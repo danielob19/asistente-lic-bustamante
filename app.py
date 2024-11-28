@@ -5,7 +5,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import os
 
 # Configuración de OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Configurada como variable de entorno
 
 # Ruta al archivo de credenciales JSON para Google Sheets
 CREDENCIALES_JSON = "asistente-441318-e6835310ec59.json"
@@ -64,7 +64,11 @@ def asistente():
 
     return jsonify({"respuesta": respuesta_openai})
 
-import os
+@app.route('/favicon.ico')
+def favicon():
+    """Manejar solicitudes de favicon.ico."""
+    return '', 204  # Devuelve una respuesta vacía sin contenido
 
-port = int(os.environ.get("PORT", 5000))
-app.run(host="0.0.0.0", port=port)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
