@@ -1,65 +1,42 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS  # Para manejar CORS
 import openai
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import json
 import os
+import json
 from io import StringIO
-
-CREDENCIALES_JSON = os.getenv("GOOGLE_CREDENTIALS")
-
-# Cargar las credenciales desde la variable de entorno
-creds_dict = json.loads(CREDENCIALES_JSON)
-creds_stream = StringIO(json.dumps(creds_dict))
-
 
 # Configuración de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")  # Configurada como variable de entorno
 
-# Ruta al archivo de credenciales JSON para Google Sheets
-CREDENCIALES_JSON = os.getenv("GOOGLE_CREDENTIALS")
-
-# Cargar las credenciales desde la variable de entorno
-creds_dict = json.loads(CREDENCIALES_JSON)
-creds_stream = StringIO(json.dumps(creds_dict))
-
-from oauth2client.service_account import ServiceAccountCredentials
-import gspread
-import json
-from io import StringIO
-
-import gspread 
-from oauth2client.service_account import ServiceAccountCredentials
-import os
-
+# Función para conectar con Google Sheets
 def conectar_google_sheets():
     """Conecta a Google Sheets y devuelve la hoja activa."""
     try:
         # Obtén el contenido del archivo secreto desde la variable de entorno
         CREDENCIALES_JSON = os.getenv("GOOGLE_CREDENTIALS_FILE")
         if not CREDENCIALES_JSON:
-            raise ValueError("La variable de entorno GOOGLE_CREDENTIALS_FILE no está configurada.")
+            raise ValueError("La variable de entorno GOOGLE_CREDENTIALS_FILE no está configurada o está vacía.")
 
-        # Convierte el contenido del archivo secreto a un diccionario
+        # Convierte el contenido del archivo JSON a un diccionario
         creds_dict = json.loads(CREDENCIALES_JSON)
 
         # Configuración de alcance y autenticación
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-        client = gspread.authorize(creds)
 
-        # Abre la hoja de cálculo y retorna la hoja activa
+        # Autenticación y conexión
+        client = gspread.authorize(creds)
         hoja = client.open("Asistente_Lic_Bustamante").worksheet("tab2")
         return hoja
     except Exception as e:
         print("Error al conectar con Google Sheets:", e)
         return None
 
-
-# Configuración de Flask
+# Inicializar Flask y configurar CORS
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "https://licbustamante.com.ar"}})  # Permite solicitudes desde tu dominio
+CORS(app, resources={r"/*": {"origins": "*"}})  # Permite solicitudes desde cualquier origen
 
 @app.route("/", methods=["GET"])
 def home():
@@ -95,7 +72,7 @@ def asistente():
     try:
         hoja = conectar_google_sheets()
         if hoja:
-            hoja.append_row([mensaje_usuario, respuesta_openai, "campo1", "campo2"])
+            hoja.append_row([mensaje_usuario, respuesta_openai])
     except Exception as e:
         print("Error al registrar en Google Sheets:", e)
 
@@ -108,4 +85,4 @@ def favicon():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port)
