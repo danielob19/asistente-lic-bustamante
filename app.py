@@ -5,7 +5,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import os
 
 # Configuración de OpenAI
-openai.api_key = "xxxx_tu_clave_de_openai_xxxx"  # Reemplaza con tu clave de OpenAI
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Ruta al archivo de credenciales JSON para Google Sheets
 CREDENCIALES_JSON = "asistente-441318-e6835310ec59.json"
