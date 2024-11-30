@@ -6,7 +6,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import openai
 
-# Configurar Flask
+# Configuración de Flask
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "https://licbustamante.com.ar"}})
 
@@ -55,8 +55,11 @@ def cotejar_sintomas(sintomas):
                 coincidencias.append(fila['D'])
 
         return coincidencias
+    except gspread.exceptions.APIError as api_error:
+        print(f"API Error cotejando síntomas: {api_error}")
+        return None
     except Exception as e:
-        print(f"Error cotejando síntomas: {e}")
+        print(f"Error general cotejando síntomas: {e}")
         return None
 
 # Función para registrar nuevos síntomas
@@ -66,8 +69,10 @@ def registrar_sintomas(sintomas):
         worksheet = spreadsheet.worksheet(worksheet_name)
         worksheet.append_row([sintomas, "", "", ""])
         print(f"Síntoma registrado: {sintomas}")
+    except gspread.exceptions.APIError as api_error:
+        print(f"API Error registrando síntomas: {api_error}")
     except Exception as e:
-        print(f"Error registrando síntomas: {e}")
+        print(f"Error general registrando síntomas: {e}")
 
 # Ruta principal del asistente
 @app.route("/asistente", methods=["POST"])
