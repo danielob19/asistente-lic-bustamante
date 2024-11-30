@@ -37,24 +37,32 @@ def cotejar_sintomas_google_sheets(sintomas_usuario):
         if not hoja:
             return None
 
-        # Obtener los datos de la hoja incluyendo los encabezados
+        # Obtener todos los registros de la hoja
         registros = hoja.get_all_records()
-        
+
+        if not registros:
+            raise ValueError("La hoja está vacía o no tiene datos.")
+
+        # Obtener los encabezados dinámicamente
+        encabezados = registros[0].keys()
+        columnas_esperadas = ['Celda A1: "A"', 'Celda B1: "B"', 'Celda C1: "C"', 'Celda D1: "D"']
+
+        # Validar que los encabezados contengan las columnas esperadas
+        if not all(col in encabezados for col in columnas_esperadas):
+            raise KeyError(f"Los encabezados en la hoja no coinciden con {columnas_esperadas}.")
+
         # Lista para almacenar coincidencias
         coincidencias = []
 
         # Revisión de los síntomas en las columnas A, B y C
         for fila in registros:
-            if not all(k in fila for k in ["A", "B", "C", "D"]):
-                raise KeyError("Los encabezados en la hoja no coinciden con 'A', 'B', 'C', 'D'.")
-            
             for sintoma in sintomas_usuario:
                 if (
-                    sintoma.lower() in str(fila["A"]).lower()
-                    or sintoma.lower() in str(fila["B"]).lower()
-                    or sintoma.lower() in str(fila["C"]).lower()
+                    sintoma.lower() in str(fila['Celda A1: "A"']).lower()
+                    or sintoma.lower() in str(fila['Celda B1: "B"']).lower()
+                    or sintoma.lower() in str(fila['Celda C1: "C"']).lower()
                 ):
-                    coincidencias.append(fila["D"])  # Registrar diagnóstico asociado
+                    coincidencias.append(fila['Celda D1: "D"'])  # Registrar diagnóstico asociado
 
         return coincidencias
     except KeyError as e:
