@@ -4,7 +4,6 @@ import openai
 import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import random
 import json
 
 # Configuración de OpenAI
@@ -37,27 +36,43 @@ def cotejar_sintomas_google_sheets(sintomas_usuario):
         if not hoja:
             return None
 
-        # Obtener registros y encabezados
         registros = hoja.get_all_records()
-        encabezados = registros[0].keys()
-
-        columnas_esperadas = ['Celda A1: "A"', 'Celda B1: "B"', 'Celda C1: "C"', 'Celda D1: "D"']
-        if not all(col in encabezados for col in columnas_esperadas):
-            raise KeyError(f"Encabezados de la hoja no coinciden con {columnas_esperadas}.")
-
         coincidencias = []
+
         for fila in registros:
             for sintoma in sintomas_usuario:
                 if (
-                    sintoma.lower() in str(fila['Celda A1: "A"']).lower()
-                    or sintoma.lower() in str(fila['Celda B1: "B"']).lower()
-                    or sintoma.lower() in str(fila['Celda C1: "C"']).lower()
+                    sintoma.lower() in str(fila.get('Celda A1: "A"', '')).lower()
+                    or sintoma.lower() in str(fila.get('Celda B1: "B"', '')).lower()
+                    or sintoma.lower() in str(fila.get('Celda C1: "C"', '')).lower()
                 ):
-                    coincidencias.append(fila['Celda D1: "D"'])
+                    coincidencias.append(fila.get('Celda D1: "D"', 'Diagnóstico pendiente'))
+
         return coincidencias
     except Exception as e:
         print(f"Error cotejando síntomas: {e}")
         return None
+
+# Generar respuesta con OpenAI
+def generar_respuesta_openai(sintomas_usuario, diagnosticos):
+    try:
+        prompt = (
+            f"El usuario mencionó los siguientes síntomas: {', '.join(sintomas_usuario)}. "
+            f"Coincidencias encontradas: {', '.join(diagnosticos)}. "
+            "Redacta una respuesta profesional de no más de 70 palabras, sugiriendo al usuario contactar al Lic. Daniel O. Bustamante para una evaluación más profunda. "
+            "Evita dramatizar y enfócate en un tono profesional y objetivo."
+        )
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "system", "content": "Eres un asistente profesional de psicología."},
+                      {"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.7
+        )
+        return response['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        print(f"Error generando respuesta con OpenAI: {e}")
+        return "Lamentablemente, no puedo proporcionar una respuesta en este momento. Por favor, intenta más tarde."
 
 # Ruta del asistente
 @app.route("/asistente", methods=["POST"])
@@ -71,13 +86,8 @@ def asistente():
         sintomas_usuario = [sintoma.strip() for sintoma in mensaje_usuario.split(",")]
 
         coincidencias = cotejar_sintomas_google_sheets(sintomas_usuario)
-
-        if coincidencias and len(set(coincidencias)) >= 2:
-            posibles_diagnosticos = ", ".join(set(coincidencias))
-            respuesta = (
-                f"En base a los síntomas que mencionaste: {', '.join(sintomas_usuario)}, podría haber una coincidencia con los siguientes cuadros: {posibles_diagnosticos}. "
-                f"Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para recibir una evaluación más detallada."
-            )
+        if coincidencias and len(coincidencias) >= 2:
+            respuesta = generar_respuesta_openai(sintomas_usuario, coincidencias)
         else:
             respuesta = (
                 f"No encontré coincidencias claras para los síntomas mencionados: {', '.join(sintomas_usuario)}. "
