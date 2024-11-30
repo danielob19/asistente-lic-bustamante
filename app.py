@@ -5,6 +5,7 @@ import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import json
+import random
 
 # Configuración de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -73,6 +74,15 @@ def generar_respuesta_openai(sintomas_usuario, diagnosticos):
     except Exception as e:
         print(f"Error generando respuesta con OpenAI: {e}")
         return "Lamentablemente, no puedo proporcionar una respuesta en este momento. Por favor, intenta más tarde."
+
+# Generar saludo inicial variado
+def generar_saludo():
+    saludos = [
+        "¡Hola! ¿En qué puedo ayudarte?",
+        "¡Hola! ¿Cómo te sientes hoy?",
+        "Hola, gracias por contactarme. ¿Cómo puedo asistirte?",
+    ]
+    return random.choice(saludos)
 
 # Ruta del asistente
 @app.route("/asistente", methods=["POST"])
