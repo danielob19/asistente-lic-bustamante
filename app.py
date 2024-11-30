@@ -7,11 +7,11 @@ import os
 import json
 
 # Configuración de OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Configurada como variable de entorno
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Inicializar Flask
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "https://licbustamante.com.ar"}})  # Permite solicitudes desde tu dominio
+CORS(app, resources={r"/*": {"origins": "https://licbustamante.com.ar"}})
 
 # Conectar con Google Sheets
 def conectar_google_sheets():
@@ -49,25 +49,24 @@ def asistente():
 
         # Obtener todos los registros, omitiendo los encabezados
         datos = hoja.get_all_records()
-
         coincidencias = []
 
-        # Verificar coincidencias en las columnas con encabezados específicos
+        # Verificar coincidencias en las columnas "A", "B" y "C"
         for fila in datos:
             if mensaje_usuario in [fila.get("A", "").lower(), fila.get("B", "").lower(), fila.get("C", "").lower()]:
                 coincidencias.append(fila.get("D", "").strip())
 
         if len(coincidencias) > 0:
-            # Si hay coincidencias, generar respuesta con OpenAI
+            # Si hay coincidencias, generar una respuesta con OpenAI
             sintomas = ", ".join(set(coincidencias))
             prompt = (
                 f"En base a los síntomas mencionados ({mensaje_usuario}) y las coincidencias detectadas ({sintomas}), "
-                "genera una respuesta profesional y empática mencionando los síntomas reportados y sugiriendo contacto con el Lic. Daniel O. Bustamante."
+                "genera una respuesta profesional mencionando los síntomas reportados y sugiriendo contacto con el Lic. Daniel O. Bustamante."
             )
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "Eres un asistente profesional que responde en un encuadre psicológico existencial. Respondes de forma profesional, clara y empática, sin dramatización."},
+                    {"role": "system", "content": "Eres un asistente profesional que responde de manera clara, profesional y empática, sin dramatización ni insistencia."},
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.7,
