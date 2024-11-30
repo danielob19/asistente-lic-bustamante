@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from fuzzywuzzy import fuzz
 import openai
 
 # Configuración de Flask
@@ -37,30 +38,30 @@ def obtener_encabezados(worksheet):
         print(f"Error al obtener encabezados: {e}")
         return None
 
-# Función para cotejar síntomas
+# Función para cotejar síntomas con fuzzy matching
 def cotejar_sintomas(sintomas):
     try:
         spreadsheet = client.open_by_key(spreadsheet_id)
         worksheet = spreadsheet.worksheet(worksheet_name)
         headers = obtener_encabezados(worksheet)
 
-        # Validar encabezados
-        if headers is None or not all(h in headers for h in ['A', 'B', 'C', 'D']):
+        if headers != ['A', 'B', 'C', 'D']:
             raise ValueError("Los encabezados en la hoja no coinciden con 'A', 'B', 'C', 'D'.")
 
         datos = worksheet.get_all_records()
         coincidencias = []
+        umbral_similitud = 80  # Umbral para considerar una coincidencia
 
         for fila in datos:
-            if sintomas in (fila.get('A', '').lower() or fila.get('B', '').lower() or fila.get('C', '').lower()):
-                coincidencias.append(fila.get('D', '').lower())
+            for columna in ['A', 'B', 'C']:
+                similitud = fuzz.token_sort_ratio(sintomas, fila[columna])
+                if similitud >= umbral_similitud:
+                    coincidencias.append(fila['D'])
+                    break  # Sal del loop interno si ya hay una coincidencia
 
         return coincidencias
     except gspread.exceptions.APIError as api_error:
         print(f"API Error cotejando síntomas: {api_error}")
-        return None
-    except ValueError as e:
-        print(f"Error de validación: {e}")
         return None
     except Exception as e:
         print(f"Error general cotejando síntomas: {e}")
