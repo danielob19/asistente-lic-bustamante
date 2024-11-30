@@ -12,7 +12,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Inicializar Flask
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "https://licbustamante.com.ar"}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Conexión a Google Sheets
 def conectar_google_sheets():
@@ -37,24 +37,15 @@ def cotejar_sintomas_google_sheets(sintomas_usuario):
         if not hoja:
             return None
 
-        # Obtener todos los registros de la hoja
+        # Obtener registros y encabezados
         registros = hoja.get_all_records()
-
-        if not registros:
-            raise ValueError("La hoja está vacía o no tiene datos.")
-
-        # Obtener los encabezados dinámicamente
         encabezados = registros[0].keys()
+
         columnas_esperadas = ['Celda A1: "A"', 'Celda B1: "B"', 'Celda C1: "C"', 'Celda D1: "D"']
-
-        # Validar que los encabezados contengan las columnas esperadas
         if not all(col in encabezados for col in columnas_esperadas):
-            raise KeyError(f"Los encabezados en la hoja no coinciden con {columnas_esperadas}.")
+            raise KeyError(f"Encabezados de la hoja no coinciden con {columnas_esperadas}.")
 
-        # Lista para almacenar coincidencias
         coincidencias = []
-
-        # Revisión de los síntomas en las columnas A, B y C
         for fila in registros:
             for sintoma in sintomas_usuario:
                 if (
@@ -62,30 +53,11 @@ def cotejar_sintomas_google_sheets(sintomas_usuario):
                     or sintoma.lower() in str(fila['Celda B1: "B"']).lower()
                     or sintoma.lower() in str(fila['Celda C1: "C"']).lower()
                 ):
-                    coincidencias.append(fila['Celda D1: "D"'])  # Registrar diagnóstico asociado
-
+                    coincidencias.append(fila['Celda D1: "D"'])
         return coincidencias
-    except KeyError as e:
+    except Exception as e:
         print(f"Error cotejando síntomas: {e}")
         return None
-    except Exception as e:
-        print(f"Error general cotejando síntomas: {e}")
-        return None
-
-# Registrar síntomas en Google Sheets
-def registrar_sintomas_google_sheets(sintomas_usuario):
-    try:
-        hoja = conectar_google_sheets()
-        if hoja:
-            for sintoma in sintomas_usuario:
-                hoja.append_row([sintoma, "Sinónimo pendiente", "Sinónimo pendiente", "Diagnóstico pendiente"])
-    except Exception as e:
-        print(f"Error registrando en Google Sheets: {e}")
-
-# Ruta principal
-@app.route("/", methods=["GET"])
-def home():
-    return jsonify({"mensaje": "¡Bienvenido al Asistente Lic. Bustamante!"})
 
 # Ruta del asistente
 @app.route("/asistente", methods=["POST"])
@@ -99,49 +71,23 @@ def asistente():
         sintomas_usuario = [sintoma.strip() for sintoma in mensaje_usuario.split(",")]
 
         coincidencias = cotejar_sintomas_google_sheets(sintomas_usuario)
-        respuestas_pregunta = [
-            "¿Podrías contarme si hay algún otro malestar que sientas?",
-            "¿Hay algo más que te preocupe emocionalmente?",
-            "¿Aparte de esto, sentís algún otro síntoma?"
-        ]
 
         if coincidencias and len(set(coincidencias)) >= 2:
             posibles_diagnosticos = ", ".join(set(coincidencias))
-            prompt = (
-                f"Con base en los síntomas mencionados: {', '.join(sintomas_usuario)}. "
-                f"Estos coinciden con los siguientes diagnósticos: {posibles_diagnosticos}. "
-                f"Responde profesionalmente y sugiere contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para más orientación."
+            respuesta = (
+                f"En base a los síntomas que mencionaste: {', '.join(sintomas_usuario)}, podría haber una coincidencia con los siguientes cuadros: {posibles_diagnosticos}. "
+                f"Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para recibir una evaluación más detallada."
             )
         else:
-            registrar_sintomas_google_sheets(sintomas_usuario)
-            prompt = (
-                f"No se encontraron coincidencias claras para los síntomas mencionados: {', '.join(sintomas_usuario)}. "
-                f"Indica que estos serán registrados y sugiere contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para orientación especializada."
+            respuesta = (
+                f"No encontré coincidencias claras para los síntomas mencionados: {', '.join(sintomas_usuario)}. "
+                f"Tus síntomas serán registrados y puedes contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para orientación adicional."
             )
 
-        # Generar respuesta con OpenAI
-        try:
-            respuesta_openai = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Eres un asistente profesional que responde de manera clara, breve y profesional."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=150
-            )["choices"][0]["message"]["content"].strip()
-        except Exception as e:
-            print(f"Error con OpenAI: {e}")
-            respuesta_openai = "Lo siento, ocurrió un error procesando tu solicitud."
-
-        # Respuesta final con preguntas adicionales
-        respuesta_final = respuesta_openai + " " + random.choice(respuestas_pregunta)
-
-        return jsonify({"respuesta": respuesta_final})
+        return jsonify({"respuesta": respuesta})
     except Exception as e:
         print(f"Error procesando la solicitud: {e}")
-        return jsonify({"error": "Lo siento, ocurrió un error procesando tu solicitud."}), 500
+        return jsonify({"error": "Ocurrió un error procesando tu solicitud."}), 500
 
-# Ejecutar la aplicación
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
