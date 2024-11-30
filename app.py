@@ -35,7 +35,7 @@ def conectar_google_sheets():
         print(f"Error al conectar con Google Sheets: {e}")
         return None
 
-# Función para cotejar síntomas
+# Función para cotejar síntomas en Google Sheets
 def cotejar_sintomas_google_sheets(sintomas_usuario):
     try:
         hoja = conectar_google_sheets()
@@ -47,8 +47,8 @@ def cotejar_sintomas_google_sheets(sintomas_usuario):
 
         coincidencias = []
         for fila in data:
-            if any(sintoma.lower() in (fila["Celda A1: \"A\""].lower(), fila["Celda B1: \"B\""].lower(), fila["Celda C1: \"C\""].lower()) for sintoma in sintomas_usuario):
-                coincidencias.append(fila["Celda D1: \"D\""])
+            if any(sintoma.lower() in (fila["A"].lower(), fila["B"].lower(), fila["C"].lower()) for sintoma in sintomas_usuario):
+                coincidencias.append(fila["D"])
         
         return coincidencias
     except Exception as e:
@@ -91,7 +91,7 @@ def asistente():
             respuesta_openai = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "Eres un asistente profesional que responde de forma clara, breve y profesional."},
+                    {"role": "system", "content": "Eres un asistente profesional que responde de forma clara, breve y profesional, cumpliendo con las directrices establecidas."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
