@@ -4,94 +4,102 @@ import openai
 import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import random
 import json
 
 # Configuración de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Inicialización de Flask
+# Inicializar Flask
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "https://licbustamante.com.ar"}})
 
 # Conexión a Google Sheets
 def conectar_google_sheets():
     try:
-        # Obtener las credenciales desde la variable de entorno
         creds_json = os.getenv("GOOGLE_CREDENTIALS_FILE")
         if not creds_json:
-            raise ValueError("GOOGLE_CREDENTIALS_FILE no configurada en variables de entorno.")
-        
+            raise ValueError("GOOGLE_CREDENTIALS_FILE no configurada en las variables de entorno.")
         creds_dict = json.loads(creds_json)
-        
-        # Configuración de alcance
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
-
-        # Conectar con la hoja de cálculo
         hoja = client.open("Asistente_Lic_Bustamante").worksheet("tab2")
         return hoja
     except Exception as e:
         print(f"Error al conectar con Google Sheets: {e}")
         return None
 
-# Función para cotejar síntomas en Google Sheets
+# Cotejar síntomas en Google Sheets
 def cotejar_sintomas_google_sheets(sintomas_usuario):
     try:
         hoja = conectar_google_sheets()
         if not hoja:
             return None
 
-        # Leer datos de las columnas A, B, C y D
         data = hoja.get_all_records()
-
         coincidencias = []
         for fila in data:
-            if any(sintoma.lower() in (fila["A"].lower(), fila["B"].lower(), fila["C"].lower()) for sintoma in sintomas_usuario):
+            if any(sintoma.lower() in [fila["A"].lower(), fila["B"].lower(), fila["C"].lower()] for sintoma in sintomas_usuario):
                 coincidencias.append(fila["D"])
-        
         return coincidencias
     except Exception as e:
         print(f"Error cotejando síntomas: {e}")
         return None
+
+# Registrar síntomas en Google Sheets
+def registrar_sintomas_google_sheets(sintomas_usuario):
+    try:
+        hoja = conectar_google_sheets()
+        if hoja:
+            for sintoma in sintomas_usuario:
+                hoja.append_row([sintoma, "Sinónimo pendiente", "Sinónimo pendiente", "Diagnóstico pendiente"])
+    except Exception as e:
+        print(f"Error registrando en Google Sheets: {e}")
 
 # Ruta principal
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"mensaje": "¡Bienvenido al Asistente Lic. Bustamante!"})
 
+# Ruta del asistente
 @app.route("/asistente", methods=["POST"])
 def asistente():
     try:
         data = request.get_json()
         if not data or "mensaje" not in data:
             return jsonify({"error": "Falta el campo 'mensaje'"}), 400
-        
-        mensaje_usuario = data["mensaje"]
 
-        # Procesar síntomas
-        sintomas_usuario = [s.strip() for s in mensaje_usuario.split(",")]
+        mensaje_usuario = data["mensaje"].lower()
+        sintomas_usuario = [sintoma.strip() for sintoma in mensaje_usuario.split(",")]
+
         coincidencias = cotejar_sintomas_google_sheets(sintomas_usuario)
+        respuestas_pregunta = [
+            "¿Podrías contarme si hay algún otro malestar que sientas?",
+            "¿Hay algo más que te preocupe emocionalmente?",
+            "¿Aparte de esto, sentís algún otro síntoma?"
+        ]
 
-        # Generar respuesta con OpenAI
-        if coincidencias:
+        if coincidencias and len(set(coincidencias)) >= 2:
             posibles_diagnosticos = ", ".join(set(coincidencias))
             prompt = (
-                f"Con base en los síntomas reportados: {', '.join(sintomas_usuario)}. "
-                f"Se encontraron coincidencias con los posibles diagnósticos: {posibles_diagnosticos}. "
-                f"Responde profesionalmente, sugiriendo al usuario contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para más ayuda."
+                f"Con base en los síntomas mencionados: {', '.join(sintomas_usuario)}. "
+                f"Estos coinciden con los siguientes diagnósticos: {posibles_diagnosticos}. "
+                f"Responde profesionalmente y sugiere contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para más orientación."
             )
         else:
+            registrar_sintomas_google_sheets(sintomas_usuario)
             prompt = (
-                f"No se encontraron coincidencias claras para los síntomas reportados: {', '.join(sintomas_usuario)}. "
-                f"Informa al usuario que sus síntomas serán registrados y sugiere contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para más ayuda."
+                f"No se encontraron coincidencias claras para los síntomas mencionados: {', '.join(sintomas_usuario)}. "
+                f"Indica que estos serán registrados y sugiere contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para orientación especializada."
             )
 
+        # Generar respuesta con OpenAI
         try:
             respuesta_openai = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "Eres un asistente profesional que responde de forma clara, breve y profesional, cumpliendo con las directrices establecidas."},
+                    {"role": "system", "content": "Eres un asistente profesional que responde de manera clara, breve y profesional."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
@@ -101,16 +109,13 @@ def asistente():
             print(f"Error con OpenAI: {e}")
             respuesta_openai = "Lo siento, ocurrió un error procesando tu solicitud."
 
-        # Registrar datos en Google Sheets
-        try:
-            hoja = conectar_google_sheets()
-            if hoja:
-                hoja.append_row([mensaje_usuario, respuesta_openai, "Sinónimo pendiente", "Diagnóstico pendiente"])
-        except Exception as e:
-            print(f"Error registrando en Google Sheets: {e}")
+        # Respuesta final con preguntas adicionales
+        if "¿podrías contarme" in prompt.lower():
+            respuesta_final = respuesta_openai
+        else:
+            respuesta_final = respuesta_openai + " " + random.choice(respuestas_pregunta)
 
-        return jsonify({"respuesta": respuesta_openai})
-
+        return jsonify({"respuesta": respuesta_final})
     except Exception as e:
         print(f"Error procesando la solicitud: {e}")
         return jsonify({"error": "Lo siento, ocurrió un error procesando tu solicitud."}), 500
