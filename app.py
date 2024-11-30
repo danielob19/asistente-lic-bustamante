@@ -37,14 +37,31 @@ def cotejar_sintomas_google_sheets(sintomas_usuario):
         if not hoja:
             return None
 
-        data = hoja.get_all_records()
+        # Obtener los datos de la hoja incluyendo los encabezados
+        registros = hoja.get_all_records()
+        
+        # Lista para almacenar coincidencias
         coincidencias = []
-        for fila in data:
-            if any(sintoma.lower() in [fila["A"].lower(), fila["B"].lower(), fila["C"].lower()] for sintoma in sintomas_usuario):
-                coincidencias.append(fila["D"])
+
+        # Revisión de los síntomas en las columnas A, B y C
+        for fila in registros:
+            if not all(k in fila for k in ["A", "B", "C", "D"]):
+                raise KeyError("Los encabezados en la hoja no coinciden con 'A', 'B', 'C', 'D'.")
+            
+            for sintoma in sintomas_usuario:
+                if (
+                    sintoma.lower() in str(fila["A"]).lower()
+                    or sintoma.lower() in str(fila["B"]).lower()
+                    or sintoma.lower() in str(fila["C"]).lower()
+                ):
+                    coincidencias.append(fila["D"])  # Registrar diagnóstico asociado
+
         return coincidencias
-    except Exception as e:
+    except KeyError as e:
         print(f"Error cotejando síntomas: {e}")
+        return None
+    except Exception as e:
+        print(f"Error general cotejando síntomas: {e}")
         return None
 
 # Registrar síntomas en Google Sheets
@@ -110,10 +127,7 @@ def asistente():
             respuesta_openai = "Lo siento, ocurrió un error procesando tu solicitud."
 
         # Respuesta final con preguntas adicionales
-        if "¿podrías contarme" in prompt.lower():
-            respuesta_final = respuesta_openai
-        else:
-            respuesta_final = respuesta_openai + " " + random.choice(respuestas_pregunta)
+        respuesta_final = respuesta_openai + " " + random.choice(respuestas_pregunta)
 
         return jsonify({"respuesta": respuesta_final})
     except Exception as e:
