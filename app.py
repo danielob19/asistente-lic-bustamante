@@ -44,19 +44,23 @@ def cotejar_sintomas(sintomas):
         worksheet = spreadsheet.worksheet(worksheet_name)
         headers = obtener_encabezados(worksheet)
 
-        if headers != ['A', 'B', 'C', 'D']:
+        # Validar encabezados
+        if headers is None or not all(h in headers for h in ['A', 'B', 'C', 'D']):
             raise ValueError("Los encabezados en la hoja no coinciden con 'A', 'B', 'C', 'D'.")
 
         datos = worksheet.get_all_records()
         coincidencias = []
 
         for fila in datos:
-            if sintomas in fila['A'] or sintomas in fila['B'] or sintomas in fila['C']:
-                coincidencias.append(fila['D'])
+            if sintomas in (fila.get('A', '').lower() or fila.get('B', '').lower() or fila.get('C', '').lower()):
+                coincidencias.append(fila.get('D', '').lower())
 
         return coincidencias
     except gspread.exceptions.APIError as api_error:
         print(f"API Error cotejando síntomas: {api_error}")
+        return None
+    except ValueError as e:
+        print(f"Error de validación: {e}")
         return None
     except Exception as e:
         print(f"Error general cotejando síntomas: {e}")
