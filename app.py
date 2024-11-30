@@ -5,7 +5,6 @@ import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import json
-from io import StringIO
 
 # Configuración de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -17,17 +16,16 @@ CORS(app, resources={r"/*": {"origins": "https://licbustamante.com.ar"}})
 # Conexión a Google Sheets
 def conectar_google_sheets():
     try:
-        # Ruta o credenciales desde variable de entorno
+        # Obtener las credenciales desde la variable de entorno
         creds_json = os.getenv("GOOGLE_CREDENTIALS_FILE")
         if not creds_json:
             raise ValueError("GOOGLE_CREDENTIALS_FILE no configurada en variables de entorno.")
         
         creds_dict = json.loads(creds_json)
-        creds_stream = StringIO(json.dumps(creds_dict))
         
         # Configuración de alcance
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = ServiceAccountCredentials.from_json_keyfile_name(creds_stream, scope)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
 
         # Conectar con la hoja de cálculo
