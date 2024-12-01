@@ -77,6 +77,10 @@ def manejar_conversacion(mensaje_usuario):
 @app.route("/asistente", methods=["POST"])
 def asistente():
     try:
+        # Verificar encabezado Content-Type
+        if not request.content_type or 'application/json' not in request.content_type:
+            return jsonify({"respuesta": "El encabezado 'Content-Type' debe ser 'application/json'."}), 415
+
         # Leer el mensaje del usuario desde el cuerpo de la solicitud
         data = request.get_json()
         if not data or "mensaje" not in data:
