@@ -88,10 +88,18 @@ def asistente():
         return jsonify({"error": str(e), "respuesta": "Ocurrió un error interno en el servidor."}), 500
 
 
-# Generador de respuestas usando GPT-3.5 Turbo
 def generar_respuesta_openai(prompt):
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Eres un asistente conversacional cortés y
+                {"role": "system", "content": "Eres un asistente conversacional cortés y profesional."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=150,
+            temperature=0.7
+        )
+        return response['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        print(f"Error generando respuesta con OpenAI: {e}")
+        return "Lo siento, ocurrió un error generando la respuesta."
