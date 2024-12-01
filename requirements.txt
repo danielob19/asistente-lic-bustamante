@@ -1,0 +1,9 @@
+flask
+flask-cors
+flask-session
+openai==0.28
+gspread
+oauth2client
+gunicorn
+fuzzywuzzy
+python-Levenshtein
