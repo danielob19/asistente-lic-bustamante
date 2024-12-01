@@ -101,7 +101,14 @@ def asistente():
         print(f"Error procesando la solicitud: {e}")
         return jsonify({"respuesta": "Lo siento, ocurrió un error procesando tu solicitud."})
 
+# Ruta para reiniciar la sesión (opcional)
+@app.route("/reset", methods=["POST"])
+def reset_sesion():
+    session.clear()
+    return jsonify({"respuesta": "La conversación se ha reiniciado. ¡Hola! ¿En qué puedo ayudarte?"})
+
 # Iniciar la aplicación
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
