@@ -1,20 +1,16 @@
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
-import os
 import openai
+import os
 
 # Configuración de Flask
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 app.secret_key = "supersecretkey"  # Necesario para manejar sesiones
 
-# Configurar la clave de API desde las variables de entorno
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Configuración de OpenAI
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Asegúrate de configurar esta variable de entorno
 
-# Verifica que la clave se haya cargado correctamente
-if not openai.api_key:
-    raise ValueError("La clave de OpenAI no está configurada. Verifica las variables de entorno.")
-    
 # Ruta principal del asistente
 @app.route("/asistente", methods=["POST"])
 def asistente():
@@ -90,18 +86,19 @@ def asistente():
         return jsonify({"error": str(e), "respuesta": "Ocurrió un error interno en el servidor."}), 500
 
 
-# Generador de respuestas usando OpenAI
+# Generador de respuestas usando GPT-3.5 Turbo
 def generar_respuesta_openai(prompt):
     try:
-        response = openai.Completion.create(
-            engine="text-davinci-003",  # Ajusta según el modelo que desees usar
-            prompt=prompt,
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Usamos GPT-3.5 Turbo
+            messages=[
+                {"role": "system", "content": "Eres un asistente conversacional cortés y profesional."},
+                {"role": "user", "content": prompt}
+            ],
             max_tokens=150,
-            n=1,
-            stop=None,
             temperature=0.7
         )
-        return response.choices[0].text.strip()
+        return response['choices'][0]['message']['content'].strip()
     except Exception as e:
         print(f"Error generando respuesta con OpenAI: {e}")
         return "Lo siento, ocurrió un error generando la respuesta."
