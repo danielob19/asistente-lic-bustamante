@@ -2,9 +2,6 @@ import os
 import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from fuzzywuzzy import fuzz
 import openai
 
 # Configuración de Flask
@@ -14,74 +11,32 @@ CORS(app, resources={r"/*": {"origins": "https://licbustamante.com.ar"}})
 # Configuración de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Configuración de Google Sheets
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-credentials_json = os.getenv("GOOGLE_CREDENTIALS_FILE")
+# Importar la base de conocimiento
+from base_conocimiento import base_de_conocimiento
 
-if not credentials_json:
-    raise ValueError("La variable de entorno GOOGLE_CREDENTIALS_FILE no está configurada.")
+# Archivo para almacenar los síntomas no reconocidos
+archivo_sintomas_pendientes = "sintomas_pendientes.json"
 
-# Cargar las credenciales desde la variable de entorno
-try:
-    credentials = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(credentials_json), scope)
-    client = gspread.authorize(credentials)
-except Exception as e:
-    raise ValueError(f"Error al configurar las credenciales de Google Sheets: {e}")
+# Cargar síntomas pendientes existentes
+if not os.path.exists(archivo_sintomas_pendientes):
+    with open(archivo_sintomas_pendientes, "w") as f:
+        json.dump([], f)  # Crear archivo vacío
 
-# ID de la hoja de cálculo y nombre de la pestaña
-spreadsheet_id = "1cAy1BEENCGHBKxTHBhNTtYjI9WokkW97"
-worksheet_name = "tab2"  # Cambia si el nombre de la pestaña es diferente
-
-# Función para obtener los encabezados de Google Sheets
-def obtener_encabezados(worksheet):
+def guardar_sintoma_pendiente(sintoma):
+    """Guarda un síntoma no reconocido en el archivo JSON."""
     try:
-        headers = worksheet.row_values(1)
-        print(f"Encabezados detectados: {headers}")
-        return headers
+        with open(archivo_sintomas_pendientes, "r") as f:
+            sintomas_pendientes = json.load(f)
+        
+        if sintoma not in sintomas_pendientes:
+            sintomas_pendientes.append(sintoma)
+
+        with open(archivo_sintomas_pendientes, "w") as f:
+            json.dump(sintomas_pendientes, f, indent=4)
+        
+        print(f"Sintoma pendiente guardado: {sintoma}")
     except Exception as e:
-        print(f"Error al obtener encabezados: {e}")
-        return None
-
-# Función para cotejar síntomas con fuzzy matching
-def cotejar_sintomas(sintomas):
-    try:
-        spreadsheet = client.open_by_key(spreadsheet_id)
-        worksheet = spreadsheet.worksheet(worksheet_name)
-        headers = obtener_encabezados(worksheet)
-
-        if headers != ['A', 'B', 'C', 'D']:
-            raise ValueError("Los encabezados en la hoja no coinciden con 'A', 'B', 'C', 'D'.")
-
-        datos = worksheet.get_all_records()
-        coincidencias = []
-        umbral_similitud = 80  # Umbral para considerar una coincidencia
-
-        for fila in datos:
-            for columna in ['A', 'B', 'C']:
-                similitud = fuzz.token_sort_ratio(sintomas, fila[columna])
-                if similitud >= umbral_similitud:
-                    coincidencias.append(fila['D'])
-                    break  # Sal del loop interno si ya hay una coincidencia
-
-        return coincidencias
-    except gspread.exceptions.APIError as api_error:
-        print(f"API Error cotejando síntomas: {api_error}")
-        return None
-    except Exception as e:
-        print(f"Error general cotejando síntomas: {e}")
-        return None
-
-# Función para registrar nuevos síntomas
-def registrar_sintomas(sintomas):
-    try:
-        spreadsheet = client.open_by_key(spreadsheet_id)
-        worksheet = spreadsheet.worksheet(worksheet_name)
-        worksheet.append_row([sintomas, "", "", ""])
-        print(f"Síntoma registrado: {sintomas}")
-    except gspread.exceptions.APIError as api_error:
-        print(f"API Error registrando síntomas: {api_error}")
-    except Exception as e:
-        print(f"Error general registrando síntomas: {e}")
+        print(f"Error guardando síntoma pendiente: {e}")
 
 # Ruta principal del asistente
 @app.route("/asistente", methods=["POST"])
@@ -93,25 +48,42 @@ def asistente():
         if not mensaje_usuario:
             return jsonify({"respuesta": "Por favor, proporciona un mensaje válido."})
 
-        coincidencias = cotejar_sintomas(mensaje_usuario)
+        # Buscar en la base de conocimiento local
+        if mensaje_usuario in base_de_conocimiento:
+            diagnostico = base_de_conocimiento[mensaje_usuario]
+            return jsonify({
+                "respuesta": f"Según los síntomas mencionados: '{mensaje_usuario}', podría tratarse de un {diagnostico}. "
+                            "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más detallada."
+            })
 
-        if coincidencias:
-            diagnosticos = ", ".join(set(coincidencias))
-            respuesta = (f"En base a los síntomas que mencionaste: {mensaje_usuario}, "
-                         f"podría haber una coincidencia con los siguientes cuadros: {diagnosticos}. "
-                         "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                         "para recibir una evaluación más detallada.")
-        else:
-            registrar_sintomas(mensaje_usuario)
-            respuesta = ("No encontré coincidencias claras para los síntomas mencionados. "
-                         "Tus síntomas serán registrados y puedes contactar al Lic. Daniel O. Bustamante "
-                         "al WhatsApp +54 911 3310-1186 para orientación adicional.")
+        # Si no se encuentra, guardar el síntoma como pendiente
+        guardar_sintoma_pendiente(mensaje_usuario)
 
-        return jsonify({"respuesta": respuesta})
+        # Usar OpenAI para generar una respuesta tentativa
+        respuesta_openai = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=f"¿Qué puede significar el síntoma: {mensaje_usuario}?",
+            max_tokens=100
+        )
+        return jsonify({
+            "respuesta": respuesta_openai['choices'][0]['text'].strip(),
+            "nota": "Este síntoma no está en la base de conocimiento y ha sido registrado para clasificarlo posteriormente."
+        })
 
     except Exception as e:
         print(f"Error procesando la solicitud: {e}")
         return jsonify({"respuesta": "Lo siento, ocurrió un error procesando tu solicitud."})
+
+# Ruta para obtener los síntomas pendientes
+@app.route("/sintomas_pendientes", methods=["GET"])
+def obtener_sintomas_pendientes():
+    try:
+        with open(archivo_sintomas_pendientes, "r") as f:
+            sintomas_pendientes = json.load(f)
+        return jsonify({"sintomas_pendientes": sintomas_pendientes})
+    except Exception as e:
+        print(f"Error obteniendo síntomas pendientes: {e}")
+        return jsonify({"respuesta": "Error al obtener los síntomas pendientes."})
 
 # Iniciar la aplicación
 if __name__ == "__main__":
