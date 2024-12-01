@@ -60,6 +60,7 @@ def interpretar_sintomas(sintomas):
 
 # Función para manejar la conversación
 def manejar_conversacion(mensaje_usuario, sintomas_recibidos):
+    """Gestiona la conversación fluida con el usuario, incluyendo saludos."""
     respuestas_generales = [
         "¿Podrías contarme si hay algún otro síntoma que te preocupe?",
         "¿Hay algo más que quieras mencionar sobre cómo te sentís?",
@@ -67,31 +68,67 @@ def manejar_conversacion(mensaje_usuario, sintomas_recibidos):
         "Entendido. ¿Podés decirme si tenés algún otro síntoma?"
     ]
 
+    # Saludo inicial si no hay síntomas registrados
+    if not sintomas_recibidos:
+        return "¡Hola! ¿En qué puedo ayudarte hoy?"
+
+    # Finalizar la conversación si el usuario dice "no" o similar
     if mensaje_usuario.lower() in ["no", "nada más", "listo", "terminé"]:
-        diagnosticos = [base_de_conocimiento[sintoma] for sintoma in sintomas_recibidos if sintoma in base_de_conocimiento]
-        if diagnosticos:
-            mensaje_diagnostico = (
-                f"En base a los síntomas que mencionaste ({', '.join(sintomas_recibidos)}), "
-                f"podrías estar atravesando un estado relacionado con {', '.join(set(diagnosticos))}. "
-                "Si lo considerás necesario, contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                "para una evaluación más profunda."
-            )
+        if sintomas_recibidos:
+            diagnosticos = [
+                base_de_conocimiento[sintoma]
+                for sintoma in sintomas_recibidos
+                if sintoma in base_de_conocimiento
+            ]
+            if diagnosticos:
+                respuesta_final = (
+                    f"En base a los síntomas que mencionaste ({', '.join(sintomas_recibidos)}), "
+                    f"podrías estar atravesando un estado relacionado con {', '.join(set(diagnosticos))}. "
+                    "Si lo considerás necesario, contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "para una evaluación más profunda. Gracias por compartir cómo te sentís."
+                )
+            else:
+                respuesta_final = (
+                    "Gracias por compartir cómo te sentís. Si considerás necesario, contactá al Lic. Daniel O. Bustamante "
+                    "al WhatsApp +54 911 3310-1186 para una consulta más detallada."
+                )
         else:
-            mensaje_diagnostico = (
+            respuesta_final = (
                 "Gracias por compartir cómo te sentís. Si considerás necesario, contactá al Lic. Daniel O. Bustamante "
                 "al WhatsApp +54 911 3310-1186 para una consulta más detallada."
             )
-        return mensaje_diagnostico
+        return respuesta_final
 
-    elif mensaje_usuario.lower() in ["sí", "si"]:
-        return "Entendido, por favor contame qué otro síntoma sentís."
+    # Evitar repetir preguntas por síntomas ya registrados
+    if mensaje_usuario in sintomas_recibidos:
+        return "Ya mencionaste ese síntoma. ¿Podrías contarme si hay algún otro síntoma que te preocupe?"
 
-    else:
-        sintomas_recibidos.append(mensaje_usuario)
-        if mensaje_usuario not in base_de_conocimiento:
-            registrar_sintomas_pendientes(mensaje_usuario)
+    # Agregar síntoma y continuar
+    sintomas_recibidos.append(mensaje_usuario)
 
-        return random.choice(respuestas_generales)
+    # Finalizar automáticamente si hay más de 3 síntomas
+    if len(sintomas_recibidos) >= 3:
+        diagnosticos = [
+            base_de_conocimiento[sintoma]
+            for sintoma in sintomas_recibidos
+            if sintoma in base_de_conocimiento
+        ]
+        if diagnosticos:
+            respuesta_final = (
+                f"En base a los síntomas que mencionaste ({', '.join(sintomas_recibidos)}), "
+                f"podrías estar atravesando un estado relacionado con {', '.join(set(diagnosticos))}. "
+                "Si lo considerás necesario, contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                "para una evaluación más profunda. Gracias por compartir cómo te sentís."
+            )
+        else:
+            respuesta_final = (
+                "Gracias por compartir cómo te sentís. Si considerás necesario, contactá al Lic. Daniel O. Bustamante "
+                "al WhatsApp +54 911 3310-1186 para una consulta más detallada."
+            )
+        return respuesta_final
+
+    # Continuar la conversación con preguntas variadas
+    return random.choice(respuestas_generales)
 
 # Ruta principal del asistente
 @app.route("/asistente", methods=["POST"])
