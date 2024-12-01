@@ -141,7 +141,13 @@ def asistente():
         if not mensaje_usuario:
             return jsonify({"respuesta": "Por favor, proporcioná un mensaje válido."})
 
-        respuesta = manejar_conversacion(mensaje_usuario, sintomas_recibidos)
+        # Si no hay síntomas registrados, saludar al usuario
+        if not sintomas_recibidos:
+            sintomas_recibidos = []  # Inicializar si es la primera interacción
+            respuesta = "¡Hola! ¿En qué puedo ayudarte hoy?"
+        else:
+            # Manejar el flujo normal de la conversación
+            respuesta = manejar_conversacion(mensaje_usuario, sintomas_recibidos)
 
         return jsonify({"respuesta": respuesta, "sintomas": sintomas_recibidos})
 
