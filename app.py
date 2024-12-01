@@ -9,9 +9,9 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "https://licbustamante.com.ar"}})
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")  # Necesario para sesiones
 
+
 def manejar_conversacion(mensaje_usuario):
     # Recuperar o inicializar los síntomas y respuestas desde la sesión
-   
     sintomas_recibidos = session.get("sintomas_recibidos", [])
     respuestas_previas = session.get("respuestas_previas", [])
 
@@ -71,11 +71,40 @@ def manejar_conversacion(mensaje_usuario):
     session["respuestas_previas"] = respuestas_previas
     return respuesta
 
+
+# Ruta para manejar la conversación
+@app.route("/asistente", methods=["POST"])
+def asistente():
+    try:
+        # Leer el mensaje del usuario desde el cuerpo de la solicitud
+        data = request.get_json()
+        if not data or "mensaje" not in data:
+            return jsonify({"respuesta": "Por favor, proporcioná un mensaje válido."}), 400
+
+        mensaje_usuario = data["mensaje"].strip().lower()
+        if not mensaje_usuario:
+            return jsonify({"respuesta": "Por favor, proporcioná un mensaje no vacío."}), 400
+
+        # Manejar la conversación
+        respuesta = manejar_conversacion(mensaje_usuario)
+
+        return jsonify({
+            "respuesta": respuesta,
+            "sintomas": session.get("sintomas_recibidos", []),
+            "respuestas_previas": session.get("respuestas_previas", [])
+        })
+
+    except Exception as e:
+        print(f"Error procesando la solicitud: {e}")
+        return jsonify({"respuesta": "Ocurrió un error interno en el servidor.", "error": str(e)}), 500
+
+
 # Ruta para reiniciar la sesión (opcional)
 @app.route("/reset", methods=["POST"])
 def reset_sesion():
     session.clear()
     return jsonify({"respuesta": "La conversación se ha reiniciado. ¡Hola! ¿En qué puedo ayudarte?"})
+
 
 # Iniciar la aplicación
 if __name__ == "__main__":
