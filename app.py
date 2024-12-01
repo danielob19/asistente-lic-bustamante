@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import openai
 import os
@@ -6,104 +6,45 @@ import os
 # Configuración de Flask
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
-app.secret_key = "supersecretkey"  # Necesario para manejar sesiones
 
 # Configuración de OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Asegúrate de configurar esta variable de entorno
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Configura esta variable de entorno
 
-# Ruta principal del asistente
+# Ruta principal para interactuar con OpenAI
 @app.route("/asistente", methods=["POST"])
 def asistente():
     try:
-        # Inicializar sesión si es necesario
-        if "estado_conversacion" not in session:
-            session["estado_conversacion"] = "inicio"
-        if "nombre_usuario" not in session:
-            session["nombre_usuario"] = None
-        if "respuestas_usuario" not in session:
-            session["respuestas_usuario"] = []
-
-        # Obtener el mensaje del usuario
+        # Leer el mensaje del usuario
         data = request.get_json()
         mensaje_usuario = data.get("mensaje", "").strip()
 
         if not mensaje_usuario:
-            return jsonify({"respuesta": "Por favor, proporcioná un mensaje válido."}), 400
+            return jsonify({"error": "Por favor, proporciona un mensaje válido."}), 400
 
-        estado = session["estado_conversacion"]
-        nombre = session["nombre_usuario"]
-        respuestas = session["respuestas_usuario"]
+        # Enviar solicitud a OpenAI
+        respuesta = interactuar_con_openai(mensaje_usuario)
 
-        # Flujo de conversación basado en el estado
-        if estado == "inicio":
-            respuesta = generar_respuesta_openai(
-                "Saluda al usuario cortésmente y pídele su nombre."
-            )
-            session["estado_conversacion"] = "nombre"  # Cambiar estado
-            session.modified = True  # Asegurar que Flask registre el cambio
-            return jsonify({"respuesta": respuesta})
-
-        elif estado == "nombre":
-            # Guardar el nombre del usuario
-            session["nombre_usuario"] = mensaje_usuario
-            nombre = mensaje_usuario
-            respuesta = generar_respuesta_openai(
-                f"Saluda a {nombre} de manera cortés y preséntate como el asistente del Lic. Daniel O. Bustamante."
-            )
-            session["estado_conversacion"] = "consulta1"  # Cambiar estado
-            session.modified = True  # Asegurar que Flask registre el cambio
-            return jsonify({"respuesta": respuesta})
-
-        elif estado == "consulta1":
-            respuesta = generar_respuesta_openai(
-                "Pregúntale al usuario en un lenguaje enriquecido qué lo está afectando y qué motiva su consulta."
-            )
-            session["estado_conversacion"] = "consulta2"  # Cambiar estado
-            respuestas.append(mensaje_usuario)
-            session["respuestas_usuario"] = respuestas
-            session.modified = True  # Asegurar que Flask registre el cambio
-            return jsonify({"respuesta": respuesta})
-
-        elif estado == "consulta2":
-            respuesta = generar_respuesta_openai(
-                "Pregúntale al usuario qué otro malestar le afecta, utilizando una variación en la formulación."
-            )
-            session["estado_conversacion"] = "recomendacion"  # Cambiar estado
-            respuestas.append(mensaje_usuario)
-            session["respuestas_usuario"] = respuestas
-            session.modified = True  # Asegurar que Flask registre el cambio
-            return jsonify({"respuesta": respuesta})
-
-        elif estado == "recomendacion":
-            descripcion = " ".join(respuestas + [mensaje_usuario])
-            respuesta = generar_respuesta_openai(
-                f"En base a la descripción del usuario: '{descripcion}', "
-                "recomienda cortésmente que solicite un turno con el Lic. Daniel O. Bustamante al whatsapp +54 911 3310-1186 "
-                "para evaluar en detalle su malestar."
-            )
-            session.clear()  # Limpiar sesión tras finalizar la conversación
-            return jsonify({"respuesta": respuesta})
-
+        return jsonify({"respuesta": respuesta})
     except Exception as e:
-        return jsonify({"error": str(e), "respuesta": "Ocurrió un error interno en el servidor."}), 500
+        return jsonify({"error": str(e), "mensaje": "Error al procesar la solicitud."}), 500
 
 
-# Generador de respuestas usando GPT-3.5 Turbo
-def generar_respuesta_openai(prompt):
+# Función para interactuar con OpenAI
+def interactuar_con_openai(mensaje_usuario):
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-3.5-turbo",  # Cambia a "gpt-4" si prefieres ese modelo
             messages=[
-                {"role": "system", "content": "Eres un asistente conversacional cortés y profesional."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "Eres un asistente conversacional que responde de manera profesional."},
+                {"role": "user", "content": mensaje_usuario}
             ],
-            max_tokens=150,
+            max_tokens=200,
             temperature=0.7
         )
         return response['choices'][0]['message']['content'].strip()
     except Exception as e:
-        print(f"Error generando respuesta con OpenAI: {e}")
-        return "Lo siento, ocurrió un error generando la respuesta."
+        print(f"Error interactuando con OpenAI: {e}")
+        return "Lo siento, ocurrió un problema al generar la respuesta."
 
 # Iniciar el servidor Flask
 if __name__ == "__main__":
