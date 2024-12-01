@@ -15,10 +15,12 @@ openai.api_key = os.getenv("OPENAI_API_KEY")  # Configura esta variable de entor
 @app.route("/asistente", methods=["POST"])
 def asistente():
     try:
-        # Inicializar sesión si es necesario
+        # Verificar y depurar la sesión
         if "contador_interacciones" not in session:
+            print("Inicializando contador de interacciones en la sesión.")
             session["contador_interacciones"] = 0  # Contador de interacciones
         if "respuestas_usuario" not in session:
+            print("Inicializando respuestas de usuario en la sesión.")
             session["respuestas_usuario"] = []  # Respuestas acumuladas del usuario
 
         # Leer el mensaje del usuario
@@ -32,12 +34,15 @@ def asistente():
         session["contador_interacciones"] += 1
         session["respuestas_usuario"].append(mensaje_usuario)
 
+        # Depuración: Imprimir el estado actual de la sesión
+        print(f"Estado actual de la sesión: {dict(session)}")
+
         # Verificar si es la segunda interacción
         if session["contador_interacciones"] >= 2:
             respuesta_final = (
                 "Gracias por compartir cómo te sientes. "
                 "Para una evaluación más profunda de tu malestar, te recomiendo solicitar un turno de consulta con el Lic. Daniel O. Bustamante "
-                "al WhatsApp +54 911 3310-1186, siempre que sea de tu interés resolver tu afección psicológica y emocional "
+                "al WhatsApp +54 911 3310-1186, siempre que sea de tu interés resolver tu afección psicológica y emocional."
             )
             session.clear()  # Limpiar la sesión al final del flujo
             return jsonify({"respuesta": respuesta_final})
@@ -47,6 +52,7 @@ def asistente():
         return jsonify({"respuesta": respuesta})
 
     except Exception as e:
+        print(f"Error procesando la solicitud: {e}")
         return jsonify({"error": str(e), "mensaje": "Error al procesar la solicitud."}), 500
 
 
