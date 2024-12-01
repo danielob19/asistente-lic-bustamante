@@ -14,13 +14,13 @@ app = FastAPI()
 # Permitir solicitudes CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Cambia esto para limitar los orígenes permitidos
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Simulación de sesiones (para simplificar, usamos un diccionario)
+# Simulación de sesiones (almacenamiento en memoria)
 user_sessions = {}
 
 # Modelo de entrada
@@ -40,11 +40,15 @@ async def asistente(input_data: UserInput):
         # Inicializar sesión del usuario si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {"contador_interacciones": 0, "respuestas_usuario": []}
+            print(f"Inicializando sesión para el usuario: {user_id}")
 
-        # Incrementar contador y registrar la interacción
+        # Incrementar contador y registrar interacción
         session = user_sessions[user_id]
         session["contador_interacciones"] += 1
         session["respuestas_usuario"].append(mensaje_usuario)
+
+        # Depurar: Mostrar estado actual de la sesión
+        print(f"Estado actual de la sesión del usuario {user_id}: {session}")
 
         # Verificar si es la tercera interacción
         if session["contador_interacciones"] >= 3:
@@ -53,7 +57,7 @@ async def asistente(input_data: UserInput):
                 "con el Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186, siempre que sea de tu interés "
                 "resolver tu afección psicológica y emocional."
             )
-            # Limpiar sesión
+            # Limpiar sesión después de la recomendación
             user_sessions.pop(user_id, None)
             return JSONResponse(content={"respuesta": respuesta_final})
 
