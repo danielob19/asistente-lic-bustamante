@@ -23,10 +23,11 @@ def manejar_conversacion(mensaje_usuario):
     ]
 
     # Saludo inicial si no hay síntomas registrados
-    if not sintomas_recibidos:
+    if len(sintomas_recibidos) == 0:
         saludo_inicial = "¡Hola! ¿En qué puedo ayudarte hoy?"
         respuestas_previas.append(saludo_inicial)
         session["respuestas_previas"] = respuestas_previas
+        session["sintomas_recibidos"] = []  # Asegurarse de inicializar correctamente
         return saludo_inicial
 
     # Evitar repetir preguntas o síntomas ya registrados
