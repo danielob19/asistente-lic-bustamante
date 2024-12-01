@@ -1,48 +1,51 @@
-from flask import Flask, request, jsonify, session
-from flask_cors import CORS
-from flask_session import Session
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from typing import Optional
+from pydantic import BaseModel
 import openai
 import os
 
-# Configuración de Flask
-app = Flask(__name__)
-CORS(app, supports_credentials=True)
-app.secret_key = "supersecretkey"  # Necesario para manejar sesiones
-
-# Configuración de Flask-Session
-app.config["SESSION_TYPE"] = "filesystem"
-app.config["SESSION_PERMANENT"] = False
-Session(app)
-
 # Configuración de OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Configura esta variable de entorno
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Configura tu clave API
 
-# Ruta principal para interactuar con OpenAI
-@app.route("/asistente", methods=["POST"])
-def asistente():
+# Configuración de FastAPI
+app = FastAPI()
+
+# Permitir solicitudes CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Cambia esto para limitar los orígenes permitidos
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Simulación de sesiones (en lugar de `Flask-Session`)
+user_sessions = {}
+
+# Modelo de entrada
+class UserInput(BaseModel):
+    mensaje: str
+    user_id: Optional[str] = "default_user"
+
+@app.post("/asistente")
+async def asistente(input_data: UserInput):
     try:
-        # Verificar y depurar la sesión
-        if "contador_interacciones" not in session:
-            print("Inicializando contador de interacciones en la sesión.")
-            session["contador_interacciones"] = 0  # Contador de interacciones
-        if "respuestas_usuario" not in session:
-            print("Inicializando respuestas de usuario en la sesión.")
-            session["respuestas_usuario"] = []  # Respuestas acumuladas del usuario
-
-        # Leer el mensaje del usuario
-        data = request.get_json()
-        mensaje_usuario = data.get("mensaje", "").strip()
+        user_id = input_data.user_id
+        mensaje_usuario = input_data.mensaje.strip()
 
         if not mensaje_usuario:
-            return jsonify({"error": "Por favor, proporciona un mensaje válido."}), 400
+            raise HTTPException(status_code=400, detail="Por favor, proporciona un mensaje válido.")
 
-        # Incrementar el contador de interacciones
+        # Inicializar sesión del usuario si no existe
+        if user_id not in user_sessions:
+            user_sessions[user_id] = {"contador_interacciones": 0, "respuestas_usuario": []}
+
+        # Incrementar contador y registrar la interacción
+        session = user_sessions[user_id]
         session["contador_interacciones"] += 1
         session["respuestas_usuario"].append(mensaje_usuario)
-        session.modified = True  # Garantizar que Flask guarde los cambios
-
-        # Depuración: Imprimir el estado actual de la sesión
-        print(f"Estado actual de la sesión: {dict(session)}")
 
         # Verificar si es la segunda interacción
         if session["contador_interacciones"] >= 2:
@@ -51,23 +54,22 @@ def asistente():
                 "Para una evaluación más profunda de tu malestar, te recomiendo solicitar un turno de consulta con el Lic. Daniel O. Bustamante "
                 "al WhatsApp +54 911 3310-1186, siempre que sea de tu interés resolver tu afección psicológica y emocional."
             )
-            session.clear()  # Limpiar la sesión al final del flujo
-            return jsonify({"respuesta": respuesta_final})
+            # Limpiar sesión
+            user_sessions.pop(user_id, None)
+            return JSONResponse(content={"respuesta": respuesta_final})
 
-        # Enviar solicitud a OpenAI para generar una respuesta
-        respuesta = interactuar_con_openai(mensaje_usuario)
-        return jsonify({"respuesta": respuesta})
+        # Generar respuesta de OpenAI
+        respuesta = await interactuar_con_openai(mensaje_usuario)
+        return JSONResponse(content={"respuesta": respuesta})
 
     except Exception as e:
-        print(f"Error procesando la solicitud: {e}")
-        return jsonify({"error": str(e), "mensaje": "Error al procesar la solicitud."}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-# Función para interactuar con OpenAI
-def interactuar_con_openai(mensaje_usuario):
+async def interactuar_con_openai(mensaje_usuario):
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Cambia a "gpt-4" si prefieres ese modelo
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Eres un asistente conversacional que responde de manera profesional."},
                 {"role": "user", "content": mensaje_usuario}
@@ -81,6 +83,7 @@ def interactuar_con_openai(mensaje_usuario):
         return "Lo siento, ocurrió un problema al generar la respuesta."
 
 
-# Iniciar el servidor Flask
-if __name__ == "__main__":
-    app.run(debug=True)
+@app.get("/")
+def home():
+    return {"mensaje": "Bienvenido al asistente del Lic. Daniel O. Bustamante"}
+
