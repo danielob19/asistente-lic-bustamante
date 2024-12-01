@@ -21,8 +21,12 @@ credentials_json = os.getenv("GOOGLE_CREDENTIALS_FILE")
 if not credentials_json:
     raise ValueError("La variable de entorno GOOGLE_CREDENTIALS_FILE no está configurada.")
 
-credentials = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(credentials_json), scope)
-client = gspread.authorize(credentials)
+# Cargar las credenciales desde la variable de entorno
+try:
+    credentials = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(credentials_json), scope)
+    client = gspread.authorize(credentials)
+except Exception as e:
+    raise ValueError(f"Error al configurar las credenciales de Google Sheets: {e}")
 
 # ID de la hoja de cálculo y nombre de la pestaña
 spreadsheet_id = "1cAy1BEENCGHBKxTHBhNTtYjI9WokkW97"
