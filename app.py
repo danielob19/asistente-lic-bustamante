@@ -2,21 +2,12 @@ from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 import os
 import random
+from base_de_conocimiento import base_de_conocimiento  # Importación unificada
 
 # Configuración de Flask
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "https://licbustamante.com.ar"}})
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")  # Necesario para sesiones
-
-# Base de conocimiento local
-base_de_conocimiento = {
-    "angustia": "cuadro de angustia",
-    "nervioso": "nerviosismo",
-    "ansiedad": "cuadro de ansiedad",
-    "cansancio": "depresión",
-    "atonito": "estrés",
-    # Agrega más términos según sea necesario...
-}
 
 # Lista de palabras inapropiadas
 palabras_inapropiadas = ["puto", "idiota", "tonto", "imbécil"]
@@ -111,4 +102,3 @@ def reset_sesion():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-
