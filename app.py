@@ -1,13 +1,12 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from typing import Optional
 from pydantic import BaseModel
 import openai
 import os
 
 # Configuración de OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Configura tu clave API
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Configuración de FastAPI
 app = FastAPI()
@@ -21,13 +20,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Simulación de sesiones (en lugar de `Flask-Session`)
+# Simulación de sesiones (para simplificar, usamos un diccionario)
 user_sessions = {}
 
 # Modelo de entrada
 class UserInput(BaseModel):
     mensaje: str
-    user_id: Optional[str] = "default_user"
+    user_id: str
 
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
@@ -47,12 +46,12 @@ async def asistente(input_data: UserInput):
         session["contador_interacciones"] += 1
         session["respuestas_usuario"].append(mensaje_usuario)
 
-        # Verificar si es la segunda interacción
-        if session["contador_interacciones"] >= 2:
+        # Verificar si es la tercera interacción
+        if session["contador_interacciones"] >= 3:
             respuesta_final = (
-                "Gracias por compartir cómo te sientes. "
-                "Para una evaluación más profunda de tu malestar, te recomiendo solicitar un turno de consulta con el Lic. Daniel O. Bustamante "
-                "al WhatsApp +54 911 3310-1186, siempre que sea de tu interés resolver tu afección psicológica y emocional."
+                "Para una evaluación más profunda de tu malestar, te recomiendo solicitar un turno de consulta "
+                "con el Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186, siempre que sea de tu interés "
+                "resolver tu afección psicológica y emocional."
             )
             # Limpiar sesión
             user_sessions.pop(user_id, None)
@@ -71,7 +70,7 @@ async def interactuar_con_openai(mensaje_usuario):
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Eres un asistente conversacional que responde de manera profesional."},
+                {"role": "system", "content": "Eres un asistente conversacional profesional y empático."},
                 {"role": "user", "content": mensaje_usuario}
             ],
             max_tokens=200,
@@ -86,4 +85,3 @@ async def interactuar_con_openai(mensaje_usuario):
 @app.get("/")
 def home():
     return {"mensaje": "Bienvenido al asistente del Lic. Daniel O. Bustamante"}
-
