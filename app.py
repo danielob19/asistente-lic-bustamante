@@ -39,8 +39,8 @@ def asistente():
             respuesta = generar_respuesta_openai(
                 "Saluda al usuario cortésmente y pídele su nombre."
             )
-            session["estado_conversacion"] = "nombre"
-            session.modified = True
+            session["estado_conversacion"] = "nombre"  # Cambiar estado
+            session.modified = True  # Asegurar que Flask registre el cambio
             return jsonify({"respuesta": respuesta})
 
         elif estado == "nombre":
@@ -50,28 +50,28 @@ def asistente():
             respuesta = generar_respuesta_openai(
                 f"Saluda a {nombre} de manera cortés y preséntate como el asistente del Lic. Daniel O. Bustamante."
             )
-            session["estado_conversacion"] = "consulta1"
-            session.modified = True
+            session["estado_conversacion"] = "consulta1"  # Cambiar estado
+            session.modified = True  # Asegurar que Flask registre el cambio
             return jsonify({"respuesta": respuesta})
 
         elif estado == "consulta1":
             respuesta = generar_respuesta_openai(
                 "Pregúntale al usuario en un lenguaje enriquecido qué lo está afectando y qué motiva su consulta."
             )
-            session["estado_conversacion"] = "consulta2"
+            session["estado_conversacion"] = "consulta2"  # Cambiar estado
             respuestas.append(mensaje_usuario)
             session["respuestas_usuario"] = respuestas
-            session.modified = True
+            session.modified = True  # Asegurar que Flask registre el cambio
             return jsonify({"respuesta": respuesta})
 
         elif estado == "consulta2":
             respuesta = generar_respuesta_openai(
                 "Pregúntale al usuario qué otro malestar le afecta, utilizando una variación en la formulación."
             )
-            session["estado_conversacion"] = "recomendacion"
+            session["estado_conversacion"] = "recomendacion"  # Cambiar estado
             respuestas.append(mensaje_usuario)
             session["respuestas_usuario"] = respuestas
-            session.modified = True
+            session.modified = True  # Asegurar que Flask registre el cambio
             return jsonify({"respuesta": respuesta})
 
         elif estado == "recomendacion":
@@ -94,17 +94,4 @@ def generar_respuesta_openai(prompt):
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Eres un asistente conversacional cortés y profesional."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=150,
-            temperature=0.7
-        )
-        return response['choices'][0]['message']['content'].strip()
-    except Exception as e:
-        print(f"Error generando respuesta con OpenAI: {e}")
-        return "Lo siento, ocurrió un error generando la respuesta."
-
-# Iniciar el servidor Flask
-if __name__ == "__main__":
-    app.run(debug=True)
+                {"role": "system", "content": "Eres un asistente conversacional cortés y
