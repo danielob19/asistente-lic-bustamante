@@ -1,16 +1,12 @@
-import os
-import json
-import random
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
-import openai
+import os
+import random
 
 # Configuración de Flask
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "https://licbustamante.com.ar"}})
-
-# Configuración de OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")  # Necesario para sesiones
 
 # Base de conocimiento local
 base_de_conocimiento = {
@@ -22,45 +18,17 @@ base_de_conocimiento = {
     # Agrega más términos según sea necesario...
 }
 
-# Archivo para almacenar síntomas pendientes
-archivo_sintomas_pendientes = "sintomas_pendientes.json"
+# Lista de palabras inapropiadas
+palabras_inapropiadas = ["puto", "idiota", "tonto", "imbécil"]
 
-# Función para cargar síntomas pendientes
-def cargar_sintomas_pendientes():
-    if os.path.exists(archivo_sintomas_pendientes):
-        with open(archivo_sintomas_pendientes, "r") as f:
-            return json.load(f)
-    return []
-
-# Función para guardar nuevos síntomas en el archivo local
-def registrar_sintomas_pendientes(sintomas):
-    sintomas_pendientes = cargar_sintomas_pendientes()
-    sintomas_pendientes.append(sintomas)
-    with open(archivo_sintomas_pendientes, "w") as f:
-        json.dump(sintomas_pendientes, f, indent=4)
-    print(f"Síntomas pendientes registrados: {sintomas}")
-
-# Función para interpretar los síntomas usando OpenAI
-def interpretar_sintomas(sintomas):
-    mensajes = [
-        {"role": "system", "content": "Eres un asistente psicológico profesional."},
-        {"role": "user", "content": f"El usuario menciona los siguientes síntomas: {sintomas}."}
-    ]
-    try:
-        respuesta_openai = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=mensajes,
-            max_tokens=70,
-            temperature=0.7
-        )
-        return respuesta_openai.choices[0].message['content'].strip()
-    except openai.error.OpenAIError as e:
-        print(f"Error al conectar con OpenAI: {e}")
-        return "Lo siento, no pude procesar tu solicitud en este momento."
+# Función para filtrar lenguaje inapropiado
+def filtrar_lenguaje_inapropiado(mensaje):
+    if any(palabra in mensaje for palabra in palabras_inapropiadas):
+        return "Por favor, mantengamos el respeto en esta conversación."
+    return None
 
 # Función para manejar la conversación
 def manejar_conversacion(mensaje_usuario, sintomas_recibidos):
-    """Gestiona la conversación fluida con el usuario, incluyendo saludos."""
     respuestas_generales = [
         "¿Podrías contarme si hay algún otro síntoma que te preocupe?",
         "¿Hay algo más que quieras mencionar sobre cómo te sentís?",
@@ -72,33 +40,6 @@ def manejar_conversacion(mensaje_usuario, sintomas_recibidos):
     if not sintomas_recibidos:
         return "¡Hola! ¿En qué puedo ayudarte hoy?"
 
-    # Finalizar la conversación si el usuario dice "no" o similar
-    if mensaje_usuario.lower() in ["no", "nada más", "listo", "terminé"]:
-        if sintomas_recibidos:
-            diagnosticos = [
-                base_de_conocimiento[sintoma]
-                for sintoma in sintomas_recibidos
-                if sintoma in base_de_conocimiento
-            ]
-            if diagnosticos:
-                respuesta_final = (
-                    f"En base a los síntomas que mencionaste ({', '.join(sintomas_recibidos)}), "
-                    f"podrías estar atravesando un estado relacionado con {', '.join(set(diagnosticos))}. "
-                    "Si lo considerás necesario, contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda. Gracias por compartir cómo te sentís."
-                )
-            else:
-                respuesta_final = (
-                    "Gracias por compartir cómo te sentís. Si considerás necesario, contactá al Lic. Daniel O. Bustamante "
-                    "al WhatsApp +54 911 3310-1186 para una consulta más detallada."
-                )
-        else:
-            respuesta_final = (
-                "Gracias por compartir cómo te sentís. Si considerás necesario, contactá al Lic. Daniel O. Bustamante "
-                "al WhatsApp +54 911 3310-1186 para una consulta más detallada."
-            )
-        return respuesta_final
-
     # Evitar repetir preguntas por síntomas ya registrados
     if mensaje_usuario in sintomas_recibidos:
         return "Ya mencionaste ese síntoma. ¿Podrías contarme si hay algún otro síntoma que te preocupe?"
@@ -109,23 +50,23 @@ def manejar_conversacion(mensaje_usuario, sintomas_recibidos):
     # Finalizar automáticamente si hay más de 3 síntomas
     if len(sintomas_recibidos) >= 3:
         diagnosticos = [
-            base_de_conocimiento[sintoma]
+            base_de_conocimiento.get(sintoma, "desconocido")
             for sintoma in sintomas_recibidos
-            if sintoma in base_de_conocimiento
         ]
+        diagnosticos = [diag for diag in diagnosticos if diag != "desconocido"]
+
         if diagnosticos:
-            respuesta_final = (
+            return (
                 f"En base a los síntomas que mencionaste ({', '.join(sintomas_recibidos)}), "
                 f"podrías estar atravesando un estado relacionado con {', '.join(set(diagnosticos))}. "
                 "Si lo considerás necesario, contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
                 "para una evaluación más profunda. Gracias por compartir cómo te sentís."
             )
         else:
-            respuesta_final = (
+            return (
                 "Gracias por compartir cómo te sentís. Si considerás necesario, contactá al Lic. Daniel O. Bustamante "
                 "al WhatsApp +54 911 3310-1186 para una consulta más detallada."
             )
-        return respuesta_final
 
     # Continuar la conversación con preguntas variadas
     return random.choice(respuestas_generales)
@@ -136,18 +77,23 @@ def asistente():
     try:
         data = request.get_json()
         mensaje_usuario = data.get("mensaje", "").strip().lower()
-        sintomas_recibidos = data.get("sintomas", [])
+
+        # Recuperar la lista de síntomas de la sesión
+        sintomas_recibidos = session.get("sintomas_recibidos", [])
 
         if not mensaje_usuario:
             return jsonify({"respuesta": "Por favor, proporcioná un mensaje válido."})
 
-        # Si no hay síntomas registrados, saludar al usuario
-        if not sintomas_recibidos:
-            sintomas_recibidos = []  # Inicializar si es la primera interacción
-            respuesta = "¡Hola! ¿En qué puedo ayudarte hoy?"
-        else:
-            # Manejar el flujo normal de la conversación
-            respuesta = manejar_conversacion(mensaje_usuario, sintomas_recibidos)
+        # Verificar lenguaje inapropiado
+        filtro = filtrar_lenguaje_inapropiado(mensaje_usuario)
+        if filtro:
+            return jsonify({"respuesta": filtro, "sintomas": sintomas_recibidos})
+
+        # Manejar la conversación
+        respuesta = manejar_conversacion(mensaje_usuario, sintomas_recibidos)
+
+        # Guardar la lista actualizada de síntomas en la sesión
+        session["sintomas_recibidos"] = sintomas_recibidos
 
         return jsonify({"respuesta": respuesta, "sintomas": sintomas_recibidos})
 
