@@ -20,12 +20,10 @@ def filtrar_lenguaje_inapropiado(mensaje):
 
 
 def manejar_conversacion(mensaje_usuario):
-    """
-    Maneja la conversación con el usuario, leyendo y actualizando síntomas y respuestas desde la sesión.
-    """
     # Recuperar o inicializar los síntomas y respuestas desde la sesión
-    sintomas_recibidos = session.get("sintomas_recibidos", [])
-    respuestas_previas = session.get("respuestas_previas", [])
+    try:
+        sintomas_recibidos = session.get("sintomas_recibidos", [])
+        respuestas_previas = session.get("respuestas_previas", [])
 
     respuestas_generales = [
         "¿Podrías contarme si hay algún otro síntoma que te preocupe?",
