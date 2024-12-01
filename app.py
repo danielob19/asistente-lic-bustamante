@@ -87,6 +87,7 @@ def asistente():
         session["sintomas_recibidos"] = sintomas_recibidos
 
         return jsonify({"respuesta": respuesta, "sintomas": sintomas_recibidos})
+        manejar_conversacion(respuesta,sintomas_recibidos)
 
     except Exception as e:
         print(f"Error procesando la solicitud: {e}")
