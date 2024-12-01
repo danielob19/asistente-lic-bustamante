@@ -1,138 +1,106 @@
 from flask import Flask, request, jsonify, session
-from flask_session import Session  # Importa Flask-Session
 from flask_cors import CORS
-import os
-import random
+import openai
 
 # Configuración de Flask
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
+app.secret_key = "supersecretkey"  # Necesario para manejar sesiones
 
-# Configuración de la sesión
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")
-app.config["SESSION_TYPE"] = "filesystem"  # Usa el sistema de archivos para almacenar sesiones
-app.config["SESSION_PERMANENT"] = False    # Las sesiones no serán permanentes
-app.config["SESSION_USE_SIGNER"] = True    # Firma las sesiones para mayor seguridad
-Session(app)  # Inicializa Flask-Session
+# Configuración de OpenAI
+openai.api_key = "tu_clave_api_openai"
 
-# Base de conocimiento (diccionario simple para el ejemplo)
-base_de_conocimiento = {
-    "ansioso": "cuadro de ansiedad",
-    "nervioso": "nerviosismo",
-    "cansado": "fatiga",
-    "estresado": "estrés",
-    "angustiado": "angustia"
-}
-
-# Función para manejar la conversación
-def manejar_conversacion(mensaje_usuario):
-    # Inicializar sesión si no existe
-    if "sintomas_recibidos" not in session:
-        session["sintomas_recibidos"] = []
-    if "respuestas_previas" not in session:
-        session["respuestas_previas"] = []
-
-    # Recuperar listas de la sesión
-    sintomas_recibidos = session["sintomas_recibidos"]
-    respuestas_previas = session["respuestas_previas"]
-
-    # Respuestas generales
-    respuestas_generales = [
-        "¿Podrías contarme si hay algún otro síntoma que te preocupe?",
-        "¿Hay algo más que quieras mencionar sobre cómo te sentís?",
-        "¿Aparte de eso, qué otro malestar sentís?",
-        "Entendido. ¿Podés decirme si tenés algún otro síntoma?"
-    ]
-
-    # Saludo inicial si no hay síntomas registrados
-    if len(sintomas_recibidos) == 0:
-        saludo_inicial = "¡Hola! ¿En qué puedo ayudarte hoy?"
-        respuestas_previas.append(saludo_inicial)
-        session["respuestas_previas"] = respuestas_previas
-        session.modified = True
-        return saludo_inicial
-
-    # Evitar repetir preguntas sobre síntomas ya registrados
-    if mensaje_usuario in sintomas_recibidos:
-        respuesta = "Ya mencionaste ese síntoma. ¿Podrías contarme si hay algún otro síntoma que te preocupe?"
-        respuestas_previas.append(respuesta)
-        session["respuestas_previas"] = respuestas_previas
-        session.modified = True
-        return respuesta
-
-    # Registrar el nuevo síntoma
-    sintomas_recibidos.append(mensaje_usuario)
-    session["sintomas_recibidos"] = sintomas_recibidos
-    session.modified = True
-
-    # Diagnóstico si hay más de 3 síntomas
-    if len(sintomas_recibidos) >= 3:
-        diagnosticos = [
-            base_de_conocimiento.get(sintoma, "desconocido")
-            for sintoma in sintomas_recibidos
-        ]
-        diagnosticos = [diag for diag in diagnosticos if diag != "desconocido"]
-
-        if diagnosticos:
-            respuesta_final = (
-                f"En base a los síntomas que mencionaste ({', '.join(sintomas_recibidos)}), "
-                f"podrías estar atravesando un estado relacionado con {', '.join(set(diagnosticos))}. "
-                "Si lo considerás necesario, contactá con un profesional de la salud."
-            )
-        else:
-            respuesta_final = (
-                "Gracias por compartir cómo te sentís. No se encontró un diagnóstico en la base de conocimiento."
-            )
-
-        respuestas_previas.append(respuesta_final)
-        session["respuestas_previas"] = respuestas_previas
-        session.modified = True
-        return respuesta_final
-
-    # Continuar la conversación con preguntas generales
-    respuesta = random.choice(respuestas_generales)
-    respuestas_previas.append(respuesta)
-    session["respuestas_previas"] = respuestas_previas
-    session.modified = True
-    return respuesta
-
-# Ruta principal para manejar la conversación
+# Ruta principal del asistente
 @app.route("/asistente", methods=["POST"])
 def asistente():
     try:
-        # Verificar que el contenido sea JSON
-        if not request.content_type or "application/json" not in request.content_type:
-            return jsonify({"respuesta": "El encabezado 'Content-Type' debe ser 'application/json'."}), 400
+        # Inicializar sesión si es necesario
+        if "estado_conversacion" not in session:
+            session["estado_conversacion"] = "inicio"
+        if "nombre_usuario" not in session:
+            session["nombre_usuario"] = None
+        if "respuestas_usuario" not in session:
+            session["respuestas_usuario"] = []
 
-        # Leer el cuerpo de la solicitud
+        # Obtener el mensaje del usuario
         data = request.get_json()
-        if not data or "mensaje" not in data:
+        mensaje_usuario = data.get("mensaje", "").strip()
+
+        if not mensaje_usuario:
             return jsonify({"respuesta": "Por favor, proporcioná un mensaje válido."}), 400
 
-        mensaje_usuario = data["mensaje"].strip().lower()
-        if not mensaje_usuario:
-            return jsonify({"respuesta": "Por favor, proporcioná un mensaje no vacío."}), 400
+        estado = session["estado_conversacion"]
+        nombre = session["nombre_usuario"]
+        respuestas = session["respuestas_usuario"]
 
-        # Manejar la conversación
-        respuesta = manejar_conversacion(mensaje_usuario)
+        # Gestionar la conversación
+        if estado == "inicio":
+            # Saludo inicial y solicitud del nombre
+            respuesta = generar_respuesta_openai("Saluda al usuario cortésmente y pídele su nombre.")
+            session["estado_conversacion"] = "nombre"
+            return jsonify({"respuesta": respuesta})
 
-        return jsonify({
-            "respuesta": respuesta,
-            "sintomas": session.get("sintomas_recibidos", []),
-            "respuestas_previas": session.get("respuestas_previas", [])
-        })
+        elif estado == "nombre":
+            # Guardar el nombre del usuario y saludarlo nuevamente
+            session["nombre_usuario"] = mensaje_usuario
+            nombre = mensaje_usuario
+            respuesta = generar_respuesta_openai(
+                f"Saluda cortésmente a {nombre} y preséntate como el Asistente del Lic. Daniel O. Bustamante."
+            )
+            session["estado_conversacion"] = "consulta1"
+            return jsonify({"respuesta": respuesta})
+
+        elif estado == "consulta1":
+            # Preguntar sobre lo que motiva la consulta
+            respuesta = generar_respuesta_openai(
+                "Pregúntale al usuario en un lenguaje enriquecido qué lo está afectando y qué motiva su consulta."
+            )
+            session["estado_conversacion"] = "consulta2"
+            respuestas.append(mensaje_usuario)
+            session["respuestas_usuario"] = respuestas
+            return jsonify({"respuesta": respuesta})
+
+        elif estado == "consulta2":
+            # Preguntar nuevamente con una variación
+            respuesta = generar_respuesta_openai(
+                "Pregúntale al usuario qué otro malestar le afecta, utilizando una variación en la formulación."
+            )
+            session["estado_conversacion"] = "recomendacion"
+            respuestas.append(mensaje_usuario)
+            session["respuestas_usuario"] = respuestas
+            return jsonify({"respuesta": respuesta})
+
+        elif estado == "recomendacion":
+            # Recomendar contacto con el Lic. Daniel O. Bustamante
+            descripcion = " ".join(respuestas + [mensaje_usuario])
+            respuesta = generar_respuesta_openai(
+                f"En base a la descripción del usuario: '{descripcion}', "
+                "recomienda cortésmente que solicite un turno con el Lic. Daniel O. Bustamante al whatsapp +54 911 3310-1186 "
+                "para evaluar en detalle su malestar."
+            )
+            session.clear()  # Limpiar sesión tras finalizar la conversación
+            return jsonify({"respuesta": respuesta})
 
     except Exception as e:
-        print(f"Error procesando la solicitud: {e}")
-        return jsonify({"respuesta": "Ocurrió un error interno en el servidor.", "error": str(e)}), 500
+        return jsonify({"error": str(e), "respuesta": "Ocurrió un error interno en el servidor."}), 500
 
-# Ruta para reiniciar la conversación
-@app.route("/reset", methods=["POST"])
-def reset_sesion():
-    session.clear()
-    return jsonify({"respuesta": "La conversación se ha reiniciado. ¡Hola! ¿En qué puedo ayudarte?"})
+
+# Generador de respuestas usando OpenAI
+def generar_respuesta_openai(prompt):
+    try:
+        response = openai.Completion.create(
+            engine="text-davinci-003",  # Ajusta según el modelo que desees usar
+            prompt=prompt,
+            max_tokens=150,
+            n=1,
+            stop=None,
+            temperature=0.7
+        )
+        return response.choices[0].text.strip()
+    except Exception as e:
+        print(f"Error generando respuesta con OpenAI: {e}")
+        return "Lo siento, ocurrió un error generando la respuesta."
 
 # Iniciar el servidor Flask
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True)
