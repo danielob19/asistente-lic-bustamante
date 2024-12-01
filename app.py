@@ -34,45 +34,47 @@ def asistente():
         nombre = session["nombre_usuario"]
         respuestas = session["respuestas_usuario"]
 
-        # Gestionar la conversación
+        # Flujo de conversación basado en el estado
         if estado == "inicio":
-            # Saludo inicial y solicitud del nombre
-            respuesta = generar_respuesta_openai("Saluda al usuario cortésmente y pídele su nombre.")
+            respuesta = generar_respuesta_openai(
+                "Saluda al usuario cortésmente y pídele su nombre."
+            )
             session["estado_conversacion"] = "nombre"
+            session.modified = True
             return jsonify({"respuesta": respuesta})
 
         elif estado == "nombre":
-            # Guardar el nombre del usuario y saludarlo nuevamente
+            # Guardar el nombre del usuario
             session["nombre_usuario"] = mensaje_usuario
             nombre = mensaje_usuario
             respuesta = generar_respuesta_openai(
-                f"Saluda cortésmente a {nombre} y preséntate como el Asistente del Lic. Daniel O. Bustamante."
+                f"Saluda a {nombre} de manera cortés y preséntate como el asistente del Lic. Daniel O. Bustamante."
             )
             session["estado_conversacion"] = "consulta1"
+            session.modified = True
             return jsonify({"respuesta": respuesta})
 
         elif estado == "consulta1":
-            # Preguntar sobre lo que motiva la consulta
             respuesta = generar_respuesta_openai(
                 "Pregúntale al usuario en un lenguaje enriquecido qué lo está afectando y qué motiva su consulta."
             )
             session["estado_conversacion"] = "consulta2"
             respuestas.append(mensaje_usuario)
             session["respuestas_usuario"] = respuestas
+            session.modified = True
             return jsonify({"respuesta": respuesta})
 
         elif estado == "consulta2":
-            # Preguntar nuevamente con una variación
             respuesta = generar_respuesta_openai(
                 "Pregúntale al usuario qué otro malestar le afecta, utilizando una variación en la formulación."
             )
             session["estado_conversacion"] = "recomendacion"
             respuestas.append(mensaje_usuario)
             session["respuestas_usuario"] = respuestas
+            session.modified = True
             return jsonify({"respuesta": respuesta})
 
         elif estado == "recomendacion":
-            # Recomendar contacto con el Lic. Daniel O. Bustamante
             descripcion = " ".join(respuestas + [mensaje_usuario])
             respuesta = generar_respuesta_openai(
                 f"En base a la descripción del usuario: '{descripcion}', "
@@ -90,7 +92,7 @@ def asistente():
 def generar_respuesta_openai(prompt):
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Usamos GPT-3.5 Turbo
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Eres un asistente conversacional cortés y profesional."},
                 {"role": "user", "content": prompt}
