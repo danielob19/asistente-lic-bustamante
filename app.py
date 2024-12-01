@@ -4,6 +4,9 @@ import random
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import openai
+from base_de_conocimiento import base_de_conocimiento
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 # Configuración de Flask
 app = Flask(__name__)
@@ -12,78 +15,27 @@ CORS(app, resources={r"/*": {"origins": "https://licbustamante.com.ar"}})
 # Configuración de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Importar la base de conocimiento
-from base_de_conocimiento import base_de_conocimiento
+# Configuración de Google Sheets
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+credentials_json = os.getenv("GOOGLE_CREDENTIALS_FILE")
 
-# Archivo para almacenar síntomas pendientes
-archivo_sintomas_pendientes = "sintomas_pendientes.json"
+if not credentials_json:
+    raise ValueError("La variable de entorno GOOGLE_CREDENTIALS_FILE no está configurada.")
 
-# Crear el archivo si no existe
-if not os.path.exists(archivo_sintomas_pendientes):
-    with open(archivo_sintomas_pendientes, "w") as f:
-        json.dump([], f)
+credentials = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(credentials_json), scope)
+client = gspread.authorize(credentials)
 
-# Frases iniciales y de continuación
-frases_iniciales = [
-    "¿Hola, en qué te puedo ayudar hoy?",
-    "¿Qué malestar estás experimentando hoy?",
-    "¿Cómo te sentís en este momento?"
-]
+spreadsheet_id = "1cAy1BEENCGHBKxTHBhNTtYjI9WokkW97"
+worksheet_name = "sintomas_pendientes"
 
-frases_continuar = [
-    "¿Aparte de eso, qué otro malestar sentís?",
-    "¿Podrías contarme si hay algún otro síntoma que te preocupe?",
-    "¿Hay algo más que quieras mencionar sobre cómo te sentís?"
-]
 
-# Guardar síntoma no reconocido
-def guardar_sintoma_pendiente(sintoma):
-    """Guarda un síntoma no reconocido en el archivo JSON."""
-    try:
-        with open(archivo_sintomas_pendientes, "r") as f:
-            sintomas_pendientes = json.load(f)
-
-        if sintoma not in sintomas_pendientes:
-            sintomas_pendientes.append(sintoma)
-
-        with open(archivo_sintomas_pendientes, "w") as f:
-            json.dump(sintomas_pendientes, f, indent=4)
-
-    except Exception as e:
-        print(f"Error guardando síntoma pendiente: {e}")
-
-# Interpretar síntomas usando OpenAI
-def interpretar_sintomas(mensaje_usuario):
-    """Utiliza OpenAI para interpretar y normalizar los síntomas del usuario."""
+# Función para interpretar los síntomas usando OpenAI
+def interpretar_sintomas(sintomas):
+    """Interpreta síntomas y genera respuestas con OpenAI."""
     mensajes = [
-        {"role": "system", "content": "Eres un asistente que ayuda a interpretar síntomas psicológicos."},
-        {"role": "user", "content": f"El usuario menciona los siguientes síntomas: '{mensaje_usuario}'. Convierte estos síntomas al formato estándar utilizado en una base de conocimiento médica o psicológica."}
+        {"role": "system", "content": "Eres un asistente psicológico profesional."},
+        {"role": "user", "content": f"El usuario menciona los siguientes síntomas: {sintomas}."}
     ]
-    try:
-        respuesta_openai = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=mensajes,
-            max_tokens=50,
-            temperature=0.7
-        )
-        return respuesta_openai.choices[0].message['content'].strip().split(",")
-    except Exception as e:
-        print(f"Error interpretando síntomas: {e}")
-        return mensaje_usuario.split(",")
-
-# Generar respuesta profesional
-def generar_respuesta_general(sintomas, diagnostico=None):
-    """Genera una respuesta profesional usando OpenAI."""
-    if diagnostico:
-        mensajes = [
-            {"role": "system", "content": "Eres un asistente que genera respuestas profesionales sobre síntomas psicológicos."},
-            {"role": "user", "content": f"Usuario menciona los síntomas: {', '.join(sintomas)}. El diagnóstico presuntivo es: {diagnostico}. Genera una respuesta profesional estilo argentino que mencione los síntomas, el diagnóstico presuntivo y sugiera solicitar un turno diplomáticamente con el Lic. Daniel O. Bustamante."}
-        ]
-    else:
-        mensajes = [
-            {"role": "system", "content": "Eres un asistente que genera respuestas profesionales sobre síntomas psicológicos."},
-            {"role": "user", "content": f"Usuario menciona los síntomas: {', '.join(sintomas)}. No se encontró un diagnóstico exacto en la base de conocimiento. Genera una respuesta profesional estilo argentino que mencione los síntomas y sugiera diplomáticamente solicitar un turno con el Lic. Daniel O. Bustamante."}
-        ]
     try:
         respuesta_openai = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -92,14 +44,66 @@ def generar_respuesta_general(sintomas, diagnostico=None):
             temperature=0.7
         )
         return respuesta_openai.choices[0].message['content'].strip()
-    except Exception as e:
+    except openai.error.OpenAIError as e:
         print(f"Error al conectar con OpenAI: {e}")
-        return (
-            f"En base a los síntomas que mencionaste ({', '.join(sintomas)}), "
-            "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más profunda."
-        )
+        return "Lo siento, no pude procesar tu solicitud en este momento."
 
-# Ruta del Asistente
+
+# Función para registrar síntomas no encontrados
+def registrar_sintomas_pendientes(sintomas):
+    try:
+        spreadsheet = client.open_by_key(spreadsheet_id)
+        worksheet = spreadsheet.worksheet(worksheet_name)
+        worksheet.append_row([sintomas])
+        print(f"Síntomas registrados como pendientes: {sintomas}")
+    except Exception as e:
+        print(f"Error al registrar síntomas pendientes: {e}")
+
+
+# Función para manejar la conversación
+def manejar_conversacion(mensaje_usuario, sintomas_recibidos):
+    """Gestiona la conversación fluida con el usuario."""
+    respuestas_generales = [
+        "¿Podrías contarme si hay algún otro síntoma que te preocupe?",
+        "¿Hay algo más que quieras mencionar sobre cómo te sentís?",
+        "¿Aparte de eso, qué otro malestar sentís?",
+        "Entendido. ¿Podés decirme si tenés algún otro síntoma?"
+    ]
+
+    if mensaje_usuario.lower() in ["no", "nada más", "listo", "terminé"]:
+        # Si el usuario dice "no" o similar, finalizar la conversación
+        diagnosticos = []
+        for sintoma in sintomas_recibidos:
+            if sintoma in base_de_conocimiento:
+                diagnosticos.append(base_de_conocimiento[sintoma])
+        if len(set(diagnosticos)) > 0:
+            mensaje_diagnostico = (
+                f"En base a los síntomas que mencionaste ({', '.join(sintomas_recibidos)}), "
+                f"podrías estar atravesando un estado relacionado con {', '.join(set(diagnosticos))}. "
+                "Si lo considerás necesario, contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                "para una evaluación más profunda."
+            )
+        else:
+            mensaje_diagnostico = (
+                "Gracias por compartir cómo te sentís. Si considerás necesario, contactá al Lic. Daniel O. Bustamante "
+                "al WhatsApp +54 911 3310-1186 para una consulta más detallada."
+            )
+        return mensaje_diagnostico
+
+    elif mensaje_usuario.lower() in ["sí", "si"]:
+        # Si el usuario dice "sí", preguntar por más síntomas
+        return "Entendido, por favor contame qué otro síntoma sentís."
+
+    else:
+        # Agregar síntoma a la lista y continuar la conversación
+        sintomas_recibidos.append(mensaje_usuario)
+        if mensaje_usuario not in base_de_conocimiento:
+            registrar_sintomas_pendientes(mensaje_usuario)
+
+        return random.choice(respuestas_generales)
+
+
+# Ruta principal del asistente
 @app.route("/asistente", methods=["POST"])
 def asistente():
     try:
@@ -107,24 +111,22 @@ def asistente():
         mensaje_usuario = data.get("mensaje", "").strip().lower()
 
         if not mensaje_usuario:
-            return jsonify({"respuesta": random.choice(frases_iniciales)})
+            return jsonify({"respuesta": "Por favor, proporcioná un mensaje válido."})
 
-        # Interpretar y normalizar los síntomas del usuario
-        sintomas = interpretar_sintomas(mensaje_usuario)
+        # Cargar la conversación actual
+        sintomas_recibidos = data.get("sintomas", [])
 
-        # Registrar síntomas no reconocidos
-        for sintoma in sintomas:
-            if sintoma not in base_de_conocimiento:
-                guardar_sintoma_pendiente(sintoma)
+        # Manejar la conversación
+        respuesta = manejar_conversacion(mensaje_usuario, sintomas_recibidos)
 
-        # Preguntar por más información
-        respuesta = random.choice(frases_continuar)
-        return jsonify({"respuesta": respuesta})
+        return jsonify({"respuesta": respuesta, "sintomas": sintomas_recibidos})
 
     except Exception as e:
         print(f"Error procesando la solicitud: {e}")
         return jsonify({"respuesta": "Lo siento, ocurrió un error procesando tu solicitud."})
 
+
 # Iniciar la aplicación
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
