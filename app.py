@@ -1,12 +1,19 @@
 from flask import Flask, request, jsonify, session
+from flask_session import Session  # Importa Flask-Session
 from flask_cors import CORS
 import os
 import random
 
 # Configuración de Flask
 app = Flask(__name__)
-CORS(app, supports_credentials=True)  # Permite el manejo de cookies entre dominios
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")  # Necesario para sesiones
+CORS(app, supports_credentials=True)
+
+# Configuración de la sesión
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")
+app.config["SESSION_TYPE"] = "filesystem"  # Usa el sistema de archivos para almacenar sesiones
+app.config["SESSION_PERMANENT"] = False    # Las sesiones no serán permanentes
+app.config["SESSION_USE_SIGNER"] = True    # Firma las sesiones para mayor seguridad
+Session(app)  # Inicializa Flask-Session
 
 # Base de conocimiento (diccionario simple para el ejemplo)
 base_de_conocimiento = {
