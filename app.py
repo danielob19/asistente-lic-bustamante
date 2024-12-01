@@ -88,6 +88,7 @@ def asistente():
         return jsonify({"error": str(e), "respuesta": "Ocurrió un error interno en el servidor."}), 500
 
 
+# Generador de respuestas usando GPT-3.5 Turbo
 def generar_respuesta_openai(prompt):
     try:
         response = openai.ChatCompletion.create(
@@ -103,3 +104,7 @@ def generar_respuesta_openai(prompt):
     except Exception as e:
         print(f"Error generando respuesta con OpenAI: {e}")
         return "Lo siento, ocurrió un error generando la respuesta."
+
+# Iniciar el servidor Flask
+if __name__ == "__main__":
+    app.run(debug=True)
