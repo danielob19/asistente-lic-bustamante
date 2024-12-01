@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
+from flask_session import Session
 import openai
 import os
 
@@ -7,6 +8,11 @@ import os
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 app.secret_key = "supersecretkey"  # Necesario para manejar sesiones
+
+# Configuración de Flask-Session
+app.config["SESSION_TYPE"] = "filesystem"
+app.config["SESSION_PERMANENT"] = False
+Session(app)
 
 # Configuración de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")  # Configura esta variable de entorno
@@ -33,6 +39,7 @@ def asistente():
         # Incrementar el contador de interacciones
         session["contador_interacciones"] += 1
         session["respuestas_usuario"].append(mensaje_usuario)
+        session.modified = True  # Garantizar que Flask guarde los cambios
 
         # Depuración: Imprimir el estado actual de la sesión
         print(f"Estado actual de la sesión: {dict(session)}")
