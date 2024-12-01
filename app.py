@@ -32,8 +32,8 @@ def asistente():
         session["contador_interacciones"] += 1
         session["respuestas_usuario"].append(mensaje_usuario)
 
-        # Verificar si es la cuarta interacción
-        if session["contador_interacciones"] >= 4:
+        # Verificar si es la segunda interacción
+        if session["contador_interacciones"] >= 2:
             respuesta_final = (
                 "Gracias por compartir cómo te sientes. "
                 "Para una evaluación más profunda de tu malestar, te recomiendo solicitar un turno de consulta con el Lic. Daniel O. Bustamante "
