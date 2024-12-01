@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
+import os
 import openai
 
 # Configuración de Flask
@@ -7,9 +8,13 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 app.secret_key = "supersecretkey"  # Necesario para manejar sesiones
 
-# Configuración de OpenAI
-openai.api_key = "tu_clave_api_openai"
+# Configurar la clave de API desde las variables de entorno
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# Verifica que la clave se haya cargado correctamente
+if not openai.api_key:
+    raise ValueError("La clave de OpenAI no está configurada. Verifica las variables de entorno.")
+    
 # Ruta principal del asistente
 @app.route("/asistente", methods=["POST"])
 def asistente():
