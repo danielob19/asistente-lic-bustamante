@@ -71,7 +71,7 @@ async def asistente(input_data: UserInput):
 
 async def interactuar_con_openai(mensaje_usuario):
     try:
-        # Nueva API de OpenAI
+        print(f"Enviando solicitud a OpenAI con el mensaje: {mensaje_usuario}")
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -81,11 +81,21 @@ async def interactuar_con_openai(mensaje_usuario):
             max_tokens=200,
             temperature=0.7
         )
-        # Extraer contenido de la respuesta
+        print(f"Respuesta de OpenAI: {response}")
         return response['choices'][0]['message']['content'].strip()
+    except openai.error.AuthenticationError:
+        print("Error: Clave de API de OpenAI no válida o no configurada.")
+        return "Error: Clave de API inválida."
+    except openai.error.RateLimitError:
+        print("Error: Límite de solicitudes alcanzado en OpenAI.")
+        return "Error: Se alcanzó el límite de solicitudes. Inténtalo más tarde."
     except openai.error.OpenAIError as e:
-        print(f"Error interactuando con OpenAI: {e}")
-        return "Lo siento, ocurrió un problema al generar la respuesta."
+        print(f"Error en OpenAI: {e}")
+        return f"Error de OpenAI: {e}"
+    except Exception as e:
+        print(f"Error general en interactuar_con_openai: {e}")
+        return "Error: Problema inesperado al procesar tu solicitud."
+
 
 
 @app.get("/")
