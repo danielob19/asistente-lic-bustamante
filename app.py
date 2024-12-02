@@ -42,5 +42,6 @@ async def interactuar_con_openai(mensaje_usuario: str) -> str:
             temperature=0.7
         )
         return response.choices[0].message.content.strip()
-    except openai.error.OpenAIError as e:
+    except Exception as e:
+        # Manejo genérico de errores
         raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
