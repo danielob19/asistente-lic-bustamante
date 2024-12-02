@@ -1,14 +1,15 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 import openai
 import os
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
-# Configuración de clave de API
+# Configuración de la clave de API
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Inicialización de FastAPI
 app = FastAPI()
 
+# Modelo para la solicitud
 class UserInput(BaseModel):
     mensaje: str
 
@@ -18,6 +19,7 @@ async def asistente(input_data: UserInput):
         mensaje_usuario = input_data.mensaje.strip()
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+        
         respuesta = await interactuar_con_openai(mensaje_usuario)
         return {"respuesta": respuesta}
     except Exception as e:
@@ -25,7 +27,8 @@ async def asistente(input_data: UserInput):
 
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
     try:
-        response = openai.ChatCompletion.create(
+        # Usar el nuevo método `openai.Chat.create`
+        response = openai.Chat.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Eres un asistente útil y amable."},
