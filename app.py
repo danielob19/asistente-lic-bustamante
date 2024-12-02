@@ -39,23 +39,28 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # Inicializar la sesión del usuario si no existe
+        # Verificar si la sesión del usuario ha terminado
+        if user_id in user_sessions and user_sessions[user_id].get("contactá", False):
+            return {
+                "respuesta": "La conversación ha terminado. Si necesitas más ayuda, por favor inicia una nueva conversación."
+            }
+
+        # Inicializar la sesión si no existe
         if user_id not in user_sessions:
-            user_sessions[user_id] = {"contador_interacciones": 0}
+            user_sessions[user_id] = {"contador_interacciones": 0, "terminada": False}
 
         # Incrementar el contador de interacciones
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        # Si es la tercera interacción, sugerir contacto profesional y cerrar sesión
+        # Si es la tercera interacción, sugerir contacto profesional y marcar la sesión como terminada
         if interacciones >= 3:
-            # Eliminar sesión del usuario después de responder
-            user_sessions.pop(user_id, None)
+            user_sessions[user_id]["terminada"] = True
             return {
                 "respuesta": (
                     "Gracias por compartir cómo te sentís. Si lo considerás necesario, "
                     "contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda. La conversación ha terminado."
+                    "para una evaluación más profunda."
                 )
             }
 
@@ -65,7 +70,6 @@ async def asistente(input_data: UserInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
 
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
     try:
