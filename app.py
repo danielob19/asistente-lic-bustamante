@@ -50,16 +50,16 @@ async def asistente(input_data: UserInput):
         # Depurar: Mostrar estado actual de la sesión
         print(f"Estado actual de la sesión del usuario {user_id}: {session}")
 
-        # Verificar si es la tercera interacción
-        if session["contador_interacciones"] >= 3:
-            respuesta_final = (
-                "Para una evaluación más profunda de tu malestar, te recomiendo solicitar un turno de consulta "
-                "con el Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186, siempre que sea de tu interés "
-                "resolver tu afección psicológica y emocional."
-            )
-            # Limpiar sesión después de la recomendación
-            user_sessions.pop(user_id, None)
-            return JSONResponse(content={"respuesta": respuesta_final})
+        # # Verificar si es la tercera interacción
+        # if session["contador_interacciones"] >= 3:
+        #     respuesta_final = (
+        #         "Para una evaluación más profunda de tu malestar, te recomiendo solicitar un turno de consulta "
+        #         "con el Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186, siempre que sea de tu interés "
+        #         "resolver tu afección psicológica y emocional."
+        #     )
+        #     # Limpiar sesión después de la recomendación
+        #     user_sessions.pop(user_id, None)
+        #     return JSONResponse(content={"respuesta": respuesta_final})
 
         # Generar respuesta de OpenAI
         respuesta = await interactuar_con_openai(mensaje_usuario)
