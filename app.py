@@ -39,24 +39,18 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # Si la sesión ya no existe, indica que la conversación ha terminado
-        if user_id not in user_sessions:
-            return {
-                "respuesta": (
-                    "La conversación ha terminado. Si necesitas más ayuda, por favor inicia una nueva conversación."
-                )
-            }
-
-        # Inicializar o incrementar el contador de interacciones
+        # Inicializar la sesión del usuario si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {"contador_interacciones": 0}
 
+        # Incrementar el contador de interacciones
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        # Si es la tercera interacción, sugerir contacto y reiniciar conversación
+        # Si es la tercera interacción, sugerir contacto profesional y cerrar sesión
         if interacciones >= 3:
-            user_sessions.pop(user_id, None)  # Eliminar sesión del usuario
+            # Eliminar sesión del usuario después de responder
+            user_sessions.pop(user_id, None)
             return {
                 "respuesta": (
                     "Gracias por compartir cómo te sentís. Si lo considerás necesario, "
@@ -71,6 +65,7 @@ async def asistente(input_data: UserInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
 
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
     try:
