@@ -1,3 +1,5 @@
+import time
+import threading
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -21,6 +23,7 @@ app.add_middleware(
 
 # Simulación de sesiones (almacenamiento en memoria)
 user_sessions = {}
+SESSION_TIMEOUT = 300  # Tiempo de inactividad permitido en segundos (5 minutos)
 
 class UserInput(BaseModel):
     mensaje: str
@@ -29,6 +32,23 @@ class UserInput(BaseModel):
 @app.get("/")
 def read_root():
     return {"message": "Bienvenido al asistente"}
+
+@app.on_event("startup")
+def start_session_cleaner():
+    """Inicia un thread para limpiar sesiones inactivas."""
+    def cleaner():
+        while True:
+            current_time = time.time()
+            inactive_users = [
+                user_id for user_id, data in user_sessions.items()
+                if current_time - data["ultima_interaccion"] > SESSION_TIMEOUT
+            ]
+            for user_id in inactive_users:
+                user_sessions.pop(user_id, None)  # Elimina sesiones inactivas
+            time.sleep(60)  # Ejecuta la limpieza cada 60 segundos
+
+    thread = threading.Thread(target=cleaner, daemon=True)
+    thread.start()
 
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
@@ -39,9 +59,13 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
+         # Inicializar sesión si no existe
         if user_id not in user_sessions:
-            user_sessions[user_id] = {"contador_interacciones": 0}
-
+            user_sessions[user_id] = {"contador_interacciones": 0, "ultima_interaccion": time.time()}
+        else:
+            # Actualizar la marca de tiempo de la última interacción
+            user_sessions[user_id]["ultima_interaccion"] = time.time()
+            
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
