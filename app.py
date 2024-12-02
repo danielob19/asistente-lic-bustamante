@@ -46,7 +46,6 @@ async def asistente(input_data: UserInput):
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
         if interacciones >= 4:
-            user_sessions.pop(user_id, None)
             return {
                 "respuesta": (
                     "La conversación ha terminado. Si necesitas más ayuda, por favor inicia una nueva conversación."
