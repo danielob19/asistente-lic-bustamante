@@ -48,7 +48,9 @@ async def asistente(input_data: UserInput):
         if interacciones >= 4:
             return {
                 "respuesta": (
-                    "La conversación ha terminado. Si necesitas más ayuda, por favor inicia una nueva conversación."
+                    "La conversación ha terminado. Si lo considerás necesario, "
+                    "contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "para una evaluación más profunda."
                 )
             }
         
