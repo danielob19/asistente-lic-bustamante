@@ -3,33 +3,26 @@ from pydantic import BaseModel
 import openai
 import os
 
-# Configuración de la clave de API de OpenAI
+# Configuración de clave de API
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Inicialización de la aplicación FastAPI
+# Inicialización de FastAPI
 app = FastAPI()
 
-# Modelo de entrada para la solicitud
 class UserInput(BaseModel):
     mensaje: str
 
-# Ruta principal para interactuar con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
         mensaje_usuario = input_data.mensaje.strip()
-        
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
-        
-        # Llamada al modelo de OpenAI
         respuesta = await interactuar_con_openai(mensaje_usuario)
         return {"respuesta": respuesta}
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
-# Función para interactuar con el modelo de OpenAI
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
     try:
         response = openai.ChatCompletion.create(
@@ -43,5 +36,4 @@ async def interactuar_con_openai(mensaje_usuario: str) -> str:
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        # Manejo genérico de errores
         raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
