@@ -1,13 +1,21 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
 import os
 
-# Configuración de la clave de API
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Inicialización de FastAPI
 app = FastAPI()
+
+# Configuración de CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Cambia "*" por tu dominio si lo prefieres
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Simulación de sesiones (almacenamiento en memoria)
 user_sessions = {}
@@ -15,6 +23,10 @@ user_sessions = {}
 class UserInput(BaseModel):
     mensaje: str
     user_id: str
+
+@app.get("/")
+def read_root():
+    return {"message": "Bienvenido al asistente"}
 
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
@@ -25,17 +37,13 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # Inicializar sesión del usuario si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {"contador_interacciones": 0}
-        
-        # Incrementar contador de interacciones
+
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        # Si es la tercera interacción, sugerir contacto profesional
         if interacciones >= 3:
-            # Eliminar la sesión del usuario
             user_sessions.pop(user_id, None)
             return {
                 "respuesta": (
@@ -45,7 +53,6 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        # Generar respuesta usando OpenAI
         respuesta = await interactuar_con_openai(mensaje_usuario)
         return {"respuesta": respuesta}
 
