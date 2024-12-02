@@ -1,4 +1,4 @@
 fastapi
-uvicorn
-openai
-python-dotenv
+pydantic
+openai>=0.27.0
+uvicorn[standard]
