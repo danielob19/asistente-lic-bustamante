@@ -39,23 +39,14 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # Verificar si la sesión del usuario ha terminado
-        if user_id in user_sessions and user_sessions[user_id].get("contactá", False):
-            return {
-                "respuesta": "La conversación ha terminado. Si necesitas más ayuda, por favor inicia una nueva conversación."
-            }
-
-        # Inicializar la sesión si no existe
         if user_id not in user_sessions:
-            user_sessions[user_id] = {"contador_interacciones": 0, "terminada": False}
+            user_sessions[user_id] = {"contador_interacciones": 0}
 
-        # Incrementar el contador de interacciones
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        # Si es la tercera interacción, sugerir contacto profesional y marcar la sesión como terminada
-        if interacciones >= 3:
-            user_sessions[user_id]["terminada"] = True
+        if interacciones == 3:
+            user_sessions.pop(user_id, None)
             return {
                 "respuesta": (
                     "Gracias por compartir cómo te sentís. Si lo considerás necesario, "
@@ -64,7 +55,13 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        # Generar respuesta usando OpenAI
+       if interacciones >= 4:
+            return {
+                "respuesta": (
+                    "La conversación ha terminado. Si necesitas más ayuda, por favor inicia una nueva conversación."
+                )
+            }
+
         respuesta = await interactuar_con_openai(mensaje_usuario)
         return {"respuesta": respuesta}
 
