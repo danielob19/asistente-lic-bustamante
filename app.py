@@ -23,7 +23,7 @@ app.add_middleware(
 
 # Simulación de sesiones (almacenamiento en memoria)
 user_sessions = {}
-SESSION_TIMEOUT = 60  # Tiempo de inactividad permitido en segundos (5 minutos)
+SESSION_TIMEOUT = 60  # Tiempo de inactividad permitido en segundos
 
 class UserInput(BaseModel):
     mensaje: str
@@ -70,7 +70,7 @@ async def asistente(input_data: UserInput):
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
          # Reiniciar la conversación si el mensaje es "reiniciar conversación"
-        if mensaje_usuario == "reiniciar conversación":
+        if mensaje_usuario == "reiniciar":
             user_sessions.pop(user_id, None)  # Eliminar la sesión del usuario
             return {"respuesta": "La conversación ha sido reiniciada. Puedes empezar de nuevo."}
 
@@ -79,7 +79,7 @@ async def asistente(input_data: UserInput):
                 "respuesta": (
                     "La conversación ha terminado. Si lo considerás necesario, "
                     "contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda."
+                    "para una evaluación más profunda. Para reiniciar el chat escriba reiniciar"
                 )
             }
         
