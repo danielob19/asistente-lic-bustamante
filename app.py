@@ -71,6 +71,7 @@ async def asistente(input_data: UserInput):
 
 async def interactuar_con_openai(mensaje_usuario):
     try:
+        # Nueva API de OpenAI
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -80,8 +81,9 @@ async def interactuar_con_openai(mensaje_usuario):
             max_tokens=200,
             temperature=0.7
         )
+        # Extraer contenido de la respuesta
         return response['choices'][0]['message']['content'].strip()
-    except Exception as e:
+    except openai.error.OpenAIError as e:
         print(f"Error interactuando con OpenAI: {e}")
         return "Lo siento, ocurrió un problema al generar la respuesta."
 
