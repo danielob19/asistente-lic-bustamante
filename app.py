@@ -85,18 +85,16 @@ async def interactuar_con_openai(mensaje_usuario):
         return response['choices'][0]['message']['content'].strip()
     except openai.error.AuthenticationError:
         print("Error: Clave de API de OpenAI no válida o no configurada.")
-        return "Error: Clave de API inválida."
+        return "Error: La clave de API no es válida. Contacta al administrador."
     except openai.error.RateLimitError:
-        print("Error: Límite de solicitudes alcanzado en OpenAI.")
+        print("Error: Límite de solicitudes alcanzado.")
         return "Error: Se alcanzó el límite de solicitudes. Inténtalo más tarde."
     except openai.error.OpenAIError as e:
-        print(f"Error en OpenAI: {e}")
-        return f"Error de OpenAI: {e}"
+        print(f"Error de OpenAI: {e}")
+        return "Error: Hubo un problema con el servicio de OpenAI. Inténtalo más tarde."
     except Exception as e:
-        print(f"Error general en interactuar_con_openai: {e}")
+        print(f"Error general: {e}")
         return "Error: Problema inesperado al procesar tu solicitud."
-
-
 
 @app.get("/")
 def home():
