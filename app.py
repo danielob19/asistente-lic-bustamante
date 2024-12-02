@@ -45,6 +45,14 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
+        if interacciones >= 4:
+            user_sessions.pop(user_id, None)
+            return {
+                "respuesta": (
+                    "La conversación ha terminado. Si necesitas más ayuda, por favor inicia una nueva conversación."
+                )
+            }
+        
         if interacciones == 3:
             user_sessions.pop(user_id, None)
             return {
@@ -52,13 +60,6 @@ async def asistente(input_data: UserInput):
                     "Gracias por compartir cómo te sentís. Si lo considerás necesario, "
                     "contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
                     "para una evaluación más profunda."
-                )
-            }
-
-       if interacciones >= 4:
-            return {
-                "respuesta": (
-                    "La conversación ha terminado. Si necesitas más ayuda, por favor inicia una nueva conversación."
                 )
             }
 
