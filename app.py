@@ -69,12 +69,12 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-         # Reiniciar la conversación si el mensaje es "reiniciar conversación"
+         # Reiniciar la conversación si el mensaje es "reiniciar"
         if mensaje_usuario == "reiniciar":
             user_sessions.pop(user_id, None)  # Eliminar la sesión del usuario
             return {"respuesta": "La conversación ha sido reiniciada. Puedes empezar de nuevo."}
 
-        if interacciones >= 5:
+        if interacciones >= 6:
             return {
                 "respuesta": (
                     "La conversación ha terminado. Si lo considerás necesario, "
@@ -83,7 +83,7 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        if interacciones == 4:
+        if interacciones == 5:
             return {
                 "respuesta": (
                     "Comprendo perfectamente. Si lo considerás necesario, "
