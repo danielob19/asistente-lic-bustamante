@@ -86,7 +86,7 @@ async def asistente(input_data: UserInput):
         if interacciones == 3:
             return {
                 "respuesta": (
-                    "Gracias por compartir cómo te sentís. Si lo considerás necesario, "
+                    "Comprendo perfectamente. Si lo considerás necesario, "
                     "contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
                     "para una evaluación más profunda."
                 )
