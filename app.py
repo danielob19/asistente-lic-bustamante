@@ -54,7 +54,6 @@ async def asistente(input_data: UserInput):
             }
         
         if interacciones == 3:
-            user_sessions.pop(user_id, None)
             return {
                 "respuesta": (
                     "Gracias por compartir cómo te sentís. Si lo considerás necesario, "
