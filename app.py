@@ -74,7 +74,7 @@ async def asistente(input_data: UserInput):
             user_sessions.pop(user_id, None)  # Eliminar la sesión del usuario
             return {"respuesta": "La conversación ha sido reiniciada. Puedes empezar de nuevo."}
 
-        if interacciones >= 4:
+        if interacciones >= 5:
             return {
                 "respuesta": (
                     "La conversación ha terminado. Si lo considerás necesario, "
@@ -83,7 +83,7 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        if interacciones == 3:
+        if interacciones == 4:
             return {
                 "respuesta": (
                     "Comprendo perfectamente. Si lo considerás necesario, "
