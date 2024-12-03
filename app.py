@@ -7,32 +7,46 @@ import openai
 import json
 import os
 
-# Base de conocimiento local
-base_de_conocimiento = {
-    "angustia": "cuadro de angustia",
-    "nervioso": "nerviosismo",
-    "ansiedad": "cuadro de ansiedad",
-    "cansancio": "depresión",
-    "atonito": "estrés",
-    # Agrega más términos según sea necesario...
-}
-
-# Ruta del archivo para guardar palabras mencionadas
+# Archivos para base de conocimiento y síntomas mencionados
+base_de_conocimiento_path = "base_de_conocimiento.json"
 sintomas_guardados_path = "sintomas_mencionados.json"
 
-# Crear archivo de síntomas si no existe
+# Cargar o crear la base de conocimiento
+if os.path.exists(base_de_conocimiento_path):
+    with open(base_de_conocimiento_path, "r") as file:
+        base_de_conocimiento = json.load(file)
+else:
+    base_de_conocimiento = {
+        "angustia": "cuadro de angustia",
+        "nervioso": "nerviosismo",
+        "ansiedad": "cuadro de ansiedad",
+        "cansancio": "depresión",
+        "atonito": "estrés",
+        # Agrega más términos según sea necesario...
+    }
+    with open(base_de_conocimiento_path, "w") as file:
+        json.dump(base_de_conocimiento, file, indent=4)
+
+# Crear archivo de síntomas mencionados si no existe
 if not os.path.exists(sintomas_guardados_path):
     with open(sintomas_guardados_path, "w") as file:
         json.dump([], file)
 
-# Función para detectar palabras clave
+# Función para detectar palabras clave en el mensaje
 def detectar_palabras_clave(mensaje):
     """Detecta palabras clave en el mensaje del usuario que coincidan con el diccionario."""
-    return [palabra for palabra in base_de_conocimiento if palabra in mensaje]
+    palabras_detectadas = [
+        palabra for palabra in mensaje.lower().split()
+        if palabra in base_de_conocimiento
+    ]
+    return list(set(palabras_detectadas))  # Evitar duplicados
 
-# Función para guardar las palabras clave detectadas
+# Función para guardar palabras clave mencionadas en un archivo JSON
 def guardar_sintomas_mencionados(sintomas):
     """Guarda los síntomas mencionados por el usuario en un archivo JSON."""
+    if not sintomas:  # No hacer nada si no hay síntomas detectados
+        return
+
     try:
         with open(sintomas_guardados_path, "r+") as file:
             datos_actuales = json.load(file)  # Leer datos existentes
@@ -40,6 +54,10 @@ def guardar_sintomas_mencionados(sintomas):
             datos_actuales = list(set(datos_actuales))  # Evitar duplicados
             file.seek(0)  # Volver al inicio del archivo para sobrescribir
             json.dump(datos_actuales, file, indent=4)  # Guardar en JSON
+    except json.JSONDecodeError:
+        # Si el archivo está vacío o corrupto, sobrescribirlo
+        with open(sintomas_guardados_path, "w") as file:
+            json.dump(sintomas, file, indent=4)
     except Exception as e:
         print(f"Error al guardar los síntomas: {e}")
 
