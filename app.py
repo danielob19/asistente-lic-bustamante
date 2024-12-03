@@ -82,17 +82,20 @@ async def asistente(input_data: UserInput):
 
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
     try:
-        # Solicitar la respuesta a OpenAI
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Eres un asistente conversacional profesional que da respuestas empáticas y útiles."},
-                {"role": "user", "content": mensaje_usuario}
-            ],
-            max_tokens=200,
-            temperature=0.7
-        )
-        respuesta = response.choices[0].message.content.strip()
+    # Solicitar la respuesta a OpenAI
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "Eres un asistente conversacional profesional que da respuestas empáticas y útiles."},
+            {"role": "user", "content": mensaje_usuario}
+        ],
+        max_tokens=200,
+        temperature=0.7
+    )
+    respuesta = response.choices[0].message.content.strip()
+except Exception as e:
+    print(f"Error al comunicarse con OpenAI: {e}")
+    raise HTTPException(status_code=502, detail="Error al comunicarse con OpenAI")
 
         # Agregar recomendación al final de la respuesta
         recomendacion = (
