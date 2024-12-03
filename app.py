@@ -55,7 +55,7 @@ def guardar_sintomas_mencionados(sintomas):
             file.seek(0)  # Volver al inicio del archivo para sobrescribir
             json.dump(datos_actuales, file, indent=4)  # Guardar en JSON
     except json.JSONDecodeError:
-        # Cuando el archivo está vacío o corrupto, sobrescribirlo
+        # Si el archivo está vacío o corrupto, sobrescribirlo
         with open(sintomas_guardados_path, "w") as file:
             json.dump(sintomas, file, indent=4)
     except Exception as e:
@@ -65,6 +65,10 @@ def guardar_sintomas_mencionados(sintomas):
 mensaje_usuario = "Me siento angustia y también algo nervioso."
 palabras_detectadas = detectar_palabras_clave(mensaje_usuario)
 guardar_sintomas_mencionados(palabras_detectadas)
+
+# Tratamiento especial para "si"
+if mensaje_usuario == "si":
+    return "¿Podrías contarme un poco más? ¿Qué otro síntoma sentís?"
 
 # Configuración de la clave de API
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -105,7 +109,7 @@ def start_session_cleaner():
             ]
             for user_id in inactive_users:
                 user_sessions.pop(user_id, None)  # Elimina sesiones inactivas
-            time.sleep(30)  # Ejecuta la limpieza cada 60 segundos
+            time.sleep(60)  # Ejecuta la limpieza cada 60 segundos
 
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
