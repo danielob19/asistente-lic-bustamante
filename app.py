@@ -87,9 +87,9 @@ async def asistente(input_data: UserInput):
         if interacciones >= 4:
             return {
                 "respuesta": (
-                    "La conversación ha terminado. Si lo considerás necesario, "
-                    "contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda. Para reiniciar el chat escriba reiniciar"
+                    "Si bien tengo que dar por terminada esta conversación, no obstante si lo considerás necesario, "
+                    "podés contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "para una evaluación más profunda. Si querés reiniciar un nuevo chat escribí: reiniciar "
                 )
             }
         
