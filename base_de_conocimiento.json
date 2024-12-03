@@ -1,4 +1,4 @@
-base_de_conocimiento = {
+{
     "angustia": "cuadro de angustia",
     "angustiada": "cuadro de angustia",
     "mucha angustia": "cuadro de angustia",
@@ -116,5 +116,4 @@ base_de_conocimiento = {
     "intolerante": "depresion",
     "divague": "estres",
     "moria": "fobia"
-    # Agregué más términos. Puedes seguir expandiendo.
 }
