@@ -82,30 +82,23 @@ async def asistente(input_data: UserInput):
 
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
     try:
-    # Solicitar la respuesta a OpenAI
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "Eres un asistente conversacional profesional que da respuestas empáticas y útiles."},
-            {"role": "user", "content": mensaje_usuario}
-        ],
-        max_tokens=200,
-        temperature=0.7
-    )
-    respuesta = response.choices[0].message.content.strip()
-except Exception as e:
-    print(f"Error al comunicarse con OpenAI: {e}")
-    raise HTTPException(status_code=502, detail="Error al comunicarse con OpenAI")
-
-        # Agregar recomendación al final de la respuesta
-        recomendacion = (
-            " Si considerás necesario, contactá al Lic. Daniel O. Bustamante "
-            "al WhatsApp +54 911 3310-1186 para una evaluación más profunda."
+        # Solicitar la respuesta a OpenAI
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Eres un asistente conversacional profesional y empático."},
+                {"role": "user", "content": mensaje_usuario}
+            ],
+            max_tokens=200,
+            temperature=0.7
         )
-        return f"{respuesta} {recomendacion}"
-
+        respuesta = response.choices[0].message.content.strip()
+        return respuesta
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
+        # Manejo de errores
+        print(f"Error al comunicarse con OpenAI: {e}")
+        return "Lo siento, ocurrió un problema al procesar tu solicitud. Por favor, inténtalo más tarde."
+
             
          # Reiniciar la conversación si el mensaje es "reiniciar"
         if mensaje_usuario == "reiniciar":
