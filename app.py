@@ -80,13 +80,29 @@ async def asistente(input_data: UserInput):
         # Actualizar el último contexto basado en el mensaje
         user_sessions[user_id]["ultimo_contexto"] = mensaje_usuario
 
-        # Manejo del mensaje por OpenAI o lógica adicional
-        respuesta = await interactuar_con_openai(mensaje_usuario)
+async def interactuar_con_openai(mensaje_usuario: str) -> str:
+    try:
+        # Solicitar la respuesta a OpenAI
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Eres un asistente conversacional profesional que da respuestas empáticas y útiles."},
+                {"role": "user", "content": mensaje_usuario}
+            ],
+            max_tokens=200,
+            temperature=0.7
+        )
+        respuesta = response.choices[0].message.content.strip()
 
-        return {"respuesta": respuesta}
+        # Agregar recomendación al final de la respuesta
+        recomendacion = (
+            " Si considerás necesario, contactá al Lic. Daniel O. Bustamante "
+            "al WhatsApp +54 911 3310-1186 para una evaluación más profunda."
+        )
+        return f"{respuesta} {recomendacion}"
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
             
          # Reiniciar la conversación si el mensaje es "reiniciar"
         if mensaje_usuario == "reiniciar":
