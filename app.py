@@ -4,7 +4,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
-import json
 import os
 
 # Configuración de la clave de API
@@ -70,32 +69,46 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        # Manejo específico para "sí"
-        if mensaje_usuario == "sí" or mensaje_usuario == "si":
-            if user_sessions[user_id]["ultimo_contexto"] == "confirmación":
-                return {"respuesta": "Ya confirmaste eso. ¿Hay algo más en lo que pueda ayudarte?"}
-            user_sessions[user_id]["ultimo_contexto"] = "confirmación"
-            return {"respuesta": "Gracias por confirmar. ¿Hay algo más en lo que pueda ayudarte?"}
+         # Reiniciar la conversación si el mensaje es "reiniciar conversación"
+        if mensaje_usuario == "reiniciar":
+            user_sessions.pop(user_id, None)  # Eliminar la sesión del usuario
+            return {"respuesta": "La conversación ha sido reiniciada. Puedes empezar de nuevo."}
 
-        # Actualizar el último contexto basado en el mensaje
-        user_sessions[user_id]["ultimo_contexto"] = mensaje_usuario
+        if interacciones >= 4:
+            return {
+                "respuesta": (
+                    "La conversación ha terminado. Si lo considerás necesario, "
+                    "contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "para una evaluación más profunda. Para reiniciar el chat escriba reiniciar"
+                )
+            }
+        
+        if interacciones == 3:
+            return {
+                "respuesta": (
+                    "Comprendo perfectamente. Si lo considerás necesario, "
+                    "contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "para una evaluación más profunda."
+                )
+            }
 
+        respuesta = await interactuar_con_openai(mensaje_usuario)
+        return {"respuesta": respuesta}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
     try:
-        # Solicitar la respuesta a OpenAI
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Eres un asistente conversacional profesional que da respuestas empáticas y útiles."},
+                {"role": "system", "content": "Eres un asistente conversacional profesional y empático."},
                 {"role": "user", "content": mensaje_usuario}
             ],
             max_tokens=200,
             temperature=0.7
         )
-        respuesta = response.choices[0].message.content.strip()
-        return respuesta
+        return response.choices[0].message.content.strip()
     except Exception as e:
-        # Manejo de errores
-        print(f"Error al comunicarse con OpenAI: {e}")
-        return "Lo siento, ocurrió un problema al procesar tu solicitud. Por favor, inténtalo más tarde."
+        raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
