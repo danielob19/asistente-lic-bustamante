@@ -4,7 +4,49 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
+import json
 import os
+
+# Base de conocimiento local
+base_de_conocimiento = {
+    "angustia": "cuadro de angustia",
+    "nervioso": "nerviosismo",
+    "ansiedad": "cuadro de ansiedad",
+    "cansancio": "depresión",
+    "atonito": "estrés",
+    # Agrega más términos según sea necesario...
+}
+
+# Ruta del archivo para guardar palabras mencionadas
+sintomas_guardados_path = "sintomas_mencionados.json"
+
+# Crear archivo de síntomas si no existe
+if not os.path.exists(sintomas_guardados_path):
+    with open(sintomas_guardados_path, "w") as file:
+        json.dump([], file)
+
+# Función para detectar palabras clave
+def detectar_palabras_clave(mensaje):
+    """Detecta palabras clave en el mensaje del usuario que coincidan con el diccionario."""
+    return [palabra for palabra in base_de_conocimiento if palabra in mensaje]
+
+# Función para guardar las palabras clave detectadas
+def guardar_sintomas_mencionados(sintomas):
+    """Guarda los síntomas mencionados por el usuario en un archivo JSON."""
+    try:
+        with open(sintomas_guardados_path, "r+") as file:
+            datos_actuales = json.load(file)  # Leer datos existentes
+            datos_actuales.extend(sintomas)  # Agregar nuevos síntomas
+            datos_actuales = list(set(datos_actuales))  # Evitar duplicados
+            file.seek(0)  # Volver al inicio del archivo para sobrescribir
+            json.dump(datos_actuales, file, indent=4)  # Guardar en JSON
+    except Exception as e:
+        print(f"Error al guardar los síntomas: {e}")
+
+# Ejemplo de uso
+mensaje_usuario = "Me siento angustia y también algo nervioso."
+palabras_detectadas = detectar_palabras_clave(mensaje_usuario)
+guardar_sintomas_mencionados(palabras_detectadas)
 
 # Configuración de la clave de API
 openai.api_key = os.getenv("OPENAI_API_KEY")
