@@ -83,7 +83,7 @@ app.add_middleware(
 
 # Simulación de sesiones (almacenamiento en memoria)
 user_sessions = {}
-SESSION_TIMEOUT = 120  # Tiempo de inactividad permitido en segundos
+SESSION_TIMEOUT = 60  # Tiempo de inactividad permitido en segundos
 
 class UserInput(BaseModel):
     mensaje: str
@@ -105,7 +105,7 @@ def start_session_cleaner():
             ]
             for user_id in inactive_users:
                 user_sessions.pop(user_id, None)  # Elimina sesiones inactivas
-            time.sleep(120)  # Ejecuta la limpieza cada 60 segundos
+            time.sleep(30)  # Ejecuta la limpieza cada 60 segundos
 
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
