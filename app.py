@@ -54,7 +54,7 @@ def start_session_cleaner():
 async def asistente(input_data: UserInput):
     try:
         user_id = input_data.user_id
-        mensaje_usuario = input_data.mensaje.strip()
+        mensaje_usuario = input_data.mensaje.strip().lower()  # Convertir a minúsculas para evitar problemas
 
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
@@ -68,6 +68,16 @@ async def asistente(input_data: UserInput):
             
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
+
+        # Manejo explícito del mensaje "si" y similares
+        if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
+            if user_sessions[user_id]["ultimo_mensaje"] in ["si", "sí", "si claro", "sí claro"]:
+                return {"respuesta": "Ya confirmaste eso. ¿Hay algo más en lo que pueda ayudarte?"}
+            user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
+            return {"respuesta": "Gracias por confirmar. ¿Hay algo más en lo que pueda ayudarte?"}
+
+        # Guardar el mensaje actual como último procesado
+        user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
 
          # Reiniciar la conversación si el mensaje es "reiniciar conversación"
         if mensaje_usuario == "reiniciar":
