@@ -83,7 +83,7 @@ app.add_middleware(
 
 # Simulación de sesiones (almacenamiento en memoria)
 user_sessions = {}
-SESSION_TIMEOUT = 60  # Tiempo de inactividad permitido en segundos
+SESSION_TIMEOUT = 120  # Tiempo de inactividad permitido en segundos
 
 class UserInput(BaseModel):
     mensaje: str
