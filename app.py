@@ -93,8 +93,8 @@ async def interactuar_con_openai(mensaje_usuario: str) -> str:
             max_tokens=200,
             temperature=0.7
         )
-        # Procesar y devolver la respuesta
-        return response.choices[0].message.content.strip()
+        respuesta = response.choices[0].message.content.strip()
+        return respuesta
     except Exception as e:
         # Manejo de errores
         print(f"Error al comunicarse con OpenAI: {e}")
