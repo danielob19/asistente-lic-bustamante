@@ -55,7 +55,7 @@ def guardar_sintomas_mencionados(sintomas):
             file.seek(0)  # Volver al inicio del archivo para sobrescribir
             json.dump(datos_actuales, file, indent=4)  # Guardar en JSON
     except json.JSONDecodeError:
-        # Si el archivo está vacío o corrupto, sobrescribirlo
+        # Cuando el archivo está vacío o corrupto, sobrescribirlo
         with open(sintomas_guardados_path, "w") as file:
             json.dump(sintomas, file, indent=4)
     except Exception as e:
