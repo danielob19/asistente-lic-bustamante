@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
 import os
+import json
 import re  # Import necesario para expresiones regulares
 
 # Configuración de la clave de API
@@ -22,6 +23,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Diccionario global para registrar las palabras clave detectadas
+palabras_detectadas = {}
+
+# Función para detectar palabras clave
 def detectar_palabras_clave(texto: str):
     """
     Detecta palabras clave en el texto según las categorías definidas.
@@ -38,7 +43,47 @@ def detectar_palabras_clave(texto: str):
             if re.search(rf'\b{palabra}\b', texto):  # Coincidencia exacta de palabras
                 if categoria not in palabras_detectadas:
                     palabras_detectadas[categoria] = []
-                palabras_detectadas[categoria].append(palabra)
+                if palabra not in palabras_detectadas[categoria]:  # Evitar duplicados
+                    palabras_detectadas[categoria].append(palabra)
+
+# Función para guardar palabras detectadas en un archivo JSON
+def guardar_palabras_en_archivo(nombre_archivo: str = "palabras_detectadas.json"):
+    """
+    Guarda el diccionario de palabras detectadas en un archivo JSON.
+    """
+    with open(nombre_archivo, "w") as archivo:
+        json.dump(palabras_detectadas, archivo, indent=4)
+    print(f"Palabras detectadas guardadas en {nombre_archivo}")
+
+# Función para cargar palabras detectadas desde un archivo JSON
+def cargar_palabras_desde_archivo(nombre_archivo: str = "palabras_detectadas.json"):
+    """
+    Carga el diccionario de palabras detectadas desde un archivo JSON.
+    """
+    global palabras_detectadas
+    try:
+        with open(nombre_archivo, "r") as archivo:
+            palabras_detectadas = json.load(archivo)
+        print(f"Palabras detectadas cargadas desde {nombre_archivo}")
+    except FileNotFoundError:
+        palabras_detectadas = {}
+        print(f"No se encontró el archivo {nombre_archivo}. Iniciando con un diccionario vacío.")
+
+# Ejemplo de uso
+if __name__ == "__main__":
+    # Cargar datos previos (si existen)
+    cargar_palabras_desde_archivo()
+
+    # Texto de ejemplo para detectar palabras clave
+    texto_usuario = "Estoy muy triste porque tengo un problema y necesito ayuda urgente."
+    detectar_palabras_clave(texto_usuario)
+
+    # Mostrar palabras detectadas
+    print("Palabras detectadas:", palabras_detectadas)
+
+    # Guardar los resultados en un archivo
+    guardar_palabras_en_archivo()
+
 
 # Simulación de sesiones (almacenamiento en memoria)
 user_sessions = {}
@@ -80,6 +125,14 @@ async def asistente(input_data: UserInput):
 
         # Detectar palabras clave en el mensaje del usuario
         detectar_palabras_clave(mensaje_usuario)
+
+        # Guardar las palabras detectadas en un archivo
+        guardar_palabras_en_archivo()
+
+        return {
+            "respuesta": "Palabras clave detectadas y registradas correctamente.",
+            "palabras_detectadas": palabras_detectadas
+        }
 
          # Inicializar sesión si no existe
         if user_id not in user_sessions:
