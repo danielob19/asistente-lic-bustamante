@@ -74,7 +74,7 @@ async def asistente(input_data: UserInput):
             if user_sessions[user_id]["ultimo_mensaje"] in ["si", "sí", "si claro", "sí claro"]:
                 return {"respuesta": "Ya confirmaste eso. ¿Hay algo más en lo que pueda ayudarte?"}
             user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
-            return {"respuesta": "Gracias por confirmar. ¿Hay algo más en lo que pueda ayudarte?"}
+            return {"respuesta": "Comprendo. ¿Qué puedo hacer por vos al respecto?"}
 
         # Guardar el mensaje actual como último procesado
         user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
