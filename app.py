@@ -70,15 +70,23 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        # Manejo explícito del mensaje "si" y similares
-        if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
-            if user_sessions[user_id]["ultimo_mensaje"] in ["si", "sí", "si claro", "sí claro"]:
+        # Manejo específico para "sí"
+        if mensaje_usuario == "sí" or mensaje_usuario == "si":
+            if user_sessions[user_id]["ultimo_contexto"] == "confirmación":
                 return {"respuesta": "Ya confirmaste eso. ¿Hay algo más en lo que pueda ayudarte?"}
-            user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
+            user_sessions[user_id]["ultimo_contexto"] = "confirmación"
             return {"respuesta": "Gracias por confirmar. ¿Hay algo más en lo que pueda ayudarte?"}
 
-        # Guardar el mensaje actual como último procesado
-        user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
+        # Actualizar el último contexto basado en el mensaje
+        user_sessions[user_id]["ultimo_contexto"] = mensaje_usuario
+
+        # Manejo del mensaje por OpenAI o lógica adicional
+        respuesta = await interactuar_con_openai(mensaje_usuario)
+
+        return {"respuesta": respuesta}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
             
          # Reiniciar la conversación si el mensaje es "reiniciar"
         if mensaje_usuario == "reiniciar":
