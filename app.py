@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
 import os
+import re  # Import necesario para expresiones regulares
 
 # Configuración de la clave de API
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -20,6 +21,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def detectar_palabras_clave(texto: str):
+    """
+    Detecta palabras clave en el texto según las categorías definidas.
+    Actualiza el diccionario global `palabras_detectadas`.
+    """
+    global palabras_detectadas
+    palabras_clave = {
+        "emociones": ["triste", "feliz", "ansioso", "estresado"],
+        "problemas": ["problema", "dificultad", "conflicto"],
+        "acciones": ["ayuda", "soporte", "contactar"]
+    }
+    for categoria, palabras in palabras_clave.items():
+        for palabra in palabras:
+            if re.search(rf'\b{palabra}\b', texto):  # Coincidencia exacta de palabras
+                if categoria not in palabras_detectadas:
+                    palabras_detectadas[categoria] = []
+                palabras_detectadas[categoria].append(palabra)
 
 # Simulación de sesiones (almacenamiento en memoria)
 user_sessions = {}
@@ -58,6 +77,9 @@ async def asistente(input_data: UserInput):
 
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+
+        # Detectar palabras clave en el mensaje del usuario
+        detectar_palabras_clave(mensaje_usuario)
 
          # Inicializar sesión si no existe
         if user_id not in user_sessions:
