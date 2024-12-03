@@ -66,9 +66,12 @@ mensaje_usuario = "Me siento angustia y también algo nervioso."
 palabras_detectadas = detectar_palabras_clave(mensaje_usuario)
 guardar_sintomas_mencionados(palabras_detectadas)
 
-# Tratamiento especial para "si"
-if mensaje_usuario == "si":
-    return "¿Podrías contarme un poco más? ¿Qué otro síntoma sentís?"
+def manejar_conversacion(mensaje_usuario, sintomas_recibidos):
+    # Tratamiento especial para "si"
+    if mensaje_usuario.strip().lower() == "si":
+        return "¿Podrías contarme un poco más? ¿Qué otro síntoma sentís?"
+
+    # Aquí continúa el resto de la lógica de la conversación...
 
 # Configuración de la clave de API
 openai.api_key = os.getenv("OPENAI_API_KEY")
