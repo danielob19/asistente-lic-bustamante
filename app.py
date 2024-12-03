@@ -70,11 +70,15 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        # Manejo explícito del mensaje "si"
-        if mensaje_usuario == "si":
-            return {
-                "respuesta": "Gracias por confirmar. ¿Hay algo más en lo que pueda ayudarte?"
-            }
+        # Manejo explícito del mensaje "si" y similares
+        if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
+            if user_sessions[user_id]["ultimo_mensaje"] in ["si", "sí", "si claro", "sí claro"]:
+                return {"respuesta": "Ya confirmaste eso. ¿Hay algo más en lo que pueda ayudarte?"}
+            user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
+            return {"respuesta": "Gracias por confirmar. ¿Hay algo más en lo que pueda ayudarte?"}
+
+        # Guardar el mensaje actual como último procesado
+        user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
             
          # Reiniciar la conversación si el mensaje es "reiniciar"
         if mensaje_usuario == "reiniciar":
