@@ -47,7 +47,7 @@ def detectar_palabras_clave(texto: str):
                     palabras_detectadas[categoria].append(palabra)
 
 # Función para guardar palabras detectadas en un archivo JSON
-def guardar_palabras_en_archivo(nombre_archivo: str = "palabras_detectadas.json"):
+def guardar_palabras_en_archivo(nombre_archivo: str = "base_de_conocimiento.json"):
     """
     Guarda el diccionario de palabras detectadas en un archivo JSON.
     """
@@ -55,7 +55,7 @@ def guardar_palabras_en_archivo(nombre_archivo: str = "palabras_detectadas.json"
         json.dump(palabras_detectadas, archivo, indent=4)
 
 # Función para cargar palabras detectadas desde un archivo JSON
-def cargar_palabras_desde_archivo(nombre_archivo: str = "palabras_detectadas.json"):
+def cargar_palabras_desde_archivo(nombre_archivo: str = "base_de_conocimiento.json"):
     """
     Carga el diccionario de palabras detectadas desde un archivo JSON.
     """
@@ -72,25 +72,48 @@ def iniciar_aplicacion():
     cargar_palabras_desde_archivo()
 
 @app.post("/asistente")
-async def asistente(input_data: dict):
+async def asistente(input_data: BaseModel):
     """
-    Endpoint para procesar el mensaje del usuario y detectar palabras clave.
+    Endpoint para interactuar con el usuario y registrar palabras clave.
     """
     try:
-        mensaje_usuario = input_data.get("mensaje", "").strip().lower()
+        user_id = input_data.user_id
+        mensaje_usuario = input_data.mensaje.strip().lower()
+        
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
-        
+
         # Detectar palabras clave
         detectar_palabras_clave(mensaje_usuario)
-        
+
         # Guardar palabras clave detectadas en el archivo
         guardar_palabras_en_archivo()
 
-        # Devolver la respuesta al usuario (sin informar sobre las palabras clave detectadas)
-        return {"respuesta": "Mensaje procesado correctamente."}
+        # Interactuar con OpenAI para generar una respuesta
+        respuesta = await interactuar_con_openai(mensaje_usuario)
+
+        # Responder al usuario
+        return {"respuesta": respuesta}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+async def interactuar_con_openai(mensaje_usuario: str) -> str:
+    """
+    Genera una respuesta usando OpenAI.
+    """
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Eres un asistente conversacional profesional y empático."},
+                {"role": "user", "content": mensaje_usuario}
+            ],
+            max_tokens=200,
+            temperature=0.7
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
 
 # Simulación de sesiones (almacenamiento en memoria)
 user_sessions = {}
@@ -130,16 +153,19 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # Detectar palabras clave en el mensaje del usuario
+        # Detectar palabras clave
         detectar_palabras_clave(mensaje_usuario)
 
-        # Guardar las palabras detectadas en un archivo
+        # Guardar palabras clave detectadas en el archivo
         guardar_palabras_en_archivo()
 
-        return {
-            "respuesta": "Palabras clave detectadas y registradas correctamente.",
-            "palabras_detectadas": palabras_detectadas
-        }
+        # Interactuar con OpenAI para generar una respuesta
+        respuesta = await interactuar_con_openai(mensaje_usuario)
+
+        # Responder al usuario
+        return {"respuesta": respuesta}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
          # Inicializar sesión si no existe
         if user_id not in user_sessions:
