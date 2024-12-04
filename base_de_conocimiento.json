@@ -1,0 +1,149 @@
+{
+    "cuadro de angustia": [
+        "angustia",
+        "angustiada",
+        "mucha angustia",
+        "angustiado"
+    ],
+    "cuadro de ansiedad": [
+        "ansioso"
+    ],
+    "cuadro de impulsividad": [
+        "soy impulsiva",
+        "soy impulsivo",
+        "controlar impulsos",
+        "soy muy impulsiva",
+        "soy muy impulsivo",
+        "conductas impulsivas",
+        "impulsiva",
+        "impulsivo"
+    ],
+    "inestabilidad emocional": [
+        "inestabilidad",
+        "cambios de animo",
+        "cambios de anímicos",
+        "muy inestable",
+        "cambiante",
+        "alterada",
+        "cambios emocionales",
+        "alterado"
+    ],
+    "inseguridad emocional": [
+        "mucha inseguridad",
+        "insegura",
+        "inseguro"
+    ],
+    "insomnio": [
+        "me cuesta dormir",
+        "sin sueño",
+        "no puedo dormir"
+    ],
+    "irritabilidad": [
+        "me enojo",
+        "todo me molesta",
+        "molesta"
+    ],
+    "nauseas": [
+        "ganas de vomitar",
+        "vomitar",
+        "arcada"
+    ],
+    "nerviosismo": [
+        "nervioso",
+        "nerviosa",
+        "nervios"
+    ],
+    "tensión emocional": [
+        "muy tensionado",
+        "tensionada",
+        "tension"
+    ],
+    "alteraciones de la memoria": [
+        "problemas de memoria",
+        "falta memoria",
+        "fallas de memoria",
+        "amnesia",
+        "desmemoriado",
+        "lagunas",
+        "olvidos",
+        "olvido"
+    ],
+    "violencia": [
+        "golpeada",
+        "violentada",
+        "agredida",
+        "abusaron",
+        "abuso",
+        "abusada",
+        "violada",
+        "violado",
+        "golpeado",
+        "lastimado",
+        "lastimada",
+        "humillada"
+    ],
+    "depresion": [
+        "tristeza",
+        "compungido",
+        "cansancio animico",
+        "estado de agotamiento",
+        "debil",
+        "falta de energias",
+        "fatigada",
+        "fatiga",
+        "fatigado",
+        "autoexigencia",
+        "autocritica",
+        "autoreproche",
+        "muy autocritico",
+        "baja autoestima",
+        "inferioridad",
+        "no valgo",
+        "me siento menos",
+        "sin autoestima",
+        "poco valor",
+        "valgo poco",
+        "bajon",
+        "bajoneado",
+        "bloqueo",
+        "bloqueos",
+        "bloquee",
+        "deprimo",
+        "deprimida",
+        "deprimido",
+        "derrota",
+        "derrotada",
+        "derrotado",
+        "perdedora",
+        "vencida",
+        "abatida",
+        "desalentado",
+        "desaliento",
+        "desconsolado",
+        "desmotivado",
+        "desganado",
+        "sin ganas",
+        "desanimo",
+        "poco entusiasmo",
+        "discute",
+        "peleo",
+        "detencion",
+        "atasco",
+        "sin fuerzas",
+        "fracazada",
+        "bronca",
+        "lloro",
+        "abandonada",
+        "autorreproche",
+        "susceptible",
+        "intolerante"
+    ],
+    "fobia": [
+        "ruborizo",
+        "temor",
+        "moria"
+    ],
+    "estres": [
+        "divague"
+    ]
+}
