@@ -97,24 +97,6 @@ async def asistente(input_data: BaseModel):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
-async def interactuar_con_openai(mensaje_usuario: str) -> str:
-    """
-    Genera una respuesta usando OpenAI.
-    """
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Eres un asistente conversacional profesional y empático."},
-                {"role": "user", "content": mensaje_usuario}
-            ],
-            max_tokens=200,
-            temperature=0.7
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
-
 # Simulación de sesiones (almacenamiento en memoria)
 user_sessions = {}
 SESSION_TIMEOUT = 60  # Tiempo de inactividad permitido en segundos
