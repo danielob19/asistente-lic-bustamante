@@ -135,20 +135,6 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # Detectar palabras clave
-        detectar_palabras_clave(mensaje_usuario)
-
-        # Guardar palabras clave detectadas en el archivo
-        guardar_palabras_en_archivo()
-
-        # Interactuar con OpenAI para generar una respuesta
-        respuesta = await interactuar_con_openai(mensaje_usuario)
-
-        # Responder al usuario
-        return {"respuesta": respuesta}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
          # Inicializar sesión si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {"contador_interacciones": 0, "ultima_interaccion": time.time()}
