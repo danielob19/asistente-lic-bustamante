@@ -53,7 +53,6 @@ def guardar_palabras_en_archivo(nombre_archivo: str = "palabras_detectadas.json"
     """
     with open(nombre_archivo, "w") as archivo:
         json.dump(palabras_detectadas, archivo, indent=4)
-    print(f"Palabras detectadas guardadas en {nombre_archivo}")
 
 # Función para cargar palabras detectadas desde un archivo JSON
 def cargar_palabras_desde_archivo(nombre_archivo: str = "palabras_detectadas.json"):
@@ -64,26 +63,34 @@ def cargar_palabras_desde_archivo(nombre_archivo: str = "palabras_detectadas.jso
     try:
         with open(nombre_archivo, "r") as archivo:
             palabras_detectadas = json.load(archivo)
-        print(f"Palabras detectadas cargadas desde {nombre_archivo}")
     except FileNotFoundError:
         palabras_detectadas = {}
-        print(f"No se encontró el archivo {nombre_archivo}. Iniciando con un diccionario vacío.")
 
-# Ejemplo de uso
-if __name__ == "__main__":
-    # Cargar datos previos (si existen)
+# Cargar datos al iniciar la aplicación
+@app.on_event("startup")
+def iniciar_aplicacion():
     cargar_palabras_desde_archivo()
 
-    # Texto de ejemplo para detectar palabras clave
-    texto_usuario = "Estoy muy triste porque tengo un problema y necesito ayuda urgente."
-    detectar_palabras_clave(texto_usuario)
+@app.post("/asistente")
+async def asistente(input_data: dict):
+    """
+    Endpoint para procesar el mensaje del usuario y detectar palabras clave.
+    """
+    try:
+        mensaje_usuario = input_data.get("mensaje", "").strip().lower()
+        if not mensaje_usuario:
+            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+        
+        # Detectar palabras clave
+        detectar_palabras_clave(mensaje_usuario)
+        
+        # Guardar palabras clave detectadas en el archivo
+        guardar_palabras_en_archivo()
 
-    # Mostrar palabras detectadas
-    print("Palabras detectadas:", palabras_detectadas)
-
-    # Guardar los resultados en un archivo
-    guardar_palabras_en_archivo()
-
+        # Devolver la respuesta al usuario (sin informar sobre las palabras clave detectadas)
+        return {"respuesta": "Mensaje procesado correctamente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 # Simulación de sesiones (almacenamiento en memoria)
 user_sessions = {}
