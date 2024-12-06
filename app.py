@@ -22,25 +22,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configuración de la base de datos SQLite
 def init_db():
-    """Inicializa la base de datos SQLite y crea la tabla si no existe."""
-    db_path = os.path.abspath("palabras_clave.db")  # Ruta absoluta para evitar confusiones
-    try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS palabras_clave (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                palabra TEXT UNIQUE NOT NULL,
-                categoria TEXT NOT NULL
-            )
-        """)
-        conn.commit()
-        conn.close()
-        print(f"Base de datos creada o abierta con éxito en: {db_path}")
-    except sqlite3.Error as e:
-        print(f"Error al inicializar la base de datos: {e}")
-
+    conn = sqlite3.connect("palabras_clave.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS palabras_clave (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            palabra TEXT UNIQUE NOT NULL,
+            categoria TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
 
 # Lógica para registrar palabras clave nuevas
 def registrar_palabra_clave(palabra: str, categoria: str):
@@ -75,22 +69,11 @@ def read_root():
     return {"message": "Bienvenido al asistente"}
 
 # Evento de inicio
-def verificar_permisos():
-    ruta_actual = os.getcwd()
-    archivo_prueba = os.path.join(ruta_actual, "prueba_escritura.txt")
-    try:
-        # Intenta escribir un archivo de prueba
-        with open(archivo_prueba, "w") as archivo:
-            archivo.write("Prueba de escritura exitosa.")
-        print(f"Permisos de escritura confirmados en: {ruta_actual}")
-        # Borra el archivo de prueba
-        os.remove(archivo_prueba)
-    except Exception as e:
-        print(f"No tienes permisos de escritura en: {ruta_actual}. Error: {e}")
-
-verificar_permisos()
-
 @app.on_event("startup")
+def startup_event():
+    init_db()
+    start_session_cleaner()
+
 # Limpieza de sesiones inactivas
 def start_session_cleaner():
     def cleaner():
