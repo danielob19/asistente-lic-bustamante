@@ -3,13 +3,26 @@ import threading
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import sqlite3
 import openai
 import os
-import json
-import re  # Import necesario para expresiones regulares
-import sqlite3
 
-# Inicializar la conexión a SQLite
+# Configuración de la clave de API
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# Inicialización de la aplicación FastAPI
+app = FastAPI()
+
+# Configuración de CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Cambiar "*" por una lista de dominios permitidos si es necesario
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Configuración de la base de datos SQLite
 def init_db():
     conn = sqlite3.connect("palabras_clave.db")
     cursor = conn.cursor()
@@ -23,14 +36,8 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Llamar a la función al iniciar la aplicación
-@app.on_event("startup")
-def startup_event():
-    init_db()
-    start_session_cleaner()
-
+# Lógica para registrar palabras clave nuevas
 def registrar_palabra_clave(palabra: str, categoria: str):
-    """Registra una palabra clave en la base de datos si no existe."""
     try:
         conn = sqlite3.connect("palabras_clave.db")
         cursor = conn.cursor()
@@ -41,29 +48,12 @@ def registrar_palabra_clave(palabra: str, categoria: str):
         print(f"Error al registrar palabra clave: {e}")
 
 def obtener_palabras_clave():
-    """Obtiene todas las palabras clave de la base de datos."""
     conn = sqlite3.connect("palabras_clave.db")
     cursor = conn.cursor()
     cursor.execute("SELECT palabra FROM palabras_clave")
     palabras = [row[0] for row in cursor.fetchall()]
     conn.close()
     return palabras
-
-
-# Configuración de la clave de API
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-# Inicialización de FastAPI
-app = FastAPI()
-
-# Configuración de CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Cambia "*" por una lista de dominios permitidos si lo necesitas
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Simulación de sesiones (almacenamiento en memoria)
 user_sessions = {}
@@ -73,13 +63,19 @@ class UserInput(BaseModel):
     mensaje: str
     user_id: str
 
+# Ruta inicial
 @app.get("/")
 def read_root():
     return {"message": "Bienvenido al asistente"}
 
+# Evento de inicio
 @app.on_event("startup")
+def startup_event():
+    init_db()
+    start_session_cleaner()
+
+# Limpieza de sesiones inactivas
 def start_session_cleaner():
-    """Inicia un thread para limpiar sesiones inactivas."""
     def cleaner():
         while True:
             current_time = time.time()
@@ -88,26 +84,30 @@ def start_session_cleaner():
                 if current_time - data["ultima_interaccion"] > SESSION_TIMEOUT
             ]
             for user_id in inactive_users:
-                user_sessions.pop(user_id, None)  # Elimina sesiones inactivas
-            time.sleep(60)  # Ejecuta la limpieza cada 60 segundos
+                user_sessions.pop(user_id, None)
+            time.sleep(60)
 
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
+# Endpoint principal
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
         user_id = input_data.user_id
-        mensaje_usuario = input_data.mensaje.strip().lower()  # Convertir a minúsculas para evitar problemas
+        mensaje_usuario = input_data.mensaje.strip().lower()
 
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-         # Inicializar sesión si no existe
+        # Inicializar sesión si no existe
         if user_id not in user_sessions:
-            user_sessions[user_id] = {"contador_interacciones": 0, "ultima_interaccion": time.time()}
+            user_sessions[user_id] = {
+                "contador_interacciones": 0,
+                "ultima_interaccion": time.time(),
+                "ultimo_mensaje": None,
+            }
         else:
-            # Actualizar la marca de tiempo de la última interacción
             user_sessions[user_id]["ultima_interaccion"] = time.time()
             
         user_sessions[user_id]["contador_interacciones"] += 1
@@ -120,32 +120,28 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
             return {"respuesta": "Comprendo. ¿Qué puedo hacer por vos al respecto?"}
 
-        # Obtener palabras clave existentes
+        # Detectar palabras clave
         palabras_existentes = obtener_palabras_clave()
-
-        # Detectar palabras clave nuevas en el mensaje del usuario
         nuevas_palabras = [
             palabra for palabra in mensaje_usuario.split() if palabra not in palabras_existentes
         ]
 
-        # Registrar nuevas palabras clave con una categoría genérica
+        # Registrar palabras clave nuevas
         for palabra in nuevas_palabras:
             registrar_palabra_clave(palabra, "categoría pendiente")
-        
-        # Guardar el mensaje actual como último procesado
-        user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
 
-         # Reiniciar la conversación si el mensaje es "reiniciar conversación"
+        # Reiniciar conversación
         if mensaje_usuario == "reiniciar":
-            user_sessions.pop(user_id, None)  # Eliminar la sesión del usuario
+            user_sessions.pop(user_id, None)
             return {"respuesta": "La conversación ha sido reiniciada. Puedes empezar de nuevo."}
 
+        # Limitar el número de interacciones
         if interacciones >= 6:
             return {
                 "respuesta": (
                     "Si bien tengo que dar por terminada esta conversación, no obstante si lo considerás necesario, "
                     "podés contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda de tu condición emocional. Si querés reiniciar un nuevo chat escribí: reiniciar "
+                    "para una evaluación más profunda de tu condición emocional. Si querés reiniciar un nuevo chat escribí: reiniciar."
                 )
             }
         
@@ -158,12 +154,14 @@ async def asistente(input_data: UserInput):
                 )
             }
 
+        # Interactuar con OpenAI
         respuesta = await interactuar_con_openai(mensaje_usuario)
         return {"respuesta": respuesta}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
+# Interacción con OpenAI
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
     try:
         response = openai.ChatCompletion.create(
