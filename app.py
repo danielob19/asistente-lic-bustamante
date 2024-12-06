@@ -91,9 +91,16 @@ def verificar_permisos():
 verificar_permisos()
 
 @app.on_event("startup")
-def startup_event():
-    init_db()
-    start_session_cleaner()
+def verificar_permisos():
+    ruta_actual = os.getcwd()  # Obtiene el directorio actual
+    archivo_prueba = os.path.join(ruta_actual, "prueba_escritura.txt")
+    try:
+        # Intenta escribir un archivo de prueba
+        with open(archivo_prueba, "w") as archivo:
+            archivo.write("Prueba de escritura exitosa.")
+        print(f"Archivo creado exitosamente en: {archivo_prueba}")
+    except Exception as e:
+        print(f"No tienes permisos de escritura en: {ruta_actual}. Error: {e}")
 
 # Limpieza de sesiones inactivas
 def start_session_cleaner():
