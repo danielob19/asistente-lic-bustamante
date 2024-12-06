@@ -22,19 +22,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configuración de la base de datos SQLite
+import sqlite3
+import os
+
 def init_db():
-    conn = sqlite3.connect("palabras_clave.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS palabras_clave (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            palabra TEXT UNIQUE NOT NULL,
-            categoria TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
+    """Inicializa la base de datos SQLite y crea la tabla si no existe."""
+    db_path = os.path.abspath("palabras_clave.db")  # Ruta absoluta para evitar confusiones
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS palabras_clave (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                palabra TEXT UNIQUE NOT NULL,
+                categoria TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+        conn.close()
+        print(f"Base de datos creada o abierta con éxito en: {db_path}")
+    except sqlite3.Error as e:
+        print(f"Error al inicializar la base de datos: {e}")
+
 
 # Lógica para registrar palabras clave nuevas
 def registrar_palabra_clave(palabra: str, categoria: str):
