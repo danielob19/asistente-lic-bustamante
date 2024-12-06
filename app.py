@@ -13,6 +13,25 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 # Inicialización de la aplicación FastAPI
 app = FastAPI()
 
+# Script de verificación de permisos
+def verificar_permisos():
+    ruta_actual = os.getcwd()  # Obtiene el directorio actual
+    archivo_prueba = os.path.join(ruta_actual, "prueba_escritura.txt")
+    try:
+        # Intenta escribir un archivo de prueba
+        with open(archivo_prueba, "w") as archivo:
+            archivo.write("Prueba de escritura exitosa.")
+        print(f"Archivo creado exitosamente en: {archivo_prueba}")
+    except Exception as e:
+        print(f"No tienes permisos de escritura en: {ruta_actual}. Error: {e}")
+
+# Evento de inicio de FastAPI
+@app.on_event("startup")
+def startup_event():
+    print("Iniciando aplicación...")
+    verificar_permisos()  # Llama al script de prueba de escritura
+    print("Aplicación inicializada.")
+    
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
