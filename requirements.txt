@@ -2,5 +2,4 @@ fastapi
 pydantic
 openai==0.28
 uvicorn[standard]
-sqlite3
-python-dotenv  # Opcional, para cargar variables de entorno desde un archivo .env
+python-dotenv  # Si utilizas variables de entorno opcionales
