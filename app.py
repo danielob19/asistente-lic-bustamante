@@ -22,9 +22,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-import sqlite3
-import os
-
 def init_db():
     """Inicializa la base de datos SQLite y crea la tabla si no existe."""
     db_path = os.path.abspath("palabras_clave.db")  # Ruta absoluta para evitar confusiones
