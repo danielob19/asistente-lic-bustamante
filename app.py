@@ -24,8 +24,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Ruta de la base de datos SQLite (usando /tmp para Render)
-DB_PATH = "/tmp/palabras_clave.db"
+# Ruta para la base de datos y prueba de escritura
+DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
+PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
 # Configuración de la base de datos SQLite
 def init_db():
@@ -70,6 +71,15 @@ def obtener_palabras_clave():
         print(f"Error al obtener palabras clave: {e}")
         return []
 
+# Prueba de escritura en el disco persistente
+def verificar_escritura_en_disco():
+    try:
+        with open(PRUEBA_PATH, "w") as archivo:
+            archivo.write("Prueba de escritura exitosa.")
+        print(f"Archivo de prueba creado en: {PRUEBA_PATH}")
+    except Exception as e:
+        print(f"Error al escribir en el disco: {e}")
+
 # Clase para el cuerpo de las solicitudes
 class UserInput(BaseModel):
     mensaje: str
@@ -83,6 +93,7 @@ SESSION_TIMEOUT = 60  # Tiempo de inactividad permitido en segundos
 @app.on_event("startup")
 def startup_event():
     print("Iniciando la aplicación...")
+    verificar_escritura_en_disco()  # Prueba de escritura
     init_db()  # Inicializa la base de datos
     start_session_cleaner()  # Inicia el limpiador de sesiones
     print("Aplicación inicializada.")
@@ -194,4 +205,3 @@ async def interactuar_con_openai(mensaje_usuario: str) -> str:
         return response.choices[0].message.content.strip()
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
-
