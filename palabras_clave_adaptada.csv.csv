@@ -1,0 +1,79 @@
+ID,palabra,categoria
+1,angustia,cuadro de angustia
+2,angustiada,cuadro de angustia
+3,mucha angustia,cuadro de angustia
+4,angustiado,cuadro de angustia
+5,ansioso,cuadro de ansiedad
+6,soy impulsiva,cuadro de impulsividad
+7,soy impulsivo,cuadro de impulsividad
+8,controlar impulsos,cuadro de impulsividad
+9,soy muy impulsiva,cuadro de impulsividad
+10,soy muy impulsivo,cuadro de impulsividad
+11,conductas impulsivas,cuadro de impulsividad
+12,impulsiva,cuadro de impulsividad
+13,impulsivo,cuadro de impulsividad
+14,inestabilidad,inestabilidad emocional
+15,cambios de animo,inestabilidad emocional
+16,cambios de anímicos,inestabilidad emocional
+17,muy inestable,inestabilidad emocional
+18,cambiante,inestabilidad emocional
+19,alterada,inestabilidad emocional
+20,cambios emocionales,inestabilidad emocional
+21,alterado,inestabilidad emocional
+22,mucha inseguridad,inseguridad emocional
+23,insegura,inseguridad emocional
+24,inseguro,inseguridad emocional
+25,me cuesta dormir,insomnio
+26,sin sueño,insomnio
+27,no puedo dormir,insomnio
+28,me enojo,irritabilidad
+29,todo me molesta,irritabilidad
+30,molesta,irritabilidad
+31,ganas de vomitar,nauseas
+32,vomitar,nauseas
+33,arcada,nauseas
+34,nervioso,nerviosismo
+35,nerviosa,nerviosismo
+36,nervios,nerviosismo
+37,muy tensionado,tensión emocional
+38,tensionada,tensión emocional
+39,tension,tensión emocional
+40,problemas de memoria,alteraciones de la memoria
+41,falta memoria,alteraciones de la memoria
+42,fallas de memoria,alteraciones de la memoria
+43,amnesia,alteraciones de la memoria
+44,desmemoriado,alteraciones de la memoria
+45,lagunas,alteraciones de la memoria
+46,olvidos,alteraciones de la memoria
+47,olvido,alteraciones de la memoria
+48,golpeada,violencia
+49,violentada,violencia
+50,agredida,violencia
+51,abusaron,violencia
+52,abuso,violencia
+53,abusada,violencia
+54,violada,violencia
+55,violado,violencia
+56,golpeado,violencia
+57,lastimado,violencia
+58,lastimada,violencia
+59,humillada,violencia
+60,tristeza,depresion
+61,compungido,depresion
+62,cansancio animico,depresion
+63,estado de agotamiento,depresion
+64,debil,depresion
+65,falta de energias,depresion
+66,fatigada,depresion
+67,fatiga,depresion
+68,fatigado,depresion
+69,autoexigencia,depresion
+70,autocritica,depresion
+71,autoreproche,depresion
+72,muy autocritico,depresion
+73,baja autoestima,depresion
+74,inferioridad,depresion
+75,no valgo,depresion
+76,me siento menos,depresion
+77,sin autoestima,depresion
+78,poco valor,depresion
