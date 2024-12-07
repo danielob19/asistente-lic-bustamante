@@ -31,6 +31,8 @@ def startup_event():
     print("Iniciando aplicación...")
     verificar_permisos()  # Llama al script de prueba de escritura
     print("Aplicación inicializada.")
+    init_db()  # Inicializa la base de datos al arrancar la aplicación
+    print("Base de datos inicializada.")
     
 # Configuración de CORS
 app.add_middleware(
@@ -43,17 +45,22 @@ app.add_middleware(
 
 # Configuración de la base de datos SQLite
 def init_db():
-    conn = sqlite3.connect("palabras_clave.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS palabras_clave (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            palabra TEXT UNIQUE NOT NULL,
-            categoria TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
+    db_path = os.path.abspath("palabras_clave.db")
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS palabras_clave (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                palabra TEXT UNIQUE NOT NULL,
+                categoria TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+        conn.close()
+        print(f"Base de datos creada o abierta en: {db_path}")
+    except Exception as e:
+        print(f"Error al inicializar la base de datos: {e}")
 
 # Lógica para registrar palabras clave nuevas
 def registrar_palabra_clave(palabra: str, categoria: str):
