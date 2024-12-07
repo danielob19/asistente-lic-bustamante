@@ -24,7 +24,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Ruta para la base de datos y prueba de escritura
+# Ruta para la base de datos
 DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
 PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
@@ -40,13 +40,21 @@ def init_db():
                 categoria TEXT NOT NULL
             )
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS interacciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                consulta TEXT NOT NULL,
+                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         conn.commit()
         conn.close()
         print(f"Base de datos creada o abierta en: {DB_PATH}")
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
-# Registro de palabras clave nuevas
+# Registrar palabra clave nueva
 def registrar_palabra_clave(palabra: str, categoria: str):
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -54,11 +62,10 @@ def registrar_palabra_clave(palabra: str, categoria: str):
         cursor.execute("INSERT OR IGNORE INTO palabras_clave (palabra, categoria) VALUES (?, ?)", (palabra, categoria))
         conn.commit()
         conn.close()
-        print(f"Palabra clave registrada: {palabra}")
     except Exception as e:
         print(f"Error al registrar palabra clave: {e}")
 
-# Obtener todas las palabras clave existentes
+# Obtener palabras clave existentes
 def obtener_palabras_clave():
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -71,32 +78,28 @@ def obtener_palabras_clave():
         print(f"Error al obtener palabras clave: {e}")
         return []
 
-# Prueba de escritura en el disco persistente
+# Verificar escritura en disco
 def verificar_escritura_en_disco():
     try:
         with open(PRUEBA_PATH, "w") as archivo:
             archivo.write("Prueba de escritura exitosa.")
-        print(f"Archivo de prueba creado en: {PRUEBA_PATH}")
     except Exception as e:
         print(f"Error al escribir en el disco: {e}")
 
-# Clase para el cuerpo de las solicitudes
+# Clase para solicitudes del usuario
 class UserInput(BaseModel):
     mensaje: str
     user_id: str
 
-# Gestión de sesiones (almacenamiento en memoria)
+# Gestión de sesiones (en memoria)
 user_sessions = {}
-SESSION_TIMEOUT = 60  # Tiempo de inactividad permitido en segundos
+SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
 
-# Inicio de la aplicación
 @app.on_event("startup")
 def startup_event():
-    print("Iniciando la aplicación...")
     verificar_escritura_en_disco()  # Prueba de escritura
-    init_db()  # Inicializa la base de datos
-    start_session_cleaner()  # Inicia el limpiador de sesiones
-    print("Aplicación inicializada.")
+    init_db()  # Inicializar base de datos
+    start_session_cleaner()  # Iniciar limpieza de sesiones
 
 # Limpieza de sesiones inactivas
 def start_session_cleaner():
@@ -119,7 +122,7 @@ def start_session_cleaner():
 def read_root():
     return {"message": "Bienvenido al asistente"}
 
-# Endpoint principal para el asistente
+# Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -142,48 +145,44 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        # Manejo explícito del mensaje "si" y similares
+        # Manejo de "sí"
         if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
             if user_sessions[user_id]["ultimo_mensaje"] in ["si", "sí", "si claro", "sí claro"]:
                 return {"respuesta": "Ya confirmaste eso. ¿Hay algo más en lo que pueda ayudarte?"}
             user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
-            return {"respuesta": "Comprendo. ¿Qué puedo hacer por vos al respecto?"}
+            return {"respuesta": "Entendido. ¿Qué más puedo hacer por vos?"}
 
-        # Detectar palabras clave
+        # Detectar y registrar nuevas palabras clave
         palabras_existentes = obtener_palabras_clave()
         nuevas_palabras = [
             palabra for palabra in mensaje_usuario.split() if palabra not in palabras_existentes
         ]
-
-        # Registrar palabras clave nuevas
         for palabra in nuevas_palabras:
             registrar_palabra_clave(palabra, "categoría pendiente")
 
-        # Reiniciar conversación
-        if mensaje_usuario == "reiniciar":
-            user_sessions.pop(user_id, None)
-            return {"respuesta": "La conversación ha sido reiniciada. Puedes empezar de nuevo."}
-
-        # Limitar el número de interacciones
+        # Mensaje de finalización de conversación
         if interacciones >= 6:
             return {
                 "respuesta": (
-                    "Si bien tengo que dar por terminada esta conversación, no obstante si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda de tu condición emocional. Si querés reiniciar un nuevo chat escribí: reiniciar."
-                )
-            }
-        
-        if interacciones == 5:
-            return {
-                "respuesta": (
-                    "Comprendo perfectamente. Si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "quien podrá ayudarte a partir de una evaluación más profunda de tu situación personal."
+                    "Finalizamos esta conversación. Si es necesario, contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186. "
+                    "Si querés reiniciar un nuevo chat, escribí: reiniciar."
                 )
             }
 
-        # Interactuar con OpenAI
+        if interacciones == 5:
+            return {
+                "respuesta": (
+                    "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "para evaluar tu situación personal."
+                )
+            }
+
+        # Reinicio de conversación
+        if mensaje_usuario == "reiniciar":
+            user_sessions.pop(user_id, None)
+            return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
+
+        # Interacción con OpenAI
         respuesta = await interactuar_con_openai(mensaje_usuario)
         return {"respuesta": respuesta}
 
