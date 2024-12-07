@@ -1,53 +1,36 @@
+import os
 import time
 import threading
+import sqlite3
+import openai
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import sqlite3
-import openai
-import os
 
-# Configuración de la clave de API
+# Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
+    raise ValueError("OPENAI_API_KEY no está configurada en las variables de entorno.")
 
-# Inicialización de la aplicación FastAPI
+# Inicialización de FastAPI
 app = FastAPI()
 
-# Script de verificación de permisos
-def verificar_permisos():
-    ruta_actual = os.getcwd()  # Obtiene el directorio actual
-    archivo_prueba = os.path.join(ruta_actual, "prueba_escritura.txt")
-    try:
-        # Intenta escribir un archivo de prueba
-        with open(archivo_prueba, "w") as archivo:
-            archivo.write("Prueba de escritura exitosa.")
-        print(f"Archivo creado exitosamente en: {archivo_prueba}")
-    except Exception as e:
-        print(f"No tienes permisos de escritura en: {ruta_actual}. Error: {e}")
-
-# Evento de inicio de FastAPI
-@app.on_event("startup")
-def startup_event():
-    print("Iniciando aplicación...")
-    verificar_permisos()  # Llama al script de prueba de escritura
-    print("Aplicación inicializada.")
-    init_db()  # Inicializa la base de datos al arrancar la aplicación
-    print("Base de datos inicializada.")
-    
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Cambiar "*" por una lista de dominios permitidos si es necesario
+    allow_origins=["*"],  # Cambiar "*" a una lista de dominios específicos si es necesario
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Ruta de la base de datos SQLite (usando /tmp para Render)
+DB_PATH = "/tmp/palabras_clave.db"
+
 # Configuración de la base de datos SQLite
 def init_db():
-    db_path = os.path.abspath("palabras_clave.db")
     try:
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS palabras_clave (
@@ -58,47 +41,51 @@ def init_db():
         """)
         conn.commit()
         conn.close()
-        print(f"Base de datos creada o abierta en: {db_path}")
+        print(f"Base de datos creada o abierta en: {DB_PATH}")
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
-# Lógica para registrar palabras clave nuevas
+# Registro de palabras clave nuevas
 def registrar_palabra_clave(palabra: str, categoria: str):
     try:
-        conn = sqlite3.connect("palabras_clave.db")
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute("INSERT OR IGNORE INTO palabras_clave (palabra, categoria) VALUES (?, ?)", (palabra, categoria))
         conn.commit()
         conn.close()
+        print(f"Palabra clave registrada: {palabra}")
     except Exception as e:
         print(f"Error al registrar palabra clave: {e}")
 
+# Obtener todas las palabras clave existentes
 def obtener_palabras_clave():
-    conn = sqlite3.connect("palabras_clave.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT palabra FROM palabras_clave")
-    palabras = [row[0] for row in cursor.fetchall()]
-    conn.close()
-    return palabras
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT palabra FROM palabras_clave")
+        palabras = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return palabras
+    except Exception as e:
+        print(f"Error al obtener palabras clave: {e}")
+        return []
 
-# Simulación de sesiones (almacenamiento en memoria)
-user_sessions = {}
-SESSION_TIMEOUT = 60  # Tiempo de inactividad permitido en segundos
-
+# Clase para el cuerpo de las solicitudes
 class UserInput(BaseModel):
     mensaje: str
     user_id: str
 
-# Ruta inicial
-@app.get("/")
-def read_root():
-    return {"message": "Bienvenido al asistente"}
+# Gestión de sesiones (almacenamiento en memoria)
+user_sessions = {}
+SESSION_TIMEOUT = 60  # Tiempo de inactividad permitido en segundos
 
-# Evento de inicio
+# Inicio de la aplicación
 @app.on_event("startup")
 def startup_event():
-    init_db()
-    start_session_cleaner()
+    print("Iniciando la aplicación...")
+    init_db()  # Inicializa la base de datos
+    start_session_cleaner()  # Inicia el limpiador de sesiones
+    print("Aplicación inicializada.")
 
 # Limpieza de sesiones inactivas
 def start_session_cleaner():
@@ -116,7 +103,12 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
-# Endpoint principal
+# Endpoint inicial
+@app.get("/")
+def read_root():
+    return {"message": "Bienvenido al asistente"}
+
+# Endpoint principal para el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -175,8 +167,8 @@ async def asistente(input_data: UserInput):
             return {
                 "respuesta": (
                     "Comprendo perfectamente. Si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "quien te podrá ayudar partiendo de una evaluación profunda de tu situación personal."
+                    "contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "para una evaluación más profunda de tu situación personal."
                 )
             }
 
@@ -202,3 +194,4 @@ async def interactuar_con_openai(mensaje_usuario: str) -> str:
         return response.choices[0].message.content.strip()
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
+
