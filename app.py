@@ -5,6 +5,7 @@ import sqlite3
 import openai
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 # Configuración de la clave de API de OpenAI
@@ -121,6 +122,13 @@ def start_session_cleaner():
 @app.get("/")
 def read_root():
     return {"message": "Bienvenido al asistente"}
+
+# Endpoint para descargar el archivo de base de datos
+@app.get("/download/palabras_clave.db")
+async def download_file():
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
 
 # Endpoint principal para interacción con el asistente
 @app.post("/asistente")
