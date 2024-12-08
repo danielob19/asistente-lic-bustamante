@@ -164,16 +164,18 @@ async def asistente(input_data: UserInput):
         if interacciones >= 6:
             return {
                 "respuesta": (
-                    "Finalizamos esta conversación. Si es necesario, contactá al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186. "
-                    "Si querés reiniciar un nuevo chat, escribí: reiniciar."
+                    "Si bien tengo que dar por terminada esta conversación, no obstante si lo considerás necesario, "
+                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "para una evaluación más profunda de tu condición emocional. Si querés reiniciar un nuevo chat escribí: reiniciar."
                 )
             }
 
         if interacciones == 5:
             return {
                 "respuesta": (
-                    "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para evaluar tu situación personal."
+                    "Comprendo perfectamente. Si lo considerás necesario, "
+                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "quien podrá ayudarte a partir de una evaluación más profunda de tu situación personal."
                 )
             }
 
