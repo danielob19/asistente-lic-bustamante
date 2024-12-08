@@ -130,6 +130,35 @@ async def download_file():
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")
     return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
 
+# Endpoint para subir el archivo de base de datos
+@app.post("/upload_file")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        with open(DB_PATH, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
+
+# Formulario para subir archivo
+@app.get("/upload_form", response_class=HTMLResponse)
+async def upload_form():
+    return """
+    <!doctype html>
+    <html>
+    <head>
+        <title>Subir palabras_clave.db</title>
+    </head>
+    <body>
+        <h1>Subir un nuevo archivo palabras_clave.db</h1>
+        <form action="/upload_file" method="post" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <button type="submit">Subir</button>
+        </form>
+    </body>
+    </html>
+    """
+
 # Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
