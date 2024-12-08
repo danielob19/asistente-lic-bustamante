@@ -22,7 +22,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Cambiar "*" a una lista de dominios específicos si es necesario
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"],  # Asegura que todos los métodos están permitidos
     allow_headers=["*"],
 )
 
@@ -132,7 +132,7 @@ async def download_file():
     return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
 
 # Endpoint para subir el archivo de base de datos
-@app.post("/upload/palabras_clave.db")
+@app.post("/upload_file")
 async def upload_file(file: UploadFile = File(...)):
     try:
         with open(DB_PATH, "wb") as buffer:
