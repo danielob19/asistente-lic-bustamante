@@ -5,7 +5,7 @@ import sqlite3
 import openai
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 import shutil
 
@@ -20,14 +20,14 @@ app = FastAPI()
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Cambiar "*" a una lista de dominios específicos si es necesario
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Asegura que todos los métodos están permitidos
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Ruta para la base de datos
-DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
+DB_PATH = "/var/data/palabras_clave.db"
 PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
 # Configuración de la base de datos SQLite
@@ -52,7 +52,6 @@ def init_db():
         """)
         conn.commit()
         conn.close()
-        print(f"Base de datos creada o abierta en: {DB_PATH}")
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
@@ -99,9 +98,9 @@ SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
 
 @app.on_event("startup")
 def startup_event():
-    verificar_escritura_en_disco()  # Prueba de escritura
-    init_db()  # Inicializar base de datos
-    start_session_cleaner()  # Iniciar limpieza de sesiones
+    verificar_escritura_en_disco()
+    init_db()
+    start_session_cleaner()
 
 # Limpieza de sesiones inactivas
 def start_session_cleaner():
@@ -122,7 +121,7 @@ def start_session_cleaner():
 # Endpoint inicial
 @app.get("/")
 def read_root():
-    return {"message": "Bienvenido al asistente"}
+    return {"message": "Bienvenido al asistente conversacional profesional y empático."}
 
 # Endpoint para descargar el archivo de base de datos
 @app.get("/download/palabras_clave.db")
@@ -141,77 +140,63 @@ async def upload_file(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
 
+# Formulario para subir archivo
+@app.get("/upload_form", response_class=HTMLResponse)
+async def upload_form():
+    return """
+    <!doctype html>
+    <html>
+    <head>
+        <title>Subir palabras_clave.db</title>
+    </head>
+    <body>
+        <h1>Subir un nuevo archivo palabras_clave.db</h1>
+        <form action="/upload_file" method="post" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <button type="submit">Subir</button>
+        </form>
+    </body>
+    </html>
+    """
+
 # Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
-    try:
-        user_id = input_data.user_id
-        mensaje_usuario = input_data.mensaje.strip().lower()
+    user_id = input_data.user_id
+    mensaje_usuario = input_data.mensaje.strip().lower()
 
-        if not mensaje_usuario:
-            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+    if not mensaje_usuario:
+        raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # Inicializar sesión si no existe
-        if user_id not in user_sessions:
-            user_sessions[user_id] = {
-                "contador_interacciones": 0,
-                "ultima_interaccion": time.time(),
-                "ultimo_mensaje": None,
-            }
-        else:
-            user_sessions[user_id]["ultima_interaccion"] = time.time()
+    if user_id not in user_sessions:
+        user_sessions[user_id] = {
+            "contador_interacciones": 0,
+            "ultima_interaccion": time.time(),
+            "ultimo_mensaje": None,
+        }
+    else:
+        user_sessions[user_id]["ultima_interaccion"] = time.time()
 
-        user_sessions[user_id]["contador_interacciones"] += 1
-        interacciones = user_sessions[user_id]["contador_interacciones"]
+    user_sessions[user_id]["contador_interacciones"] += 1
+    interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        # Reinicio de conversación
-        if mensaje_usuario == "reiniciar":
-            if user_id in user_sessions:
-                user_sessions.pop(user_id)
-                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
-            else:
-                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
+    if mensaje_usuario == "reiniciar":
+        user_sessions.pop(user_id, None)
+        return {"respuesta": "Sesión reiniciada. Podés comenzar de nuevo cuando quieras."}
 
-        # Manejo de "sí"
-        if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
-            if user_sessions[user_id]["ultimo_mensaje"] in ["si", "sí", "si claro", "sí claro"]:
-                return {"respuesta": "Ya confirmaste eso. ¿Hay algo más en lo que pueda ayudarte?"}
-            user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
-            return {"respuesta": "Entendido. ¿Qué más puedo hacer por vos?"}
+    if mensaje_usuario in ["si", "sí"]:
+        return {"respuesta": "Entendido. ¿Hay algo más que quieras saber?"}
 
-        # Detectar y registrar nuevas palabras clave
-        palabras_existentes = obtener_palabras_clave()
-        nuevas_palabras = [
-            palabra for palabra in mensaje_usuario.split() if palabra not in palabras_existentes
-        ]
-        for palabra in nuevas_palabras:
-            registrar_palabra_clave(palabra, "categoría pendiente")
+    if interacciones >= 6:
+        return {
+            "respuesta": (
+                "Si lo considerás necesario, te sugiero contactar al Lic. Daniel O. Bustamante "
+                "por WhatsApp al +54 911 3310-1186 para una evaluación más profunda."
+            )
+        }
 
-        # Mensaje de finalización de conversación
-        if interacciones >= 6:
-            return {
-                "respuesta": (
-                    "Si bien tengo que dar por terminada esta conversación, no obstante si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda de tu condición emocional. Si querés reiniciar un nuevo chat escribí: reiniciar."
-                )
-            }
-
-        if interacciones == 5:
-            return {
-                "respuesta": (
-                    "Comprendo perfectamente. Si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "quien podrá ayudarte a partir de una evaluación más profunda de tu situación personal."
-                )
-            }
-
-        # Interacción con OpenAI
-        respuesta = await interactuar_con_openai(mensaje_usuario)
-        return {"respuesta": respuesta}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+    respuesta = await interactuar_con_openai(mensaje_usuario)
+    return {"respuesta": respuesta}
 
 # Interacción con OpenAI
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
