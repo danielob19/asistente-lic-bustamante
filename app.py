@@ -3,10 +3,11 @@ import time
 import threading
 import sqlite3
 import openai
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
+import shutil
 
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
