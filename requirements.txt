@@ -3,3 +3,5 @@ pydantic
 openai==0.28
 uvicorn[standard]
 python-dotenv  # Si utilizas variables de entorno opcionales
+python-multipart
+
