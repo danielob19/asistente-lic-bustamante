@@ -149,9 +149,17 @@ async def asistente(input_data: UserInput):
             }
         else:
             user_sessions[user_id]["ultima_interaccion"] = time.time()
-            
+
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
+
+        # Reinicio de conversación
+        if mensaje_usuario == "reiniciar":
+            if user_id in user_sessions:
+                user_sessions.pop(user_id)
+                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
+            else:
+                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
 
         # Manejo de "sí"
         if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
@@ -186,11 +194,6 @@ async def asistente(input_data: UserInput):
                     "quien podrá ayudarte a partir de una evaluación más profunda de tu situación personal."
                 )
             }
-
-        # Reinicio de conversación
-        if mensaje_usuario == "reiniciar":
-            user_sessions.pop(user_id, None)
-            return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
 
         # Interacción con OpenAI
         respuesta = await interactuar_con_openai(mensaje_usuario)
