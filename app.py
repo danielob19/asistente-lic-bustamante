@@ -288,9 +288,16 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        # Interacción con OpenAI
-        respuesta = await interactuar_con_openai(mensaje_usuario)
-        return {"respuesta": respuesta}
+        # Analizar mensaje para detectar palabras clave y categorías
+        resultado_analisis = analizar_mensaje_usuario(mensaje_usuario)
+
+        # Interactuar con OpenAI para enriquecer la respuesta
+        respuesta_ai = await interactuar_con_openai(mensaje_usuario)
+
+        # Combinar la respuesta del análisis con la de OpenAI
+        respuesta_completa = f"{resultado_analisis}\n\n{respuesta_ai}"
+
+        return {"respuesta": respuesta_completa}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
