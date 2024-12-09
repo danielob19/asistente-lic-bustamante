@@ -160,6 +160,69 @@ async def upload_form():
     </html>
     """
 
+def analizar_mensaje_usuario(mensaje_usuario: str):
+    """
+    Analiza el mensaje del usuario buscando palabras clave en la base de datos,
+    identifica categorías asociadas y genera una recomendación personalizada.
+    Siempre menciona los síntomas referidos por el usuario.
+    """
+    try:
+        # Mencionar los síntomas referidos por el usuario
+        sintomas_referidos = f"Los síntomas referidos por vos son: \"{mensaje_usuario}\".\n"
+
+        # Conectar a la base de datos
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Dividir el mensaje en palabras y buscar coincidencias
+        palabras_clave = mensaje_usuario.split()
+        consulta = f"""
+            SELECT palabra, categoria 
+            FROM palabras_clave 
+            WHERE palabra IN ({','.join(['?'] * len(palabras_clave))})
+        """
+        cursor.execute(consulta, palabras_clave)
+        resultados = cursor.fetchall()
+        conn.close()
+
+        # Si no hay coincidencias, limitarse a los síntomas referidos
+        if not resultados:
+            return (
+                f"{sintomas_referidos}"
+                "No se encontraron coincidencias específicas en la base de datos. "
+                "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                "para evaluar más profundamente tu situación y ayudarte a tu recuperación."
+            )
+
+        # Agrupar palabras clave por categorías
+        categorias = {}
+        for palabra, categoria in resultados:
+            if categoria not in categorias:
+                categorias[categoria] = []
+            categorias[categoria].append(palabra)
+
+        # Construir el mensaje basado en las categorías detectadas
+        detalles = []
+        for categoria, palabras in categorias.items():
+            detalles.append(f"- {categoria}: {' '.join(palabras)}")
+
+        mensaje_base = (
+            "Hemos analizado tu mensaje y encontrado coincidencias con las siguientes categorías:\n"
+            + "\n".join(detalles)
+        )
+
+        mensaje_recomendacion = (
+            f"{sintomas_referidos}{mensaje_base}\n\n"
+            "Dado que hemos identificado posibles síntomas relacionados con estas categorías, "
+            "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+            "para una evaluación más profunda y ayudarte a tu recuperación."
+        )
+
+        return mensaje_recomendacion
+
+    except Exception as e:
+        return f"Error al analizar el mensaje: {str(e)}"
+
 # Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
