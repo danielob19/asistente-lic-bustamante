@@ -258,10 +258,12 @@ async def asistente(input_data: UserInput):
 
         # Manejo de "sí" o "no"
         if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
+            print(f"Mensaje recibido: {mensaje_usuario}. Respuesta generada: 'Entendido. ¿Podrías contarme más sobre lo que estás sintiendo?'")
             return {"respuesta": "Entendido. ¿Podrías contarme más sobre lo que estás sintiendo?"}
         elif mensaje_usuario in ["no", "no sé", "tal vez"]:
+            print(f"Mensaje recibido: {mensaje_usuario}. Respuesta generada: 'Está bien, toma tu tiempo. Estoy aquí para escucharte.'")
             return {"respuesta": "Está bien, toma tu tiempo. Estoy aquí para escucharte."}
-
+    
         # Respuesta durante las primeras interacciones (1 a 5)
         if interacciones < 6:
             respuesta_ai = await interactuar_con_openai(mensaje_usuario)
