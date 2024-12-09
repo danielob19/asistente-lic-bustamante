@@ -195,7 +195,9 @@ async def asistente(input_data: UserInput):
         if interacciones > 5:
             user_sessions.pop(user_id, None)  # Asegurar que la sesión se elimina
             return {
-                "respuesta": "La conversación ha finalizado. Si querés reiniciar, escribí **reiniciar**."
+                "respuesta": "Si bien debo finalizar nuestra conversación, igualmente te sugiero"
+                "contactar al Lic. Daniel O. Bustamante al whatsapp +54 911 3310-1186 para una mejor evaluación"
+                "de tu malestar psicológico y anímico. Si querés reiniciar, escribí **reiniciar**."
             }
 
         # Reinicio de conversación
@@ -227,7 +229,8 @@ async def asistente(input_data: UserInput):
                 f"El usuario compartió los siguientes síntomas: \"{sintomas_usuario}\".\n\n"
                 f"Resultado del análisis: {resultado_analisis}\n\n"
                 "Redacta una respuesta profesional y empática que mencione los síntomas, posibles cuadros o estados, "
-                "y sugiera al usuario contactar al Lic. Daniel O. Bustamante para una evaluación más profunda."
+                "y sugiera al usuario contactar al Lic. Daniel O. Bustamante al whatsapp +54 911 3310-1186 para una evaluación "
+                "más profunda de su malestar psicológico."
             )
             respuesta_final = await interactuar_con_openai(prompt)
             user_sessions.pop(user_id, None)  # Limpiar la sesión
@@ -243,7 +246,7 @@ async def interactuar_con_openai(mensaje_usuario: str) -> str:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Eres un asistente conversacional profesional y empático."},
+                {"role": "system", "content": "Eres un asistente conversacional profesional."},
                 {"role": "user", "content": mensaje_usuario}
             ],
             max_tokens=200,
