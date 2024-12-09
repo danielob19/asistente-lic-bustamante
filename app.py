@@ -254,7 +254,7 @@ async def asistente(input_data: UserInput):
         # Reinicio de conversación
         if mensaje_usuario == "reiniciar":
             user_sessions.pop(user_id, None)
-            return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
+            return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras escribiendo **reiniciar**."}
 
         # Manejo de "sí" o "no"
         if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
@@ -288,14 +288,15 @@ async def asistente(input_data: UserInput):
             respuesta_final = await interactuar_con_openai(prompt)
 
             # Limpiar sesión después de responder
-            user_sessions.pop(user_id)
+            user_sessions.pop(user_id, None)
 
             return {"respuesta": respuesta_final}
 
         # Interacciones posteriores a la sexta (bloquear conversación)
         if interacciones > 6:
+            user_sessions.pop(user_id, None)  # Eliminar la sesión si no fue eliminada en la sexta interacción
             return {
-                "respuesta": "La conversación ha finalizado. Si querés reiniciar, escribí 'reiniciar'."
+                "respuesta": "La conversación ha finalizado. Si querés reiniciar, escribí **reiniciar**."
             }
 
     except Exception as e:
