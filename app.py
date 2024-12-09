@@ -263,7 +263,7 @@ async def asistente(input_data: UserInput):
         elif mensaje_usuario in ["no", "no sé", "tal vez"]:
             print(f"Mensaje recibido: {mensaje_usuario}. Respuesta generada: 'Está bien, toma tu tiempo. Estoy aquí para escucharte.'")
             return {"respuesta": "Está bien, toma tu tiempo. Estoy aquí para escucharte."}
-    
+
         # Respuesta durante las primeras interacciones (1 a 5)
         if interacciones < 6:
             respuesta_ai = await interactuar_con_openai(mensaje_usuario)
@@ -291,6 +291,12 @@ async def asistente(input_data: UserInput):
             user_sessions.pop(user_id)
 
             return {"respuesta": respuesta_final}
+
+        # Interacciones posteriores a la sexta (bloquear conversación)
+        if interacciones > 6:
+            return {
+                "respuesta": "La conversación ha finalizado. Si querés reiniciar, escribí 'reiniciar'."
+            }
 
     except Exception as e:
         print(f"Error interno: {e}")
