@@ -239,61 +239,59 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
-                "ultimo_mensaje": None,
+                "mensajes": [],
             }
         else:
             user_sessions[user_id]["ultima_interaccion"] = time.time()
 
+        # Incrementar contador de interacciones
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
+        # Almacenar mensaje del usuario
+        user_sessions[user_id]["mensajes"].append(mensaje_usuario)
+
         # Reinicio de conversación
         if mensaje_usuario == "reiniciar":
-            if user_id in user_sessions:
-                user_sessions.pop(user_id)
-                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
-            else:
-                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
+            user_sessions.pop(user_id, None)
+            return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
 
-        # Manejo de "sí"
+        # Manejo de "sí" o "no"
         if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
-            if user_sessions[user_id]["ultimo_mensaje"] in ["si", "sí", "si claro", "sí claro"]:
-                return {"respuesta": "Ya confirmaste eso. ¿Hay algo más en lo que pueda ayudarte?"}
-            user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
-            return {"respuesta": "Entendido. ¿Qué más puedo hacer por vos?"}
+            return {"respuesta": "Entendido. ¿Podrías contarme más sobre lo que estás sintiendo?"}
+        elif mensaje_usuario in ["no", "no sé", "tal vez"]:
+            return {"respuesta": "Está bien, toma tu tiempo. Estoy aquí para escucharte."}
 
-        # Detectar y registrar nuevas palabras clave
-        palabras_existentes = obtener_palabras_clave()
-        nuevas_palabras = [
-            palabra for palabra in mensaje_usuario.split() if palabra not in palabras_existentes
-        ]
-        for palabra in nuevas_palabras:
-            registrar_palabra_clave(palabra, "categoría pendiente")
+        # Respuesta durante las primeras interacciones (1 a 5)
+        if interacciones < 6:
+            respuesta_ai = await interactuar_con_openai(mensaje_usuario)
+            return {"respuesta": respuesta_ai}
 
-        # Mensaje de finalización de conversación
-        if interacciones >= 6:
-            return {
-                "respuesta": (
-                    "Si bien tengo que dar por terminada esta conversación, no obstante si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda de tu condición emocional. Si querés reiniciar un nuevo chat escribí: reiniciar."
-                )
-            }
+        # Sexta interacción: análisis completo
+        if interacciones == 6:
+            # Obtener todos los mensajes acumulados
+            sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
 
-        if interacciones == 5:
-            return {
-                "respuesta": (
-                    "Comprendo perfectamente. Si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "quien podrá ayudarte a partir de una evaluación más profunda de tu situación personal."
-                )
-            }
+            # Analizar el mensaje para palabras clave y categorías
+            resultado_analisis = analizar_mensaje_usuario(sintomas_usuario)
 
-        # Interacción con OpenAI
-        respuesta = await interactuar_con_openai(mensaje_usuario)
-        return {"respuesta": respuesta}
+            # Generar respuesta final con OpenAI
+            prompt = (
+                f"El usuario compartió los siguientes síntomas: \"{sintomas_usuario}\".\n\n"
+                f"Resultado del análisis: {resultado_analisis}\n\n"
+                "Redacta una respuesta profesional y empática que mencione los síntomas, posibles cuadros o estados, "
+                "y sugiera al usuario contactar al Lic. Daniel O. Bustamante para una evaluación más profunda."
+            )
+
+            respuesta_final = await interactuar_con_openai(prompt)
+
+            # Limpiar sesión después de responder
+            user_sessions.pop(user_id)
+
+            return {"respuesta": respuesta_final}
 
     except Exception as e:
+        print(f"Error interno: {e}")
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 # Interacción con OpenAI
