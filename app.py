@@ -254,6 +254,13 @@ async def asistente(input_data: UserInput):
         # Registro para depuración
         print(f"Usuario: {user_id}, Interacciones: {interacciones}, Mensajes: {user_sessions[user_id]['mensajes']}")
 
+        # Bloquear cualquier interacción después de la quinta
+        if interacciones > 5:
+            print(f"Usuario {user_id}: Intento de interacción adicional bloqueado después de la quinta interacción.")
+            return {
+                "respuesta": "La conversación ha finalizado. Si querés reiniciar, escribí **reiniciar**."
+            }
+
         # Reinicio de conversación
         if mensaje_usuario == "reiniciar":
             user_sessions.pop(user_id, None)
@@ -265,13 +272,13 @@ async def asistente(input_data: UserInput):
         elif mensaje_usuario in ["no", "no sé", "tal vez"]:
             return {"respuesta": "Está bien, toma tu tiempo. Estoy aquí para escucharte."}
 
-        # Respuesta durante las primeras interacciones (1 a 5)
-        if interacciones < 6:
+        # Respuesta durante las primeras interacciones (1 a 4)
+        if interacciones < 5:
             respuesta_ai = await interactuar_con_openai(mensaje_usuario)
             return {"respuesta": respuesta_ai}
 
-        # Sexta interacción: análisis completo
-        if interacciones == 6:
+        # Quinta interacción: análisis completo
+        if interacciones == 5:
             # Obtener todos los mensajes acumulados
             sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
 
@@ -292,13 +299,6 @@ async def asistente(input_data: UserInput):
             user_sessions.pop(user_id, None)
 
             return {"respuesta": respuesta_final}
-
-        # Interacciones posteriores a la sexta (bloquear conversación)
-        if interacciones > 6:
-            user_sessions.pop(user_id, None)  # Asegurar que la sesión se elimina
-            return {
-                "respuesta": "La conversación ha finalizado. Si querés reiniciar, escribí **reiniciar**."
-            }
 
     except Exception as e:
         print(f"Error interno: {e}")
