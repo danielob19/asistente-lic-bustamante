@@ -119,70 +119,6 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
-# Nueva función: analizar mensaje del usuario
-def analizar_mensaje_usuario(mensaje_usuario: str):
-    """
-    Analiza el mensaje del usuario buscando palabras clave en la base de datos,
-    identifica categorías asociadas y genera una recomendación personalizada.
-    Siempre menciona los síntomas referidos por el usuario.
-    """
-    try:
-        # Mencionar los síntomas referidos por el usuario
-        sintomas_referidos = f"Los síntomas referidos por vos son: \"{mensaje_usuario}\".\n"
-
-        # Conectar a la base de datos
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-
-        # Dividir el mensaje en palabras y buscar coincidencias
-        palabras_clave = mensaje_usuario.split()
-        consulta = f"""
-            SELECT palabra, categoria 
-            FROM palabras_clave 
-            WHERE palabra IN ({','.join(['?'] * len(palabras_clave))})
-        """
-        cursor.execute(consulta, palabras_clave)
-        resultados = cursor.fetchall()
-        conn.close()
-
-        # Si no hay coincidencias, limitarse a los síntomas referidos
-        if not resultados:
-            return (
-                f"{sintomas_referidos}"
-                "No se encontraron coincidencias específicas en la base de datos. "
-                "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                "para evaluar más profundamente tu situación y ayudarte a tu recuperación."
-            )
-
-        # Agrupar palabras clave por categorías
-        categorias = {}
-        for palabra, categoria in resultados:
-            if categoria not in categorias:
-                categorias[categoria] = []
-            categorias[categoria].append(palabra)
-
-        # Construir el mensaje basado en las categorías detectadas
-        detalles = []
-        for categoria, palabras in categorias.items():
-            detalles.append(f"- {categoria}: {' '.join(palabras)}")
-
-        mensaje_base = (
-            "Hemos analizado tu mensaje y encontrado coincidencias con las siguientes categorías:\n"
-            + "\n".join(detalles)
-        )
-
-        mensaje_recomendacion = (
-            f"{sintomas_referidos}{mensaje_base}\n\n"
-            "Dado que hemos identificado posibles síntomas relacionados con estas categorías, "
-            "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-            "para una evaluación más profunda y ayudarte a tu recuperación."
-        )
-
-        return mensaje_recomendacion
-
-    except Exception as e:
-        return f"Error al analizar el mensaje: {str(e)}"
-
 # Endpoint inicial
 @app.get("/")
 def read_root():
@@ -240,6 +176,7 @@ async def asistente(input_data: UserInput):
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "mensajes": [],
+                "ultimo_mensaje": None,
             }
         else:
             user_sessions[user_id]["ultima_interaccion"] = time.time()
@@ -251,12 +188,9 @@ async def asistente(input_data: UserInput):
         # Almacenar mensaje del usuario
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
 
-        # Registro para depuración
-        print(f"Usuario: {user_id}, Interacciones: {interacciones}, Mensajes: {user_sessions[user_id]['mensajes']}")
-
         # Bloquear cualquier interacción después de la quinta
         if interacciones > 5:
-            print(f"Usuario {user_id}: Intento de interacción adicional bloqueado después de la quinta interacción.")
+            user_sessions.pop(user_id, None)  # Asegurar que la sesión se elimina
             return {
                 "respuesta": "La conversación ha finalizado. Si querés reiniciar, escribí **reiniciar**."
             }
@@ -266,10 +200,15 @@ async def asistente(input_data: UserInput):
             user_sessions.pop(user_id, None)
             return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras escribiendo **reiniciar**."}
 
-        # Manejo de "sí" o "no"
+        # Manejo de "sí"
         if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
+            if user_sessions[user_id]["ultimo_mensaje"] in ["si", "sí", "si claro", "sí claro"]:
+                return {"respuesta": "Ya confirmaste eso. ¿Hay algo más en lo que pueda ayudarte?"}
+            user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
             return {"respuesta": "Entendido. ¿Podrías contarme más sobre lo que estás sintiendo?"}
-        elif mensaje_usuario in ["no", "no sé", "tal vez"]:
+
+        # Manejo de "no"
+        if mensaje_usuario in ["no", "no sé", "tal vez"]:
             return {"respuesta": "Está bien, toma tu tiempo. Estoy aquí para escucharte."}
 
         # Respuesta durante las primeras interacciones (1 a 4)
@@ -279,25 +218,16 @@ async def asistente(input_data: UserInput):
 
         # Quinta interacción: análisis completo
         if interacciones == 5:
-            # Obtener todos los mensajes acumulados
             sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
-
-            # Analizar el mensaje para palabras clave y categorías
             resultado_analisis = analizar_mensaje_usuario(sintomas_usuario)
-
-            # Generar respuesta final con OpenAI
             prompt = (
                 f"El usuario compartió los siguientes síntomas: \"{sintomas_usuario}\".\n\n"
                 f"Resultado del análisis: {resultado_analisis}\n\n"
                 "Redacta una respuesta profesional y empática que mencione los síntomas, posibles cuadros o estados, "
                 "y sugiera al usuario contactar al Lic. Daniel O. Bustamante para una evaluación más profunda."
             )
-
             respuesta_final = await interactuar_con_openai(prompt)
-
-            # Limpiar sesión después de responder
-            user_sessions.pop(user_id, None)
-
+            user_sessions.pop(user_id, None)  # Limpiar la sesión
             return {"respuesta": respuesta_final}
 
     except Exception as e:
