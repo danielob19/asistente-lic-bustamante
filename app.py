@@ -251,6 +251,9 @@ async def asistente(input_data: UserInput):
         # Almacenar mensaje del usuario
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
 
+        # Registro para depuración
+        print(f"Usuario: {user_id}, Interacciones: {interacciones}, Mensajes: {user_sessions[user_id]['mensajes']}")
+
         # Reinicio de conversación
         if mensaje_usuario == "reiniciar":
             user_sessions.pop(user_id, None)
@@ -258,10 +261,8 @@ async def asistente(input_data: UserInput):
 
         # Manejo de "sí" o "no"
         if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
-            print(f"Mensaje recibido: {mensaje_usuario}. Respuesta generada: 'Entendido. ¿Podrías contarme más sobre lo que estás sintiendo?'")
             return {"respuesta": "Entendido. ¿Podrías contarme más sobre lo que estás sintiendo?"}
         elif mensaje_usuario in ["no", "no sé", "tal vez"]:
-            print(f"Mensaje recibido: {mensaje_usuario}. Respuesta generada: 'Está bien, toma tu tiempo. Estoy aquí para escucharte.'")
             return {"respuesta": "Está bien, toma tu tiempo. Estoy aquí para escucharte."}
 
         # Respuesta durante las primeras interacciones (1 a 5)
@@ -294,7 +295,7 @@ async def asistente(input_data: UserInput):
 
         # Interacciones posteriores a la sexta (bloquear conversación)
         if interacciones > 6:
-            user_sessions.pop(user_id, None)  # Eliminar la sesión si no fue eliminada en la sexta interacción
+            user_sessions.pop(user_id, None)  # Asegurar que la sesión se elimina
             return {
                 "respuesta": "La conversación ha finalizado. Si querés reiniciar, escribí **reiniciar**."
             }
