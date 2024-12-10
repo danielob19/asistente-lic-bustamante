@@ -176,16 +176,16 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        user_sessions[user_id]["mensajes"].append(mensaje_usuario)
-
         if interacciones > MAX_INTERACTIONS:
-            user_sessions.pop(user_id, None)
+            del user_sessions[user_id]  # Asegura que la sesión se elimina estrictamente
             return {
                 "respuesta": "Si bien debo finalizar nuestra conversación, igualmente te sugiero contactar al Lic. Daniel O. Bustamante al whatsapp +54 911 3310-1186 para una mejor evaluación de tu malestar psicológico y anímico. Si querés reiniciar, escribí **reiniciar**."
             }
 
+        user_sessions[user_id]["mensajes"].append(mensaje_usuario)
+
         if mensaje_usuario == "reiniciar":
-            user_sessions.pop(user_id, None)
+            del user_sessions[user_id]
             return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras escribiendo **reiniciar**."}
 
         if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
@@ -197,11 +197,11 @@ async def asistente(input_data: UserInput):
         if mensaje_usuario in ["no", "no sé", "tal vez"]:
             return {"respuesta": "Está bien, toma tu tiempo. Estoy aquí para escucharte."}
 
-        if interacciones < 5:
+        if interacciones < MAX_INTERACTIONS:
             respuesta_ai = await interactuar_con_openai(mensaje_usuario)
             return {"respuesta": respuesta_ai}
 
-        if interacciones == 5:
+        if interacciones == MAX_INTERACTIONS:
             sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
             resultado_analisis = analizar_mensaje_usuario(sintomas_usuario)
             prompt = (
@@ -212,7 +212,7 @@ async def asistente(input_data: UserInput):
                 "más profunda de su malestar psicológico."
             )
             respuesta_final = await interactuar_con_openai(prompt)
-            user_sessions.pop(user_id, None)
+            del user_sessions[user_id]  # Elimina la sesión después de procesar la interacción
             return {"respuesta": respuesta_final}
 
     except Exception as e:
