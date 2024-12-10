@@ -233,3 +233,5 @@ async def interactuar_con_openai(mensaje_usuario: str) -> str:
         return response.choices[0].message.content.strip()
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
+        print(f"Usuario: {user_id}, Interacciones: {interacciones}")
+
