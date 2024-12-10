@@ -96,6 +96,7 @@ class UserInput(BaseModel):
 # Gestión de sesiones (en memoria)
 user_sessions = {}
 SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
+MAX_INTERACTIONS = 5  # Máximo de interacciones permitidas
 
 @app.on_event("startup")
 def startup_event():
@@ -121,16 +122,9 @@ def start_session_cleaner():
 
 # Analizar mensaje del usuario
 def analizar_mensaje_usuario(mensaje_usuario: str) -> str:
-    """
-    Analiza el mensaje del usuario buscando palabras clave en la base de datos,
-    identifica categorías asociadas y genera un análisis resumido.
-    """
     try:
-        # Conectar a la base de datos
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-
-        # Dividir el mensaje en palabras y buscar coincidencias
         palabras_clave = mensaje_usuario.split()
         consulta = f"""
             SELECT palabra, categoria 
@@ -141,18 +135,15 @@ def analizar_mensaje_usuario(mensaje_usuario: str) -> str:
         resultados = cursor.fetchall()
         conn.close()
 
-        # Si no hay coincidencias
         if not resultados:
             return "No se encontraron coincidencias en la base de datos para los síntomas proporcionados."
 
-        # Agrupar palabras clave por categorías
         categorias = {}
         for palabra, categoria in resultados:
             if categoria not in categorias:
                 categorias[categoria] = []
             categorias[categoria].append(palabra)
 
-        # Construir el mensaje basado en las categorías detectadas
         detalles = []
         for categoria, palabras in categorias.items():
             detalles.append(f"{categoria}: {' '.join(palabras)}")
@@ -163,7 +154,6 @@ def analizar_mensaje_usuario(mensaje_usuario: str) -> str:
         print(f"Error al analizar el mensaje: {e}")
         return "Hubo un error al analizar los síntomas. Por favor, intenta nuevamente más tarde."
 
-# Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -173,7 +163,6 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # Inicializar sesión si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
@@ -184,44 +173,34 @@ async def asistente(input_data: UserInput):
         else:
             user_sessions[user_id]["ultima_interaccion"] = time.time()
 
-        # Incrementar contador de interacciones
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        # Almacenar mensaje del usuario
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
 
-        # Bloquear cualquier interacción después de la quinta
-        if interacciones > 5:
-            user_sessions.pop(user_id, None)  # Asegurar que la sesión se elimina
+        if interacciones > MAX_INTERACTIONS:
+            user_sessions.pop(user_id, None)
             return {
-                "respuesta": "Si bien debo finalizar nuestra conversación, igualmente te sugiero"
-                "contactar al Lic. Daniel O. Bustamante al whatsapp +54 911 3310-1186 para una mejor evaluación"
-                "de tu malestar psicológico y anímico. Si querés reiniciar, escribí **reiniciar**."
+                "respuesta": "Si bien debo finalizar nuestra conversación, igualmente te sugiero contactar al Lic. Daniel O. Bustamante al whatsapp +54 911 3310-1186 para una mejor evaluación de tu malestar psicológico y anímico. Si querés reiniciar, escribí **reiniciar**."
             }
 
-        # Reinicio de conversación
         if mensaje_usuario == "reiniciar":
             user_sessions.pop(user_id, None)
             return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras escribiendo **reiniciar**."}
 
-        # Manejo de "sí"
         if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
             if user_sessions[user_id]["ultimo_mensaje"] in ["si", "sí", "si claro", "sí claro"]:
                 return {"respuesta": "Ya confirmaste eso. ¿Hay algo más en lo que pueda ayudarte?"}
             user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
             return {"respuesta": "Entendido. ¿Podrías contarme más sobre lo que estás sintiendo?"}
 
-        # Manejo de "no"
         if mensaje_usuario in ["no", "no sé", "tal vez"]:
             return {"respuesta": "Está bien, toma tu tiempo. Estoy aquí para escucharte."}
 
-        # Respuesta durante las primeras interacciones (1 a 4)
         if interacciones < 5:
             respuesta_ai = await interactuar_con_openai(mensaje_usuario)
             return {"respuesta": respuesta_ai}
 
-        # Quinta interacción: análisis completo
         if interacciones == 5:
             sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
             resultado_analisis = analizar_mensaje_usuario(sintomas_usuario)
@@ -233,14 +212,13 @@ async def asistente(input_data: UserInput):
                 "más profunda de su malestar psicológico."
             )
             respuesta_final = await interactuar_con_openai(prompt)
-            user_sessions.pop(user_id, None)  # Limpiar la sesión
+            user_sessions.pop(user_id, None)
             return {"respuesta": respuesta_final}
 
     except Exception as e:
         print(f"Error interno: {e}")
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
-# Interacción con OpenAI
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
     try:
         response = openai.ChatCompletion.create(
