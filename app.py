@@ -224,7 +224,7 @@ async def interactuar_con_openai(mensaje_usuario: str) -> str:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Eres un asistente conversacional profesional."},
+                {"role": "system", "content": "Eres un asistente psicologico profesional que interactua unicamente 5 veces con el Usuario."},
                 {"role": "user", "content": mensaje_usuario}
             ],
             max_tokens=200,
