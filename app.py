@@ -234,33 +234,36 @@ async def asistente(input_data: UserInput):
         if interacciones >= 6:
             malestares_usuario = user_sessions[user_id]["malestares"]
             posibles_afecciones = analizar_posibles_afecciones_final(malestares_usuario)
+
+            malestares_list = ", ".join(malestares_usuario)
             posibles_afecciones_str = ". ".join(
                 f"{categoria}: {', '.join(malestares)}" for categoria, malestares in posibles_afecciones.items()
             )
 
             return {
                 "respuesta": (
-                    "Si bien tengo que dar por terminada esta conversación, no obstante si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda de tu condición emocional. "
-                    f"Aquí tienes un resumen de lo analizado: {posibles_afecciones_str}. "
-                    "Si querés reiniciar un nuevo chat escribí: reiniciar."
+                    f"Durante esta conversación mencionaste los siguientes aspectos de tu malestar anímico: {malestares_list}. "
+                    f"Esto podría estar relacionado con las siguientes posibles afecciones: {posibles_afecciones_str}. "
+                    "Si lo considerás necesario, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "para una evaluación más profunda. Si querés reiniciar un nuevo chat escribí: reiniciar."
                 )
             }
 
         if interacciones == 5:
             malestares_usuario = user_sessions[user_id]["malestares"]
             posibles_afecciones = analizar_posibles_afecciones_final(malestares_usuario)
+
+            malestares_list = ", ".join(malestares_usuario)
             posibles_afecciones_str = ". ".join(
                 f"{categoria}: {', '.join(malestares)}" for categoria, malestares in posibles_afecciones.items()
             )
 
             return {
                 "respuesta": (
-                    "Comprendo perfectamente. Si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "quien podrá ayudarte a partir de una evaluación más profunda de tu situación personal. "
-                    f"Aquí tienes un resumen de lo analizado: {posibles_afecciones_str}."
+                    f"Hasta ahora has mencionado los siguientes aspectos de tu malestar anímico: {malestares_list}. "
+                    f"Esto podría estar relacionado con las siguientes posibles afecciones: {posibles_afecciones_str}. "
+                    "Si lo considerás necesario, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "quien podrá ayudarte con una evaluación más profunda."
                 )
             }
 
