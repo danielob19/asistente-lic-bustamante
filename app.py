@@ -205,6 +205,17 @@ async def asistente(input_data: UserInput):
             user_sessions.pop(user_id, None)
             return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras escribiendo **reiniciar**."}
 
+        # Manejo de "sí"
+        if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
+            if user_sessions[user_id]["ultimo_mensaje"] in ["si", "sí", "si claro", "sí claro"]:
+                return {"respuesta": "Ya confirmaste eso. ¿Hay algo más en lo que pueda ayudarte?"}
+            user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
+            return {"respuesta": "Entendido. ¿Podrías contarme más sobre lo que estás sintiendo?"}
+
+        # Manejo de "no"
+        if mensaje_usuario in ["no", "no sé", "tal vez"]:
+            return {"respuesta": "Está bien, toma tu tiempo. Estoy aquí para escucharte."}
+
         # Respuesta durante las primeras interacciones (1 a 4)
         if interacciones < 5:
             respuesta_ai = await interactuar_con_openai(mensaje_usuario)
