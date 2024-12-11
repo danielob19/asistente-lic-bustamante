@@ -80,6 +80,23 @@ def obtener_palabras_clave():
         print(f"Error al obtener palabras clave: {e}")
         return []
 
+# Obtener categorías asociadas a los síntomas
+def obtener_categorias(sintomas):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        categorias = set()
+        for sintoma in sintomas:
+            cursor.execute("SELECT categoria FROM palabras_clave WHERE palabra LIKE ?", (f"%{sintoma}%",))
+            resultados = cursor.fetchall()
+            for resultado in resultados:
+                categorias.add(resultado[0])
+        conn.close()
+        return list(categorias)
+    except Exception as e:
+        print(f"Error al obtener categorías: {e}")
+        return []
+
 # Verificar escritura en disco
 def verificar_escritura_en_disco():
     try:
@@ -176,12 +193,17 @@ async def asistente(input_data: UserInput):
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "ultimo_mensaje": None,
+                "sintomas": []
             }
         else:
             user_sessions[user_id]["ultima_interaccion"] = time.time()
 
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
+
+        # Guardar síntomas mencionados por el usuario
+        sintomas_usuario = mensaje_usuario.split()
+        user_sessions[user_id]["sintomas"].extend(sintomas_usuario)
 
         # Reinicio de conversación
         if mensaje_usuario == "reiniciar":
@@ -208,20 +230,30 @@ async def asistente(input_data: UserInput):
 
         # Mensaje de finalización de conversación
         if interacciones >= 6:
+            categorias_detectadas = obtener_categorias(user_sessions[user_id]["sintomas"])
+            sintomas_unicos = set(user_sessions[user_id]["sintomas"])
+            categorias_texto = ", ".join(categorias_detectadas)
+
             return {
                 "respuesta": (
-                    "Si bien tengo que dar por terminada esta conversación, no obstante si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda de tu condición emocional. Si querés reiniciar un nuevo chat escribí: reiniciar."
+                    f"Has mencionado los siguientes síntomas: {', '.join(sintomas_unicos)}. "
+                    f"Esto podría estar relacionado con la siguiente posible afección: {categorias_texto}. "
+                    "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más profunda. "
+                    "Si querés reiniciar un nuevo chat escribí: reiniciar."
                 )
             }
 
         if interacciones == 5:
+            categorias_detectadas = obtener_categorias(user_sessions[user_id]["sintomas"])
+            sintomas_unicos = set(user_sessions[user_id]["sintomas"])
+            categorias_texto = ", ".join(categorias_detectadas)
+
             return {
                 "respuesta": (
-                    "Comprendo perfectamente. Si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "quien podrá ayudarte a partir de una evaluación más profunda de tu situación personal."
+                    f"Entendido. Has mencionado los siguientes síntomas: {', '.join(sintomas_unicos)}. "
+                    f"Esto podría estar relacionado con la siguiente posible afección: {categorias_texto}. "
+                    "Si lo considerás necesario, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "para una evaluación más profunda de tu situación personal."
                 )
             }
 
