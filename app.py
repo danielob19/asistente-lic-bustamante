@@ -201,6 +201,10 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
+        # Detener respuestas después de la interacción 6
+        if interacciones > 6:
+            return
+
         # Guardar síntomas mencionados por el usuario
         sintomas_usuario = mensaje_usuario.split()
         user_sessions[user_id]["sintomas"].extend(sintomas_usuario)
@@ -229,7 +233,7 @@ async def asistente(input_data: UserInput):
             registrar_palabra_clave(palabra, "categoría pendiente")
 
         # Mensaje de finalización de conversación
-        if interacciones >= 6:
+        if interacciones == 6:
             categorias_detectadas = obtener_categorias(user_sessions[user_id]["sintomas"])
             sintomas_unicos = set(user_sessions[user_id]["sintomas"])
             categorias_texto = ", ".join(categorias_detectadas)
@@ -254,14 +258,6 @@ async def asistente(input_data: UserInput):
                     f"Esto podría estar relacionado con la siguiente posible afección: {categorias_texto}. "
                     "Si lo considerás necesario, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
                     "para una evaluación más profunda de tu situación personal."
-                )
-            }
-
-        if interacciones > 6:
-            return {
-                "respuesta": (
-                    "La sesión ha alcanzado su límite de interacciones. Si necesitas más ayuda, reinicia el chat escribiendo: reiniciar. "
-                    "También podés contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186."
                 )
             }
 
