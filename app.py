@@ -254,7 +254,7 @@ async def asistente(input_data: UserInput):
 
             return {
                 "respuesta": (
-                    f"Comprendo perfectamente, tus síntomas: {', '.join(sintomas_unicos)} "
+                    f"Comprendo perfectamente, tus síntomas de {', '.join(sintomas_unicos)} "
                     f"podrían estar relacionados afecciónes tales como {categorias_texto}. "
                     "Si lo considerás necesario, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
                     "para una evaluación más profunda de tu situación personal."
