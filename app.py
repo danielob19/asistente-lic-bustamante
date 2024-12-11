@@ -160,26 +160,7 @@ async def upload_form():
     </html>
     """
 
-# Nueva función para analizar coincidencias y sus agrupaciones por interacción final
-def analizar_posibles_afecciones_final(malestares):
-    try:
-        conexion = sqlite3.connect(DB_PATH)
-        cursor = conexion.cursor()
-        posibles_afecciones = {}
-
-        for malestar in set(malestares):
-            cursor.execute("SELECT categoria FROM palabras_clave WHERE palabra LIKE ?", (f"%{malestar}%",))
-            resultados = cursor.fetchall()
-            for categoria, in resultados:
-                if categoria != "categoría pendiente":
-                    if categoria not in posibles_afecciones:
-                        posibles_afecciones[categoria] = malestar
-
-        conexion.close()
-        return posibles_afecciones
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al analizar malestares: {str(e)}")
-
+# Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -195,7 +176,6 @@ async def asistente(input_data: UserInput):
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "ultimo_mensaje": None,
-                "malestares": []
             }
         else:
             user_sessions[user_id]["ultima_interaccion"] = time.time()
@@ -226,45 +206,22 @@ async def asistente(input_data: UserInput):
         for palabra in nuevas_palabras:
             registrar_palabra_clave(palabra, "categoría pendiente")
 
-        # Agregar palabras del mensaje como posibles malestares
-        user_sessions[user_id]["malestares"].extend(mensaje_usuario.split())
-
-        # Mensaje de finalización de conversación con análisis de posibles afecciones
+        # Mensaje de finalización de conversación
         if interacciones >= 6:
-            malestares_usuario = user_sessions[user_id]["malestares"]
-            posibles_afecciones = analizar_posibles_afecciones_final(malestares_usuario)
-
-            malestares_list = ", ".join(set(malestares_usuario))
-            posibles_afecciones_str = ". ".join(
-                f"{categoria}: {malestar}" for categoria, malestar in posibles_afecciones.items()
-            )
-
-            user_sessions.pop(user_id, None)  # Finalizar sesión después de 6 interacciones
-
             return {
                 "respuesta": (
-                    f"Durante esta conversación mencionaste los siguientes aspectos de tu malestar anímico: {malestares_list}. "
-                    f"Esto podría estar relacionado con las siguientes posibles afecciones: {posibles_afecciones_str}. "
-                    "Si lo considerás necesario, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda. Si querés reiniciar un nuevo chat escribí: reiniciar."
+                    "Si bien tengo que dar por terminada esta conversación, no obstante si lo considerás necesario, "
+                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "para una evaluación más profunda de tu condición emocional. Si querés reiniciar un nuevo chat escribí: reiniciar."
                 )
             }
 
         if interacciones == 5:
-            malestares_usuario = user_sessions[user_id]["malestares"]
-            posibles_afecciones = analizar_posibles_afecciones_final(malestares_usuario)
-
-            malestares_list = ", ".join(set(malestares_usuario))
-            posibles_afecciones_str = ". ".join(
-                f"{categoria}: {malestar}" for categoria, malestar in posibles_afecciones.items()
-            )
-
             return {
                 "respuesta": (
-                    f"Hasta ahora has mencionado los siguientes aspectos de tu malestar anímico: {malestares_list}. "
-                    f"Esto podría estar relacionado con las siguientes posibles afecciones: {posibles_afecciones_str}. "
-                    "Si lo considerás necesario, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "quien podrá ayudarte con una evaluación más profunda."
+                    "Comprendo perfectamente. Si lo considerás necesario, "
+                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
+                    "quien podrá ayudarte a partir de una evaluación más profunda de tu situación personal."
                 )
             }
 
