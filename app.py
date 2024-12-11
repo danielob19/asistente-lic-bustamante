@@ -239,6 +239,8 @@ async def asistente(input_data: UserInput):
                 f"{categoria}: {malestar}" for categoria, malestar in posibles_afecciones.items()
             )
 
+            user_sessions.pop(user_id, None)  # Finalizar sesión después de 6 interacciones
+
             return {
                 "respuesta": (
                     f"Durante esta conversación mencionaste los siguientes aspectos de tu malestar anímico: {malestares_list}. "
