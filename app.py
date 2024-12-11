@@ -247,3 +247,24 @@ async def interactuar_con_openai(mensaje_usuario: str) -> str:
         return response.choices[0].message.content.strip()
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
+
+# Nueva función para analizar síntomas y categorías por interacción final
+def analizar_sintomas_categoria_final(sintomas_usuario):
+    try:
+        conexion = sqlite3.connect(DB_PATH)
+        cursor = conexion.cursor()
+        categorias = {}
+
+        for sintoma in sintomas_usuario:
+            cursor.execute("SELECT categoria FROM palabras_clave WHERE palabra LIKE ?", (f"%{sintoma}%",))
+            resultados = cursor.fetchall()
+            for categoria, in resultados:
+                if categoria in categorias:
+                    categorias[categoria].append(sintoma)
+                else:
+                    categorias[categoria] = [sintoma]
+
+        conexion.close()
+        return categorias
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al analizar síntomas: {str(e)}")
