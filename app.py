@@ -257,6 +257,14 @@ async def asistente(input_data: UserInput):
                 )
             }
 
+        if interacciones > 6:
+            return {
+                "respuesta": (
+                    "La sesión ha alcanzado su límite de interacciones. Si necesitas más ayuda, reinicia el chat escribiendo: reiniciar. "
+                    "También podés contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186."
+                )
+            }
+
         # Interacción con OpenAI
         respuesta = await interactuar_con_openai(mensaje_usuario)
         return {"respuesta": respuesta}
