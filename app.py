@@ -167,14 +167,13 @@ def analizar_posibles_afecciones_final(malestares):
         cursor = conexion.cursor()
         posibles_afecciones = {}
 
-        for malestar in malestares:
+        for malestar in set(malestares):
             cursor.execute("SELECT categoria FROM palabras_clave WHERE palabra LIKE ?", (f"%{malestar}%",))
             resultados = cursor.fetchall()
             for categoria, in resultados:
-                if categoria in posibles_afecciones:
-                    posibles_afecciones[categoria].append(malestar)
-                else:
-                    posibles_afecciones[categoria] = [malestar]
+                if categoria != "categoría pendiente":
+                    if categoria not in posibles_afecciones:
+                        posibles_afecciones[categoria] = malestar
 
         conexion.close()
         return posibles_afecciones
@@ -235,9 +234,9 @@ async def asistente(input_data: UserInput):
             malestares_usuario = user_sessions[user_id]["malestares"]
             posibles_afecciones = analizar_posibles_afecciones_final(malestares_usuario)
 
-            malestares_list = ", ".join(malestares_usuario)
+            malestares_list = ", ".join(set(malestares_usuario))
             posibles_afecciones_str = ". ".join(
-                f"{categoria}: {', '.join(malestares)}" for categoria, malestares in posibles_afecciones.items()
+                f"{categoria}: {malestar}" for categoria, malestar in posibles_afecciones.items()
             )
 
             return {
@@ -253,9 +252,9 @@ async def asistente(input_data: UserInput):
             malestares_usuario = user_sessions[user_id]["malestares"]
             posibles_afecciones = analizar_posibles_afecciones_final(malestares_usuario)
 
-            malestares_list = ", ".join(malestares_usuario)
+            malestares_list = ", ".join(set(malestares_usuario))
             posibles_afecciones_str = ". ".join(
-                f"{categoria}: {', '.join(malestares)}" for categoria, malestares in posibles_afecciones.items()
+                f"{categoria}: {malestar}" for categoria, malestar in posibles_afecciones.items()
             )
 
             return {
