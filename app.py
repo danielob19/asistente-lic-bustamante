@@ -240,10 +240,10 @@ async def asistente(input_data: UserInput):
 
             return {
                 "respuesta": (
-                    f"Has mencionado los siguientes síntomas: {', '.join(sintomas_unicos)}. "
-                    f"Esto podría estar relacionado con la siguiente posible afección: {categorias_texto}. "
+                    f"Si bien tengo que cerrar esta conversación, igualmente insisto que tus síntomas de {', '.join(sintomas_unicos)} "
+                    f"podrían estar asociados estados o cuadros de {categorias_texto}. "
                     "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más profunda. "
-                    "Si querés reiniciar un nuevo chat escribí: reiniciar."
+                    "Si querés reiniciar un nuevo chat escribí: **reiniciar**."
                 )
             }
 
@@ -254,8 +254,8 @@ async def asistente(input_data: UserInput):
 
             return {
                 "respuesta": (
-                    f"Entendido. Has mencionado los siguientes síntomas: {', '.join(sintomas_unicos)}. "
-                    f"Esto podría estar relacionado con la siguiente posible afección: {categorias_texto}. "
+                    f"Comprendo perfectamente, tus síntomas: {', '.join(sintomas_unicos)} "
+                    f"podrían estar relacionados afecciónes tales como {categorias_texto}. "
                     "Si lo considerás necesario, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
                     "para una evaluación más profunda de tu situación personal."
                 )
