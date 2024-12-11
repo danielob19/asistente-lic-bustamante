@@ -160,26 +160,26 @@ async def upload_form():
     </html>
     """
 
-# Nueva función para analizar síntomas y categorías por interacción final
-def analizar_sintomas_categoria_final(sintomas_usuario):
+# Nueva función para analizar coincidencias y sus agrupaciones por interacción final
+def analizar_posibles_afecciones_final(malestares):
     try:
         conexion = sqlite3.connect(DB_PATH)
         cursor = conexion.cursor()
-        categorias = {}
+        posibles_afecciones = {}
 
-        for sintoma in sintomas_usuario:
-            cursor.execute("SELECT categoria FROM palabras_clave WHERE palabra LIKE ?", (f"%{sintoma}%",))
+        for malestar in malestares:
+            cursor.execute("SELECT categoria FROM palabras_clave WHERE palabra LIKE ?", (f"%{malestar}%",))
             resultados = cursor.fetchall()
             for categoria, in resultados:
-                if categoria in categorias:
-                    categorias[categoria].append(sintoma)
+                if categoria in posibles_afecciones:
+                    posibles_afecciones[categoria].append(malestar)
                 else:
-                    categorias[categoria] = [sintoma]
+                    posibles_afecciones[categoria] = [malestar]
 
         conexion.close()
-        return categorias
+        return posibles_afecciones
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al analizar síntomas: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al analizar malestares: {str(e)}")
 
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
@@ -196,7 +196,7 @@ async def asistente(input_data: UserInput):
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "ultimo_mensaje": None,
-                "sintomas": []
+                "malestares": []
             }
         else:
             user_sessions[user_id]["ultima_interaccion"] = time.time()
@@ -227,15 +227,15 @@ async def asistente(input_data: UserInput):
         for palabra in nuevas_palabras:
             registrar_palabra_clave(palabra, "categoría pendiente")
 
-        # Agregar palabras del mensaje como posibles síntomas
-        user_sessions[user_id]["sintomas"].extend(mensaje_usuario.split())
+        # Agregar palabras del mensaje como posibles malestares
+        user_sessions[user_id]["malestares"].extend(mensaje_usuario.split())
 
-        # Mensaje de finalización de conversación con análisis de síntomas
+        # Mensaje de finalización de conversación con análisis de posibles afecciones
         if interacciones >= 6:
-            sintomas_usuario = user_sessions[user_id]["sintomas"]
-            categorias = analizar_sintomas_categoria_final(sintomas_usuario)
-            categorias_str = ". ".join(
-                f"Categoría: {categoria}. Síntomas: {', '.join(sintomas)}" for categoria, sintomas in categorias.items()
+            malestares_usuario = user_sessions[user_id]["malestares"]
+            posibles_afecciones = analizar_posibles_afecciones_final(malestares_usuario)
+            posibles_afecciones_str = ". ".join(
+                f"{categoria}: {', '.join(malestares)}" for categoria, malestares in posibles_afecciones.items()
             )
 
             return {
@@ -243,16 +243,16 @@ async def asistente(input_data: UserInput):
                     "Si bien tengo que dar por terminada esta conversación, no obstante si lo considerás necesario, "
                     "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
                     "para una evaluación más profunda de tu condición emocional. "
-                    f"Aquí tienes un resumen de los síntomas detectados y sus categorías: {categorias_str}. "
+                    f"Aquí tienes un resumen de lo analizado: {posibles_afecciones_str}. "
                     "Si querés reiniciar un nuevo chat escribí: reiniciar."
                 )
             }
 
         if interacciones == 5:
-            sintomas_usuario = user_sessions[user_id]["sintomas"]
-            categorias = analizar_sintomas_categoria_final(sintomas_usuario)
-            categorias_str = ". ".join(
-                f"Categoría: {categoria}. Síntomas: {', '.join(sintomas)}" for categoria, sintomas in categorias.items()
+            malestares_usuario = user_sessions[user_id]["malestares"]
+            posibles_afecciones = analizar_posibles_afecciones_final(malestares_usuario)
+            posibles_afecciones_str = ". ".join(
+                f"{categoria}: {', '.join(malestares)}" for categoria, malestares in posibles_afecciones.items()
             )
 
             return {
@@ -260,7 +260,7 @@ async def asistente(input_data: UserInput):
                     "Comprendo perfectamente. Si lo considerás necesario, "
                     "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
                     "quien podrá ayudarte a partir de una evaluación más profunda de tu situación personal. "
-                    f"Aquí tienes un resumen de los síntomas detectados y sus categorías: {categorias_str}."
+                    f"Aquí tienes un resumen de lo analizado: {posibles_afecciones_str}."
                 )
             }
 
