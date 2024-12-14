@@ -193,17 +193,28 @@ async def asistente(input_data: UserInput):
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "ultimo_mensaje": None,
-                "sintomas": []
+                "sintomas": [],
+                "bloqueado": False  # Nuevo estado de bloqueo
             }
         else:
             user_sessions[user_id]["ultima_interaccion"] = time.time()
 
+        # Verificar si la sesión está bloqueada
+        if user_sessions[user_id].get("bloqueado", False):
+            return {
+                "respuesta": "Has alcanzado el límite de interacciones. Por favor, escribe 'reiniciar' para comenzar una nueva conversación."
+            }
+
+        # Incrementar el contador de interacciones
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
         # Detener respuestas después de la interacción 6
         if interacciones > 6:
-            return
+            user_sessions[user_id]["bloqueado"] = True
+            return {
+                "respuesta": "Has alcanzado el límite de interacciones. Por favor, escribe 'reiniciar' para comenzar una nueva conversación."
+            }
 
         # Guardar síntomas mencionados por el usuario
         sintomas_usuario = mensaje_usuario.split()
@@ -211,11 +222,14 @@ async def asistente(input_data: UserInput):
 
         # Reinicio de conversación
         if mensaje_usuario == "reiniciar":
-            if user_id in user_sessions:
-                user_sessions.pop(user_id)
-                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
-            else:
-                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
+            user_sessions[user_id] = {
+                "contador_interacciones": 0,
+                "ultima_interaccion": time.time(),
+                "ultimo_mensaje": None,
+                "sintomas": [],
+                "bloqueado": False
+            }
+            return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
 
         # Manejo de "sí"
         if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
@@ -255,7 +269,7 @@ async def asistente(input_data: UserInput):
             return {
                 "respuesta": (
                     f"Comprendo perfectamente, tus síntomas de {', '.join(sintomas_unicos)} "
-                    f"podrían estar relacionados afecciónes tales como {categorias_texto}. "
+                    f"podrían estar relacionados afecciones tales como {categorias_texto}. "
                     "Si lo considerás necesario, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
                     "para una evaluación más profunda de tu situación personal."
                 )
@@ -267,6 +281,7 @@ async def asistente(input_data: UserInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
 
 # Interacción con OpenAI
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
