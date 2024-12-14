@@ -20,7 +20,7 @@ app = FastAPI()
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Cambiar "*" a una lista de dominios específicos si es necesario
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,25 +85,17 @@ PALABRAS_IRRELEVANTES = {"mal", "me", "hola", "estoy", "muy", "siento", "es", "a
 
 # Detectar y registrar nuevas palabras clave
 def registrar_palabras_clave_limpiadas(mensaje_usuario: str):
-    # Separar palabras del mensaje
     palabras_usuario = mensaje_usuario.split()
-
-    # Filtrar palabras irrelevantes
     palabras_clave = [
         palabra for palabra in palabras_usuario if palabra not in PALABRAS_IRRELEVANTES
     ]
 
-    # Registrar solo las palabras relevantes
+    if not palabras_clave:
+        print("No se encontraron palabras clave relevantes en el mensaje.")
+        return
+
     for palabra in palabras_clave:
         registrar_palabra_clave(palabra, "categoría pendiente")
-
-# Limpiar palabras irrelevantes del registro existente
-def limpiar_palabras_clave_existentes():
-    palabras_existentes = obtener_palabras_clave()
-    palabras_filtradas = [
-        palabra for palabra in palabras_existentes if palabra not in PALABRAS_IRRELEVANTES
-    ]
-    guardar_palabras_clave_filtradas(palabras_filtradas)
 
 # Obtener categorías asociadas a los síntomas
 def obtener_categorias(sintomas):
@@ -111,11 +103,16 @@ def obtener_categorias(sintomas):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         categorias = set()
+
         for sintoma in sintomas:
-            cursor.execute("SELECT categoria FROM palabras_clave WHERE palabra LIKE ?", (f"%{sintoma}%",))
-            resultados = cursor.fetchall()
-            for resultado in resultados:
-                categorias.add(resultado[0])
+            if sintoma.strip():
+                cursor.execute(
+                    "SELECT categoria FROM palabras_clave WHERE palabra LIKE ?", (f"%{sintoma}%",)
+                )
+                resultados = cursor.fetchall()
+                for resultado in resultados:
+                    categorias.add(resultado[0])
+
         conn.close()
         return list(categorias)
     except Exception as e:
@@ -138,12 +135,13 @@ class UserInput(BaseModel):
 # Gestión de sesiones (en memoria)
 user_sessions = {}
 SESSION_TIMEOUT = 30  # Tiempo de inactividad en segundos
+MAX_INTERACCIONES = 6  # Máximo de interacciones permitidas
 
 @app.on_event("startup")
 def startup_event():
-    verificar_escritura_en_disco()  # Prueba de escritura
-    init_db()  # Inicializar base de datos
-    start_session_cleaner()  # Iniciar limpieza de sesiones
+    verificar_escritura_en_disco()
+    init_db()
+    start_session_cleaner()
 
 # Limpieza de sesiones inactivas
 def start_session_cleaner():
@@ -166,43 +164,7 @@ def start_session_cleaner():
 def read_root():
     return {"message": "Bienvenido al asistente"}
 
-# Endpoint para descargar el archivo de base de datos
-@app.get("/download/palabras_clave.db")
-async def download_file():
-    if not os.path.exists(DB_PATH):
-        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
-    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
-
-# Endpoint para subir el archivo de base de datos
-@app.post("/upload_file")
-async def upload_file(file: UploadFile = File(...)):
-    try:
-        with open(DB_PATH, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
-
-# Formulario para subir archivo
-@app.get("/upload_form", response_class=HTMLResponse)
-async def upload_form():
-    return """
-    <!doctype html>
-    <html>
-    <head>
-        <title>Subir palabras_clave.db</title>
-    </head>
-    <body>
-        <h1>Subir un nuevo archivo palabras_clave.db</h1>
-        <form action="/upload_file" method="post" enctype="multipart/form-data">
-            <input type="file" name="file">
-            <button type="submit">Subir</button>
-        </form>
-    </body>
-    </html>
-    """
-
-# Endpoint principal para interacción con el asistente
+# Endpoint para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -219,10 +181,19 @@ async def asistente(input_data: UserInput):
                 "ultima_interaccion": time.time(),
                 "ultimo_mensaje": None,
                 "sintomas": [],
-                "bloqueado": False  # Estado inicial no bloqueado
+                "bloqueado": False
             }
 
-        # Verificar si el usuario desea reiniciar
+        session = user_sessions[user_id]
+        session["ultima_interaccion"] = time.time()
+
+        # Verificar si la sesión está bloqueada
+        if session["bloqueado"]:
+            return {
+                "respuesta": "Has alcanzado el límite de interacciones. Por favor, escribe 'reiniciar' para comenzar una nueva conversación."
+            }
+
+        # Reiniciar la sesión si el usuario lo solicita
         if mensaje_usuario == "reiniciar":
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
@@ -233,40 +204,24 @@ async def asistente(input_data: UserInput):
             }
             return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
 
-        # Verificar si la sesión está bloqueada
-        if user_sessions[user_id]["bloqueado"]:
+        # Incrementar el contador de interacciones
+        session["contador_interacciones"] += 1
+
+        # Bloquear si se excede el máximo permitido
+        if session["contador_interacciones"] > MAX_INTERACCIONES:
+            session["bloqueado"] = True
             return {
                 "respuesta": "Has alcanzado el límite de interacciones. Por favor, escribe 'reiniciar' para comenzar una nueva conversación."
             }
 
-        # Incrementar el contador de interacciones
-        user_sessions[user_id]["contador_interacciones"] += 1
-        interacciones = user_sessions[user_id]["contador_interacciones"]
-
-        # Detener respuestas después de la interacción 6
-        if interacciones >= 6:
-            user_sessions[user_id]["bloqueado"] = True
-            categorias_detectadas = obtener_categorias(user_sessions[user_id]["sintomas"])
-            sintomas_unicos = set(user_sessions[user_id]["sintomas"])
-            categorias_texto = ", ".join(categorias_detectadas)
-
-            return {
-                "respuesta": (
-                    f"Si bien tengo que cerrar esta conversación, igualmente insisto que tus síntomas de {', '.join(sintomas_unicos)} "
-                    f"podrían estar asociados a estados o cuadros de {categorias_texto}. "
-                    "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más profunda. "
-                    "Si querés reiniciar un nuevo chat escribí: **reiniciar**."
-                )
-            }
-
-        # Guardar síntomas mencionados por el usuario
+        # Guardar síntomas mencionados
         sintomas_usuario = mensaje_usuario.split()
-        user_sessions[user_id]["sintomas"].extend(sintomas_usuario)
+        session["sintomas"].extend(sintomas_usuario)
 
-        # Mensaje de interacción 5
-        if interacciones == 5:
-            categorias_detectadas = obtener_categorias(user_sessions[user_id]["sintomas"])
-            sintomas_unicos = set(user_sessions[user_id]["sintomas"])
+        # Obtener categorías asociadas y responder en la interacción 5
+        if session["contador_interacciones"] == 5:
+            categorias_detectadas = obtener_categorias(session["sintomas"])
+            sintomas_unicos = set(session["sintomas"])
             categorias_texto = ", ".join(categorias_detectadas)
 
             return {
@@ -277,13 +232,30 @@ async def asistente(input_data: UserInput):
                     "para una evaluación más profunda de tu situación personal."
                 )
             }
-            
-       # Detectar y registrar nuevas palabras clave
+
+        # Detectar y registrar nuevas palabras clave
         registrar_palabras_clave_limpiadas(mensaje_usuario)
-        
+
         # Interacción con OpenAI
         respuesta = await interactuar_con_openai(mensaje_usuario)
         return {"respuesta": respuesta}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+# Interacción con OpenAI
+async def interactuar_con_openai(mensaje_usuario: str) -> str:
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Eres un asistente conversacional profesional y empático."},
+                {"role": "user", "content": mensaje_usuario}
+            ],
+            max_tokens=200,
+            temperature=0.7
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"Error al interactuar con OpenAI: {e}")
+        return "Lo siento, ocurrió un problema al procesar tu mensaje. Intenta nuevamente más tarde."
