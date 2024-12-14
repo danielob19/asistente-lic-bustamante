@@ -80,6 +80,31 @@ def obtener_palabras_clave():
         print(f"Error al obtener palabras clave: {e}")
         return []
 
+# Conjunto de palabras irrelevantes
+PALABRAS_IRRELEVANTES = {"mal", "me", "hola", "estoy", "muy", "siento", "es", "a", "de", "que", "en", "con", "por"}
+
+# Detectar y registrar nuevas palabras clave
+def registrar_palabras_clave_limpiadas(mensaje_usuario: str):
+    # Separar palabras del mensaje
+    palabras_usuario = mensaje_usuario.split()
+
+    # Filtrar palabras irrelevantes
+    palabras_clave = [
+        palabra for palabra in palabras_usuario if palabra not in PALABRAS_IRRELEVANTES
+    ]
+
+    # Registrar solo las palabras relevantes
+    for palabra in palabras_clave:
+        registrar_palabra_clave(palabra, "categoría pendiente")
+
+# Limpiar palabras irrelevantes del registro existente
+def limpiar_palabras_clave_existentes():
+    palabras_existentes = obtener_palabras_clave()
+    palabras_filtradas = [
+        palabra for palabra in palabras_existentes if palabra not in PALABRAS_IRRELEVANTES
+    ]
+    guardar_palabras_clave_filtradas(palabras_filtradas)
+
 # Obtener categorías asociadas a los síntomas
 def obtener_categorias(sintomas):
     try:
@@ -252,7 +277,10 @@ async def asistente(input_data: UserInput):
                     "para una evaluación más profunda de tu situación personal."
                 )
             }
-
+            
+       # Detectar y registrar nuevas palabras clave
+        registrar_palabras_clave_limpiadas(mensaje_usuario)
+        
         # Interacción con OpenAI
         respuesta = await interactuar_con_openai(mensaje_usuario)
         return {"respuesta": respuesta}
