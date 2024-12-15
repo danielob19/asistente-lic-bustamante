@@ -103,7 +103,7 @@ class UserInput(BaseModel):
 
 # Gestión de sesiones activas
 user_sessions = {}
-SESSION_TIMEOUT = 30  # Tiempo de inactividad en segundos
+SESSION_TIMEOUT = 300  # Tiempo de inactividad en segundos
 MAX_INTERACCIONES = 6  # Máximo de interacciones permitidas
 
 @app.on_event("startup")
@@ -127,56 +127,11 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
-# Endpoint para descargar el archivo de base de datos
-@app.get("/download/palabras_clave.db")
-async def download_database():
-    """
-    Descarga la base de datos `palabras_clave.db`.
-    """
-    if not os.path.exists(DB_PATH):
-        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
-    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
-
-# Endpoint para subir un archivo y reemplazar la base de datos
-@app.post("/upload_file")
-async def upload_database(file: UploadFile = File(...)):
-    """
-    Permite subir un archivo y reemplazar la base de datos actual.
-    """
-    try:
-        with open(DB_PATH, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
-
-# Formulario HTML para subir la base de datos
-@app.get("/upload_form", response_class=HTMLResponse)
-async def upload_form():
-    """
-    Devuelve un formulario HTML para cargar un nuevo archivo de base de datos desde el navegador.
-    """
-    return """
-    <!doctype html>
-    <html>
-    <head>
-        <title>Subir palabras_clave.db</title>
-    </head>
-    <body>
-        <h1>Subir un nuevo archivo palabras_clave.db</h1>
-        <form action="/upload_file" method="post" enctype="multipart/form-data">
-            <input type="file" name="file">
-            <button type="submit">Subir</button>
-        </form>
-    </body>
-    </html>
-    """
-
 # Endpoint para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     """
-    Procesa un mensaje del usuario y registra palabras clave relevantes.
+    Procesa un mensaje del usuario y responde en el flujo de diálogo.
     """
     user_id = input_data.user_id
     mensaje_usuario = input_data.mensaje.strip().lower()
@@ -184,11 +139,56 @@ async def asistente(input_data: UserInput):
     if not mensaje_usuario:
         raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-    palabras_clave_limpiadas = limpiar_mensaje(mensaje_usuario)
-    for palabra in palabras_clave_limpiadas:
-        registrar_palabra_clave(palabra, "categoría pendiente")
+    # Limpia y registra palabras clave
+    registrar_palabras_clave_limpiadas(mensaje_usuario)
 
-    return {"respuesta": f"Palabras clave registradas: {', '.join(palabras_clave_limpiadas)}"}
+    # Inicializa la sesión del usuario si no existe
+    if user_id not in user_sessions:
+        user_sessions[user_id] = {
+            "contador_interacciones": 0,
+            "ultima_interaccion": time.time(),
+            "sintomas": [],
+            "bloqueado": False
+        }
+
+    session = user_sessions[user_id]
+    session["ultima_interaccion"] = time.time()
+
+    # Bloqueo si se excede el límite de interacciones
+    if session["bloqueado"]:
+        return {"respuesta": "Has alcanzado el límite de interacciones. Escribe 'reiniciar' para empezar de nuevo."}
+
+    if mensaje_usuario == "reiniciar":
+        user_sessions[user_id] = {
+            "contador_interacciones": 0,
+            "ultima_interaccion": time.time(),
+            "sintomas": [],
+            "bloqueado": False
+        }
+        return {"respuesta": "La conversación ha sido reiniciada. Estoy listo para ayudarte."}
+
+    session["contador_interacciones"] += 1
+
+    # Bloquea si excede el número máximo de interacciones
+    if session["contador_interacciones"] > MAX_INTERACCIONES:
+        session["bloqueado"] = True
+        return {"respuesta": "Has alcanzado el límite de interacciones. Escribe 'reiniciar' para empezar de nuevo."}
+
+    # En la quinta interacción, ofrecer un resumen
+    if session["contador_interacciones"] == 5:
+        palabras_clave = limpiar_mensaje(mensaje_usuario)
+        sintomas_usuario = list(set(session["sintomas"] + palabras_clave))
+        categorias_detectadas = "cuadro de estrés, ansiedad, depresión"  # Ejemplo fijo
+        return {
+            "respuesta": (
+                f"Entendido. Detecté síntomas relacionados con: {', '.join(sintomas_usuario)}. "
+                f"Esto podría estar asociado con {categorias_detectadas}. Si lo consideras necesario, contacta al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186."
+            )
+        }
+
+    # Generar una respuesta con OpenAI
+    respuesta = await interactuar_con_openai(mensaje_usuario)
+    return {"respuesta": respuesta}
 
 # Interacción con OpenAI
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
