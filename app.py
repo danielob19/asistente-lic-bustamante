@@ -42,14 +42,10 @@ def limpiar_mensaje(mensaje_usuario: str) -> list:
     """
     Limpia el mensaje del usuario eliminando palabras irrelevantes y caracteres especiales.
     """
-    # Convertir a minúsculas y dividir en palabras
     palabras_usuario = re.findall(r'\b\w+\b', mensaje_usuario.lower())
-
-    # Filtrar palabras irrelevantes
     palabras_clave = [
         palabra for palabra in palabras_usuario if palabra not in PALABRAS_IRRELEVANTES
     ]
-    
     return palabras_clave
 
 # Inicialización de la base de datos SQLite
@@ -94,11 +90,9 @@ def registrar_palabras_clave_limpiadas(mensaje_usuario: str):
     Detecta palabras clave relevantes en el mensaje del usuario y las registra en la base de datos.
     """
     palabras_clave = limpiar_mensaje(mensaje_usuario)
-
     if not palabras_clave:
         print("No se encontraron palabras clave relevantes en el mensaje.")
         return
-
     for palabra in palabras_clave:
         registrar_palabra_clave(palabra, "categoría pendiente")
 
@@ -114,7 +108,6 @@ MAX_INTERACCIONES = 6  # Máximo de interacciones permitidas
 
 @app.on_event("startup")
 def startup_event():
-    verificar_escritura_en_disco()
     init_db()
     start_session_cleaner()
 
@@ -179,14 +172,9 @@ async def upload_form():
     </html>
     """
 
-# Endpoint inicial
-@app.get("/")
-def read_root():
-    return {"message": "Bienvenido al asistente"}
-
 # Endpoint para interacción con el asistente
 @app.post("/asistente")
-async def asistente(input_data: BaseModel):
+async def asistente(input_data: UserInput):
     """
     Procesa un mensaje del usuario y registra palabras clave relevantes.
     """
@@ -196,64 +184,11 @@ async def asistente(input_data: BaseModel):
     if not mensaje_usuario:
         raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-    # Limpia el mensaje y extrae las palabras clave
     palabras_clave_limpiadas = limpiar_mensaje(mensaje_usuario)
-
-    # Registra las palabras clave relevantes
     for palabra in palabras_clave_limpiadas:
         registrar_palabra_clave(palabra, "categoría pendiente")
 
-    # Respuesta para el usuario
     return {"respuesta": f"Palabras clave registradas: {', '.join(palabras_clave_limpiadas)}"}
-    
-    if user_id not in user_sessions:
-        user_sessions[user_id] = {
-            "contador_interacciones": 0,
-            "ultima_interaccion": time.time(),
-            "sintomas": [],
-            "bloqueado": False
-        }
-
-    session = user_sessions[user_id]
-    session["ultima_interaccion"] = time.time()
-
-    if session["bloqueado"]:
-        return {"respuesta": "Has alcanzado el límite de interacciones. Escribe 'reiniciar' para una nueva conversación."}
-
-    if mensaje_usuario == "reiniciar":
-        user_sessions[user_id] = {
-            "contador_interacciones": 0,
-            "ultima_interaccion": time.time(),
-            "sintomas": [],
-            "bloqueado": False
-        }
-        return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
-
-    session["contador_interacciones"] += 1
-
-    if session["contador_interacciones"] > MAX_INTERACCIONES:
-        session["bloqueado"] = True
-        return {"respuesta": "Has alcanzado el límite de interacciones. Escribe 'reiniciar' para empezar otra vez."}
-
-    # Limpiar y registrar palabras clave
-    palabras_clave_limpiadas = limpiar_mensaje(mensaje_usuario)
-    session["sintomas"].extend(palabras_clave_limpiadas)
-
-    if session["contador_interacciones"] == 5:
-        categorias_detectadas = obtener_categorias(session["sintomas"])
-        sintomas_unicos = set(session["sintomas"])
-        categorias_texto = ", ".join(categorias_detectadas)
-
-        return {
-            "respuesta": (
-                f"Tus síntomas de {', '.join(sintomas_unicos)} pueden estar relacionados con: {categorias_texto}. "
-                "Considerá contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186."
-            )
-        }
-
-    registrar_palabras_clave_limpiadas(mensaje_usuario)
-    respuesta = await interactuar_con_openai(mensaje_usuario)
-    return {"respuesta": respuesta}
 
 # Interacción con OpenAI
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
