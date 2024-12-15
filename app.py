@@ -5,9 +5,10 @@ import sqlite3
 import openai
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import shutil
+import asyncio
 
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -39,12 +40,11 @@ user_sessions = {}
 SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
 
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
     init_db()
-    start_session_cleaner()
+    asyncio.create_task(session_cleaner())
 
 # Inicialización de la base de datos
-
 def init_db():
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -65,25 +65,19 @@ def init_db():
         print(f"Error al inicializar la base de datos: {e}")
 
 # Limpieza de sesiones inactivas
-
-def start_session_cleaner():
-    def cleaner():
-        while True:
-            current_time = time.time()
-            inactive_users = [
-                user_id
-                for user_id, data in user_sessions.items()
-                if current_time - data["ultima_interaccion"] > SESSION_TIMEOUT
-            ]
-            for user_id in inactive_users:
-                user_sessions.pop(user_id, None)
-            time.sleep(60)
-
-    thread = threading.Thread(target=cleaner, daemon=True)
-    thread.start()
+async def session_cleaner():
+    while True:
+        current_time = time.time()
+        inactive_users = [
+            user_id
+            for user_id, data in user_sessions.items()
+            if current_time - data["ultima_interaccion"] > SESSION_TIMEOUT
+        ]
+        for user_id in inactive_users:
+            user_sessions.pop(user_id, None)
+        await asyncio.sleep(60)
 
 # Analizar mensaje del usuario con cuadros psicológicos
-
 def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -167,8 +161,8 @@ async def asistente(input_data: UserInput):
             resultado_analisis = analizar_mensaje_usuario_con_cuadros(sintomas_usuario)
             return {
                 "respuesta": (
-                    f"En base a los síntomas proporcionados, se recomienda contactar al Lic. Daniel O. Bustamante 
-                    "al WhatsApp +54 911 3310-1186 para una evaluación profesional. {resultado_analisis}"
+                    f"En base a los síntomas proporcionados, se recomienda contactar al Lic. Daniel O. Bustamante "
+                    f"al WhatsApp +54 911 3310-1186 para una evaluación profesional. {resultado_analisis}"
                 )
             }
 
