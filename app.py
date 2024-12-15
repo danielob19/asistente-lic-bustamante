@@ -95,13 +95,19 @@ def startup_event():
 def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
     """
     Analiza el mensaje del usuario buscando palabras clave en la base de datos,
-    identifica categorías asociadas, y genera un análisis con cuadros psicológicos.
+    identifica categorías asociadas y genera un análisis con cuadros psicológicos.
     """
     try:
+        # Conectar a la base de datos
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
+        # Dividir el mensaje en palabras para buscar coincidencias
         palabras_clave = mensaje_usuario.split()
+        if not palabras_clave:
+            return "El mensaje proporcionado está vacío o no contiene información válida."
+
+        # Construir y ejecutar la consulta SQL
         consulta = f"""
             SELECT palabra, categoria, cuadros 
             FROM palabras_clave 
@@ -109,32 +115,41 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
         """
         cursor.execute(consulta, palabras_clave)
         resultados = cursor.fetchall()
+
+        # Cerrar la conexión
         conn.close()
 
+        # Si no se encuentran coincidencias
         if not resultados:
             return "No se encontraron coincidencias en la base de datos para los síntomas proporcionados."
 
+        # Procesar los resultados
         categorias = {}
         cuadros_detectados = set()
         for palabra, categoria, cuadro in resultados:
             if categoria not in categorias:
                 categorias[categoria] = []
             categorias[categoria].append(palabra)
-            cuadros_detectados.add(cuadro)
+            if cuadro:  # Evitar cuadros nulos o vacíos
+                cuadros_detectados.add(cuadro)
 
+        # Generar el análisis detallado
         detalles_categorias = []
         for categoria, palabras in categorias.items():
             detalles_categorias.append(f"{categoria}: {' '.join(palabras)}")
 
-        detalles_cuadros = ", ".join(cuadros_detectados)
+        detalles_cuadros = ", ".join(cuadros_detectados) if cuadros_detectados else "No se detectaron cuadros específicos."
 
         return (
             f"Categorías detectadas:\n{'\n'.join(detalles_categorias)}\n\n"
             f"Probabilidad de los siguientes cuadros psicológicos: {detalles_cuadros}."
         )
 
+    except sqlite3.Error as db_error:
+        print(f"Error en la base de datos: {db_error}")
+        return "Hubo un error al acceder a la base de datos. Por favor, intenta nuevamente más tarde."
     except Exception as e:
-        print(f"Error al analizar el mensaje: {e}")
+        print(f"Error inesperado: {e}")
         return "Hubo un error al analizar los síntomas. Por favor, intenta nuevamente más tarde."
 
 # Endpoint principal para interacción con el asistente
