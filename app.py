@@ -3,7 +3,6 @@ import re
 import time
 import threading
 import sqlite3
-import openai
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
@@ -11,6 +10,8 @@ from pydantic import BaseModel
 import shutil
 
 # Configuración de la clave de API de OpenAI
+import openai
+
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     raise ValueError("OPENAI_API_KEY no está configurada en las variables de entorno.")
@@ -34,7 +35,7 @@ DB_PATH = "/var/data/palabras_clave.db"
 PALABRAS_IRRELEVANTES = {
     "mal", "me", "hola", "estoy", "muy", "siento", "es", "a", "de", "que", "en", "con", "por", "si", "no", 
     "un", "una", "el", "la", "los", "las", "al", "del", "lo", "mi", "mis", "tu", "tus", "su", "sus", "y", 
-    "o", "u", "porque", "como", "tal", "poco", "tengo", "te", "se", "soy", "hace", "ya"
+    "o", "u", "porque", "como", "tal", "poco", "tengo", "te", "se", "soy", "hace", "ya", "verdad", "sé"
 }
 
 # Función para limpiar mensajes y filtrar palabras irrelevantes
@@ -72,7 +73,6 @@ def registrar_palabra_clave(palabra: str, categoria: str):
     Registra una palabra clave en la base de datos si no está en la lista de palabras irrelevantes.
     """
     if palabra in PALABRAS_IRRELEVANTES:
-        print(f"Ignorando palabra irrelevante: {palabra}")
         return
 
     try:
@@ -90,11 +90,27 @@ def registrar_palabras_clave_limpiadas(mensaje_usuario: str):
     Detecta palabras clave relevantes en el mensaje del usuario y las registra en la base de datos.
     """
     palabras_clave = limpiar_mensaje(mensaje_usuario)
-    if not palabras_clave:
-        print("No se encontraron palabras clave relevantes en el mensaje.")
-        return
     for palabra in palabras_clave:
         registrar_palabra_clave(palabra, "categoría pendiente")
+
+# Función para obtener categorías asociadas
+def obtener_categorias(sintomas):
+    """
+    Busca en la base de datos las categorías asociadas a los síntomas proporcionados.
+    """
+    categorias = set()
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        for sintoma in sintomas:
+            cursor.execute("SELECT categoria FROM palabras_clave WHERE palabra = ?", (sintoma,))
+            resultados = cursor.fetchall()
+            for resultado in resultados:
+                categorias.add(resultado[0])
+        conn.close()
+    except Exception as e:
+        print(f"Error al obtener categorías: {e}")
+    return list(categorias)
 
 # Clase para solicitudes del usuario
 class UserInput(BaseModel):
@@ -140,6 +156,7 @@ async def asistente(input_data: UserInput):
         raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
     # Limpia y registra palabras clave
+    palabras_clave = limpiar_mensaje(mensaje_usuario)
     registrar_palabras_clave_limpiadas(mensaje_usuario)
 
     # Inicializa la sesión del usuario si no existe
@@ -148,45 +165,32 @@ async def asistente(input_data: UserInput):
             "contador_interacciones": 0,
             "ultima_interaccion": time.time(),
             "sintomas": [],
-            "bloqueado": False
         }
 
     session = user_sessions[user_id]
     session["ultima_interaccion"] = time.time()
-
-    # Bloqueo si se excede el límite de interacciones
-    if session["bloqueado"]:
-        return {"respuesta": "Has alcanzado el límite de interacciones. Escribe 'reiniciar' para empezar de nuevo."}
-
-    if mensaje_usuario == "reiniciar":
-        user_sessions[user_id] = {
-            "contador_interacciones": 0,
-            "ultima_interaccion": time.time(),
-            "sintomas": [],
-            "bloqueado": False
-        }
-        return {"respuesta": "La conversación ha sido reiniciada. Estoy listo para ayudarte."}
-
     session["contador_interacciones"] += 1
 
-    # Bloquea si excede el número máximo de interacciones
-    if session["contador_interacciones"] > MAX_INTERACCIONES:
-        session["bloqueado"] = True
-        return {"respuesta": "Has alcanzado el límite de interacciones. Escribe 'reiniciar' para empezar de nuevo."}
+    # Guarda síntomas detectados
+    session["sintomas"].extend(palabras_clave)
 
-    # En la quinta interacción, ofrecer un resumen
-    if session["contador_interacciones"] == 5:
-        palabras_clave = limpiar_mensaje(mensaje_usuario)
-        sintomas_usuario = list(set(session["sintomas"] + palabras_clave))
-        categorias_detectadas = "cuadro de estrés, ansiedad, depresión"  # Ejemplo fijo
+    # Termina el flujo en la interacción 6
+    if session["contador_interacciones"] == MAX_INTERACCIONES:
+        categorias_detectadas = obtener_categorias(session["sintomas"])
+        if not categorias_detectadas:
+            categorias_detectadas = ["categoría pendiente"]
+
+        sintomas_unicos = list(set(session["sintomas"]))
         return {
             "respuesta": (
-                f"Entendido. Detecté síntomas relacionados con: {', '.join(sintomas_usuario)}. "
-                f"Esto podría estar asociado con {categorias_detectadas}. Si lo consideras necesario, contacta al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186."
+                f"Entendido. Detecté síntomas relacionados con: {', '.join(sintomas_unicos)}. "
+                f"Esto podría estar asociado con: {', '.join(categorias_detectadas)}. "
+                "Si lo consideras necesario, contacta al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186. "
+                "Gracias por compartir tu situación, espero haberte ayudado."
             )
         }
 
-    # Generar una respuesta con OpenAI
+    # Generar una respuesta normal con OpenAI para interacciones previas
     respuesta = await interactuar_con_openai(mensaje_usuario)
     return {"respuesta": respuesta}
 
