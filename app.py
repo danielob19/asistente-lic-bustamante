@@ -245,6 +245,9 @@ async def upload_file(file: UploadFile = File(...)):
 # Formulario HTML para subir el archivo de base de datos
 @app.get("/upload_form", response_class=HTMLResponse)
 async def upload_form():
+    """
+    Genera un formulario simple para subir el archivo palabras_clave.db.
+    """
     return """
     <!doctype html>
     <html>
@@ -253,4 +256,11 @@ async def upload_form():
     </head>
     <body>
         <h1>Subir un nuevo archivo palabras_clave.db</h1>
-        <form action="/upload_file" method="post" enctype="
+        <form action="/upload_file" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".db">
+            <button type="submit">Subir</button>
+        </form>
+    </body>
+    </html>
+    """
+
