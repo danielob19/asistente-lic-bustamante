@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import threading
 import sqlite3
@@ -31,7 +32,26 @@ DB_PATH = "/var/data/palabras_clave.db"
 PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
 # Palabras irrelevantes
-PALABRAS_IRRELEVANTES = {"mal", "me", "hola", "estoy", "muy", "siento", "es", "a", "de", "que", "en", "con", "por"}
+PALABRAS_IRRELEVANTES = {
+    "mal", "me", "hola", "estoy", "muy", "siento", "es", "a", "de", "que", "en", "con", "por", "si", "no", 
+    "un", "una", "el", "la", "los", "las", "al", "del", "lo", "mi", "mis", "tu", "tus", "su", "sus", "y", 
+    "o", "u", "porque", "como", "tal", "poco", "tengo", "te", "se", "soy", "hace", "ya"
+}
+
+# Función para limpiar mensajes y filtrar palabras irrelevantes
+def limpiar_mensaje(mensaje_usuario: str) -> list:
+    """
+    Limpia el mensaje del usuario eliminando palabras irrelevantes y caracteres especiales.
+    """
+    # Convertir a minúsculas y dividir en palabras
+    palabras_usuario = re.findall(r'\b\w+\b', mensaje_usuario.lower())
+
+    # Filtrar palabras irrelevantes
+    palabras_clave = [
+        palabra for palabra in palabras_usuario if palabra not in PALABRAS_IRRELEVANTES
+    ]
+    
+    return palabras_clave
 
 # Inicialización de la base de datos SQLite
 def init_db():
@@ -62,6 +82,17 @@ def registrar_palabra_clave(palabra: str, categoria: str):
     except Exception as e:
         print(f"Error al registrar palabra clave: {e}")
 
+# Detectar y registrar nuevas palabras clave
+def registrar_palabras_clave_limpiadas(mensaje_usuario: str):
+    palabras_clave = limpiar_mensaje(mensaje_usuario)
+
+    if not palabras_clave:
+        print("No se encontraron palabras clave relevantes en el mensaje.")
+        return
+
+    for palabra in palabras_clave:
+        registrar_palabra_clave(palabra, "categoría pendiente")
+
 # Obtener categorías asociadas a los síntomas
 def obtener_categorias(sintomas):
     try:
@@ -78,20 +109,6 @@ def obtener_categorias(sintomas):
     except Exception as e:
         print(f"Error al obtener categorías: {e}")
         return []
-
-# Detectar y registrar nuevas palabras clave
-def registrar_palabras_clave_limpiadas(mensaje_usuario: str):
-    palabras_usuario = mensaje_usuario.split()
-    palabras_clave = [
-        palabra for palabra in palabras_usuario if palabra not in PALABRAS_IRRELEVANTES
-    ]
-
-    if not palabras_clave:
-        print("No se encontraron palabras clave relevantes en el mensaje.")
-        return
-
-    for palabra in palabras_clave:
-        registrar_palabra_clave(palabra, "categoría pendiente")
 
 # Verificar escritura en disco
 def verificar_escritura_en_disco():
@@ -133,6 +150,11 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
+# Endpoint inicial
+@app.get("/")
+def read_root():
+    return {"message": "Bienvenido al asistente"}
+
 # Endpoint para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
@@ -171,8 +193,9 @@ async def asistente(input_data: UserInput):
         session["bloqueado"] = True
         return {"respuesta": "Has alcanzado el límite de interacciones. Escribe 'reiniciar' para empezar otra vez."}
 
-    sintomas_usuario = mensaje_usuario.split()
-    session["sintomas"].extend(sintomas_usuario)
+    # Limpiar y registrar palabras clave
+    palabras_clave_limpiadas = limpiar_mensaje(mensaje_usuario)
+    session["sintomas"].extend(palabras_clave_limpiadas)
 
     if session["contador_interacciones"] == 5:
         categorias_detectadas = obtener_categorias(session["sintomas"])
