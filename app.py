@@ -1,16 +1,16 @@
 import os
 import time
-import threading
 import sqlite3
-import openai
+import asyncio
+import shutil
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import shutil
-import asyncio
 
 # Configuración de la clave de API de OpenAI
+import openai
+
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     raise ValueError("OPENAI_API_KEY no está configurada en las variables de entorno.")
@@ -30,25 +30,33 @@ app.add_middleware(
 # Ruta para la base de datos
 DB_PATH = "/var/data/palabras_clave.db"  # Cambiar según sea necesario
 
+# Gestión de sesiones (en memoria)
+user_sessions = {}
+SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
+
+
 # Clase para solicitudes del usuario
 class UserInput(BaseModel):
     mensaje: str
     user_id: str
 
-# Gestión de sesiones (en memoria)
-user_sessions = {}
-SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
-
-@app.on_event("startup")
-async def startup_event():
-    init_db()
-    asyncio.create_task(session_cleaner())
 
 # Inicialización de la base de datos
 def init_db():
+    """
+    Inicializa la base de datos creando la tabla 'palabras_clave' si no existe.
+    """
     try:
+        # Asegurar que el directorio de la base de datos exista
+        db_directory = os.path.dirname(DB_PATH)
+        if not os.path.exists(db_directory):
+            os.makedirs(db_directory)
+
+        # Conexión a la base de datos
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
+
+        # Crear tabla si no existe
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS palabras_clave (
@@ -61,24 +69,48 @@ def init_db():
         )
         conn.commit()
         conn.close()
+        print("Base de datos inicializada correctamente.")
+    except sqlite3.Error as db_error:
+        print(f"Error al inicializar la base de datos: {db_error}")
     except Exception as e:
-        print(f"Error al inicializar la base de datos: {e}")
+        print(f"Error inesperado al inicializar la base de datos: {e}")
+
 
 # Limpieza de sesiones inactivas
 async def session_cleaner():
+    """
+    Limpia sesiones inactivas basadas en `SESSION_TIMEOUT`.
+    """
     while True:
-        current_time = time.time()
-        inactive_users = [
-            user_id
-            for user_id, data in user_sessions.items()
-            if current_time - data["ultima_interaccion"] > SESSION_TIMEOUT
-        ]
-        for user_id in inactive_users:
-            user_sessions.pop(user_id, None)
-        await asyncio.sleep(60)
+        try:
+            current_time = time.time()
+            inactive_users = [
+                user_id
+                for user_id, data in user_sessions.items()
+                if current_time - data.get("ultima_interaccion", 0) > SESSION_TIMEOUT
+            ]
+            for user_id in inactive_users:
+                user_sessions.pop(user_id, None)
+            await asyncio.sleep(60)  # Pausa antes de la próxima limpieza
+        except Exception as e:
+            print(f"Error en el limpiador de sesiones: {e}")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    Eventos de inicio de la aplicación.
+    """
+    print("Iniciando la aplicación...")
+    init_db()  # Inicializar la base de datos
+    asyncio.create_task(session_cleaner())  # Iniciar limpiador de sesiones
+
 
 # Analizar mensaje del usuario con cuadros psicológicos
 def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
+    """
+    Analiza un mensaje del usuario y busca palabras clave en la base de datos.
+    """
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -123,19 +155,20 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
             f"Probabilidad de los siguientes cuadros psicológicos: {detalles_cuadros}."
         )
 
-    except sqlite3.OperationalError as db_error:
-        print(f"Error de operación en la base de datos: {db_error}")
-        return "Parece que hubo un problema técnico al acceder a la base de datos. Por favor, intenta nuevamente más tarde."
     except sqlite3.Error as db_error:
-        print(f"Error general de la base de datos: {db_error}")
-        return "Hubo un problema al procesar tu información en la base de datos. Contacta al soporte técnico."
+        print(f"Error en la base de datos: {db_error}")
+        return "Parece que hubo un problema técnico al acceder a la base de datos. Por favor, intenta nuevamente más tarde."
     except Exception as e:
         print(f"Error inesperado: {e}")
-        return "Ocurrió un error inesperado mientras procesaba tu información. Por favor, intenta nuevamente."
+        return "Ocurrió un error inesperado mientras procesaba tu información. Por favor, inténtalo nuevamente."
+
 
 # Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
+    """
+    Endpoint para manejar la interacción con el asistente.
+    """
     try:
         user_id = input_data.user_id
         mensaje_usuario = input_data.mensaje.strip().lower()
@@ -187,7 +220,7 @@ async def asistente(input_data: UserInput):
                     "respuesta": (
                         "Lamento mucho este inconveniente. Parece que hubo un problema técnico mientras procesaba tu información. "
                         "Por favor, intenta nuevamente más tarde o, si es urgente, contacta directamente al Lic. Daniel O. Bustamante "
-                        "al WhatsApp +54 911 3310-1186 para una atención profesional inmediata."
+                        "al WhatsApp +54 911 3310-1186 para recibir ayuda profesional inmediata."
                     )
                 }
 
@@ -217,16 +250,24 @@ async def asistente(input_data: UserInput):
             detail="Lo siento, hubo un problema interno al procesar tu solicitud. Por favor, inténtalo de nuevo más tarde."
         )
 
+
 # Endpoint para descargar el archivo de base de datos
 @app.get("/download/palabras_clave.db")
 async def download_file():
+    """
+    Descarga el archivo de la base de datos.
+    """
     if not os.path.exists(DB_PATH):
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")
     return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
 
+
 # Endpoint para subir el archivo de base de datos
 @app.post("/upload_file")
 async def upload_file(file: UploadFile = File(...)):
+    """
+    Sube un nuevo archivo de base de datos.
+    """
     try:
         if file.filename != "palabras_clave.db":
             raise HTTPException(
