@@ -56,69 +56,6 @@ def init_db():
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
-# Registrar palabra clave nueva
-def registrar_palabra_clave(palabra: str, categoria: str):
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO palabras_clave (palabra, categoria) VALUES (?, ?)", (palabra, categoria))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Error al registrar palabra clave: {e}")
-
-# Obtener palabras clave existentes
-def obtener_palabras_clave():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT palabra FROM palabras_clave")
-        palabras = [row[0] for row in cursor.fetchall()]
-        conn.close()
-        return palabras
-    except Exception as e:
-        print(f"Error al obtener palabras clave: {e}")
-        return []
-
-# Conjunto de palabras irrelevantes
-PALABRAS_IRRELEVANTES = {"mal", "me", "hola", "estoy", "muy", "siento", "es", "a", "de", "que", "en", "con", "por"}
-
-# Detectar y registrar nuevas palabras clave
-def registrar_palabras_clave_limpiadas(mensaje_usuario: str):
-    palabras_usuario = mensaje_usuario.split()
-    palabras_clave = [
-        palabra for palabra in palabras_usuario if palabra not in PALABRAS_IRRELEVANTES
-    ]
-
-    if not palabras_clave:
-        print("No se encontraron palabras clave relevantes en el mensaje.")
-        return
-
-    for palabra in palabras_clave:
-        registrar_palabra_clave(palabra, "categoría pendiente")
-
-# Obtener categorías asociadas a los síntomas
-def obtener_categorias(sintomas):
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        categorias = set()
-
-        for sintoma in sintomas:
-            if sintoma.strip():
-                cursor.execute(
-                    "SELECT categoria FROM palabras_clave WHERE palabra LIKE ?", (f"%{sintoma}%",)
-                )
-                resultados = cursor.fetchall()
-                for resultado in resultados:
-                    categorias.add(resultado[0])
-
-        conn.close()
-        return list(categorias)
-    except Exception as e:
-        print(f"Error al obtener categorías: {e}")
-        return []
-
 # Verificar escritura en disco
 def verificar_escritura_en_disco():
     try:
@@ -126,6 +63,42 @@ def verificar_escritura_en_disco():
             archivo.write("Prueba de escritura exitosa.")
     except Exception as e:
         print(f"Error al escribir en el disco: {e}")
+
+# Endpoint para descargar el archivo de base de datos
+@app.get("/download/palabras_clave.db")
+async def download_file():
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
+
+# Endpoint para subir el archivo de base de datos
+@app.post("/upload_file")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        with open(DB_PATH, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
+
+# Formulario para subir archivo
+@app.get("/upload_form", response_class=HTMLResponse)
+async def upload_form():
+    return """
+    <!doctype html>
+    <html>
+    <head>
+        <title>Subir palabras_clave.db</title>
+    </head>
+    <body>
+        <h1>Subir un nuevo archivo palabras_clave.db</h1>
+        <form action="/upload_file" method="post" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <button type="submit">Subir</button>
+        </form>
+    </body>
+    </html>
+    """
 
 # Clase para solicitudes del usuario
 class UserInput(BaseModel):
