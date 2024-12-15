@@ -29,7 +29,6 @@ app.add_middleware(
 
 # Ruta para la base de datos
 DB_PATH = "/var/data/palabras_clave.db"
-PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
 # Palabras irrelevantes
 PALABRAS_IRRELEVANTES = {
