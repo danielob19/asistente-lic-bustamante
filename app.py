@@ -28,7 +28,6 @@ app.add_middleware(
 
 # Ruta para la base de datos
 DB_PATH = "/var/data/palabras_clave.db"
-PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
 # Configuración de la base de datos SQLite
 def init_db():
@@ -44,19 +43,14 @@ def init_db():
         """)
         conn.commit()
         conn.close()
-        print(f"Base de datos creada o abierta en: {DB_PATH}")
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
 # Registrar palabra clave nueva
 def registrar_palabra_clave(palabra: str, categoria: str):
-    """
-    Registra palabras clave relacionadas exclusivamente con estados emocionales
-    o problemas psicológicos.
-    """
     categorias_validas = ["depresión", "ansiedad", "ira", "estrés", "tristeza", "miedo", "inseguridad"]
     if categoria.lower() not in categorias_validas:
-        return  # Solo registrar si la categoría es válida
+        return
 
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -90,14 +84,10 @@ user_sessions = {}
 
 @app.on_event("startup")
 def startup_event():
-    init_db()  # Inicializar base de datos
+    init_db()
 
 # Analizar mensaje del usuario
 def analizar_mensaje_usuario(mensaje_usuario: str) -> str:
-    """
-    Analiza el mensaje del usuario buscando palabras clave en la base de datos,
-    identifica categorías asociadas y genera un análisis resumido.
-    """
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -125,11 +115,10 @@ def analizar_mensaje_usuario(mensaje_usuario: str) -> str:
         for categoria, palabras in categorias.items():
             detalles.append(f"{categoria}: {' '.join(palabras)}")
 
-        return "Resultados:\n" + "\n".join(detalles)
+        return "Resultados del análisis:\n" + "\n".join(detalles)
 
     except Exception as e:
-        print(f"Error al analizar el mensaje: {e}")
-        return "Error al analizar el mensaje."
+        return f"Error al analizar el mensaje: {e}"
 
 # Endpoint principal para interacción con el asistente
 @app.post("/asistente")
@@ -158,13 +147,21 @@ async def asistente(input_data: UserInput):
         if interacciones == 6:
             sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
             resultado_analisis = analizar_mensaje_usuario(sintomas_usuario)
-            user_sessions.pop(user_id, None)  # Limpiar la sesión
+            user_sessions.pop(user_id, None)
             return {
-                "respuesta": f"Análisis final:\n{resultado_analisis}\nGracias por utilizar este servicio. Conversación finalizada."
+                "respuesta": f"Hemos analizado tus mensajes. {resultado_analisis} Gracias por utilizar este servicio. La conversación ha concluido."
             }
 
         # Responder durante las primeras interacciones
-        return {"respuesta": f"Mensaje recibido: '{mensaje_usuario}'. Por favor, continúe."}
+        respuestas = [
+            "Gracias por compartir. ¿Podrías darme más detalles?",
+            "Entendido. Por favor, continúa describiendo lo que sientes.",
+            "Gracias por tu aporte. ¿Podrías mencionar algo más?",
+            "Continúa, por favor. Estoy registrando tus síntomas.",
+            "Gracias por compartir. Estamos construyendo un análisis detallado.",
+        ]
+
+        return {"respuesta": respuestas[min(interacciones - 1, len(respuestas) - 1)]}
 
     except Exception as e:
         print(f"Error interno: {e}")
