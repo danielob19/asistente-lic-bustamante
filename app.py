@@ -34,12 +34,10 @@ DB_PATH = "/var/data/palabras_clave.db"  # Cambiar según sea necesario
 user_sessions = {}
 SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
 
-
 # Clase para solicitudes del usuario
 class UserInput(BaseModel):
     mensaje: str
     user_id: str
-
 
 # Inicialización de la base de datos
 def init_db():
@@ -75,7 +73,6 @@ def init_db():
     except Exception as e:
         print(f"Error inesperado al inicializar la base de datos: {e}")
 
-
 # Limpieza de sesiones inactivas
 async def session_cleaner():
     """
@@ -95,7 +92,6 @@ async def session_cleaner():
         except Exception as e:
             print(f"Error en el limpiador de sesiones: {e}")
 
-
 @app.on_event("startup")
 async def startup_event():
     """
@@ -104,7 +100,6 @@ async def startup_event():
     print("Iniciando la aplicación...")
     init_db()  # Inicializar la base de datos
     asyncio.create_task(session_cleaner())  # Iniciar limpiador de sesiones
-
 
 # Analizar mensaje del usuario con cuadros psicológicos
 def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
@@ -173,7 +168,7 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
-                "mensajes": [],
+                "mensajes": set(),  # Cambiado a un conjunto para evitar duplicados
             }
             bienvenida = (
                 "¡Hola! Soy tu asistente virtual. Estoy aquí para escucharte y ayudarte. "
@@ -185,10 +180,16 @@ async def asistente(input_data: UserInput):
         # Actualizar la sesión del usuario
         user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
-        interacciones = user_sessions[user_id]["contador_interacciones"]
+
+        # Verificar si el mensaje ya fue mencionado
+        if mensaje_usuario in user_sessions[user_id]["mensajes"]:
+            return {
+                "respuesta": "Ya hemos hablado de eso. ¿Hay algo más que quieras compartir?"
+            }
 
         # Registrar el mensaje
-        user_sessions[user_id]["mensajes"].append(mensaje_usuario)
+        user_sessions[user_id]["mensajes"].add(mensaje_usuario)
+        interacciones = user_sessions[user_id]["contador_interacciones"]
 
         # Proveer retroalimentación al usuario
         if interacciones < 5:
@@ -239,7 +240,6 @@ async def asistente(input_data: UserInput):
             detail="Lo siento, hubo un problema interno al procesar tu solicitud. Por favor, inténtalo de nuevo más tarde."
         )
 
-
 # Endpoint para descargar el archivo de base de datos
 @app.get("/download/palabras_clave.db")
 async def download_file():
@@ -249,7 +249,6 @@ async def download_file():
     if not os.path.exists(DB_PATH):
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")
     return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
-
 
 # Endpoint para subir el archivo de base de datos
 @app.post("/upload_file")
