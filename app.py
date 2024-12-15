@@ -120,7 +120,7 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
             return "El mensaje proporcionado está vacío o no contiene información válida."
 
         consulta = f"""
-            SELECT palabra, categoria, cuadros 
+            SELECT palabra, categoria 
             FROM palabras_clave 
             WHERE palabra IN ({','.join(['?'] * len(palabras_clave))})
         """
@@ -132,27 +132,17 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
             return "No se encontraron coincidencias en la base de datos para los síntomas proporcionados."
 
         categorias = {}
-        cuadros_detectados = set()
-        for palabra, categoria, cuadro in resultados:
+        for palabra, categoria in resultados:
             if categoria not in categorias:
                 categorias[categoria] = []
             categorias[categoria].append(palabra)
-            if cuadro:
-                cuadros_detectados.add(cuadro)
 
         detalles_categorias = [
             f"{categoria}: {' '.join(palabras)}" for categoria, palabras in categorias.items()
         ]
 
-        detalles_cuadros = (
-            ", ".join(cuadros_detectados)
-            if cuadros_detectados
-            else "No se detectaron cuadros específicos."
-        )
-
         return (
-            f"Categorías detectadas:\n{chr(10).join(detalles_categorias)}\n\n"
-            f"Probabilidad de los siguientes cuadros psicológicos: {detalles_cuadros}."
+            f"Categorías detectadas:\n{chr(10).join(detalles_categorias)}."
         )
 
     except sqlite3.Error as db_error:
@@ -161,7 +151,6 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
     except Exception as e:
         print(f"Error inesperado: {e}")
         return "Ocurrió un error inesperado mientras procesaba tu información. Por favor, inténtalo nuevamente."
-
 
 # Endpoint principal para interacción con el asistente
 @app.post("/asistente")
