@@ -150,6 +150,51 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
+# Endpoint para descargar el archivo de base de datos
+@app.get("/download/palabras_clave.db")
+async def download_database():
+    """
+    Descarga la base de datos `palabras_clave.db`.
+    """
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
+
+# Endpoint para subir un archivo y reemplazar la base de datos
+@app.post("/upload_file")
+async def upload_database(file: UploadFile = File(...)):
+    """
+    Permite subir un archivo y reemplazar la base de datos actual.
+    """
+    try:
+        with open(DB_PATH, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
+
+# Formulario HTML para subir la base de datos
+@app.get("/upload_form", response_class=HTMLResponse)
+async def upload_form():
+    """
+    Devuelve un formulario HTML para cargar un nuevo archivo de base de datos desde el navegador.
+    """
+    return """
+    <!doctype html>
+    <html>
+    <head>
+        <title>Subir palabras_clave.db</title>
+    </head>
+    <body>
+        <h1>Subir un nuevo archivo palabras_clave.db</h1>
+        <form action="/upload_file" method="post" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <button type="submit">Subir</button>
+        </form>
+    </body>
+    </html>
+    """
+
 # Endpoint inicial
 @app.get("/")
 def read_root():
