@@ -1,8 +1,8 @@
 import os
-import re
 import time
 import threading
 import sqlite3
+import openai
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
@@ -10,8 +10,6 @@ from pydantic import BaseModel
 import shutil
 
 # Configuración de la clave de API de OpenAI
-import openai
-
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     raise ValueError("OPENAI_API_KEY no está configurada en las variables de entorno.")
@@ -22,34 +20,17 @@ app = FastAPI()
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Cambiar "*" a una lista de dominios específicos si es necesario
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Ruta para la base de datos
-DB_PATH = "/var/data/palabras_clave.db"
+DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
+PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
-# Palabras irrelevantes
-PALABRAS_IRRELEVANTES = {
-    "mal", "me", "hola", "estoy", "muy", "siento", "es", "a", "de", "que", "en", "con", "por", "si", "no", 
-    "un", "una", "el", "la", "los", "las", "al", "del", "lo", "mi", "mis", "tu", "tus", "su", "sus", "y", 
-    "o", "u", "porque", "como", "tal", "poco", "tengo", "te", "se", "soy", "hace", "ya", "verdad", "sé"
-}
-
-# Función para limpiar mensajes y filtrar palabras irrelevantes
-def limpiar_mensaje(mensaje_usuario: str) -> list:
-    """
-    Limpia el mensaje del usuario eliminando palabras irrelevantes y caracteres especiales.
-    """
-    palabras_usuario = re.findall(r'\b\w+\b', mensaje_usuario.lower())
-    palabras_clave = [
-        palabra for palabra in palabras_usuario if palabra not in PALABRAS_IRRELEVANTES
-    ]
-    return palabras_clave
-
-# Inicialización de la base de datos SQLite
+# Configuración de la base de datos SQLite
 def init_db():
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -70,10 +51,12 @@ def init_db():
 # Registrar palabra clave nueva
 def registrar_palabra_clave(palabra: str, categoria: str):
     """
-    Registra una palabra clave en la base de datos si no está en la lista de palabras irrelevantes.
+    Registra palabras clave relacionadas exclusivamente con estados emocionales
+    o problemas psicológicos.
     """
-    if palabra in PALABRAS_IRRELEVANTES:
-        return
+    categorias_validas = ["depresión", "ansiedad", "ira", "estrés", "tristeza", "miedo", "inseguridad"]
+    if categoria.lower() not in categorias_validas:
+        return  # Solo registrar si la categoría es válida
 
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -84,48 +67,41 @@ def registrar_palabra_clave(palabra: str, categoria: str):
     except Exception as e:
         print(f"Error al registrar palabra clave: {e}")
 
-# Detectar y registrar nuevas palabras clave
-def registrar_palabras_clave_limpiadas(mensaje_usuario: str):
-    """
-    Detecta palabras clave relevantes en el mensaje del usuario y las registra en la base de datos.
-    """
-    palabras_clave = limpiar_mensaje(mensaje_usuario)
-    for palabra in palabras_clave:
-        registrar_palabra_clave(palabra, "categoría pendiente")
-
-# Función para obtener categorías asociadas
-def obtener_categorias(sintomas):
-    """
-    Busca en la base de datos las categorías asociadas a los síntomas proporcionados.
-    """
-    categorias = set()
+# Obtener palabras clave existentes
+def obtener_palabras_clave():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        for sintoma in sintomas:
-            cursor.execute("SELECT categoria FROM palabras_clave WHERE palabra = ?", (sintoma,))
-            resultados = cursor.fetchall()
-            for resultado in resultados:
-                categorias.add(resultado[0])
+        cursor.execute("SELECT palabra FROM palabras_clave")
+        palabras = [row[0] for row in cursor.fetchall()]
         conn.close()
+        return palabras
     except Exception as e:
-        print(f"Error al obtener categorías: {e}")
-    return list(categorias)
+        print(f"Error al obtener palabras clave: {e}")
+        return []
+
+# Verificar escritura en disco
+def verificar_escritura_en_disco():
+    try:
+        with open(PRUEBA_PATH, "w") as archivo:
+            archivo.write("Prueba de escritura exitosa.")
+    except Exception as e:
+        print(f"Error al escribir en el disco: {e}")
 
 # Clase para solicitudes del usuario
 class UserInput(BaseModel):
     mensaje: str
     user_id: str
 
-# Gestión de sesiones activas
+# Gestión de sesiones (en memoria)
 user_sessions = {}
-SESSION_TIMEOUT = 300  # Tiempo de inactividad en segundos
-MAX_INTERACCIONES = 6  # Máximo de interacciones permitidas
+SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
 
 @app.on_event("startup")
 def startup_event():
-    init_db()
-    start_session_cleaner()
+    verificar_escritura_en_disco()  # Prueba de escritura
+    init_db()  # Inicializar base de datos
+    start_session_cleaner()  # Iniciar limpieza de sesiones
 
 # Limpieza de sesiones inactivas
 def start_session_cleaner():
@@ -143,56 +119,118 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
-# Endpoint para interacción con el asistente
+# Analizar mensaje del usuario
+def analizar_mensaje_usuario(mensaje_usuario: str) -> str:
+    """
+    Analiza el mensaje del usuario buscando palabras clave en la base de datos,
+    identifica categorías asociadas y genera un análisis resumido.
+    """
+    try:
+        # Conectar a la base de datos
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Dividir el mensaje en palabras y buscar coincidencias
+        palabras_clave = mensaje_usuario.split()
+        consulta = f"""
+            SELECT palabra, categoria 
+            FROM palabras_clave 
+            WHERE palabra IN ({','.join(['?'] * len(palabras_clave))})
+        """
+        cursor.execute(consulta, palabras_clave)
+        resultados = cursor.fetchall()
+        conn.close()
+
+        # Si no hay coincidencias
+        if not resultados:
+            return "No se encontraron coincidencias en la base de datos para los síntomas proporcionados."
+
+        # Agrupar palabras clave por categorías
+        categorias = {}
+        for palabra, categoria in resultados:
+            if categoria not in categorias:
+                categorias[categoria] = []
+            categorias[categoria].append(palabra)
+
+        # Construir el mensaje basado en las categorías detectadas
+        detalles = []
+        for categoria, palabras in categorias.items():
+            detalles.append(f"{categoria}: {' '.join(palabras)}")
+
+        return "Encontramos coincidencias en las siguientes categorías:\n" + "\n".join(detalles)
+
+    except Exception as e:
+        print(f"Error al analizar el mensaje: {e}")
+        return "Hubo un error al analizar los síntomas. Por favor, intenta nuevamente más tarde."
+
+# Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
-    """
-    Procesa un mensaje del usuario y responde en el flujo de diálogo.
-    """
-    user_id = input_data.user_id
-    mensaje_usuario = input_data.mensaje.strip().lower()
+    try:
+        user_id = input_data.user_id
+        mensaje_usuario = input_data.mensaje.strip().lower()
 
-    if not mensaje_usuario:
-        raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+        if not mensaje_usuario:
+            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-    # Limpia y registra palabras clave
-    palabras_clave = limpiar_mensaje(mensaje_usuario)
-    registrar_palabras_clave_limpiadas(mensaje_usuario)
+        # Inicializar sesión si no existe
+        if user_id not in user_sessions:
+            user_sessions[user_id] = {
+                "contador_interacciones": 0,
+                "ultima_interaccion": time.time(),
+                "mensajes": [],
+                "ultimo_mensaje": None,
+            }
+        else:
+            user_sessions[user_id]["ultima_interaccion"] = time.time()
 
-    # Inicializa la sesión del usuario si no existe
-    if user_id not in user_sessions:
-        user_sessions[user_id] = {
-            "contador_interacciones": 0,
-            "ultima_interaccion": time.time(),
-            "sintomas": [],
-        }
+        # Incrementar contador de interacciones
+        user_sessions[user_id]["contador_interacciones"] += 1
+        interacciones = user_sessions[user_id]["contador_interacciones"]
 
-    session = user_sessions[user_id]
-    session["ultima_interaccion"] = time.time()
-    session["contador_interacciones"] += 1
+        # Almacenar mensaje del usuario
+        user_sessions[user_id]["mensajes"].append(mensaje_usuario)
 
-    # Guarda síntomas detectados
-    session["sintomas"].extend(palabras_clave)
+        # Bloquear cualquier interacción después de la sexta
+        if interacciones > 6:
+            user_sessions.pop(user_id, None)  # Asegurar que la sesión se elimina
+            return {
+                "respuesta": "La conversación ha finalizado. Gracias por utilizar este servicio."
+            }
 
-    # Termina el flujo en la interacción 6
-    if session["contador_interacciones"] == MAX_INTERACCIONES:
-        categorias_detectadas = obtener_categorias(session["sintomas"])
-        if not categorias_detectadas:
-            categorias_detectadas = ["categoría pendiente"]
+        # Manejo de "sí"
+        if mensaje_usuario in ["si", "sí", "si claro", "sí claro"]:
+            if user_sessions[user_id]["ultimo_mensaje"] in ["si", "sí", "si claro", "sí claro"]:
+                return {"respuesta": "Ya confirmaste eso. ¿Hay algo más en lo que puedo ayudarte?"}
+            user_sessions[user_id]["ultimo_mensaje"] = mensaje_usuario
+            return {"respuesta": "Entendido. ¿Podrías contarme más sobre lo que estás sintiendo?"}
 
-        sintomas_unicos = list(set(session["sintomas"]))
-        return {
-            "respuesta": (
-                f"Entendido. Detecté síntomas relacionados con: {', '.join(sintomas_unicos)}. "
-                f"Esto podría estar asociado con: {', '.join(categorias_detectadas)}. "
-                "Si lo consideras necesario, contacta al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186. "
-                "Gracias por compartir tu situación, espero haberte ayudado."
+        # Manejo de "no"
+        if mensaje_usuario in ["no", "no sé", "tal vez"]:
+            return {"respuesta": "Está bien, toma tu tiempo. Estoy aquí para escucharte."}
+
+        # Respuesta durante las primeras interacciones (1 a 5)
+        if interacciones < 6:
+            respuesta_ai = await interactuar_con_openai(mensaje_usuario)
+            return {"respuesta": respuesta_ai}
+
+        # Sexta interacción: análisis completo
+        if interacciones == 6:
+            sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
+            resultado_analisis = analizar_mensaje_usuario(sintomas_usuario)
+            prompt = (
+                f"El usuario compartió los siguientes síntomas: \"{sintomas_usuario}\".\n\n"
+                f"Resultado del análisis: {resultado_analisis}\n\n"
+                "Redacta una respuesta profesional que mencione los síntomas, posibles cuadros o estados, "
+                "y sugiera al usuario contactar al Lic. Daniel O. Bustamante para una evaluación más profunda."
             )
-        }
+            respuesta_final = await interactuar_con_openai(prompt)
+            user_sessions.pop(user_id, None)  # Limpiar la sesión
+            return {"respuesta": respuesta_final}
 
-    # Generar una respuesta normal con OpenAI para interacciones previas
-    respuesta = await interactuar_con_openai(mensaje_usuario)
-    return {"respuesta": respuesta}
+    except Exception as e:
+        print(f"Error interno: {e}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 # Interacción con OpenAI
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
@@ -200,7 +238,7 @@ async def interactuar_con_openai(mensaje_usuario: str) -> str:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Eres un asistente conversacional profesional y empático."},
+                {"role": "system", "content": "Eres un asistente profesional neutral que analiza síntomas emocionales."},
                 {"role": "user", "content": mensaje_usuario}
             ],
             max_tokens=200,
@@ -208,5 +246,60 @@ async def interactuar_con_openai(mensaje_usuario: str) -> str:
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        print(f"Error al interactuar con OpenAI: {e}")
-        return "Lo siento, ocurrió un problema al procesar tu mensaje. Intenta nuevamente más tarde."
+        raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
+
+# Endpoint para descargar el archivo de base de datos
+@app.get("/download/palabras_clave.db")
+async def download_file():
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail="El archivo palabras_clave.db no se encuentra.")
+    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
+
+# Endpoint para subir el archivo de base de datos
+@app.post("/upload_file")
+async def upload_file(file: UploadFile = File(...)):
+    """
+    Permite subir un archivo nuevo llamado palabras_clave.db al disco persistente.
+    """
+    try:
+        if file.filename != "palabras_clave.db":
+            raise HTTPException(status_code=400, detail="El archivo debe llamarse 'palabras_clave.db'.")
+        
+        file_path = DB_PATH  # Ruta donde se almacenará el archivo
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Verificar si el archivo subido es una base de datos SQLite válida
+        try:
+            conn = sqlite3.connect(file_path)
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            conn.close()
+        except Exception:
+            os.remove(file_path)  # Eliminar el archivo si no es válido
+            raise HTTPException(status_code=400, detail="El archivo subido no es una base de datos SQLite válida.")
+        
+        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
+
+# Formulario HTML para subir el archivo de base de datos
+@app.get("/upload_form", response_class=HTMLResponse)
+async def upload_form():
+    """
+    Genera un formulario simple para subir el archivo palabras_clave.db.
+    """
+    return """
+    <!doctype html>
+    <html>
+    <head>
+        <title>Subir palabras_clave.db</title>
+    </head>
+    <body>
+        <h1>Subir un nuevo archivo palabras_clave.db</h1>
+        <form action="/upload_file" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".db">
+            <button type="submit">Subir</button>
+        </form>
+    </body>
+    </html>
+    """
