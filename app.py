@@ -123,20 +123,19 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
             f"Probabilidad de los siguientes cuadros psicológicos: {detalles_cuadros}."
         )
 
+    except sqlite3.OperationalError as db_error:
+        print(f"Error de operación en la base de datos: {db_error}")
+        return "Parece que hubo un problema técnico al acceder a la base de datos. Por favor, intenta nuevamente más tarde."
     except sqlite3.Error as db_error:
-        print(f"Error en la base de datos: {db_error}")
-        return "Hubo un error al acceder a la base de datos. Por favor, intenta nuevamente más tarde."
+        print(f"Error general de la base de datos: {db_error}")
+        return "Hubo un problema al procesar tu información en la base de datos. Contacta al soporte técnico."
     except Exception as e:
         print(f"Error inesperado: {e}")
-        return "Hubo un error al analizar los síntomas. Por favor, intenta nuevamente más tarde."
+        return "Ocurrió un error inesperado mientras procesaba tu información. Por favor, intenta nuevamente."
 
 # Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
-    """
-    Endpoint principal para interacción con el asistente.
-    El asistente responde con empatía y profesionalismo, guiando al usuario paso a paso.
-    """
     try:
         user_id = input_data.user_id
         mensaje_usuario = input_data.mensaje.strip().lower()
@@ -183,6 +182,15 @@ async def asistente(input_data: UserInput):
             sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
             resultado_analisis = analizar_mensaje_usuario_con_cuadros(sintomas_usuario)
 
+            if "error" in resultado_analisis.lower():
+                return {
+                    "respuesta": (
+                        "Lamento mucho este inconveniente. Parece que hubo un problema técnico mientras procesaba tu información. "
+                        "Por favor, intenta nuevamente más tarde o, si es urgente, contacta directamente al Lic. Daniel O. Bustamante "
+                        "al WhatsApp +54 911 3310-1186 para una atención profesional inmediata."
+                    )
+                }
+
             respuesta_final = (
                 "He analizado la información que me proporcionaste. Quiero agradecerte por compartir esto conmigo. "
                 "Es importante que sepas que no estás solo/a y que buscar ayuda profesional es un paso muy valiente. "
@@ -193,14 +201,14 @@ async def asistente(input_data: UserInput):
 
             return {"respuesta": respuesta_final}
 
-        # Cierre de sesión después de 6 interacciones
+        # Mensaje de cierre después de 6 interacciones
         if interacciones == 6:
-            user_sessions.pop(user_id, None)
-            despedida = (
-                "Muchas gracias por confiar en mí y compartir tus pensamientos. "
-                "Si necesitas más ayuda, no dudes en buscar apoyo profesional. ¡Te deseo lo mejor!"
-            )
-            return {"respuesta": despedida}
+            return {
+                "respuesta": (
+                    "Muchas gracias por confiar en mí y compartir tus pensamientos. "
+                    "Si necesitas más ayuda, no dudes en buscar apoyo profesional. ¡Te deseo lo mejor!"
+                )
+            }
 
     except Exception as e:
         print(f"Error interno: {e}")
