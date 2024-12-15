@@ -72,6 +72,13 @@ def init_db():
 
 # Registrar palabra clave nueva
 def registrar_palabra_clave(palabra: str, categoria: str):
+    """
+    Registra una palabra clave en la base de datos si no está en la lista de palabras irrelevantes.
+    """
+    if palabra in PALABRAS_IRRELEVANTES:
+        print(f"Ignorando palabra irrelevante: {palabra}")
+        return
+
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -83,6 +90,9 @@ def registrar_palabra_clave(palabra: str, categoria: str):
 
 # Detectar y registrar nuevas palabras clave
 def registrar_palabras_clave_limpiadas(mensaje_usuario: str):
+    """
+    Detecta palabras clave relevantes en el mensaje del usuario y las registra en la base de datos.
+    """
     palabras_clave = limpiar_mensaje(mensaje_usuario)
 
     if not palabras_clave:
@@ -91,23 +101,6 @@ def registrar_palabras_clave_limpiadas(mensaje_usuario: str):
 
     for palabra in palabras_clave:
         registrar_palabra_clave(palabra, "categoría pendiente")
-
-# Obtener categorías asociadas a los síntomas
-def obtener_categorias(sintomas):
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        categorias = set()
-        for sintoma in sintomas:
-            cursor.execute("SELECT categoria FROM palabras_clave WHERE palabra LIKE ?", (f"%{sintoma}%",))
-            resultados = cursor.fetchall()
-            for resultado in resultados:
-                categorias.add(resultado[0])
-        conn.close()
-        return list(categorias)
-    except Exception as e:
-        print(f"Error al obtener categorías: {e}")
-        return []
 
 # Clase para solicitudes del usuario
 class UserInput(BaseModel):
@@ -193,13 +186,26 @@ def read_root():
 
 # Endpoint para interacción con el asistente
 @app.post("/asistente")
-async def asistente(input_data: UserInput):
+async def asistente(input_data: BaseModel):
+    """
+    Procesa un mensaje del usuario y registra palabras clave relevantes.
+    """
     user_id = input_data.user_id
     mensaje_usuario = input_data.mensaje.strip().lower()
 
     if not mensaje_usuario:
         raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
+    # Limpia el mensaje y extrae las palabras clave
+    palabras_clave_limpiadas = limpiar_mensaje(mensaje_usuario)
+
+    # Registra las palabras clave relevantes
+    for palabra in palabras_clave_limpiadas:
+        registrar_palabra_clave(palabra, "categoría pendiente")
+
+    # Respuesta para el usuario
+    return {"respuesta": f"Palabras clave registradas: {', '.join(palabras_clave_limpiadas)}"}
+    
     if user_id not in user_sessions:
         user_sessions[user_id] = {
             "contador_interacciones": 0,
