@@ -27,57 +27,7 @@ app.add_middleware(
 )
 
 # Ruta para la base de datos
-DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
-
-# Configuración de la base de datos SQLite
-def init_db():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS palabras_clave (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                palabra TEXT UNIQUE NOT NULL,
-                categoria TEXT NOT NULL,
-                cuadros TEXT NOT NULL
-            )
-        """)
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Error al inicializar la base de datos: {e}")
-
-# Registrar palabra clave nueva
-def registrar_palabra_clave(palabra: str, categoria: str, cuadros: str):
-    """
-    Registra palabras clave relacionadas exclusivamente con estados emocionales
-    o problemas psicológicos.
-    """
-    categorias_validas = ["depresión", "ansiedad", "ira", "estrés", "tristeza", "miedo", "inseguridad"]
-    if categoria.lower() not in categorias_validas:
-        return  # Solo registrar si la categoría es válida
-
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO palabras_clave (palabra, categoria, cuadros) VALUES (?, ?, ?)", (palabra, categoria, cuadros))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Error al registrar palabra clave: {e}")
-
-# Obtener palabras clave existentes
-def obtener_palabras_clave():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT palabra FROM palabras_clave")
-        palabras = [row[0] for row in cursor.fetchall()]
-        conn.close()
-        return palabras
-    except Exception as e:
-        print(f"Error al obtener palabras clave: {e}")
-        return []
+DB_PATH = "/var/data/palabras_clave.db"  # Cambiar según sea necesario
 
 # Clase para solicitudes del usuario
 class UserInput(BaseModel):
@@ -86,28 +36,63 @@ class UserInput(BaseModel):
 
 # Gestión de sesiones (en memoria)
 user_sessions = {}
+SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
 
 @app.on_event("startup")
 def startup_event():
     init_db()
+    start_session_cleaner()
+
+# Inicialización de la base de datos
+
+def init_db():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS palabras_clave (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                palabra TEXT UNIQUE NOT NULL,
+                categoria TEXT NOT NULL,
+                cuadros TEXT
+            )
+            """
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error al inicializar la base de datos: {e}")
+
+# Limpieza de sesiones inactivas
+
+def start_session_cleaner():
+    def cleaner():
+        while True:
+            current_time = time.time()
+            inactive_users = [
+                user_id
+                for user_id, data in user_sessions.items()
+                if current_time - data["ultima_interaccion"] > SESSION_TIMEOUT
+            ]
+            for user_id in inactive_users:
+                user_sessions.pop(user_id, None)
+            time.sleep(60)
+
+    thread = threading.Thread(target=cleaner, daemon=True)
+    thread.start()
 
 # Analizar mensaje del usuario con cuadros psicológicos
+
 def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
-    """
-    Analiza el mensaje del usuario buscando palabras clave en la base de datos,
-    identifica categorías asociadas y genera un análisis con cuadros psicológicos.
-    """
     try:
-        # Conectar a la base de datos
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
-        # Dividir el mensaje en palabras para buscar coincidencias
         palabras_clave = mensaje_usuario.split()
         if not palabras_clave:
             return "El mensaje proporcionado está vacío o no contiene información válida."
 
-        # Construir y ejecutar la consulta SQL
         consulta = f"""
             SELECT palabra, categoria, cuadros 
             FROM palabras_clave 
@@ -115,33 +100,32 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
         """
         cursor.execute(consulta, palabras_clave)
         resultados = cursor.fetchall()
-
-        # Cerrar la conexión
         conn.close()
 
-        # Si no se encuentran coincidencias
         if not resultados:
             return "No se encontraron coincidencias en la base de datos para los síntomas proporcionados."
 
-        # Procesar los resultados
         categorias = {}
         cuadros_detectados = set()
         for palabra, categoria, cuadro in resultados:
             if categoria not in categorias:
                 categorias[categoria] = []
             categorias[categoria].append(palabra)
-            if cuadro:  # Evitar cuadros nulos o vacíos
+            if cuadro:
                 cuadros_detectados.add(cuadro)
 
-        # Generar el análisis detallado
-        detalles_categorias = []
-        for categoria, palabras in categorias.items():
-            detalles_categorias.append(f"{categoria}: {' '.join(palabras)}")
+        detalles_categorias = [
+            f"{categoria}: {' '.join(palabras)}" for categoria, palabras in categorias.items()
+        ]
 
-        detalles_cuadros = ", ".join(cuadros_detectados) if cuadros_detectados else "No se detectaron cuadros específicos."
+        detalles_cuadros = (
+            ", ".join(cuadros_detectados)
+            if cuadros_detectados
+            else "No se detectaron cuadros específicos."
+        )
 
         return (
-            f"Categorías detectadas:\n{'\n'.join(detalles_categorias)}\n\n"
+            f"Categorías detectadas:\n{chr(10).join(detalles_categorias)}\n\n"
             f"Probabilidad de los siguientes cuadros psicológicos: {detalles_cuadros}."
         )
 
@@ -160,77 +144,55 @@ async def asistente(input_data: UserInput):
         mensaje_usuario = input_data.mensaje.strip().lower()
 
         if not mensaje_usuario:
-            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+            raise HTTPException(
+                status_code=400, detail="El mensaje no puede estar vacío."
+            )
 
-        # Inicializar sesión si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
+                "ultima_interaccion": time.time(),
                 "mensajes": [],
             }
+        else:
+            user_sessions[user_id]["ultima_interaccion"] = time.time()
 
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        # Registrar mensaje del usuario
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
 
-        # Interacción 5: Sugerir contactar y describir estados emocionales
         if interacciones == 5:
             sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
             resultado_analisis = analizar_mensaje_usuario_con_cuadros(sintomas_usuario)
             return {
                 "respuesta": (
-                    f"{resultado_analisis}\n\n"
-                    "Con base en este análisis, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186. "
-                    "Él podrá realizar una evaluación más profunda y ayudarte en tu proceso de recuperación."
+                    f"En base a los síntomas proporcionados, se recomienda contactar al Lic. Daniel O. Bustamante 
+                    "al WhatsApp +54 911 3310-1186 para una evaluación profesional. {resultado_analisis}"
                 )
             }
 
-        # Interacción 6: Concluir la conversación
         if interacciones == 6:
-            sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
-            resultado_analisis = analizar_mensaje_usuario_con_cuadros(sintomas_usuario)
-            user_sessions.pop(user_id, None)  # Limpiar la sesión
+            user_sessions.pop(user_id, None)
             return {
                 "respuesta": (
-                    f"Hemos analizado tus mensajes: {resultado_analisis}\n\n"
-                    "Para garantizar que recibas el apoyo adecuado, te recomiendo contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186. "
-                    "Él podrá brindarte una evaluación detallada y un acompañamiento profesional en este proceso. "
-                    "Gracias por confiar en este servicio. La conversación ha concluido."
+                    "Gracias por utilizar el servicio. Se recomienda seguimiento profesional."
                 )
             }
 
-        # Responder durante las primeras interacciones (1 a 4)
-        if interacciones < 5:
-            respuesta_ai = await interactuar_con_openai(mensaje_usuario)
-            return {"respuesta": respuesta_ai}
+        return {
+            "respuesta": f"Mensaje recibido: '{mensaje_usuario}'. Por favor, continúe."
+        }
 
     except Exception as e:
         print(f"Error interno: {e}")
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
-# Interacción con OpenAI
-async def interactuar_con_openai(mensaje_usuario: str) -> str:
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Eres un asistente profesional que analiza síntomas emocionales."},
-                {"role": "user", "content": mensaje_usuario}
-            ],
-            max_tokens=200,
-            temperature=0.7
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Error al comunicarse con OpenAI: {str(e)}")
-
 # Endpoint para descargar el archivo de base de datos
 @app.get("/download/palabras_clave.db")
 async def download_file():
     if not os.path.exists(DB_PATH):
-        raise HTTPException(status_code=404, detail="El archivo palabras_clave.db no se encuentra.")
+        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
     return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
 
 # Endpoint para subir el archivo de base de datos
@@ -238,44 +200,21 @@ async def download_file():
 async def upload_file(file: UploadFile = File(...)):
     try:
         if file.filename != "palabras_clave.db":
-            raise HTTPException(status_code=400, detail="El archivo debe llamarse 'palabras_clave.db'.")
+            raise HTTPException(
+                status_code=400, detail="El archivo debe llamarse 'palabras_clave.db'."
+            )
 
         file_path = DB_PATH
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # Verificar si el archivo es una base de datos SQLite válida
-        try:
-            conn = sqlite3.connect(file_path)
-            conn.execute("SELECT name FROM sqlite_master WHERE type='table';")
-            conn.close()
-        except Exception:
-            os.remove(file_path)
-            raise HTTPException(status_code=400, detail="El archivo subido no es una base de datos SQLite válida.")
+        conn = sqlite3.connect(file_path)
+        conn.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        conn.close()
 
         return {"message": "Archivo subido exitosamente.", "filename": file.filename}
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
-
-# Formulario HTML para subir el archivo de base de datos
-@app.get("/upload_form", response_class=HTMLResponse)
-async def upload_form():
-    """
-    Genera un formulario simple para subir el archivo palabras_clave.db.
-    """
-    return """
-    <!doctype html>
-    <html>
-    <head>
-        <title>Subir palabras_clave.db</title>
-    </head>
-    <body>
-        <h1>Subir un nuevo archivo palabras_clave.db</h1>
-        <form action="/upload_file" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" accept=".db">
-            <button type="submit">Subir</button>
-        </form>
-    </body>
-    </html>
-    """
-
+        raise HTTPException(
+            status_code=500, detail=f"Error al subir el archivo: {str(e)}"
+        )
