@@ -27,7 +27,7 @@ app.add_middleware(
 )
 
 # Ruta para la base de datos
-DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
+DB_PATH = "/var/data/palabras_clave.db"
 PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
 # Configuración de la base de datos SQLite
@@ -132,7 +132,7 @@ class UserInput(BaseModel):
     mensaje: str
     user_id: str
 
-# Gestión de sesiones (en memoria)
+# Gestión de sesiones activas
 user_sessions = {}
 SESSION_TIMEOUT = 30  # Tiempo de inactividad en segundos
 MAX_INTERACCIONES = 6  # Máximo de interacciones permitidas
@@ -167,81 +167,59 @@ def read_root():
 # Endpoint para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
-    try:
-        user_id = input_data.user_id
-        mensaje_usuario = input_data.mensaje.strip().lower()
+    user_id = input_data.user_id
+    mensaje_usuario = input_data.mensaje.strip().lower()
 
-        if not mensaje_usuario:
-            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+    if not mensaje_usuario:
+        raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # Inicializar sesión si no existe
-        if user_id not in user_sessions:
-            user_sessions[user_id] = {
-                "contador_interacciones": 0,
-                "ultima_interaccion": time.time(),
-                "ultimo_mensaje": None,
-                "sintomas": [],
-                "bloqueado": False
-            }
+    if user_id not in user_sessions:
+        user_sessions[user_id] = {
+            "contador_interacciones": 0,
+            "ultima_interaccion": time.time(),
+            "sintomas": [],
+            "bloqueado": False
+        }
 
-        session = user_sessions[user_id]
-        session["ultima_interaccion"] = time.time()
+    session = user_sessions[user_id]
+    session["ultima_interaccion"] = time.time()
 
-        # Verificar si la sesión está bloqueada
-        if session["bloqueado"]:
-            return {
-                "respuesta": "Has alcanzado el límite de interacciones. Por favor, escribe 'reiniciar' para comenzar una nueva conversación."
-            }
+    if session["bloqueado"]:
+        return {"respuesta": "Has alcanzado el límite de interacciones. Escribe 'reiniciar' para una nueva conversación."}
 
-        # Reiniciar la sesión si el usuario lo solicita
-        if mensaje_usuario == "reiniciar":
-            user_sessions[user_id] = {
-                "contador_interacciones": 0,
-                "ultima_interaccion": time.time(),
-                "ultimo_mensaje": None,
-                "sintomas": [],
-                "bloqueado": False
-            }
-            return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
+    if mensaje_usuario == "reiniciar":
+        user_sessions[user_id] = {
+            "contador_interacciones": 0,
+            "ultima_interaccion": time.time(),
+            "sintomas": [],
+            "bloqueado": False
+        }
+        return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
 
-        # Incrementar el contador de interacciones
-        session["contador_interacciones"] += 1
+    session["contador_interacciones"] += 1
 
-        # Bloquear si se excede el máximo permitido
-        if session["contador_interacciones"] > MAX_INTERACCIONES:
-            session["bloqueado"] = True
-            return {
-                "respuesta": "Has alcanzado el límite de interacciones. Por favor, escribe 'reiniciar' para comenzar una nueva conversación."
-            }
+    if session["contador_interacciones"] > MAX_INTERACCIONES:
+        session["bloqueado"] = True
+        return {"respuesta": "Has alcanzado el límite de interacciones. Escribe 'reiniciar' para empezar otra vez."}
 
-        # Guardar síntomas mencionados
-        sintomas_usuario = mensaje_usuario.split()
-        session["sintomas"].extend(sintomas_usuario)
+    sintomas_usuario = mensaje_usuario.split()
+    session["sintomas"].extend(sintomas_usuario)
 
-        # Obtener categorías asociadas y responder en la interacción 5
-        if session["contador_interacciones"] == 5:
-            categorias_detectadas = obtener_categorias(session["sintomas"])
-            sintomas_unicos = set(session["sintomas"])
-            categorias_texto = ", ".join(categorias_detectadas)
+    if session["contador_interacciones"] == 5:
+        categorias_detectadas = obtener_categorias(session["sintomas"])
+        sintomas_unicos = set(session["sintomas"])
+        categorias_texto = ", ".join(categorias_detectadas)
 
-            return {
-                "respuesta": (
-                    f"Comprendo perfectamente, tus síntomas de {', '.join(sintomas_unicos)} "
-                    f"podrían estar relacionados con afecciones tales como {categorias_texto}. "
-                    "Si lo considerás necesario, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda de tu situación personal."
-                )
-            }
+        return {
+            "respuesta": (
+                f"Tus síntomas de {', '.join(sintomas_unicos)} pueden estar relacionados con: {categorias_texto}. "
+                "Considerá contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186."
+            )
+        }
 
-        # Detectar y registrar nuevas palabras clave
-        registrar_palabras_clave_limpiadas(mensaje_usuario)
-
-        # Interacción con OpenAI
-        respuesta = await interactuar_con_openai(mensaje_usuario)
-        return {"respuesta": respuesta}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+    registrar_palabras_clave_limpiadas(mensaje_usuario)
+    respuesta = await interactuar_con_openai(mensaje_usuario)
+    return {"respuesta": respuesta}
 
 # Interacción con OpenAI
 async def interactuar_con_openai(mensaje_usuario: str) -> str:
