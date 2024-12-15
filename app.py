@@ -133,54 +133,81 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
 # Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
+    """
+    Endpoint principal para interacción con el asistente.
+    El asistente responde con empatía y profesionalismo, guiando al usuario paso a paso.
+    """
     try:
         user_id = input_data.user_id
         mensaje_usuario = input_data.mensaje.strip().lower()
 
         if not mensaje_usuario:
             raise HTTPException(
-                status_code=400, detail="El mensaje no puede estar vacío."
+                status_code=400,
+                detail="Tu mensaje parece estar vacío. Por favor, cuéntame más sobre cómo te sientes o qué necesitas."
             )
 
+        # Inicializar sesión del usuario si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "mensajes": [],
             }
-        else:
-            user_sessions[user_id]["ultima_interaccion"] = time.time()
+            bienvenida = (
+                "¡Hola! Soy tu asistente virtual. Estoy aquí para escucharte y ayudarte. "
+                "Puedes compartir cualquier síntoma, preocupación o situación que estés experimentando. "
+                "Tómate tu tiempo para escribir, estoy aquí para ti."
+            )
+            return {"respuesta": bienvenida}
 
+        # Actualizar la sesión del usuario
+        user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
+        # Registrar el mensaje
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
 
+        # Proveer retroalimentación al usuario
+        if interacciones < 5:
+            return {
+                "respuesta": (
+                    f"Gracias por compartir tu mensaje: '{mensaje_usuario}'. "
+                    "Si hay algo más que quieras decir, no dudes en hacerlo. Estoy aquí para escuchar y ayudarte."
+                )
+            }
+
+        # Análisis de síntomas después de 5 interacciones
         if interacciones == 5:
             sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
             resultado_analisis = analizar_mensaje_usuario_con_cuadros(sintomas_usuario)
-            return {
-                "respuesta": (
-                    f"En base a los síntomas proporcionados, se recomienda contactar al Lic. Daniel O. Bustamante "
-                    f"al WhatsApp +54 911 3310-1186 para una evaluación profesional. {resultado_analisis}"
-                )
-            }
 
+            respuesta_final = (
+                "He analizado la información que me proporcionaste. Quiero agradecerte por compartir esto conmigo. "
+                "Es importante que sepas que no estás solo/a y que buscar ayuda profesional es un paso muy valiente. "
+                f"{resultado_analisis}\n\n"
+                "Te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
+                "al WhatsApp +54 911 3310-1186. Él podrá ofrecerte una evaluación y un apoyo más completo."
+            )
+
+            return {"respuesta": respuesta_final}
+
+        # Cierre de sesión después de 6 interacciones
         if interacciones == 6:
             user_sessions.pop(user_id, None)
-            return {
-                "respuesta": (
-                    "Gracias por utilizar el servicio. Se recomienda seguimiento profesional."
-                )
-            }
-
-        return {
-            "respuesta": f"Mensaje recibido: '{mensaje_usuario}'. Por favor, continúe."
-        }
+            despedida = (
+                "Muchas gracias por confiar en mí y compartir tus pensamientos. "
+                "Si necesitas más ayuda, no dudes en buscar apoyo profesional. ¡Te deseo lo mejor!"
+            )
+            return {"respuesta": despedida}
 
     except Exception as e:
         print(f"Error interno: {e}")
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Lo siento, hubo un problema interno al procesar tu solicitud. Por favor, inténtalo de nuevo más tarde."
+        )
 
 # Endpoint para descargar el archivo de base de datos
 @app.get("/download/palabras_clave.db")
