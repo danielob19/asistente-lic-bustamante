@@ -109,14 +109,6 @@ def obtener_categorias(sintomas):
         print(f"Error al obtener categorías: {e}")
         return []
 
-# Verificar escritura en disco
-def verificar_escritura_en_disco():
-    try:
-        with open(PRUEBA_PATH, "w") as archivo:
-            archivo.write("Prueba de escritura exitosa.")
-    except Exception as e:
-        print(f"Error al escribir en el disco: {e}")
-
 # Clase para solicitudes del usuario
 class UserInput(BaseModel):
     mensaje: str
