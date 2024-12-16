@@ -165,11 +165,16 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
 
-        for mensaje_previo in user_sessions[user_id]["mensajes"]:
-            if son_similares(mensaje_usuario, mensaje_previo):
-                return {
-                    "respuesta": "Ya hemos hablado de eso. ¿Qué más te está afectando en este momento?"
-                }
+        # Lista de mensajes genéricos que no activarán la respuesta de repetición
+        mensajes_excluidos = ["hola", "buenos días", "buenas tardes", "buenas noches"]
+
+        # Verificar si el mensaje es genérico o similar a mensajes previos
+        if mensaje_usuario not in mensajes_excluidos:
+            for mensaje_previo in user_sessions[user_id]["mensajes"]:
+                if son_similares(mensaje_usuario, mensaje_previo):
+                    return {
+                        "respuesta": "Ya hemos hablado de eso. ¿Qué más te está afectando en este momento?"
+                    }
 
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
         interacciones = user_sessions[user_id]["contador_interacciones"]
