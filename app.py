@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
-from difflib import SequenceMatcher  # Importación para calcular similitud
+from difflib import SequenceMatcher
 
 # Configuración de la clave de API de OpenAI
 import openai
@@ -22,14 +22,14 @@ app = FastAPI()
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Cambiar "*" a una lista de dominios específicos si es necesario
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Ruta para la base de datos
-DB_PATH = "./data/palabras_clave.db"  # Cambiar según sea necesario
+DB_PATH = "./data/palabras_clave.db"
 
 # Gestión de sesiones (en memoria)
 user_sessions = {}
@@ -51,20 +51,14 @@ def son_similares(texto1, texto2, umbral=0.8):
 
 # Inicialización de la base de datos
 def init_db():
-    """
-    Inicializa la base de datos creando la tabla 'palabras_clave' si no existe.
-    """
     try:
-        # Asegurar que el directorio de la base de datos exista
         db_directory = os.path.dirname(DB_PATH)
         if not os.path.exists(db_directory):
             os.makedirs(db_directory)
 
-        # Conexión a la base de datos
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
-        # Crear tabla si no existe
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS palabras_clave (
@@ -85,9 +79,6 @@ def init_db():
 
 # Limpieza de sesiones inactivas
 async def session_cleaner():
-    """
-    Limpia sesiones inactivas basadas en `SESSION_TIMEOUT`.
-    """
     while True:
         try:
             current_time = time.time()
@@ -98,24 +89,18 @@ async def session_cleaner():
             ]
             for user_id in inactive_users:
                 user_sessions.pop(user_id, None)
-            await asyncio.sleep(60)  # Pausa antes de la próxima limpieza
+            await asyncio.sleep(60)
         except Exception as e:
             print(f"Error en el limpiador de sesiones: {e}")
 
 @app.on_event("startup")
 async def startup_event():
-    """
-    Eventos de inicio de la aplicación.
-    """
     print("Iniciando la aplicación...")
-    init_db()  # Inicializar la base de datos
-    asyncio.create_task(session_cleaner())  # Iniciar limpiador de sesiones
+    init_db()
+    asyncio.create_task(session_cleaner())
 
 # Analizar mensaje del usuario con cuadros psicológicos
 def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> dict:
-    """
-    Analiza un mensaje del usuario y busca palabras clave en la base de datos.
-    """
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -154,9 +139,6 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> dict:
 # Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
-    """
-    Endpoint para manejar la interacción con el asistente.
-    """
     try:
         user_id = input_data.user_id
         mensaje_usuario = normalizar_texto(input_data.mensaje)
@@ -167,12 +149,11 @@ async def asistente(input_data: UserInput):
                 detail="Tu mensaje parece estar vacío. Por favor, cuéntame más sobre cómo te sientes o qué necesitas."
             )
 
-        # Inicializar sesión del usuario si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
-                "mensajes": [],  # Cambiado a lista para comparar similitud
+                "mensajes": [],
             }
             bienvenida = (
                 "¡Hola! Soy tu asistente virtual. Estoy aquí para escucharte y ayudarte. "
@@ -181,22 +162,18 @@ async def asistente(input_data: UserInput):
             )
             return {"respuesta": bienvenida}
 
-        # Actualizar la sesión del usuario
         user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
 
-        # Verificar si el mensaje es similar a otros ya mencionados
         for mensaje_previo in user_sessions[user_id]["mensajes"]:
             if son_similares(mensaje_usuario, mensaje_previo):
                 return {
                     "respuesta": "Ya hemos hablado de eso. ¿Qué más te está afectando en este momento?"
                 }
 
-        # Registrar el mensaje
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        # Proveer retroalimentación al usuario
         if interacciones < 5:
             respuestas = [
                 "Entiendo. ¿Puedes contarme más sobre lo que estás sintiendo o algo más que te preocupe?",
@@ -206,7 +183,6 @@ async def asistente(input_data: UserInput):
             ]
             return {"respuesta": respuestas[interacciones % len(respuestas)]}
 
-        # Análisis de síntomas después de 5 interacciones
         if interacciones == 5:
             sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
             resultado_analisis = analizar_mensaje_usuario_con_cuadros(sintomas_usuario)
@@ -242,7 +218,6 @@ async def asistente(input_data: UserInput):
                     "respuesta": "No se detectaron suficientes coincidencias para determinar un cuadro específico. Si persisten los síntomas, te sugiero buscar apoyo profesional."
                 }
 
-        # Mensaje de cierre después de 6 interacciones
         if interacciones == 6:
             return {
                 "respuesta": (
@@ -258,12 +233,8 @@ async def asistente(input_data: UserInput):
             detail="Lo siento, hubo un problema interno al procesar tu solicitud. Por favor, inténtalo de nuevo más tarde."
         )
 
-# Endpoint para formulario de subida
 @app.get("/upload_form", response_class=HTMLResponse)
 async def upload_form():
-    """
-    Muestra un formulario HTML para subir la base de datos.
-    """
     return """
     <html>
         <body>
@@ -276,22 +247,14 @@ async def upload_form():
     </html>
     """
 
-# Endpoint para descargar el archivo de base de datos
 @app.get("/download/palabras_clave.db")
 async def download_file():
-    """
-    Descarga el archivo de la base de datos.
-    """
     if not os.path.exists(DB_PATH):
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")
     return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
 
-# Endpoint para subir el archivo de base de datos
 @app.post("/upload_file")
 async def upload_file(file: UploadFile = File(...)):
-    """
-    Sube un nuevo archivo de base de datos.
-    """
     try:
         if file.filename != "palabras_clave.db":
             raise HTTPException(
