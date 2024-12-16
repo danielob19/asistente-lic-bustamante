@@ -63,8 +63,8 @@ def init_db():
             """
             CREATE TABLE IF NOT EXISTS palabras_clave (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                palabra TEXT UNIQUE NOT NULL,
-                categoria TEXT NOT NULL,
+                sintoma TEXT UNIQUE NOT NULL,
+                cuadro TEXT NOT NULL,
                 cuadros TEXT
             )
             """
@@ -110,9 +110,9 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> dict:
             return {"error": "El mensaje proporcionado está vacío o no contiene información válida."}
 
         consulta = f"""
-            SELECT palabra, categoria 
+            SELECT sintoma, cuadro 
             FROM palabras_clave 
-            WHERE palabra IN ({','.join(['?'] * len(palabras_clave))})
+            WHERE sintoma IN ({','.join(['?'] * len(palabras_clave))})
         """
         cursor.execute(consulta, palabras_clave)
         resultados = cursor.fetchall()
@@ -122,10 +122,10 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> dict:
             return {"mensaje": "No se encontraron coincidencias en la base de datos para los síntomas proporcionados."}
 
         categorias = {}
-        for palabra, categoria in resultados:
-            if categoria not in categorias:
-                categorias[categoria] = []
-            categorias[categoria].append(palabra)
+        for sintoma, cuadro in resultados:
+            if cuadro not in categorias:
+                categorias[cuadro] = []
+            categorias[cuadro].append(sintoma)
 
         return {"categorias": categorias}
 
@@ -205,8 +205,8 @@ async def asistente(input_data: UserInput):
 
             if categorias_detectadas:
                 lista_respuestas = []
-                for categoria, palabras in categorias_detectadas.items():
-                    lista_respuestas.append(f"{categoria}: {', '.join(palabras)}")
+                for cuadro, sintomas in categorias_detectadas.items():
+                    lista_respuestas.append(f"{cuadro}: {', '.join(sintomas)}")
 
                 respuesta_final = (
                     f"En base a los síntomas referidos, se han identificado las siguientes categorías: {'. '.join(lista_respuestas)}. "
