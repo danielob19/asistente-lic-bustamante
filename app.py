@@ -222,30 +222,25 @@ async def asistente(input_data: UserInput):
 
             categorias_detectadas = resultado_analisis.get("categorias", {})
 
-            respuestas_por_categoria = {
-                "ansiedad": "Parece que estás lidiando con síntomas de ansiedad. ¿Hay algo que creas que pueda estar desencadenándola?",
-                "depresion": "Entiendo que podrías estar experimentando síntomas relacionados con la depresión. Es importante hablar con alguien sobre ello.",
-                "estres": "El estrés puede ser muy abrumador. ¿Puedes identificar qué podría estar causándolo?",
-            }
+            if len(categorias_detectadas) > 1:
+                lista_sintomas = []
+                lista_categorias = []
+                for categoria, palabras in categorias_detectadas.items():
+                    lista_sintomas.extend(palabras)
+                    lista_categorias.append(categoria)
 
-            respuestas = []
-            for categoria, palabras in categorias_detectadas.items():
-                respuesta = respuestas_por_categoria.get(categoria.lower(), None)
-                if respuesta:
-                    respuestas.append(f"{respuesta} Palabras relacionadas: {', '.join(palabras)}.")
-
-            if respuestas:
-                respuesta_final = " ".join(respuestas)
-            else:
-                respuesta_final = "He detectado algunas categorías, pero parece que necesito más información para ayudarte mejor."
-
-            return {
-                "respuesta": (
-                    f"Gracias por compartir más detalles. Esto es lo que he podido analizar: \n{respuesta_final}\n\n"
-                    "Te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
-                    "al WhatsApp +54 911 3310-1186. Él podrá ofrecerte una evaluación y un apoyo más completo."
+                respuesta_final = (
+                    f"En base a los síntomas referidos ({', '.join(lista_sintomas)}), pareciera tratarse de una afección o cuadro "
+                    f"relacionado con {' y '.join(lista_categorias)}. Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, "
+                    f"un profesional especializado, al WhatsApp +54 911 3310-1186. Él podrá ofrecerte una evaluación y un apoyo más completo."
                 )
-            }
+
+                return {"respuesta": respuesta_final}
+
+            else:
+                return {
+                    "respuesta": "No se detectaron suficientes coincidencias para determinar un cuadro específico. Si persisten los síntomas, te sugiero buscar apoyo profesional."
+                }
 
         # Mensaje de cierre después de 6 interacciones
         if interacciones == 6:
