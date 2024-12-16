@@ -5,7 +5,7 @@ import asyncio
 import shutil
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from difflib import SequenceMatcher  # Importación para calcular similitud
 
@@ -29,7 +29,7 @@ app.add_middleware(
 )
 
 # Ruta para la base de datos
-DB_PATH = "/var/data/palabras_clave.db"  # Cambiar según sea necesario
+DB_PATH = "./data/palabras_clave.db"  # Cambiar según sea necesario
 
 # Gestión de sesiones (en memoria)
 user_sessions = {}
@@ -263,6 +263,24 @@ async def asistente(input_data: UserInput):
             detail="Lo siento, hubo un problema interno al procesar tu solicitud. Por favor, inténtalo de nuevo más tarde."
         )
 
+# Endpoint para formulario de subida
+@app.get("/upload_form", response_class=HTMLResponse)
+async def upload_form():
+    """
+    Muestra un formulario HTML para subir la base de datos.
+    """
+    return """
+    <html>
+        <body>
+            <h1>Subir archivo de base de datos</h1>
+            <form action="/upload_file" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" />
+                <button type="submit">Subir</button>
+            </form>
+        </body>
+    </html>
+    """
+
 # Endpoint para descargar el archivo de base de datos
 @app.get("/download/palabras_clave.db")
 async def download_file():
@@ -299,19 +317,3 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(
             status_code=500, detail=f"Error al subir el archivo: {str(e)}"
         )
-@app.get("/upload_form", response_class=HTMLResponse)
-async def upload_form():
-    """
-    Muestra un formulario HTML para subir la base de datos.
-    """
-    return """
-    <html>
-        <body>
-            <h1>Subir archivo de base de datos</h1>
-            <form action="/upload_file" method="post" enctype="multipart/form-data">
-                <input type="file" name="file" />
-                <button type="submit">Subir</button>
-            </form>
-        </body>
-    </html>
-    """
