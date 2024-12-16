@@ -299,3 +299,19 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(
             status_code=500, detail=f"Error al subir el archivo: {str(e)}"
         )
+@app.get("/upload_form", response_class=HTMLResponse)
+async def upload_form():
+    """
+    Muestra un formulario HTML para subir la base de datos.
+    """
+    return """
+    <html>
+        <body>
+            <h1>Subir archivo de base de datos</h1>
+            <form action="/upload_file" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" />
+                <button type="submit">Subir</button>
+            </form>
+        </body>
+    </html>
+    """
