@@ -195,7 +195,7 @@ async def asistente(input_data: UserInput):
         for mensaje_previo in user_sessions[user_id]["mensajes"]:
             if son_similares(mensaje_usuario, mensaje_previo):
                 return {
-                    "respuesta": "Ya hemos hablado de eso. ¿Hay algo más que quieras compartir?"
+                    "respuesta": "Ya hemos hablado de eso. ¿Qué más te está afectando en este momento?"
                 }
 
         # Registrar el mensaje
@@ -206,8 +206,7 @@ async def asistente(input_data: UserInput):
         if interacciones < 5:
             return {
                 "respuesta": (
-                    f"Gracias por compartir tu mensaje: '{mensaje_usuario}'. "
-                    "Si hay algo más que quieras decir, no dudes en hacerlo. Estoy aquí para escuchar y ayudarte."
+                    "Entiendo. ¿Puedes contarme más sobre lo que estás sintiendo o algo más que te preocupe? Estoy aquí para escucharte."
                 )
             }
 
@@ -226,7 +225,7 @@ async def asistente(input_data: UserInput):
                 }
 
             respuesta_final = (
-                "He analizado la información que me proporcionaste. Quiero agradecerte por compartir esto conmigo. "
+                "He analizado la información que me proporcionaste. Gracias por compartir esto conmigo. "
                 "Es importante que sepas que no estás solo/a y que buscar ayuda profesional es un paso muy valiente. "
                 f"{resultado_analisis}\n\n"
                 "Te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
