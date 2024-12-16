@@ -64,8 +64,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS palabras_clave (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 sintoma TEXT UNIQUE NOT NULL,
-                cuadro TEXT NOT NULL,
-                cuadros TEXT
+                cuadro TEXT NOT NULL
             )
             """
         )
@@ -121,13 +120,13 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> dict:
         if not resultados:
             return {"mensaje": "No se encontraron coincidencias en la base de datos para los síntomas proporcionados."}
 
-        categorias = {}
+        cuadros = {}
         for sintoma, cuadro in resultados:
-            if cuadro not in categorias:
-                categorias[cuadro] = []
-            categorias[cuadro].append(sintoma)
+            if cuadro not in cuadros:
+                cuadros[cuadro] = []
+            cuadros[cuadro].append(sintoma)
 
-        return {"categorias": categorias}
+        return {"cuadros": cuadros}
 
     except sqlite3.Error as db_error:
         print(f"Error en la base de datos: {db_error}")
@@ -201,11 +200,11 @@ async def asistente(input_data: UserInput):
                     )
                 }
 
-            categorias_detectadas = resultado_analisis.get("categorias", {})
+            cuadros_detectados = resultado_analisis.get("cuadros", {})
 
-            if categorias_detectadas:
+            if cuadros_detectados:
                 lista_respuestas = []
-                for cuadro, sintomas in categorias_detectadas.items():
+                for cuadro, sintomas in cuadros_detectados.items():
                     lista_respuestas.append(f"{cuadro}: {', '.join(sintomas)}")
 
                 respuesta_final = (
