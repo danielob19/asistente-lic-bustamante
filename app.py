@@ -203,17 +203,15 @@ async def asistente(input_data: UserInput):
 
             categorias_detectadas = resultado_analisis.get("categorias", {})
 
-            if len(categorias_detectadas) > 1:
-                lista_sintomas = []
-                lista_categorias = []
+            if categorias_detectadas:
+                lista_respuestas = []
                 for categoria, palabras in categorias_detectadas.items():
-                    lista_sintomas.extend(palabras)
-                    lista_categorias.append(categoria)
+                    lista_respuestas.append(f"{categoria}: {', '.join(palabras)}")
 
                 respuesta_final = (
-                    f"En base a los síntomas referidos ({', '.join(lista_sintomas)}), pareciera tratarse de una afección o cuadro "
-                    f"relacionado con {' y '.join(lista_categorias)}. Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, "
-                    f"un profesional especializado, al WhatsApp +54 911 3310-1186. Él podrá ofrecerte una evaluación y un apoyo más completo."
+                    f"En base a los síntomas referidos, se han identificado las siguientes categorías: {'. '.join(lista_respuestas)}. "
+                    "Te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
+                    "Él podrá ofrecerte una evaluación y un apoyo más completo."
                 )
 
                 return {"respuesta": respuesta_final}
