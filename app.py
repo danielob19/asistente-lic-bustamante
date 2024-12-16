@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from difflib import SequenceMatcher  # Importación para calcular similitud
 
 # Configuración de la clave de API de OpenAI
 import openai
@@ -38,6 +39,15 @@ SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
 class UserInput(BaseModel):
     mensaje: str
     user_id: str
+
+# Función para normalizar texto
+def normalizar_texto(texto):
+    return ''.join(c for c in texto.lower() if c.isalnum() or c.isspace()).strip()
+
+# Función para calcular similitud entre textos
+def son_similares(texto1, texto2, umbral=0.8):
+    similitud = SequenceMatcher(None, texto1, texto2).ratio()
+    return similitud >= umbral
 
 # Inicialización de la base de datos
 def init_db():
@@ -155,7 +165,7 @@ async def asistente(input_data: UserInput):
     """
     try:
         user_id = input_data.user_id
-        mensaje_usuario = input_data.mensaje.strip().lower()
+        mensaje_usuario = normalizar_texto(input_data.mensaje)
 
         if not mensaje_usuario:
             raise HTTPException(
@@ -168,7 +178,7 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
-                "mensajes": set(),  # Cambiado a un conjunto para evitar duplicados
+                "mensajes": [],  # Cambiado a lista para comparar similitud
             }
             bienvenida = (
                 "¡Hola! Soy tu asistente virtual. Estoy aquí para escucharte y ayudarte. "
@@ -181,14 +191,15 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
 
-        # Verificar si el mensaje ya fue mencionado
-        if mensaje_usuario in user_sessions[user_id]["mensajes"]:
-            return {
-                "respuesta": "Ya hemos hablado de eso. ¿Hay algo más que quieras compartir?"
-            }
+        # Verificar si el mensaje es similar a otros ya mencionados
+        for mensaje_previo in user_sessions[user_id]["mensajes"]:
+            if son_similares(mensaje_usuario, mensaje_previo):
+                return {
+                    "respuesta": "Ya hemos hablado de eso. ¿Hay algo más que quieras compartir?"
+                }
 
         # Registrar el mensaje
-        user_sessions[user_id]["mensajes"].add(mensaje_usuario)
+        user_sessions[user_id]["mensajes"].append(mensaje_usuario)
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
         # Proveer retroalimentación al usuario
