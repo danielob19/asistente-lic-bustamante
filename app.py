@@ -204,11 +204,13 @@ async def asistente(input_data: UserInput):
 
         # Proveer retroalimentación al usuario
         if interacciones < 5:
-            return {
-                "respuesta": (
-                    "Entiendo. ¿Puedes contarme más sobre lo que estás sintiendo o algo más que te preocupe? Estoy aquí para escucharte."
-                )
-            }
+            respuestas = [
+                "Entiendo. ¿Puedes contarme más sobre lo que estás sintiendo o algo más que te preocupe?",
+                "Gracias por abrirte conmigo. ¿Hay algún otro aspecto que te gustaría compartir?",
+                "Estoy aquí para escucharte. ¿Qué más te gustaría contarme sobre lo que sientes?",
+                "Cuéntame más, estoy aquí para apoyarte. ¿Hay algo más que te esté afectando?"
+            ]
+            return {"respuesta": respuestas[interacciones % len(respuestas)]}
 
         # Análisis de síntomas después de 5 interacciones
         if interacciones == 5:
@@ -225,8 +227,7 @@ async def asistente(input_data: UserInput):
                 }
 
             respuesta_final = (
-                "He analizado la información que me proporcionaste. Gracias por compartir esto conmigo. "
-                "Es importante que sepas que no estás solo/a y que buscar ayuda profesional es un paso muy valiente. "
+                "Gracias por compartir más detalles. Esto es lo que he podido analizar: "
                 f"{resultado_analisis}\n\n"
                 "Te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
                 "al WhatsApp +54 911 3310-1186. Él podrá ofrecerte una evaluación y un apoyo más completo."
