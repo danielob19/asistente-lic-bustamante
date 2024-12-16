@@ -112,7 +112,7 @@ async def startup_event():
     asyncio.create_task(session_cleaner())  # Iniciar limpiador de sesiones
 
 # Analizar mensaje del usuario con cuadros psicológicos
-def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
+def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> dict:
     """
     Analiza un mensaje del usuario y busca palabras clave en la base de datos.
     """
@@ -122,7 +122,7 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
 
         palabras_clave = mensaje_usuario.split()
         if not palabras_clave:
-            return "El mensaje proporcionado está vacío o no contiene información válida."
+            return {"error": "El mensaje proporcionado está vacío o no contiene información válida."}
 
         consulta = f"""
             SELECT palabra, categoria 
@@ -134,7 +134,7 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
         conn.close()
 
         if not resultados:
-            return "No se encontraron coincidencias en la base de datos para los síntomas proporcionados."
+            return {"mensaje": "No se encontraron coincidencias en la base de datos para los síntomas proporcionados."}
 
         categorias = {}
         for palabra, categoria in resultados:
@@ -142,20 +142,14 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> str:
                 categorias[categoria] = []
             categorias[categoria].append(palabra)
 
-        detalles_categorias = [
-            f"{categoria}: {' '.join(palabras)}" for categoria, palabras in categorias.items()
-        ]
-
-        return (
-            f"Categorías detectadas:\n{chr(10).join(detalles_categorias)}."
-        )
+        return {"categorias": categorias}
 
     except sqlite3.Error as db_error:
         print(f"Error en la base de datos: {db_error}")
-        return "Parece que hubo un problema técnico al acceder a la base de datos. Por favor, intenta nuevamente más tarde."
+        return {"error": "Hubo un problema técnico al acceder a la base de datos."}
     except Exception as e:
         print(f"Error inesperado: {e}")
-        return "Ocurrió un error inesperado mientras procesaba tu información. Por favor, inténtalo nuevamente."
+        return {"error": "Ocurrió un error inesperado mientras procesaba tu información."}
 
 # Endpoint principal para interacción con el asistente
 @app.post("/asistente")
@@ -217,7 +211,7 @@ async def asistente(input_data: UserInput):
             sintomas_usuario = " ".join(user_sessions[user_id]["mensajes"])
             resultado_analisis = analizar_mensaje_usuario_con_cuadros(sintomas_usuario)
 
-            if "error" in resultado_analisis.lower():
+            if "error" in resultado_analisis:
                 return {
                     "respuesta": (
                         "Lamento mucho este inconveniente. Parece que hubo un problema técnico mientras procesaba tu información. "
@@ -226,14 +220,32 @@ async def asistente(input_data: UserInput):
                     )
                 }
 
-            respuesta_final = (
-                "Gracias por compartir más detalles. Esto es lo que he podido analizar: "
-                f"{resultado_analisis}\n\n"
-                "Te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
-                "al WhatsApp +54 911 3310-1186. Él podrá ofrecerte una evaluación y un apoyo más completo."
-            )
+            categorias_detectadas = resultado_analisis.get("categorias", {})
 
-            return {"respuesta": respuesta_final}
+            respuestas_por_categoria = {
+                "ansiedad": "Parece que estás lidiando con síntomas de ansiedad. ¿Hay algo que creas que pueda estar desencadenándola?",
+                "depresion": "Entiendo que podrías estar experimentando síntomas relacionados con la depresión. Es importante hablar con alguien sobre ello.",
+                "estres": "El estrés puede ser muy abrumador. ¿Puedes identificar qué podría estar causándolo?",
+            }
+
+            respuestas = []
+            for categoria, palabras in categorias_detectadas.items():
+                respuesta = respuestas_por_categoria.get(categoria.lower(), None)
+                if respuesta:
+                    respuestas.append(f"{respuesta} Palabras relacionadas: {', '.join(palabras)}.")
+
+            if respuestas:
+                respuesta_final = " ".join(respuestas)
+            else:
+                respuesta_final = "He detectado algunas categorías, pero parece que necesito más información para ayudarte mejor."
+
+            return {
+                "respuesta": (
+                    f"Gracias por compartir más detalles. Esto es lo que he podido analizar: \n{respuesta_final}\n\n"
+                    "Te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
+                    "al WhatsApp +54 911 3310-1186. Él podrá ofrecerte una evaluación y un apoyo más completo."
+                )
+            }
 
         # Mensaje de cierre después de 6 interacciones
         if interacciones == 6:
