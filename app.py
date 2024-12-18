@@ -104,16 +104,16 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> dict:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
-        palabras_clave = mensaje_usuario.split()
+        palabras_clave = [palabra.strip() for palabra in mensaje_usuario.split()]
         if not palabras_clave:
-            return {"error": "El mensaje proporcionado está vacío o no contiene información válida."}
+            return {"mensaje": "El mensaje proporcionado está vacío o no contiene información válida."}
 
         consulta = f"""
             SELECT sintoma, cuadro 
             FROM palabras_clave 
-            WHERE sintoma IN ({','.join(['?'] * len(palabras_clave))})
+            WHERE LOWER(sintoma) IN ({','.join(['?'] * len(palabras_clave))})
         """
-        cursor.execute(consulta, palabras_clave)
+        cursor.execute(consulta, [palabra.lower() for palabra in palabras_clave])
         resultados = cursor.fetchall()
         conn.close()
 
