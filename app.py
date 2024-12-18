@@ -8,6 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from difflib import SequenceMatcher
+from nltk.corpus import wordnet
+import nltk
+nltk.download('wordnet')
 
 # Configuración de la clave de API de OpenAI
 import openai
@@ -48,6 +51,14 @@ def normalizar_texto(texto):
 def son_similares(texto1, texto2, umbral=0.8):
     similitud = SequenceMatcher(None, texto1, texto2).ratio()
     return similitud >= umbral
+
+# Función para obtener sinónimos de una palabra
+def obtener_sinonimos(palabra):
+    sinonimos = set()
+    for syn in wordnet.synsets(palabra):
+        for lemma in syn.lemmas():
+            sinonimos.add(lemma.name().replace('_', ' ').lower())
+    return sinonimos
 
 # Inicialización de la base de datos
 def init_db():
@@ -112,13 +123,17 @@ def analizar_mensaje_usuario_con_cuadros(mensaje_usuario: str) -> dict:
         cuadros = {}
 
         for palabra in palabras_clave:
-            cursor.execute(consulta, (f"%{palabra.lower()}%",))
-            resultados = cursor.fetchall()
+            sinonimos = obtener_sinonimos(palabra)
+            sinonimos.add(palabra)
 
-            for sintoma, cuadro in resultados:
-                if cuadro not in cuadros:
-                    cuadros[cuadro] = []
-                cuadros[cuadro].append(sintoma)
+            for sinonimo in sinonimos:
+                cursor.execute(consulta, (f"%{sinonimo.lower()}%",))
+                resultados = cursor.fetchall()
+
+                for sintoma, cuadro in resultados:
+                    if cuadro not in cuadros:
+                        cuadros[cuadro] = []
+                    cuadros[cuadro].append(sintoma)
 
         conn.close()
 
