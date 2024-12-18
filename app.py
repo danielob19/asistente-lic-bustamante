@@ -89,10 +89,14 @@ def analizar_texto(mensajes_usuario):
 
     keyword_to_category = {palabra.lower(): categoria for palabra, categoria in palabras_clave}
     coincidencias = []
+    palabras_detectadas = []
 
     for mensaje in mensajes_usuario:
         user_words = mensaje.lower().split()
-        coincidencias.extend([keyword_to_category[palabra] for palabra in user_words if palabra in keyword_to_category])
+        for palabra in user_words:
+            if palabra in keyword_to_category:
+                coincidencias.append(keyword_to_category[palabra])
+                palabras_detectadas.append(palabra)
 
     if len(coincidencias) < 2:
         return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
@@ -102,8 +106,10 @@ def analizar_texto(mensajes_usuario):
     probabilidad = (frecuencia / len(coincidencias)) * 100
 
     return (
-        f"Se identificaron las siguientes coincidencias: {dict(category_counts)}.\n"
-        f"El cuadro psicológico más probable es: '{cuadro_probable}' con una probabilidad del {probabilidad:.2f}%.")
+        f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de una afección o cuadro relacionado con {cuadro_probable}. "
+        f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
+        f"Él podrá ofrecerte una evaluación y un apoyo más completo."
+    )
 
 # Verificar escritura en disco
 def verificar_escritura_en_disco():
@@ -216,18 +222,24 @@ async def asistente(input_data: UserInput):
             else:
                 return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
 
-        # Esperar hasta la interacción 5
-        if interacciones < 5:
-            return {"respuesta": "Estoy recopilando información, por favor continúa describiendo tus síntomas."}
+        # Respuesta en la interacción 6
+        if interacciones > 5:
+            return {
+                "respuesta": (
+                    "Si bien debo concluir nuestra conversación, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
+                    "al WhatsApp +54 911 3310-1186. Un saludo."
+                )
+            }
 
         # Análisis en la interacción 5
         if interacciones == 5:
             mensajes = user_sessions[user_id]["mensajes"]
             respuesta_analisis = analizar_texto(mensajes)
-            user_sessions.pop(user_id)  # Finalizar sesión tras el análisis
+            user_sessions[user_id]["mensajes"].clear()  # Limpiar mensajes tras el análisis
             return {"respuesta": respuesta_analisis}
 
-        return {"respuesta": "Por favor continúa describiendo tus síntomas."}
+        # Continuar recopilando información
+        return {"respuesta": "Estoy recopilando información, por favor continúa describiendo tus síntomas."}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
