@@ -82,15 +82,17 @@ def obtener_palabras_clave():
         return []
 
 # Análisis de texto del usuario
-def analizar_texto(mensaje_usuario):
+def analizar_texto(mensajes_usuario):
     palabras_clave = obtener_palabras_clave()
     if not palabras_clave:
         return "No se encontraron palabras clave para analizar."
 
     keyword_to_category = {palabra.lower(): categoria for palabra, categoria in palabras_clave}
-    user_words = mensaje_usuario.lower().split()
+    coincidencias = []
 
-    coincidencias = [keyword_to_category[palabra] for palabra in user_words if palabra in keyword_to_category]
+    for mensaje in mensajes_usuario:
+        user_words = mensaje.lower().split()
+        coincidencias.extend([keyword_to_category[palabra] for palabra in user_words if palabra in keyword_to_category])
 
     if len(coincidencias) < 2:
         return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
@@ -198,12 +200,12 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
-                "ultimo_mensaje": None,
+                "mensajes": []
             }
-        else:
-            user_sessions[user_id]["ultima_interaccion"] = time.time()
 
+        user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
+        user_sessions[user_id]["mensajes"].append(mensaje_usuario)
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
         # Reinicio de conversación
@@ -214,30 +216,18 @@ async def asistente(input_data: UserInput):
             else:
                 return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
 
-        # Detectar y analizar síntomas
-        respuesta_analisis = analizar_texto(mensaje_usuario)
+        # Esperar hasta la interacción 5
+        if interacciones < 5:
+            return {"respuesta": "Estoy recopilando información, por favor continúa describiendo tus síntomas."}
 
-        # Mensaje de finalización de conversación
-        if interacciones >= 6:
-            return {
-                "respuesta": (
-                    "Si bien tengo que dar por terminada esta conversación, no obstante si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "para una evaluación más profunda de tu condición emocional. Si querés reiniciar un nuevo chat escribí: reiniciar."
-                )
-            }
-
+        # Análisis en la interacción 5
         if interacciones == 5:
-            return {
-                "respuesta": (
-                    "Comprendo perfectamente. Si lo considerás necesario, "
-                    "te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 "
-                    "quien podrá ayudarte a partir de una evaluación más profunda de tu situación personal."
-                )
-            }
+            mensajes = user_sessions[user_id]["mensajes"]
+            respuesta_analisis = analizar_texto(mensajes)
+            user_sessions.pop(user_id)  # Finalizar sesión tras el análisis
+            return {"respuesta": respuesta_analisis}
 
-        # Respuesta de análisis
-        return {"respuesta": respuesta_analisis}
+        return {"respuesta": "Por favor continúa describiendo tus síntomas."}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
