@@ -265,4 +265,31 @@ async def upload_form():
     </html>
     """
 
-@app.get("/download/palabras_cl
+@app.get("/download/palabras_clave.db")
+async def download_file():
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
+
+@app.post("/upload_file")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        if file.filename != "palabras_clave.db":
+            raise HTTPException(
+                status_code=400, detail="El archivo debe llamarse 'palabras_clave.db'."
+            )
+
+        file_path = DB_PATH
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        conn = sqlite3.connect(file_path)
+        conn.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        conn.close()
+
+        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error al subir el archivo: {str(e)}"
+        )
