@@ -249,3 +249,26 @@ async def asistente(input_data: UserInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+        # Clase para registrar una nueva palabra clave
+class NuevaPalabra(BaseModel):
+    palabra: str
+    categoria: str
+    sintoma: str
+
+@app.post("/registrar_palabra")
+async def registrar_nueva_palabra(data: NuevaPalabra):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR IGNORE INTO palabras_clave (palabra, categoria, sintoma)
+            VALUES (?, ?, ?)
+        """, (data.palabra.lower(), data.categoria.lower(), data.sintoma.lower()))
+        conn.commit()
+        conn.close()
+        return {"mensaje": "Palabra registrada exitosamente."}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="La palabra ya existe en la base de datos.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al registrar palabra: {str(e)}")
