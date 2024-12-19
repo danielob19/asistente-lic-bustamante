@@ -40,7 +40,8 @@ def init_db():
             CREATE TABLE IF NOT EXISTS palabras_clave (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 palabra TEXT UNIQUE NOT NULL,
-                categoria TEXT NOT NULL
+                categoria TEXT NOT NULL,
+                sintoma TEXT DEFAULT NULL
             )
         """)
         cursor.execute("""
