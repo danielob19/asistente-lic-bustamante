@@ -83,6 +83,9 @@ def obtener_palabras_clave():
 
 # Análisis de texto del usuario
 def analizar_texto(mensajes_usuario):
+    # Lista de saludos comunes a excluir
+    saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
+
     palabras_clave = obtener_palabras_clave()
     if not palabras_clave:
         return "No se encontraron palabras clave para analizar."
@@ -93,6 +96,8 @@ def analizar_texto(mensajes_usuario):
 
     for mensaje in mensajes_usuario:
         user_words = mensaje.lower().split()
+        # Filtrar saludos
+        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
         for palabra in user_words:
             if palabra in keyword_to_category:
                 coincidencias.append(keyword_to_category[palabra])
