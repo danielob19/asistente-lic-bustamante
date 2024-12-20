@@ -77,6 +77,7 @@ def obtener_palabras_clave():
         cursor.execute("SELECT palabra, categoria, sintoma FROM palabras_clave")
         palabras = cursor.fetchall()
         conn.close()
+        print("Palabras clave cargadas:", palabras)  # Depuración
         return palabras
     except Exception as e:
         print(f"Error al obtener palabras clave: {e}")
@@ -102,21 +103,36 @@ def analizar_texto(mensajes_usuario):
         user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
         for palabra in user_words:
             if palabra in keyword_to_category:
-                coincidencias.append(keyword_to_category[palabra][0])  # Categoría
+                coincidencias.append(keyword_to_category[palabra][0])
                 palabras_detectadas.append(palabra)
 
     if len(coincidencias) < 2:
-        return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
+        return f"No se encontraron suficientes coincidencias en tus mensajes: {', '.join(set(palabras_detectadas))}."
 
     category_counts = Counter(coincidencias)
-    cuadro_probable, frecuencia = category_counts.most_common(1)[0]
-    probabilidad = (frecuencia / len(coincidencias)) * 100
+    cuadro_probable, _ = category_counts.most_common(1)[0]
 
-    return (
-        f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de una afección o cuadro relacionado con {cuadro_probable}. "
-        f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
-        f"Él podrá ofrecerte una evaluación y un apoyo más completo."
-    )
+    # Llamada a OpenAI para generar una respuesta enriquecida
+    try:
+        prompt = (
+            f"He recibido los siguientes síntomas: {', '.join(set(palabras_detectadas))}. "
+            f"Parece tratarse de un cuadro relacionado con {cuadro_probable}. "
+            "Por favor, genera una respuesta profesional y comprensiva para el usuario."
+        )
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=prompt,
+            max_tokens=150,
+            temperature=0.7
+        )
+        return response.choices[0].text.strip()
+    except Exception as e:
+        print(f"Error en la API de OpenAI: {e}")
+        return (
+            f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de una afección o cuadro relacionado con {cuadro_probable}. "
+            f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
+            f"Él podrá ofrecerte una evaluación y un apoyo más completo."
+        )
 
 # Clase para registrar una nueva palabra clave
 class NuevaPalabra(BaseModel):
@@ -235,12 +251,15 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
+
+        print("Mensajes recopilados:", user_sessions[user_id]["mensajes"])  # Depuración
+
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
         # Reinicio de conversación
         if mensaje_usuario == "reiniciar":
             if user_id in user_sessions:
-                user_sessions.pop(user_id)
+                user_sessions.pop(user_id, None)
                 return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
             else:
                 return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
