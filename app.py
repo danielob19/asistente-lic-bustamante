@@ -2,6 +2,7 @@ import os
 import time
 import threading
 import sqlite3
+import openai
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
