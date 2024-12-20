@@ -2,7 +2,6 @@ import os
 import time
 import threading
 import sqlite3
-import openai
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
@@ -59,11 +58,11 @@ def init_db():
         print(f"Error al inicializar la base de datos: {e}")
 
 # Registrar palabra clave nueva
-def registrar_palabra_clave(palabra: str, categoria: str):
+def registrar_palabra_clave(palabra: str, categoria: str, sintoma: str):
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO palabras_clave (palabra, categoria) VALUES (?, ?)", (palabra, categoria))
+        cursor.execute("INSERT OR IGNORE INTO palabras_clave (palabra, categoria, sintoma) VALUES (?, ?, ?)", (palabra, categoria, sintoma))
         conn.commit()
         conn.close()
     except Exception as e:
@@ -74,7 +73,7 @@ def obtener_palabras_clave():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT palabra, categoria FROM palabras_clave")
+        cursor.execute("SELECT palabra, categoria, sintoma FROM palabras_clave")
         palabras = cursor.fetchall()
         conn.close()
         return palabras
@@ -91,7 +90,8 @@ def analizar_texto(mensajes_usuario):
     if not palabras_clave:
         return "No se encontraron palabras clave para analizar."
 
-    keyword_to_category = {palabra.lower(): categoria for palabra, categoria in palabras_clave}
+    # Modificar para incluir la columna 'sintoma'
+    keyword_to_category = {palabra.lower(): (categoria, sintoma) for palabra, categoria, sintoma in palabras_clave}
     coincidencias = []
     palabras_detectadas = []
 
@@ -101,7 +101,7 @@ def analizar_texto(mensajes_usuario):
         user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
         for palabra in user_words:
             if palabra in keyword_to_category:
-                coincidencias.append(keyword_to_category[palabra])
+                coincidencias.append(keyword_to_category[palabra][0])  # Categoría
                 palabras_detectadas.append(palabra)
 
     if len(coincidencias) < 2:
@@ -112,10 +112,26 @@ def analizar_texto(mensajes_usuario):
     probabilidad = (frecuencia / len(coincidencias)) * 100
 
     return (
-        f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de una afección o cuadro relacionado con un {cuadro_probable}. "
+        f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de una afección o cuadro relacionado con {cuadro_probable}. "
         f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
         f"Él podrá ofrecerte una evaluación y un apoyo más completo."
     )
+
+# Clase para registrar una nueva palabra clave
+class NuevaPalabra(BaseModel):
+    palabra: str
+    categoria: str
+    sintoma: str
+
+@app.post("/registrar_palabra")
+async def registrar_nueva_palabra(data: NuevaPalabra):
+    try:
+        registrar_palabra_clave(data.palabra.lower(), data.categoria.lower(), data.sintoma.lower())
+        return {"mensaje": "Palabra registrada exitosamente."}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="La palabra ya existe en la base de datos.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al registrar palabra: {str(e)}")
 
 # Verificar escritura en disco
 def verificar_escritura_en_disco():
@@ -249,26 +265,3 @@ async def asistente(input_data: UserInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
-        # Clase para registrar una nueva palabra clave
-class NuevaPalabra(BaseModel):
-    palabra: str
-    categoria: str
-    sintoma: str
-
-@app.post("/registrar_palabra")
-async def registrar_nueva_palabra(data: NuevaPalabra):
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT OR IGNORE INTO palabras_clave (palabra, categoria, sintoma)
-            VALUES (?, ?, ?)
-        """, (data.palabra.lower(), data.categoria.lower(), data.sintoma.lower()))
-        conn.commit()
-        conn.close()
-        return {"mensaje": "Palabra registrada exitosamente."}
-    except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail="La palabra ya existe en la base de datos.")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al registrar palabra: {str(e)}")
