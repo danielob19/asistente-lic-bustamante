@@ -77,7 +77,7 @@ def obtener_palabras_clave():
         cursor.execute("SELECT palabra, categoria, sintoma FROM palabras_clave")
         palabras = cursor.fetchall()
         conn.close()
-        print("Palabras clave cargadas:", palabras)  # Depuración
+        print("Palabras clave cargadas:", palabras)  # Registro de depuración
         return palabras
     except Exception as e:
         print(f"Error al obtener palabras clave: {e}")
