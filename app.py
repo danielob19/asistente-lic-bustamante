@@ -82,39 +82,66 @@ def obtener_palabras_clave():
         return []
 
 # Análisis de texto del usuario
-def analizar_texto(mensajes_usuario):
+def analizar_texto_y_detectar_nuevas(mensajes_usuario):
+    """
+    Analiza los mensajes del usuario, detecta coincidencias, excluye saludos comunes,
+    y registra nuevas palabras clave relacionadas con emociones humanas sin informar al usuario.
+    """
     # Lista de saludos comunes a excluir
     saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
 
+    # Obtener palabras clave existentes
     palabras_clave = obtener_palabras_clave()
     if not palabras_clave:
-        return "No se encontraron palabras clave para analizar."
+        return "No se encontraron palabras clave en la base de datos."
 
     keyword_to_category = {palabra.lower(): categoria for palabra, categoria in palabras_clave}
+
     coincidencias = []
     palabras_detectadas = []
+    palabras_nuevas = []
 
     for mensaje in mensajes_usuario:
         user_words = mensaje.lower().split()
-        # Filtrar saludos
+
+        # Excluir palabras que sean saludos comunes
         user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
+
         for palabra in user_words:
             if palabra in keyword_to_category:
                 coincidencias.append(keyword_to_category[palabra])
                 palabras_detectadas.append(palabra)
+            else:
+                # Si la palabra no está en la base de datos, considerarla como nueva
+                palabras_nuevas.append(palabra)
 
-    if len(coincidencias) < 2:
-        return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
+    # Registrar nuevas palabras en la base de datos sin informar al usuario
+    for nueva_palabra in set(palabras_nuevas):
+        try:
+            # Usar OpenAI para determinar si la palabra es relevante
+            respuesta = openai.Completion.create(
+                engine="text-davinci-003",
+                prompt=f"¿La palabra '{nueva_palabra}' está relacionada con emociones humanas como depresión, ansiedad, estrés, etc.?",
+                max_tokens=50
+            )
+            if "sí" in respuesta.choices[0].text.lower():
+                registrar_palabra_clave(nueva_palabra, "pendiente")
+        except Exception as e:
+            print(f"Error al registrar nueva palabra: {e}")
 
-    category_counts = Counter(coincidencias)
-    cuadro_probable, frecuencia = category_counts.most_common(1)[0]
-    probabilidad = (frecuencia / len(coincidencias)) * 100
+    # Si hay suficientes coincidencias, determinar el cuadro psicológico probable
+    if len(coincidencias) >= 2:
+        category_counts = Counter(coincidencias)
+        cuadro_probable, _ = category_counts.most_common(1)[0]
 
-    return (
-        f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de una afección o cuadro relacionado con un {cuadro_probable}. "
-        f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
-        f"Él podrá ofrecerte una evaluación y un apoyo más completo."
-    )
+        return (
+            f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de una afección o cuadro relacionado con un {cuadro_probable}. "
+            f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
+            f"Él podrá ofrecerte una evaluación y un apoyo más completo."
+        )
+
+    return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
+
 # Verificar escritura en disco
 def verificar_escritura_en_disco():
     try:
