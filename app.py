@@ -3,11 +3,14 @@ import time
 import threading
 import sqlite3
 import openai
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
+import shutil
 from collections import Counter
 
-# Configuración de OpenAI
+# Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     raise ValueError("OPENAI_API_KEY no está configurada en las variables de entorno.")
@@ -15,29 +18,42 @@ if not openai.api_key:
 # Inicialización de FastAPI
 app = FastAPI()
 
+# Configuración de CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Cambiar "*" a una lista de dominios específicos si es necesario
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Ruta para la base de datos
-DB_PATH = "/var/data/palabras_clave.db"
+DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
+PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
 # Configuración de la base de datos SQLite
 def init_db():
     try:
-        if not os.path.exists(os.path.dirname(DB_PATH)):
-            os.makedirs(os.path.dirname(DB_PATH))
-        if not os.path.exists(DB_PATH):
-            print(f"Creando base de datos en: {DB_PATH}")
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS palabras_clave (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 palabra TEXT UNIQUE NOT NULL,
                 categoria TEXT NOT NULL
             )
-            """
-        )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS interacciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                consulta TEXT NOT NULL,
+                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         conn.commit()
         conn.close()
+        print(f"Base de datos creada o abierta en: {DB_PATH}")
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
@@ -65,60 +81,62 @@ def obtener_palabras_clave():
         print(f"Error al obtener palabras clave: {e}")
         return []
 
-# Análisis del texto
+# Análisis de texto del usuario
 def analizar_texto(mensajes_usuario):
+    # Lista de saludos comunes a excluir
     saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
+
     palabras_clave = obtener_palabras_clave()
     if not palabras_clave:
-        return "No se encontraron palabras clave en la base de datos."
+        return "No se encontraron palabras clave para analizar."
 
     keyword_to_category = {palabra.lower(): categoria for palabra, categoria in palabras_clave}
     coincidencias = []
     palabras_detectadas = []
-    palabras_nuevas = []
 
     for mensaje in mensajes_usuario:
         user_words = mensaje.lower().split()
+        # Filtrar saludos
         user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
         for palabra in user_words:
             if palabra in keyword_to_category:
                 coincidencias.append(keyword_to_category[palabra])
                 palabras_detectadas.append(palabra)
-            else:
-                palabras_nuevas.append(palabra)
 
-    for nueva_palabra in set(palabras_nuevas):
-        try:
-            respuesta = openai.Completion.create(
-                engine="text-davinci-003",
-                prompt=f"¿La palabra '{nueva_palabra}' está relacionada con emociones humanas como depresión, ansiedad, estrés, etc.?",
-                max_tokens=50
-            )
-            if "sí" in respuesta.choices[0].text.lower():
-                registrar_palabra_clave(nueva_palabra, "pendiente")
-        except Exception as e:
-            print(f"Error al registrar nueva palabra: {e}")
+    if len(coincidencias) < 2:
+        return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
 
-    if len(coincidencias) >= 2:
-        category_counts = Counter(coincidencias)
-        cuadro_probable, _ = category_counts.most_common(1)[0]
-        return (
-            f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de un {cuadro_probable}."
-        )
+    category_counts = Counter(coincidencias)
+    cuadro_probable, frecuencia = category_counts.most_common(1)[0]
+    probabilidad = (frecuencia / len(coincidencias)) * 100
 
-    return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
+    return (
+        f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de una afección o cuadro relacionado con un {cuadro_probable}. "
+        f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
+        f"Él podrá ofrecerte una evaluación y un apoyo más completo."
+    )
+# Verificar escritura en disco
+def verificar_escritura_en_disco():
+    try:
+        with open(PRUEBA_PATH, "w") as archivo:
+            archivo.write("Prueba de escritura exitosa.")
+    except Exception as e:
+        print(f"Error al escribir en el disco: {e}")
 
+# Clase para solicitudes del usuario
 class UserInput(BaseModel):
     mensaje: str
     user_id: str
 
+# Gestión de sesiones (en memoria)
 user_sessions = {}
-SESSION_TIMEOUT = 300
+SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
 
 @app.on_event("startup")
 def startup_event():
-    init_db()
-    start_session_cleaner()
+    verificar_escritura_en_disco()  # Prueba de escritura
+    init_db()  # Inicializar base de datos
+    start_session_cleaner()  # Iniciar limpieza de sesiones
 
 # Limpieza de sesiones inactivas
 def start_session_cleaner():
@@ -136,6 +154,48 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
+# Endpoint inicial
+@app.get("/")
+def read_root():
+    return {"message": "Bienvenido al asistente"}
+
+# Endpoint para descargar el archivo de base de datos
+@app.get("/download/palabras_clave.db")
+async def download_file():
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
+
+# Endpoint para subir el archivo de base de datos
+@app.post("/upload_file")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        with open(DB_PATH, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
+
+# Formulario para subir archivo
+@app.get("/upload_form", response_class=HTMLResponse)
+async def upload_form():
+    return """
+    <!doctype html>
+    <html>
+    <head>
+        <title>Subir palabras_clave.db</title>
+    </head>
+    <body>
+        <h1>Subir un nuevo archivo palabras_clave.db</h1>
+        <form action="/upload_file" method="post" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <button type="submit">Subir</button>
+        </form>
+    </body>
+    </html>
+    """
+
+# Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -143,47 +203,48 @@ async def asistente(input_data: UserInput):
         mensaje_usuario = input_data.mensaje.strip().lower()
 
         if not mensaje_usuario:
-            return {"respuesta": "Por favor, dime cómo te sientes o qué te preocupa."}
+            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
+        # Inicializar sesión si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "mensajes": []
             }
-            if mensaje_usuario in {"hola", "buenos días", "buenas tardes"}:
-                return {"respuesta": "¡Hola! ¿Cómo te sientes hoy?"}
 
         user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
-
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
-        if interacciones == 5:
-            mensajes = user_sessions[user_id]["mensajes"]
-            respuesta_analisis = analizar_texto(mensajes)
-            user_sessions[user_id]["mensajes"].clear()
-            return {"respuesta": respuesta_analisis}
+        # Reinicio de conversación
+        if mensaje_usuario == "reiniciar":
+            if user_id in user_sessions:
+                user_sessions.pop(user_id)
+                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
+            else:
+                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
 
-        if interacciones == 6:
-            user_sessions.pop(user_id, None)
+        # Respuesta en la interacción 6
+        if interacciones > 5:
             return {
                 "respuesta": (
-                    "Gracias por compartir conmigo. Te recomiendo contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186. Él podrá ayudarte de manera profesional."
+                    "Si bien debo concluir nuestra conversación, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
+                    "al WhatsApp +54 911 3310-1186. Un saludo."
                 )
             }
 
+        # Análisis en la interacción 5
+        if interacciones == 5:
+            mensajes = user_sessions[user_id]["mensajes"]
+            respuesta_analisis = analizar_texto(mensajes)
+            user_sessions[user_id]["mensajes"].clear()  # Limpiar mensajes tras el análisis
+            return {"respuesta": respuesta_analisis}
+
+        # Continuar recopilando información
         return {"respuesta": "Estoy recopilando información, por favor continúa describiendo tus síntomas."}
 
-    except openai.error.OpenAIError as e:
-        print(f"Error al conectar con OpenAI: {e}")
-        return {"respuesta": "Lo siento, no puedo procesar tu solicitud en este momento debido a un problema técnico con OpenAI."}
-
-    except sqlite3.Error as e:
-        print(f"Error con la base de datos: {e}")
-        return {"respuesta": "Lo siento, ocurrió un problema técnico con nuestra base de datos. Inténtalo más tarde."}
-
     except Exception as e:
-        print(f"Error en el asistente: {e}")
-        return {"respuesta": f"Lo siento, ocurrió un error técnico: {str(e)}"}
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
