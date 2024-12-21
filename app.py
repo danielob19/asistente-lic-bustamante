@@ -28,12 +28,14 @@ app.add_middleware(
 )
 
 # Ruta para la base de datos
-DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
+DB_PATH = "/var/data/palabras_clave.db"
 PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
 # Configuración de la base de datos SQLite
 def init_db():
     try:
+        if not os.path.exists(DB_PATH):
+            print(f"Creando nueva base de datos en: {DB_PATH}")
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute("""
@@ -83,42 +85,28 @@ def obtener_palabras_clave():
 
 # Análisis de texto del usuario
 def analizar_texto_y_detectar_nuevas(mensajes_usuario):
-    """
-    Analiza los mensajes del usuario, detecta coincidencias, excluye saludos comunes,
-    y registra nuevas palabras clave relacionadas con emociones humanas sin informar al usuario.
-    """
-    # Lista de saludos comunes a excluir
     saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
-
-    # Obtener palabras clave existentes
     palabras_clave = obtener_palabras_clave()
     if not palabras_clave:
         return "No se encontraron palabras clave en la base de datos."
 
     keyword_to_category = {palabra.lower(): categoria for palabra, categoria in palabras_clave}
-
     coincidencias = []
     palabras_detectadas = []
     palabras_nuevas = []
 
     for mensaje in mensajes_usuario:
         user_words = mensaje.lower().split()
-
-        # Excluir palabras que sean saludos comunes
         user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
-
         for palabra in user_words:
             if palabra in keyword_to_category:
                 coincidencias.append(keyword_to_category[palabra])
                 palabras_detectadas.append(palabra)
             else:
-                # Si la palabra no está en la base de datos, considerarla como nueva
                 palabras_nuevas.append(palabra)
 
-    # Registrar nuevas palabras en la base de datos sin informar al usuario
     for nueva_palabra in set(palabras_nuevas):
         try:
-            # Usar OpenAI para determinar si la palabra es relevante
             respuesta = openai.Completion.create(
                 engine="text-davinci-003",
                 prompt=f"¿La palabra '{nueva_palabra}' está relacionada con emociones humanas como depresión, ansiedad, estrés, etc.?",
@@ -129,11 +117,9 @@ def analizar_texto_y_detectar_nuevas(mensajes_usuario):
         except Exception as e:
             print(f"Error al registrar nueva palabra: {e}")
 
-    # Si hay suficientes coincidencias, determinar el cuadro psicológico probable
     if len(coincidencias) >= 2:
         category_counts = Counter(coincidencias)
         cuadro_probable, _ = category_counts.most_common(1)[0]
-
         return (
             f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de una afección o cuadro relacionado con un {cuadro_probable}. "
             f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
@@ -145,27 +131,26 @@ def analizar_texto_y_detectar_nuevas(mensajes_usuario):
 # Verificar escritura en disco
 def verificar_escritura_en_disco():
     try:
+        if not os.path.exists(os.path.dirname(PRUEBA_PATH)):
+            os.makedirs(os.path.dirname(PRUEBA_PATH))
         with open(PRUEBA_PATH, "w") as archivo:
             archivo.write("Prueba de escritura exitosa.")
     except Exception as e:
         print(f"Error al escribir en el disco: {e}")
 
-# Clase para solicitudes del usuario
 class UserInput(BaseModel):
     mensaje: str
     user_id: str
 
-# Gestión de sesiones (en memoria)
 user_sessions = {}
-SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
+SESSION_TIMEOUT = 60
 
 @app.on_event("startup")
 def startup_event():
-    verificar_escritura_en_disco()  # Prueba de escritura
-    init_db()  # Inicializar base de datos
-    start_session_cleaner()  # Iniciar limpieza de sesiones
+    verificar_escritura_en_disco()
+    init_db()
+    start_session_cleaner()
 
-# Limpieza de sesiones inactivas
 def start_session_cleaner():
     def cleaner():
         while True:
@@ -177,102 +162,34 @@ def start_session_cleaner():
             for user_id in inactive_users:
                 user_sessions.pop(user_id, None)
             time.sleep(60)
-
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
-# Endpoint inicial
-@app.get("/")
-def read_root():
-    return {"message": "Bienvenido al asistente"}
-
-# Endpoint para descargar el archivo de base de datos
-@app.get("/download/palabras_clave.db")
-async def download_file():
-    if not os.path.exists(DB_PATH):
-        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
-    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
-
-# Endpoint para subir el archivo de base de datos
-@app.post("/upload_file")
-async def upload_file(file: UploadFile = File(...)):
-    try:
-        with open(DB_PATH, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
-
-# Formulario para subir archivo
-@app.get("/upload_form", response_class=HTMLResponse)
-async def upload_form():
-    return """
-    <!doctype html>
-    <html>
-    <head>
-        <title>Subir palabras_clave.db</title>
-    </head>
-    <body>
-        <h1>Subir un nuevo archivo palabras_clave.db</h1>
-        <form action="/upload_file" method="post" enctype="multipart/form-data">
-            <input type="file" name="file">
-            <button type="submit">Subir</button>
-        </form>
-    </body>
-    </html>
-    """
-
-# Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
         user_id = input_data.user_id
         mensaje_usuario = input_data.mensaje.strip().lower()
-
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
-
-        # Inicializar sesión si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "mensajes": []
             }
-
         user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
         interacciones = user_sessions[user_id]["contador_interacciones"]
-
-        # Reinicio de conversación
         if mensaje_usuario == "reiniciar":
-            if user_id in user_sessions:
-                user_sessions.pop(user_id)
-                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
-            else:
-                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
-
-        # Respuesta en la interacción 6
-        if interacciones > 5:
-            return {
-                "respuesta": (
-                    "Si bien debo concluir nuestra conversación, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
-                    "al WhatsApp +54 911 3310-1186. Un saludo."
-                )
-            }
-
-        # Análisis en la interacción 5
-        if interacciones == 5:
+            user_sessions.pop(user_id, None)
+            return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
+        if interacciones >= 2:
             mensajes = user_sessions[user_id]["mensajes"]
-            respuesta_analisis = analizar_texto(mensajes)
-            user_sessions[user_id]["mensajes"].clear()  # Limpiar mensajes tras el análisis
+            respuesta_analisis = analizar_texto_y_detectar_nuevas(mensajes)
+            user_sessions[user_id]["mensajes"].clear()
             return {"respuesta": respuesta_analisis}
-
-        # Continuar recopilando información
         return {"respuesta": "Estoy recopilando información, por favor continúa describiendo tus síntomas."}
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
-
