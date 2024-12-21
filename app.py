@@ -231,12 +231,12 @@ async def asistente(input_data: UserInput):
 
         # Proveer el número de contacto del Lic. Bustamante
         if "telefono del lic bustamante" in mensaje_usuario or \
-           "número del lic bustamante" in mensaje_usuario or \
+           "numero del lic bustamante" in mensaje_usuario or \
            "contactar lic bustamante" in mensaje_usuario or \
            "necesito el contacto del lic bustamante" in mensaje_usuario or \
            "necesito el número del lic bustamante" in mensaje_usuario or \
-           "necesito el teléfono del lic bustamante" in mensaje_usuario or \
-           "teléfono del lic bustamante" in mensaje_usuario or \
+           "necesito el telefono del lic bustamante" in mensaje_usuario or \
+           "telefono del lic bustamante" in mensaje_usuario or \
            "telefono de contacto del lic bustamante" in mensaje_usuario or \
            ("bustamante" in mensaje_usuario and ("contacto" in mensaje_usuario or "número" in mensaje_usuario or "teléfono" in mensaje_usuario)):
             return {
