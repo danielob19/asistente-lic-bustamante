@@ -232,7 +232,10 @@ async def asistente(input_data: UserInput):
         # Proveer el número de contacto del Lic. Bustamante
         if "número del lic bustamante" in mensaje_usuario or \
            "contactar lic bustamante" in mensaje_usuario or \
-           "necesito el contacto del lic bustamante" in mensaje_usuario:
+           "necesito el contacto del lic bustamante" in mensaje_usuario or \
+           "necesito el número del lic bustamante" in mensaje_usuario or \
+           "necesito el teléfono del lic bustamante" in mensaje_usuario or \
+           "teléfono del lic bustamante" in mensaje_usuario:
             return {
                 "respuesta": (
                     "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
