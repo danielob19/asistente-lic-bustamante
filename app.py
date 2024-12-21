@@ -21,6 +21,8 @@ DB_PATH = "/var/data/palabras_clave.db"
 # Configuración de la base de datos SQLite
 def init_db():
     try:
+        if not os.path.exists(os.path.dirname(DB_PATH)):
+            os.makedirs(os.path.dirname(DB_PATH))
         if not os.path.exists(DB_PATH):
             print(f"Creando base de datos en: {DB_PATH}")
         conn = sqlite3.connect(DB_PATH)
@@ -174,5 +176,14 @@ async def asistente(input_data: UserInput):
 
         return {"respuesta": "Estoy recopilando información, por favor continúa describiendo tus síntomas."}
 
+    except openai.error.OpenAIError as e:
+        print(f"Error al conectar con OpenAI: {e}")
+        return {"respuesta": "Lo siento, no puedo procesar tu solicitud en este momento debido a un problema técnico con OpenAI."}
+
+    except sqlite3.Error as e:
+        print(f"Error con la base de datos: {e}")
+        return {"respuesta": "Lo siento, ocurrió un problema técnico con nuestra base de datos. Inténtalo más tarde."}
+
     except Exception as e:
-        return {"respuesta": f"Lo siento, ocurrió un error: {str(e)}"}
+        print(f"Error en el asistente: {e}")
+        return {"respuesta": f"Lo siento, ocurrió un error técnico: {str(e)}"}
