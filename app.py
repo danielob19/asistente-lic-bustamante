@@ -240,7 +240,7 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        if "bustamante" in mensaje_usuario and ("contacto" in mensaje_usuario or "número" in mensaje_usuario):
+        if "bustamante" in mensaje_usuario and ("contacto" in mensaje_usuario or "número" in mensaje_usuario or "teléfono" in mensaje_usuario):
             return {
                 "respuesta": (
                     "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
