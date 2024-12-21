@@ -230,7 +230,9 @@ async def asistente(input_data: UserInput):
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
         # Proveer el número de contacto del Lic. Bustamante
-        if "teléfono de contacto con el lic. daniel o. bustamante" in mensaje_usuario or "contactar lic. bustamante" in mensaje_usuario:
+        if "número del lic bustamante" in mensaje_usuario or \
+           "contactar lic bustamante" in mensaje_usuario or \
+           "necesito el contacto del lic bustamante" in mensaje_usuario:
             return {
                 "respuesta": (
                     "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
