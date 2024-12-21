@@ -235,22 +235,14 @@ async def asistente(input_data: UserInput):
            "necesito el contacto del lic bustamante" in mensaje_usuario or \
            "necesito el número del lic bustamante" in mensaje_usuario or \
            "necesito el teléfono del lic bustamante" in mensaje_usuario or \
-           "teléfono del lic bustamante" in mensaje_usuario:
+           "teléfono del lic bustamante" in mensaje_usuario or \
+           ("bustamante" in mensaje_usuario and ("contacto" in mensaje_usuario or "número" in mensaje_usuario or "teléfono" in mensaje_usuario)):
             return {
                 "respuesta": (
                     "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
                     "+54 911 3310-1186. Él podrá responderte a la brevedad."
                 )
             }
-
-        if "bustamante" in mensaje_usuario and ("contacto" in mensaje_usuario or "número" in mensaje_usuario or "teléfono" in mensaje_usuario):
-            return {
-                "respuesta": (
-                    "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
-                    "+54 911 3310-1186. Él podrá responderte a la brevedad."
-                )
-            }
-
 
         if mensaje_usuario == "reiniciar":
             if user_id in user_sessions:
