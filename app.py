@@ -3,14 +3,11 @@ import time
 import threading
 import sqlite3
 import openai
-from fastapi import FastAPI, HTTPException, File, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import shutil
 from collections import Counter
 
-# Configuración de la clave de API de OpenAI
+# Configuración de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     raise ValueError("OPENAI_API_KEY no está configurada en las variables de entorno.")
@@ -18,44 +15,27 @@ if not openai.api_key:
 # Inicialización de FastAPI
 app = FastAPI()
 
-# Configuración de CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Cambiar "*" a una lista de dominios específicos si es necesario
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Ruta para la base de datos
 DB_PATH = "/var/data/palabras_clave.db"
-PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
 # Configuración de la base de datos SQLite
 def init_db():
     try:
         if not os.path.exists(DB_PATH):
-            print(f"Creando nueva base de datos en: {DB_PATH}")
+            print(f"Creando base de datos en: {DB_PATH}")
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS palabras_clave (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 palabra TEXT UNIQUE NOT NULL,
                 categoria TEXT NOT NULL
             )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS interacciones (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id TEXT NOT NULL,
-                consulta TEXT NOT NULL,
-                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+            """
+        )
         conn.commit()
         conn.close()
-        print(f"Base de datos creada o abierta en: {DB_PATH}")
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
@@ -83,8 +63,8 @@ def obtener_palabras_clave():
         print(f"Error al obtener palabras clave: {e}")
         return []
 
-# Análisis de texto del usuario
-def analizar_texto_y_detectar_nuevas(mensajes_usuario):
+# Análisis del texto
+def analizar_texto(mensajes_usuario):
     saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
     palabras_clave = obtener_palabras_clave()
     if not palabras_clave:
@@ -121,36 +101,24 @@ def analizar_texto_y_detectar_nuevas(mensajes_usuario):
         category_counts = Counter(coincidencias)
         cuadro_probable, _ = category_counts.most_common(1)[0]
         return (
-            f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de una afección o cuadro relacionado con un {cuadro_probable}. "
-            f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
-            f"Él podrá ofrecerte una evaluación y un apoyo más completo."
+            f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de un {cuadro_probable}."
         )
 
     return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
-
-# Verificar escritura en disco
-def verificar_escritura_en_disco():
-    try:
-        if not os.path.exists(os.path.dirname(PRUEBA_PATH)):
-            os.makedirs(os.path.dirname(PRUEBA_PATH))
-        with open(PRUEBA_PATH, "w") as archivo:
-            archivo.write("Prueba de escritura exitosa.")
-    except Exception as e:
-        print(f"Error al escribir en el disco: {e}")
 
 class UserInput(BaseModel):
     mensaje: str
     user_id: str
 
 user_sessions = {}
-SESSION_TIMEOUT = 60
+SESSION_TIMEOUT = 300
 
 @app.on_event("startup")
 def startup_event():
-    verificar_escritura_en_disco()
     init_db()
     start_session_cleaner()
 
+# Limpieza de sesiones inactivas
 def start_session_cleaner():
     def cleaner():
         while True:
@@ -162,6 +130,7 @@ def start_session_cleaner():
             for user_id in inactive_users:
                 user_sessions.pop(user_id, None)
             time.sleep(60)
+
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
@@ -170,26 +139,40 @@ async def asistente(input_data: UserInput):
     try:
         user_id = input_data.user_id
         mensaje_usuario = input_data.mensaje.strip().lower()
+
         if not mensaje_usuario:
-            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+            return {"respuesta": "Por favor, dime cómo te sientes o qué te preocupa."}
+
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "mensajes": []
             }
+            if mensaje_usuario in {"hola", "buenos días", "buenas tardes"}:
+                return {"respuesta": "¡Hola! ¿Cómo te sientes hoy?"}
+
         user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
+
         interacciones = user_sessions[user_id]["contador_interacciones"]
-        if mensaje_usuario == "reiniciar":
-            user_sessions.pop(user_id, None)
-            return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
-        if interacciones >= 2:
+
+        if interacciones == 5:
             mensajes = user_sessions[user_id]["mensajes"]
-            respuesta_analisis = analizar_texto_y_detectar_nuevas(mensajes)
+            respuesta_analisis = analizar_texto(mensajes)
             user_sessions[user_id]["mensajes"].clear()
             return {"respuesta": respuesta_analisis}
+
+        if interacciones == 6:
+            user_sessions.pop(user_id, None)
+            return {
+                "respuesta": (
+                    "Gracias por compartir conmigo. Te recomiendo contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186. Él podrá ayudarte de manera profesional."
+                )
+            }
+
         return {"respuesta": "Estoy recopilando información, por favor continúa describiendo tus síntomas."}
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        return {"respuesta": f"Lo siento, ocurrió un error: {str(e)}"}
