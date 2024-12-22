@@ -230,35 +230,24 @@ async def asistente(input_data: UserInput):
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
         # Proveer el número de contacto del Lic. Bustamante
-    try:
-        patron_contacto = re.compile(
-            r"(contactar|número|teléfono|psicólogo|turno).*(bustamante|daniel)", re.IGNORECASE
-        )
-        if patron_contacto.search(mensaje_usuario):
-            return {
-                "respuesta": (
+        try:
+    patron_contacto = re.compile(
+        r"(contactar|número|teléfono|psicólogo|turno).*(bustamante|daniel)", re.IGNORECASE
+    )
+    if patron_contacto.search(mensaje_usuario):
+        return {
+            "respuesta": (
                 "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
                 "+54 911 3310-1186. Él podrá responderte a la brevedad."
-                )
-            }
-    except Exception as e:
-        print(f"Error en la búsqueda con regex: {e}")
-        raise HTTPException(status_code=500, detail=f"Error interno en la búsqueda con regex: {e}")
+            )
+        }
+except Exception as e:
+    print(f"Error en la búsqueda con regex: {e}")
+    raise HTTPException(
+        status_code=500, 
+        detail=f"Error interno en la búsqueda con regex: {e}"
+    )
 
-        if mensaje_usuario == "reiniciar":
-            if user_id in user_sessions:
-                user_sessions.pop(user_id)
-                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
-            else:
-                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
-
-        if interacciones > 5:
-            return {
-                "respuesta": (
-                    "Si bien debo concluir nuestra conversación, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
-                    "al WhatsApp +54 911 3310-1186. Un saludo."
-                )
-            }
 
         if interacciones == 5:
             mensajes = user_sessions[user_id]["mensajes"]
