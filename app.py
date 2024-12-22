@@ -231,23 +231,22 @@ async def asistente(input_data: UserInput):
 
         # Proveer el número de contacto del Lic. Bustamante
         try:
-    patron_contacto = re.compile(
-        r"(contactar|número|teléfono|psicólogo|turno).*(bustamante|daniel)", re.IGNORECASE
-    )
-    if patron_contacto.search(mensaje_usuario):
-        return {
-            "respuesta": (
-                "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
-                "+54 911 3310-1186. Él podrá responderte a la brevedad."
+            patron_contacto = re.compile(
+            r"(contactar|número|teléfono|psicólogo|turno).*(bustamante|daniel)", re.IGNORECASE
             )
-        }
-except Exception as e:
-    print(f"Error en la búsqueda con regex: {e}")
-    raise HTTPException(
-        status_code=500, 
-        detail=f"Error interno en la búsqueda con regex: {e}"
-    )
-
+            if patron_contacto.search(mensaje_usuario):
+                return {
+                    "respuesta": (
+                        "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
+                        "+54 911 3310-1186. Él podrá responderte a la brevedad."
+                    )
+                }
+        except Exception as e:
+            print(f"Error en la búsqueda con regex: {e}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Error interno en la búsqueda con regex: {e}"
+            )
 
         if interacciones == 5:
             mensajes = user_sessions[user_id]["mensajes"]
