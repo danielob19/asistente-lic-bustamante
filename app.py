@@ -1,3 +1,4 @@
+import re  # Importa el módulo para trabajar con expresiones regulares
 import os
 import time
 import threading
