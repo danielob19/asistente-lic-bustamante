@@ -236,34 +236,13 @@ async def asistente(input_data: UserInput):
             else:
                 return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
 
-        if "telefono del lic bustamante" in mensaje_usuario or \
-           "numero del lic bustamante" in mensaje_usuario or \
-           "contactar lic bustamante" in mensaje_usuario or \
-           "contactar al lic bustamante" in mensaje_usuario or \
-           "necesito el contacto del lic bustamante" in mensaje_usuario or \
-           "necesito el número del lic bustamante" in mensaje_usuario or \
-           "necesito el telefono del lic bustamante" in mensaje_usuario or \
-           "telefono del lic bustamante" in mensaje_usuario or \
-           "telefono de contacto del lic bustamante" in mensaje_usuario or \
-           "telefono del Lic Bustamante" in mensaje_usuario or \
-           "numero del Lic Bustamante" in mensaje_usuario or \
-           "contactar Lic Bustamante" in mensaje_usuario or \
-           "contactar al Lic Bustamante" in mensaje_usuario or \
-           "necesito el contacto del Lic Bustamante" in mensaje_usuario or \
-           "necesito el número del Lic Bustamante" in mensaje_usuario or \
-           "necesito el telefono del Lic Bustamante" in mensaje_usuario or \
-           "telefono del Lic Bustamante" in mensaje_usuario or \
-           "telefono de contacto del Lic Bustamante" in mensaje_usuario or \
-           "whatsapp del Lic Bustamante" in mensaje_usuario or \
-           "Whatsapp del Lic Bustamante" in mensaje_usuario or \
-           ("bustamante" in mensaje_usuario and ("contacto" in mensaje_usuario or "número" in mensaje_usuario or "teléfono" in mensaje_usuario)):
+        if ("bustamante" in mensaje_usuario and ("contacto" in mensaje_usuario or "número" in mensaje_usuario or "teléfono" in mensaje_usuario)):
             return {
                 "respuesta": (
                     "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
                     "+54 911 3310-1186. Él podrá responderte a la brevedad."
                 )
             }
-
 
         if interacciones > 5:
             return {
