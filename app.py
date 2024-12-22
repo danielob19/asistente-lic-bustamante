@@ -233,7 +233,7 @@ async def asistente(input_data: UserInput):
         # Proveer el número de contacto del Lic. Bustamante
         try:
             patron_contacto = re.compile(
-            r"(contactar|número|teléfono|psicólogo|turno).*(bustamante|daniel)", re.IGNORECASE
+            r"(contactar|numero|telefono|psicologo|turno).*(bustamante|daniel)", re.IGNORECASE
             )
             if patron_contacto.search(mensaje_usuario):
                 return {
