@@ -231,23 +231,31 @@ async def asistente(input_data: UserInput):
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
         # Proveer el número de contacto del Lic. Bustamante
-        try:
-            patron_contacto = re.compile(
-            r"(contactar|numero|telefono|psicologo|turno).*(bustamante|daniel)", re.IGNORECASE
+        # Patrón de regex para detectar solicitudes relacionadas con contacto, turnos, o consejos
+        patron_contacto = re.compile(
+            r"(contactar|número|teléfono|psicólogo|turno|agenda|ayuda|cita|soporte|consejo).*", re.IGNORECASE
+        )
+        
+        # Respuesta predeterminada para cualquier mensaje
+        if patron_contacto.search(mensaje_usuario) or "bustamante" in mensaje_usuario:
+            return {
+                "respuesta": (
+                    "Para cualquier consulta, te sugiero contactar al Lic. Daniel O. Bustamante. "
+                    "Por favor, envíale un mensaje al WhatsApp +54 911 3310-1186 y te responderá a la brevedad."
+                )
+            }
+
+        # Respuesta genérica en caso de mensajes no relacionados
+        return {
+            "respuesta": (
+                "Para cualquier consulta relacionada, por favor, contacta al Lic. Daniel O. Bustamante "
+                "al WhatsApp +54 911 3310-1186. Él podrá ayudarte directamente."
             )
-            if patron_contacto.search(mensaje_usuario):
-                return {
-                    "respuesta": (
-                        "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
-                        "+54 911 3310-1186. Él podrá responderte a la brevedad."
-                    )
-                }
-        except Exception as e:
-            print(f"Error en la búsqueda con regex: {e}")
-            raise HTTPException(
-                status_code=500, 
-                detail=f"Error interno en la búsqueda con regex: {e}"
-            )
+        }
+
+    except Exception as e:
+        print(f"Error interno: {e}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {e}")
 
         if interacciones == 5:
             mensajes = user_sessions[user_id]["mensajes"]
