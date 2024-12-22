@@ -81,6 +81,11 @@ def obtener_palabras_clave():
         print(f"Error al obtener palabras clave: {e}")
         return []
 
+# Lista de palabras irrelevantes
+palabras_irrelevantes = {
+    "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "que", "de", "en", "por", "a", "me", "mi"
+}
+
 # Análisis de texto del usuario
 def analizar_texto(mensajes_usuario):
     saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
