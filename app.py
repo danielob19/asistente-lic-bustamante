@@ -1,4 +1,3 @@
-import re  # Importa el módulo para trabajar con expresiones regulares
 import os
 import time
 import threading
@@ -229,6 +228,21 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
         interacciones = user_sessions[user_id]["contador_interacciones"]
+
+        if mensaje_usuario == "reiniciar":
+            if user_id in user_sessions:
+                user_sessions.pop(user_id)
+                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
+            else:
+                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
+
+        if interacciones > 5:
+            return {
+                "respuesta": (
+                    "Si bien debo concluir nuestra conversación, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
+                    "al WhatsApp +54 911 3310-1186. Un saludo."
+                )
+            }
 
         if interacciones == 5:
             mensajes = user_sessions[user_id]["mensajes"]
