@@ -84,7 +84,7 @@ def obtener_palabras_clave():
 # Lista de palabras irrelevantes
 palabras_irrelevantes = {
     "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "me siento", "tambien", "tambien tengo", "que", "de", "en", 
-    "por", "a", "me", "mi", "tengo", "solo", "mucho", "muy", "bajon", "empantanado"
+    "por", "a", "me", "mi", "tengo", "mucho", "muy"
 }
 
 # Análisis de texto del usuario
