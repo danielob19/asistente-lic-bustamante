@@ -31,155 +31,144 @@ app.add_middleware(
 DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
 PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
-# Clase para solicitudes del usuario# Clase para las solicitudes del usuario
-class UserInput(BaseModel):
-    mensaje: str
-    user_id: str
-
-# Inicialización de la base de datos
+# Configuración de la base de datos SQLite
 def init_db():
-    """
-    Crea las tablas necesarias en la base de datos si no existen.
-    """
     try:
-        if not os.path.exists(os.path.dirname(DB_PATH)):
-            raise ValueError(f"La ruta {os.path.dirname(DB_PATH)} no existe o no es accesible.")
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS palabras_clave (
-                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    sintoma TEXT UNIQUE NOT NULL,
-                    cuadro TEXT NOT NULL
-                )
-            """)
-            print(f"Base de datos inicializada en: {DB_PATH}")
-    except sqlite3.Error as e:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS palabras_clave (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sintoma TEXT UNIQUE NOT NULL,
+                cuadro TEXT NOT NULL
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS interacciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                consulta TEXT NOT NULL,
+                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+        conn.close()
+        print(f"Base de datos creada o abierta en: {DB_PATH}")
+    except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
-# Verificar escritura en disco
-def verificar_escritura_en_disco():
-    """
-    Verifica si se puede escribir en el disco persistente.
-    """
-    try:
-        with open(PRUEBA_PATH, "w") as archivo:
-            archivo.write("Prueba de escritura exitosa.")
-            print("Prueba de escritura exitosa en el disco persistente.")
-    except Exception as e:
-        print(f"Error al escribir en el disco: {e}")
-
-# Registrar síntoma nuevo en la base de datos
+# Registrar síntoma nuevo
 def registrar_sintoma(sintoma: str, cuadro: str):
-    """
-    Registra un nuevo síntoma y su cuadro asociado en la base de datos.
-    """
-    if not sintoma or not cuadro:
-        print("Error: El síntoma y el cuadro no pueden estar vacíos.")
-        return
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)",
-                (sintoma.lower(), cuadro)
-            )
-            print(f"Sintoma '{sintoma}' registrado con el cuadro '{cuadro}'.")
-    except sqlite3.Error as e:
-        print(f"Error al registrar el síntoma: {e}")
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error al registrar síntoma: {e}")
 
 # Obtener síntomas existentes
 def obtener_sintomas():
-    """
-    Obtiene todos los síntomas y cuadros almacenados en la base de datos.
-    """
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT sintoma, cuadro FROM palabras_clave")
-            sintomas = cursor.fetchall()
-            return sintomas
-    except sqlite3.Error as e:
-        print(f"Error al obtener los síntomas: {e}")
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT sintoma, cuadro FROM palabras_clave")
+        sintomas = cursor.fetchall()
+        conn.close()
+        return sintomas
+    except Exception as e:
+        print(f"Error al obtener síntomas: {e}")
         return []
 
-# Detección avanzada con OpenAI
-def detectar_estado_emocional_con_openai(mensaje):
-    """
-    Usa OpenAI para detectar emociones o estados psicológicos implícitos en un mensaje.
-    """
-    try:
-        prompt = (
-            f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos:\n\n{mensaje}\n\n"
-            "Responde con una lista de síntomas o estados emocionales, separados por comas."
-        )
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=100,
-            temperature=0.7
-        )
-        emociones_detectadas = response.choices[0].message['content'].strip()
-        return [emocion.strip() for emocion in emociones_detectadas.split(",")]
-    except openai.error.OpenAIError as e:
-        print(f"Error al usar OpenAI: {e}")
-        return []
+# Lista de palabras irrelevantes
+palabras_irrelevantes = {
+    "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "me siento", "tambien", "tambien tengo", "que", "de", "en", 
+    "por", "a", "me", "mi", "tengo", "mucho", "muy"
+}
 
 # Análisis de texto del usuario
 def analizar_texto(mensajes_usuario):
     """
     Analiza los mensajes del usuario para detectar coincidencias con los síntomas almacenados
-    y usa OpenAI para detectar nuevos estados emocionales.
+    y usa OpenAI para detectar nuevos estados emocionales si no hay suficientes coincidencias.
     """
-    palabras_irrelevantes = {
-        "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "me siento", "tambien", "que", "de", "en", 
-        "por", "a", "me", "mi", "tengo", "mucho", "muy"
-    }
     saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
-    
-    sintomas = obtener_sintomas()
-    if not sintomas:
+    sintomas_existentes = obtener_sintomas()
+    if not sintomas_existentes:
         return "No se encontraron síntomas para analizar."
 
-    keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas}
+    keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
     coincidencias = []
-    palabras_detectadas = []
+    sintomas_detectados = []
 
+    # Procesar cada mensaje del usuario
     for mensaje in mensajes_usuario:
         user_words = mensaje.lower().split()
-        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes and palabra not in palabras_irrelevantes]
+        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
         for palabra in user_words:
             if palabra in keyword_to_cuadro:
                 coincidencias.append(keyword_to_cuadro[palabra])
-                palabras_detectadas.append(palabra)
+                sintomas_detectados.append(palabra)
 
+    # Si no hay suficientes coincidencias, usar OpenAI para detectar emociones nuevas
     if len(coincidencias) < 2:
-        nuevos_estados = detectar_estado_emocional_con_openai(" ".join(mensajes_usuario))
-        for estado in nuevos_estados:
-            if estado and estado.lower() not in keyword_to_cuadro:
-                registrar_sintoma(estado, "estado emocional detectado por IA")
-                coincidencias.append("estado emocional detectado por IA")
-                palabras_detectadas.append(estado)
+        texto_usuario = " ".join(mensajes_usuario)
+        prompt = (
+            f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
+            f"{texto_usuario}\n\n"
+            "Responde con una lista de emociones o estados emocionales separados por comas."
+        )
+        try:
+            emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
+            for emocion in emociones_detectadas:
+                emocion = emocion.strip().lower()
+                if emocion and emocion not in keyword_to_cuadro:
+                    registrar_sintoma(emocion, "estado emocional detectado por IA")
+                    coincidencias.append("estado emocional detectado por IA")
+                    sintomas_detectados.append(emocion)
+        except Exception as e:
+            print(f"Error al usar OpenAI para detectar emociones: {e}")
 
     if not coincidencias:
         return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
 
     category_counts = Counter(coincidencias)
     cuadro_probable, frecuencia = category_counts.most_common(1)[0]
+    probabilidad = (frecuencia / len(coincidencias)) * 100
 
     return (
-        f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de un cuadro relacionado con un {cuadro_probable}. "
+        f"En base a los síntomas referidos ({', '.join(set(sintomas_detectados))}), pareciera tratarse de una afección o cuadro relacionado con un {cuadro_probable}. "
         f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
         f"Él podrá ofrecerte una evaluación y un apoyo más completo."
     )
 
-@app.on_event("startup")
-def startup_event():
-    """
-    Configuración inicial de la aplicación.
-    """
-    verificar_escritura_en_disco()
-    init_db()
+# Generación de respuestas con OpenAI
+def generar_respuesta_con_openai(prompt):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Cambiar a "gpt-4" si tienes acceso
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.7
+        )
+        return response.choices[0].message['content'].strip()
+    except Exception as e:
+        print(f"Error al generar respuesta con OpenAI: {e}")
+        return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
+
+# Verificar escritura en disco
+def verificar_escritura_en_disco():
+    try:
+        with open(PRUEBA_PATH, "w") as archivo:
+            archivo.write("Prueba de escritura exitosa.")
+    except Exception as e:
+        print(f"Error al escribir en el disco: {e}")
+
+# Clase para solicitudes del usuario
+class UserInput(BaseModel):
+    mensaje: str
+    user_id: str
 
 # Gestión de sesiones (en memoria)
 user_sessions = {}
@@ -251,43 +240,45 @@ async def upload_form():
 # Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
-    """
-    Maneja la entrada del usuario, analiza su mensaje y devuelve el resultado.
-    """
     try:
-        # Validación del mensaje del usuario
-        if not input_data.mensaje.strip():
-            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
-
-        user_id = input_data.user_id.strip()
+        user_id = input_data.user_id
         mensaje_usuario = input_data.mensaje.strip().lower()
 
-        # Validación de `user_id`
-        if not user_id:
-            raise HTTPException(status_code=400, detail="El user_id no puede estar vacío.")
+        if not mensaje_usuario:
+            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # Manejo de sesiones
-        with session_lock:
-            if user_id not in user_sessions:
-                user_sessions[user_id] = {
-                    "contador_interacciones": 0,
-                    "ultima_interaccion": time.time(),
-                    "mensajes": []
-                }
+        if user_id not in user_sessions:
+            user_sessions[user_id] = {
+                "contador_interacciones": 0,
+                "ultima_interaccion": time.time(),
+                "mensajes": []
+            }
 
-        # Actualización de la sesión
         user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
-
-        # Lógica de respuesta según las interacciones
         interacciones = user_sessions[user_id]["contador_interacciones"]
+
+        if mensaje_usuario == "reiniciar":
+            if user_id in user_sessions:
+                user_sessions.pop(user_id)
+                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
+            else:
+                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
+
+        if ("contacto" in mensaje_usuario or "numero" in mensaje_usuario or "turno" in mensaje_usuario or "telefono" in mensaje_usuario):
+            return {
+                "respuesta": (
+                    "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
+                    "+54 911 3310-1186. Él podrá responderte a la brevedad."
+                )
+            }
 
         if interacciones > 5:
             return {
                 "respuesta": (
-                    "Si bien debo concluir nuestra conversación, te sugiero contactar al Lic. Daniel O. Bustamante "
-                    "al WhatsApp +54 911 3310-1186 para una evaluación más completa. ¡Un saludo!"
+                    "Si bien debo concluir nuestra conversación, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
+                    "al WhatsApp +54 911 3310-1186. Un saludo."
                 )
             }
 
@@ -297,11 +288,9 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id]["mensajes"].clear()
             return {"respuesta": respuesta_analisis}
 
-        # Generación de respuesta para otras interacciones
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
         return {"respuesta": respuesta_ai}
 
     except Exception as e:
-        # Manejo de errores
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
