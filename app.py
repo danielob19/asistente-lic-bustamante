@@ -242,6 +242,7 @@ SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
 def startup_event():
     verificar_escritura_en_disco()
     init_db()
+    actualizar_estructura_bd()  # Actualiza la estructura de la base de datos si es necesario
     start_session_cleaner()
 
 # Limpieza de sesiones inactivas
