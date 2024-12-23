@@ -31,82 +31,124 @@ app.add_middleware(
 DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
 PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
-# Configuración de la base de datos SQLite
+# Clase para solicitudes del usuario
+class UserInput(BaseModel):
+    mensaje: str
+    user_id: str
+
+# Inicialización de la base de datos
 def init_db():
+    """
+    Crea las tablas necesarias en la base de datos si no existen.
+    """
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS palabras_clave (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                palabra TEXT UNIQUE NOT NULL,
-                categoria TEXT NOT NULL
-            )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS interacciones (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id TEXT NOT NULL,
-                consulta TEXT NOT NULL,
-                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
-        conn.close()
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS palabras_clave (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sintoma TEXT UNIQUE NOT NULL,
+                    cuadro TEXT NOT NULL
+                )
+            """)
         print(f"Base de datos creada o abierta en: {DB_PATH}")
-    except Exception as e:
+    except sqlite3.Error as e:
         print(f"Error al inicializar la base de datos: {e}")
 
-# Registrar palabra clave nueva
-def registrar_palabra_clave(palabra: str, categoria: str):
+# Registrar síntoma nuevo
+def registrar_sintoma(sintoma: str, cuadro: str):
+    """
+    Registra un nuevo síntoma con su cuadro asociado en la base de datos.
+    """
+    if not sintoma or not cuadro:
+        print("Error: El síntoma y el cuadro no pueden estar vacíos.")
+        return
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO palabras_clave (palabra, categoria) VALUES (?, ?)", (palabra, categoria))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Error al registrar palabra clave: {e}")
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)",
+                (sintoma.lower(), cuadro)
+            )
+            print(f"Sintoma '{sintoma}' registrado con el cuadro '{cuadro}'.")
+    except sqlite3.Error as e:
+        print(f"Error al registrar el síntoma: {e}")
 
-# Obtener palabras clave existentes
-def obtener_palabras_clave():
+# Obtener síntomas existentes
+def obtener_sintomas():
+    """
+    Obtiene todos los síntomas y cuadros almacenados en la base de datos.
+    """
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT palabra, categoria FROM palabras_clave")
-        palabras = cursor.fetchall()
-        conn.close()
-        return palabras
-    except Exception as e:
-        print(f"Error al obtener palabras clave: {e}")
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT sintoma, cuadro FROM palabras_clave")
+            sintomas = cursor.fetchall()
+            return sintomas
+    except sqlite3.Error as e:
+        print(f"Error al obtener los síntomas: {e}")
         return []
 
-# Lista de palabras irrelevantes
-palabras_irrelevantes = {
-    "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "me siento", "tambien", "tambien tengo", "que", "de", "en", 
-    "por", "a", "me", "mi", "tengo", "mucho", "muy"
-}
+# Detección avanzada con OpenAI
+def detectar_estado_emocional_con_openai(mensaje):
+    """
+    Usa OpenAI para detectar emociones o estados psicológicos implícitos en un mensaje.
+    """
+    try:
+        prompt = (
+            f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos:\n\n{mensaje}\n\n"
+            "Responde con una lista de síntomas o estados emocionales, separados por comas."
+        )
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.7
+        )
+        return response.choices[0].message['content'].strip()
+    except Exception as e:
+        print(f"Error al usar OpenAI: {e}")
+        return "No se pudo analizar el mensaje."
 
 # Análisis de texto del usuario
 def analizar_texto(mensajes_usuario):
+    """
+    Analiza los mensajes del usuario para detectar coincidencias con los síntomas almacenados
+    y usa OpenAI para detectar nuevos estados emocionales.
+    """
+    palabras_irrelevantes = {
+        "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "me siento", "tambien", "que", "de", "en", 
+        "por", "a", "me", "mi", "tengo", "mucho", "muy"
+    }
     saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
-    palabras_clave = obtener_palabras_clave()
-    if not palabras_clave:
-        return "No se encontraron palabras clave para analizar."
+    
+    sintomas = obtener_sintomas()
+    if not sintomas:
+        return "No se encontraron síntomas para analizar."
 
-    keyword_to_category = {palabra.lower(): categoria for palabra, categoria in palabras_clave}
+    keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas}
     coincidencias = []
     palabras_detectadas = []
 
     for mensaje in mensajes_usuario:
         user_words = mensaje.lower().split()
-        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
+        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes and palabra not in palabras_irrelevantes]
         for palabra in user_words:
-            if palabra in keyword_to_category:
-                coincidencias.append(keyword_to_category[palabra])
+            if palabra in keyword_to_cuadro:
+                coincidencias.append(keyword_to_cuadro[palabra])
                 palabras_detectadas.append(palabra)
 
+    # Detección avanzada con OpenAI para palabras no registradas
     if len(coincidencias) < 2:
+        nuevos_estados = detectar_estado_emocional_con_openai(" ".join(mensajes_usuario))
+        for estado in nuevos_estados.split(","):
+            estado = estado.strip()
+            if estado and estado not in keyword_to_cuadro:
+                registrar_sintoma(estado, "estado emocional detectado por IA")
+                coincidencias.append("estado emocional detectado por IA")
+                palabras_detectadas.append(estado)
+
+    if not coincidencias:
         return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
 
     category_counts = Counter(coincidencias)
@@ -114,37 +156,31 @@ def analizar_texto(mensajes_usuario):
     probabilidad = (frecuencia / len(coincidencias)) * 100
 
     return (
-        f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de una afección o cuadro relacionado con un {cuadro_probable}. "
+        f"En base a los síntomas referidos ({', '.join(set(palabras_detectadas))}), pareciera tratarse de un cuadro relacionado con un {cuadro_probable}. "
         f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
         f"Él podrá ofrecerte una evaluación y un apoyo más completo."
     )
 
-# Generación de respuestas con OpenAI
-def generar_respuesta_con_openai(prompt):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Cambiar a "gpt-4" si tienes acceso
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=150,
-            temperature=0.7
-        )
-        return response.choices[0].message['content'].strip()
-    except Exception as e:
-        print(f"Error al generar respuesta con OpenAI: {e}")
-        return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
+# Manejo de la entrada del usuario con la clase UserInput
+def manejar_entrada_usuario(user_input: UserInput):
+    """
+    Maneja la entrada del usuario, analiza su mensaje y devuelve el resultado.
+    """
+    mensajes = [user_input.mensaje]  # Convertimos el mensaje a una lista para analizar_texto
+    resultado = analizar_texto(mensajes)
+    return {"user_id": user_input.user_id, "resultado": resultado}
 
 # Verificar escritura en disco
 def verificar_escritura_en_disco():
+    """
+    Verifica si es posible escribir en el disco persistente.
+    """
     try:
         with open(PRUEBA_PATH, "w") as archivo:
             archivo.write("Prueba de escritura exitosa.")
+            print("Prueba de escritura exitosa en el disco persistente.")
     except Exception as e:
         print(f"Error al escribir en el disco: {e}")
-
-# Clase para solicitudes del usuario
-class UserInput(BaseModel):
-    mensaje: str
-    user_id: str
 
 # Gestión de sesiones (en memoria)
 user_sessions = {}
