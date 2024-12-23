@@ -171,8 +171,10 @@ def analizar_texto(mensajes_usuario):
 
     # Procesar cada mensaje del usuario
     for mensaje in mensajes_usuario:
-        user_words = mensaje.lower().split()
-        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
+        user_words = mensaje.lower().split()  # Convierte el mensaje en una lista de palabras
+        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]  # Elimina saludos comunes
+        user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]  # Elimina palabras irrelevantes
+
         for palabra in user_words:
             if palabra in keyword_to_cuadro:
                 coincidencias.append(keyword_to_cuadro[palabra])
