@@ -93,7 +93,7 @@ def actualizar_estructura_bd():
         columnas = cursor.fetchall()
         nombres_columnas = [columna[1] for columna in columnas]
 
-        if "palabra" in nombres_columnas and "categoria" in nombres_columnas:
+        if "sintoma" in nombres_columnas and "cuadro" in nombres_columnas:
             cursor.execute("ALTER TABLE palabras_clave RENAME TO palabras_clave_old")
             
             # Crear nueva tabla con la estructura actualizada
@@ -108,7 +108,7 @@ def actualizar_estructura_bd():
             # Migrar datos de la tabla antigua a la nueva
             cursor.execute("""
                 INSERT INTO palabras_clave (sintoma, cuadro)
-                SELECT palabra, categoria FROM palabras_clave_old
+                SELECT sintoma, cuadro FROM palabras_clave_old
             """)
             
             # Eliminar la tabla antigua
@@ -276,7 +276,7 @@ def read_root():
 async def download_file():
     if not os.path.exists(DB_PATH):
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")
-    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
+    return FileResponse(DB_PATH, media_type="application/octet-stream", filename=".db")
 
 # Endpoint para subir el archivo de base de datos
 @app.post("/upload_file")
@@ -295,10 +295,10 @@ async def upload_form():
     <!doctype html>
     <html>
     <head>
-        <title>Subir palabras_clave.db</title>
+        <title>Subir .db</title>
     </head>
     <body>
-        <h1>Subir un nuevo archivo palabras_clave.db</h1>
+        <h1>Subir un nuevo archivo .db</h1>
         <form action="/upload_file" method="post" enctype="multipart/form-data">
             <input type="file" name="file">
             <button type="submit">Subir</button>
