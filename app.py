@@ -181,35 +181,49 @@ def analizar_texto(mensajes_usuario):
                 sintomas_detectados.append(palabra)
 
     # Si no hay suficientes coincidencias, usar OpenAI para detectar emociones nuevas
-if len(coincidencias) < 2:
-    # Combinar los mensajes del usuario en un solo texto
-    texto_usuario = " ".join(mensajes_usuario)
-    # Prompt para el modelo de OpenAI
-    prompt = (
-        f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
-        f"{texto_usuario}\n\n"
-        "Responde con una lista de emociones o estados emocionales en minúsculas, separados estrictamente por comas."
-    )
-    try:
-        # Llamada a OpenAI para generar la respuesta
-        emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
-        
-        # Procesar las emociones detectadas
-        for emocion in emociones_detectadas:
-            emocion = emocion.strip().lower()
-            if emocion and emocion not in keyword_to_cuadro:
-                # Registrar el nuevo síntoma detectado
-                registrar_sintoma(emocion, "estado emocional detectado por IA")
-                # Agregar a las coincidencias y síntomas detectados
-                coincidencias.append("estado emocional detectado por IA")
-                sintomas_detectados.append(emocion)
-    except Exception as e:
-        # Manejo de errores al usar OpenAI
-        print(f"Error al usar OpenAI para detectar emociones: {e}")
+def analizar_emociones_y_determinar_cuadro(coincidencias, mensajes_usuario, keyword_to_cuadro, registrar_sintoma):
+    """
+    Analiza las emociones detectadas en los mensajes del usuario y determina un posible cuadro psicológico.
+    
+    Args:
+        coincidencias (list): Lista de coincidencias iniciales.
+        mensajes_usuario (list): Lista de mensajes ingresados por el usuario.
+        keyword_to_cuadro (list): Lista de palabras clave conocidas.
+        registrar_sintoma (function): Función para registrar un síntoma detectado.
+    
+    Returns:
+        str: Resultado del análisis o mensaje informativo.
+    """
+    if len(coincidencias) < 2:
+        # Combinar los mensajes del usuario en un solo texto
+        texto_usuario = " ".join(mensajes_usuario)
+        # Crear el prompt para OpenAI
+        prompt = (
+            f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
+            f"{texto_usuario}\n\n"
+            "Responde con una lista de emociones o estados emocionales en minúsculas, separados estrictamente por comas."
+        )
+        try:
+            # Llamada a OpenAI para generar la respuesta
+            emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
+            
+            # Procesar las emociones detectadas
+            for emocion in emociones_detectadas:
+                emocion = emocion.strip().lower()
+                if emocion and emocion not in keyword_to_cuadro:
+                    # Registrar el nuevo síntoma detectado
+                    registrar_sintoma(emocion, "estado emocional detectado por IA")
+                    # Agregar a las coincidencias y síntomas detectados
+                    coincidencias.append("estado emocional detectado por IA")
+                    sintomas_detectados.append(emocion)
+        except Exception as e:
+            # Manejo de errores al usar OpenAI
+            return f"Error al usar OpenAI para detectar emociones: {e}"
 
     if not coincidencias:
         return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
 
+    # Calcular las probabilidades basadas en coincidencias
     category_counts = Counter(coincidencias)
     cuadro_probable, frecuencia = category_counts.most_common(1)[0]
     probabilidad = (frecuencia / len(coincidencias)) * 100
@@ -220,8 +234,16 @@ if len(coincidencias) < 2:
         f"Él podrá ofrecerte una evaluación y un apoyo más completo."
     )
 
-# Generación de respuestas con OpenAI
 def generar_respuesta_con_openai(prompt):
+    """
+    Genera una respuesta utilizando el modelo de OpenAI.
+    
+    Args:
+        prompt (str): Prompt para el modelo de OpenAI.
+    
+    Returns:
+        str: Respuesta generada por el modelo.
+    """
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",  # Cambiar a "gpt-4" si tienes acceso
@@ -233,6 +255,22 @@ def generar_respuesta_con_openai(prompt):
     except Exception as e:
         print(f"Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
+
+# Ejemplo de uso
+if __name__ == "__main__":
+    # Variables simuladas para prueba
+    coincidencias = []
+    mensajes_usuario = ["Me siento triste y ansioso últimamente.", "A veces pierdo la paciencia sin razón."]
+    keyword_to_cuadro = ["ansiedad", "depresión", "estrés"]
+    sintomas_detectados = []
+
+    def registrar_sintoma(sintoma, descripcion):
+        print(f"Registrado síntoma: {sintoma} ({descripcion})")
+
+    resultado = analizar_emociones_y_determinar_cuadro(
+        coincidencias, mensajes_usuario, keyword_to_cuadro, registrar_sintoma
+    )
+    print(resultado)
 
 # Verificar escritura en disco
 def verificar_escritura_en_disco():
