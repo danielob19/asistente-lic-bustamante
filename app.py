@@ -27,6 +27,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Diccionario de respuestas global (debe estar aquí si se usa como variable global)
+RESPUESTAS = {
+    1: "Hola, ¿cómo te encuentras hoy? Estoy aquí para escucharte.",
+    2: "Lamento que te sientas apesadumbrado. A veces, compartir lo que sentimos puede ayudarnos a procesarlo mejor. ¿Te gustaría hablar sobre lo que te preocupa?",
+    3: "Lamento escuchar que estás teniendo bajones. Es completamente válido sentirse así a veces. Si te sientes cómodo, puedes contarme más sobre lo que está pasando. También recuerda que hablar con un profesional puede ser muy útil.",
+    4: "La tristeza puede ser muy pesada. No estás solo/a en esto, y estoy aquí para apoyarte. A veces, hablar con alguien de confianza o hacer actividades que te gusten puede ayudar. Si lo necesitas, también puedo sugerir a un profesional que te escuche y te guíe.",
+    5: "Parece que estás sintiendo enojo o frustración. Es totalmente válido. Si lo necesitas, te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. Estoy seguro de que podrá brindarte el apoyo que necesitas.",
+    6: "Entiendo que te sientas nervioso. Si bien debo terminar nuestra conversación, no obstante, te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. Él podrá ofrecerte una evaluación y apoyo más completo. Un saludo."
+}
+
+# Función para procesar emociones
+def procesar_emocion(mensaje_usuario, numero_respuesta):
+    """
+    Procesa el mensaje del usuario y devuelve una respuesta adecuada.
+
+    Args:
+        mensaje_usuario (str): El mensaje ingresado por el usuario.
+        numero_respuesta (int): Número de la respuesta en el flujo de la conversación.
+
+    Returns:
+        str: La respuesta generada por el asistente.
+    """
+    return RESPUESTAS.get(numero_respuesta, "Lo siento, no pude procesar tu solicitud.")
+
+# Simulación del flujo de conversación
+def iniciar_conversacion():
+    mensajes_usuario = [
+        "hola", 
+        "estoy apesadumbrado", 
+        "tengo bajones", 
+        "estoy triste", 
+        "me siento embroncado", 
+        "nervioso"
+    ]
+    
+    for numero, mensaje in enumerate(mensajes_usuario, start=1):
+        respuesta = procesar_emocion(mensaje, numero)
+        print(f"Tú: {mensaje}")
+        print(f"Asistente: {respuesta}")
+        print("-" * 50)
+
+# Ejecuta la simulación
+if __name__ == "__main__":
+    iniciar_conversacion()
+
 # Ruta para la base de datos
 DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
 PRUEBA_PATH = "/var/data/prueba_escritura.txt"
