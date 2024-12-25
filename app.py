@@ -181,23 +181,31 @@ def analizar_texto(mensajes_usuario):
                 sintomas_detectados.append(palabra)
 
     # Si no hay suficientes coincidencias, usar OpenAI para detectar emociones nuevas
-    if len(coincidencias) < 2:
-        texto_usuario = " ".join(mensajes_usuario)
-        prompt = (
-            f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
-            f"{texto_usuario}\n\n"
-            "Responde con una lista de emociones o estados emocionales separados por comas."
-        )
-        try:
-            emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
-            for emocion in emociones_detectadas:
-                emocion = emocion.strip().lower()
-                if emocion and emocion not in keyword_to_cuadro:
-                    registrar_sintoma(emocion, "estado emocional detectado por IA")
-                    coincidencias.append("estado emocional detectado por IA")
-                    sintomas_detectados.append(emocion)
-        except Exception as e:
-            print(f"Error al usar OpenAI para detectar emociones: {e}")
+if len(coincidencias) < 2:
+    # Combinar los mensajes del usuario en un solo texto
+    texto_usuario = " ".join(mensajes_usuario)
+    # Prompt para el modelo de OpenAI
+    prompt = (
+        f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
+        f"{texto_usuario}\n\n"
+        "Responde con una lista de emociones o estados emocionales en minúsculas, separados estrictamente por comas."
+    )
+    try:
+        # Llamada a OpenAI para generar la respuesta
+        emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
+        
+        # Procesar las emociones detectadas
+        for emocion in emociones_detectadas:
+            emocion = emocion.strip().lower()
+            if emocion and emocion not in keyword_to_cuadro:
+                # Registrar el nuevo síntoma detectado
+                registrar_sintoma(emocion, "estado emocional detectado por IA")
+                # Agregar a las coincidencias y síntomas detectados
+                coincidencias.append("estado emocional detectado por IA")
+                sintomas_detectados.append(emocion)
+    except Exception as e:
+        # Manejo de errores al usar OpenAI
+        print(f"Error al usar OpenAI para detectar emociones: {e}")
 
     if not coincidencias:
         return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
