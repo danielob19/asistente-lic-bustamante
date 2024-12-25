@@ -27,51 +27,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Diccionario de respuestas global (debe estar aquí si se usa como variable global)
-RESPUESTAS = {
-    1: "Hola, ¿cómo te encuentras hoy? Estoy aquí para escucharte.",
-    2: "Lamento que te sientas apesadumbrado. A veces, compartir lo que sentimos puede ayudarnos a procesarlo mejor. ¿Te gustaría hablar sobre lo que te preocupa?",
-    3: "Lamento escuchar que estás teniendo bajones. Es completamente válido sentirse así a veces. Si te sientes cómodo, puedes contarme más sobre lo que está pasando. También recuerda que hablar con un profesional puede ser muy útil.",
-    4: "La tristeza puede ser muy pesada. No estás solo/a en esto, y estoy aquí para apoyarte. A veces, hablar con alguien de confianza o hacer actividades que te gusten puede ayudar. Si lo necesitas, también puedo sugerir a un profesional que te escuche y te guíe.",
-    5: "Parece que estás sintiendo enojo o frustración. Es totalmente válido. Si lo necesitas, te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. Estoy seguro de que podrá brindarte el apoyo que necesitas.",
-    6: "Entiendo que te sientas nervioso. Si bien debo terminar nuestra conversación, no obstante, te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. Él podrá ofrecerte una evaluación y apoyo más completo. Un saludo."
-}
-
-# Función para procesar emociones
-def procesar_emocion(mensaje_usuario, numero_respuesta):
-    """
-    Procesa el mensaje del usuario y devuelve una respuesta adecuada.
-
-    Args:
-        mensaje_usuario (str): El mensaje ingresado por el usuario.
-        numero_respuesta (int): Número de la respuesta en el flujo de la conversación.
-
-    Returns:
-        str: La respuesta generada por el asistente.
-    """
-    return RESPUESTAS.get(numero_respuesta, "Lo siento, no pude procesar tu solicitud.")
-
-# Simulación del flujo de conversación
-def iniciar_conversacion():
-    mensajes_usuario = [
-        "hola", 
-        "estoy apesadumbrado", 
-        "tengo bajones", 
-        "estoy triste", 
-        "me siento embroncado", 
-        "nervioso"
-    ]
-    
-    for numero, mensaje in enumerate(mensajes_usuario, start=1):
-        respuesta = procesar_emocion(mensaje, numero)
-        print(f"Tú: {mensaje}")
-        print(f"Asistente: {respuesta}")
-        print("-" * 50)
-
-# Ejecuta la simulación
-if __name__ == "__main__":
-    iniciar_conversacion()
-
 # Ruta para la base de datos
 DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
 PRUEBA_PATH = "/var/data/prueba_escritura.txt"
@@ -138,7 +93,7 @@ def actualizar_estructura_bd():
         columnas = cursor.fetchall()
         nombres_columnas = [columna[1] for columna in columnas]
 
-        if "sintoma" in nombres_columnas and "cuadro" in nombres_columnas:
+        if "palabra" in nombres_columnas and "categoria" in nombres_columnas:
             cursor.execute("ALTER TABLE palabras_clave RENAME TO palabras_clave_old")
             
             # Crear nueva tabla con la estructura actualizada
@@ -153,7 +108,7 @@ def actualizar_estructura_bd():
             # Migrar datos de la tabla antigua a la nueva
             cursor.execute("""
                 INSERT INTO palabras_clave (sintoma, cuadro)
-                SELECT sintoma, cuadro FROM palabras_clave_old
+                SELECT palabra, categoria FROM palabras_clave_old
             """)
             
             # Eliminar la tabla antigua
@@ -226,49 +181,27 @@ def analizar_texto(mensajes_usuario):
                 sintomas_detectados.append(palabra)
 
     # Si no hay suficientes coincidencias, usar OpenAI para detectar emociones nuevas
-def analizar_emociones_y_determinar_cuadro(coincidencias, mensajes_usuario, keyword_to_cuadro, registrar_sintoma):
-    """
-    Analiza las emociones detectadas en los mensajes del usuario y determina un posible cuadro psicológico.
-    
-    Args:
-        coincidencias (list): Lista de coincidencias iniciales.
-        mensajes_usuario (list): Lista de mensajes ingresados por el usuario.
-        keyword_to_cuadro (list): Lista de palabras clave conocidas.
-        registrar_sintoma (function): Función para registrar un síntoma detectado.
-    
-    Returns:
-        str: Resultado del análisis o mensaje informativo.
-    """
     if len(coincidencias) < 2:
-        # Combinar los mensajes del usuario en un solo texto
         texto_usuario = " ".join(mensajes_usuario)
-        # Crear el prompt para OpenAI
         prompt = (
             f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
             f"{texto_usuario}\n\n"
-            "Responde con una lista de emociones o estados emocionales en minúsculas, separados estrictamente por comas."
+            "Responde con una lista de emociones o estados emocionales separados por comas."
         )
         try:
-            # Llamada a OpenAI para generar la respuesta
             emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
-            
-            # Procesar las emociones detectadas
             for emocion in emociones_detectadas:
                 emocion = emocion.strip().lower()
                 if emocion and emocion not in keyword_to_cuadro:
-                    # Registrar el nuevo síntoma detectado
                     registrar_sintoma(emocion, "estado emocional detectado por IA")
-                    # Agregar a las coincidencias y síntomas detectados
                     coincidencias.append("estado emocional detectado por IA")
                     sintomas_detectados.append(emocion)
         except Exception as e:
-            # Manejo de errores al usar OpenAI
-            return f"Error al usar OpenAI para detectar emociones: {e}"
+            print(f"Error al usar OpenAI para detectar emociones: {e}")
 
     if not coincidencias:
         return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
 
-    # Calcular las probabilidades basadas en coincidencias
     category_counts = Counter(coincidencias)
     cuadro_probable, frecuencia = category_counts.most_common(1)[0]
     probabilidad = (frecuencia / len(coincidencias)) * 100
@@ -279,16 +212,8 @@ def analizar_emociones_y_determinar_cuadro(coincidencias, mensajes_usuario, keyw
         f"Él podrá ofrecerte una evaluación y un apoyo más completo."
     )
 
+# Generación de respuestas con OpenAI
 def generar_respuesta_con_openai(prompt):
-    """
-    Genera una respuesta utilizando el modelo de OpenAI.
-    
-    Args:
-        prompt (str): Prompt para el modelo de OpenAI.
-    
-    Returns:
-        str: Respuesta generada por el modelo.
-    """
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",  # Cambiar a "gpt-4" si tienes acceso
@@ -300,22 +225,6 @@ def generar_respuesta_con_openai(prompt):
     except Exception as e:
         print(f"Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
-
-# Ejemplo de uso
-if __name__ == "__main__":
-    # Variables simuladas para prueba
-    coincidencias = []
-    mensajes_usuario = ["Me siento triste y ansioso últimamente.", "A veces pierdo la paciencia sin razón."]
-    keyword_to_cuadro = ["ansiedad", "depresión", "estrés"]
-    sintomas_detectados = []
-
-    def registrar_sintoma(sintoma, descripcion):
-        print(f"Registrado síntoma: {sintoma} ({descripcion})")
-
-    resultado = analizar_emociones_y_determinar_cuadro(
-        coincidencias, mensajes_usuario, keyword_to_cuadro, registrar_sintoma
-    )
-    print(resultado)
 
 # Verificar escritura en disco
 def verificar_escritura_en_disco():
@@ -367,7 +276,7 @@ def read_root():
 async def download_file():
     if not os.path.exists(DB_PATH):
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")
-    return FileResponse(DB_PATH, media_type="application/octet-stream", filename=".db")
+    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
 
 # Endpoint para subir el archivo de base de datos
 @app.post("/upload_file")
@@ -386,10 +295,10 @@ async def upload_form():
     <!doctype html>
     <html>
     <head>
-        <title>Subir .db</title>
+        <title>Subir palabras_clave.db</title>
     </head>
     <body>
-        <h1>Subir un nuevo archivo .db</h1>
+        <h1>Subir un nuevo archivo palabras_clave.db</h1>
         <form action="/upload_file" method="post" enctype="multipart/form-data">
             <input type="file" name="file">
             <button type="submit">Subir</button>
