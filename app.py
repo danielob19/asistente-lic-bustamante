@@ -56,12 +56,39 @@ def init_db():
         print(f"Base de datos creada o abierta en: {DB_PATH}")
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
+# Configuración de la base de datos SQLite
+def init_db():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS palabras_clave (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sintoma TEXT UNIQUE NOT NULL,
+                cuadro TEXT NOT NULL
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS interacciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                consulta TEXT NOT NULL,
+                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+        conn.close()
+        print(f"Base de datos creada o abierta en: {DB_PATH}")
+    except Exception as e:
+        print(f"Error al inicializar la base de datos: {e}")
+
 
 def actualizar_estructura_bd():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
+        # Renombrar tabla existente si aún tiene columnas antiguas
         cursor.execute("PRAGMA table_info(palabras_clave)")
         columnas = cursor.fetchall()
         nombres_columnas = [columna[1] for columna in columnas]
@@ -69,6 +96,7 @@ def actualizar_estructura_bd():
         if "palabra" in nombres_columnas and "categoria" in nombres_columnas:
             cursor.execute("ALTER TABLE palabras_clave RENAME TO palabras_clave_old")
             
+            # Crear nueva tabla con la estructura actualizada
             cursor.execute("""
                 CREATE TABLE palabras_clave (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,11 +105,13 @@ def actualizar_estructura_bd():
                 )
             """)
             
+            # Migrar datos de la tabla antigua a la nueva
             cursor.execute("""
                 INSERT INTO palabras_clave (sintoma, cuadro)
                 SELECT palabra, categoria FROM palabras_clave_old
             """)
             
+            # Eliminar la tabla antigua
             cursor.execute("DROP TABLE palabras_clave_old")
             print("Estructura de la base de datos actualizada exitosamente.")
 
@@ -89,6 +119,7 @@ def actualizar_estructura_bd():
         conn.close()
     except sqlite3.Error as e:
         print(f"Error al actualizar la estructura de la base de datos: {e}")
+
 
 # Registrar síntoma nuevo
 def registrar_sintoma(sintoma: str, cuadro: str):
@@ -138,16 +169,18 @@ def analizar_texto(mensajes_usuario):
     coincidencias = []
     sintomas_detectados = []
 
+    # Procesar cada mensaje del usuario
     for mensaje in mensajes_usuario:
-        user_words = mensaje.lower().split()
-        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
-        user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]
+        user_words = mensaje.lower().split()  # Convierte el mensaje en una lista de palabras
+        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]  # Elimina saludos comunes
+        user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]  # Elimina palabras irrelevantes
 
         for palabra in user_words:
             if palabra in keyword_to_cuadro:
                 coincidencias.append(keyword_to_cuadro[palabra])
                 sintomas_detectados.append(palabra)
 
+    # Si no hay suficientes coincidencias, usar OpenAI para detectar emociones nuevas
     if len(coincidencias) < 2:
         texto_usuario = " ".join(mensajes_usuario)
         prompt = (
@@ -174,20 +207,19 @@ def analizar_texto(mensajes_usuario):
     probabilidad = (frecuencia / len(coincidencias)) * 100
 
     return (
-        f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), parece estar relacionado con un {cuadro_probable}. "
-        f"Te recomiendo contactar a un profesional, como el Lic. Daniel O. Bustamante, al WhatsApp +54 911 3310-1186, "
-        f"para una evaluación más detallada."
+        f"En base a los síntomas referidos ({', '.join(set(sintomas_detectados))}), pareciera tratarse de una afección o cuadro relacionado con un {cuadro_probable}. "
+        f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
+        f"Él podrá ofrecerte una evaluación y un apoyo más completo."
     )
 
-# Generación de respuestas con OpenAI con menor empatía
+# Generación de respuestas con OpenAI
 def generar_respuesta_con_openai(prompt):
     try:
-        prompt = f"{prompt}\nResponde de manera profesional, pero directa y objetiva."
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-3.5-turbo",  # Cambiar a "gpt-4" si tienes acceso
             messages=[{"role": "user", "content": prompt}],
             max_tokens=150,
-            temperature=0.6
+            temperature=0.7
         )
         return response.choices[0].message['content'].strip()
     except Exception as e:
@@ -209,15 +241,16 @@ class UserInput(BaseModel):
 
 # Gestión de sesiones (en memoria)
 user_sessions = {}
-SESSION_TIMEOUT = 60
+SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
 
 @app.on_event("startup")
 def startup_event():
     verificar_escritura_en_disco()
     init_db()
-    actualizar_estructura_bd()
+    actualizar_estructura_bd()  # Actualiza la estructura de la base de datos si es necesario
     start_session_cleaner()
 
+# Limpieza de sesiones inactivas
 def start_session_cleaner():
     def cleaner():
         while True:
@@ -233,16 +266,19 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
+# Endpoint inicial
 @app.get("/")
 def read_root():
     return {"message": "Bienvenido al asistente"}
 
+# Endpoint para descargar el archivo de base de datos
 @app.get("/download/palabras_clave.db")
 async def download_file():
     if not os.path.exists(DB_PATH):
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")
     return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
 
+# Endpoint para subir el archivo de base de datos
 @app.post("/upload_file")
 async def upload_file(file: UploadFile = File(...)):
     try:
@@ -252,6 +288,7 @@ async def upload_file(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
 
+# Formulario para subir archivo
 @app.get("/upload_form", response_class=HTMLResponse)
 async def upload_form():
     return """
@@ -270,6 +307,7 @@ async def upload_form():
     </html>
     """
 
+# Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -309,7 +347,7 @@ async def asistente(input_data: UserInput):
         if interacciones > 5:
             return {
                 "respuesta": (
-                    "Si bien debo concluir nuestra conversación, te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
+                    "Si bien debo concluir nuestra conversación, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
                     "al WhatsApp +54 911 3310-1186. Un saludo."
                 )
             }
