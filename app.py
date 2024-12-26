@@ -46,7 +46,8 @@ def init_db():
                 sintoma TEXT UNIQUE NOT NULL,
                 cuadro TEXT NOT NULL
             )
-        """)
+        """
+        )
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS interacciones (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,7 +55,8 @@ def init_db():
                 consulta TEXT NOT NULL,
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """
+        )
         conn.commit()
         conn.close()
         print(f"Base de datos creada o abierta en: {DB_PATH}")
@@ -70,18 +72,40 @@ def obtener_sintomas():
         sintomas = cursor.fetchall()
         conn.close()
         return sintomas
-    except Exception as e:
+    except sqlite3.Error as e:
         print(f"Error al obtener síntomas: {e}")
         return []
 
-# Lista de palabras irrelevantes
-palabras_irrelevantes = {
-    "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "me siento", "tambien", "tambien tengo", "que", "de", "en", 
-    "por", "a", "me", "mi", "tengo", "mucho", "muy", "un", "poco", "tengo", "animicos", "si", "supuesto", "frecuentes", "verdad", "sé", "hoy", "quiero", 
-    "bastante", "mucho", "tambien", "gente", "frecuencia", "entendi", "hola", "estoy", "no", "entiendo", 
-    "buenas", "noches", "soy", "daniel", "mi", "numero", "de", "telefono", "es", "4782-6465", "me", "siento", 
-    "que", "opinas", "?"
-}
+# Registrar síntoma nuevo
+def registrar_sintoma(sintoma: str, cuadro: str):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
+        if cursor.rowcount > 0:
+            print(f"Síntoma registrado: {sintoma}")
+        conn.commit()
+        conn.close()
+    except sqlite3.Error as e:
+        print(f"Error al registrar síntoma: {e}")
+
+# Generación de respuestas con OpenAI
+def generar_respuesta_con_openai(prompt):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Cambiar a "gpt-4" si tienes acceso
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.7
+        )
+        respuesta = response.choices[0].message['content'].strip()
+        if not respuesta:
+            print("La respuesta de OpenAI está vacía.")
+            return ""
+        return respuesta
+    except Exception as e:
+        print(f"Error al generar respuesta con OpenAI: {e}")
+        return ""
 
 # Análisis de texto del usuario
 def analizar_texto(mensajes_usuario):
@@ -92,6 +116,7 @@ def analizar_texto(mensajes_usuario):
     saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
     sintomas_existentes = obtener_sintomas()
     if not sintomas_existentes:
+        print("No se encontraron síntomas en la base de datos.")
         return "No se encontraron síntomas para analizar."
 
     keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
@@ -108,33 +133,8 @@ def analizar_texto(mensajes_usuario):
             if palabra in keyword_to_cuadro:
                 coincidencias.append(keyword_to_cuadro[palabra])
                 sintomas_detectados.append(palabra)
-    
-# Registrar síntoma nuevo
-def registrar_sintoma(sintoma: str, cuadro: str):
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Error al registrar síntoma: {e}")
 
-# Generación de respuestas con OpenAI
-def generar_respuesta_con_openai(prompt):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Cambiar a "gpt-4" si tienes acceso
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=150,
-            temperature=0.7
-        )
-        return response.choices[0].message['content'].strip()
-    except Exception as e:
-        print(f"Error al generar respuesta con OpenAI: {e}")
-        return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
-        
-# Si no hay suficientes coincidencias, usar OpenAI para detectar emociones nuevas
+    # Si no hay suficientes coincidencias, usar OpenAI para detectar emociones nuevas
     if len(coincidencias) < 2:
         texto_usuario = " ".join(mensajes_usuario)
         prompt = (
@@ -148,14 +148,17 @@ def generar_respuesta_con_openai(prompt):
                 emocion = emocion.strip().lower()
                 if emocion and emocion not in keyword_to_cuadro:
                     registrar_sintoma(emocion, "estado emocional detectado por IA")
+                    keyword_to_cuadro[emocion] = "estado emocional detectado por IA"
                     coincidencias.append("estado emocional detectado por IA")
                     sintomas_detectados.append(emocion)
         except Exception as e:
             print(f"Error al usar OpenAI para detectar emociones: {e}")
+            return "No se pudo analizar el texto con OpenAI. Por favor, intenta nuevamente."
 
     if not coincidencias:
         return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
 
+    # Determinar el cuadro más probable
     category_counts = Counter(coincidencias)
     cuadro_probable, frecuencia = category_counts.most_common(1)[0]
     probabilidad = (frecuencia / len(coincidencias)) * 100
@@ -165,7 +168,7 @@ def generar_respuesta_con_openai(prompt):
         f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
         f"Él podrá ofrecerte una evaluación y un apoyo más completo."
     )
-    
+
 # Verificar escritura en disco
 def verificar_escritura_en_disco():
     try:
@@ -187,7 +190,6 @@ SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
 def startup_event():
     verificar_escritura_en_disco()
     init_db()
-    actualizar_estructura_bd()  # Actualiza la estructura de la base de datos si es necesario
     start_session_cleaner()
 
 # Limpieza de sesiones inactivas
