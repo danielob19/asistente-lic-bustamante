@@ -61,17 +61,6 @@ def init_db():
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
-# Registrar síntoma nuevo
-def registrar_sintoma(sintoma: str, cuadro: str):
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Error al registrar síntoma: {e}")
-
 # Obtener síntomas existentes
 def obtener_sintomas():
     try:
@@ -119,8 +108,33 @@ def analizar_texto(mensajes_usuario):
             if palabra in keyword_to_cuadro:
                 coincidencias.append(keyword_to_cuadro[palabra])
                 sintomas_detectados.append(palabra)
+    
+# Registrar síntoma nuevo
+def registrar_sintoma(sintoma: str, cuadro: str):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error al registrar síntoma: {e}")
 
-    # Si no hay suficientes coincidencias, usar OpenAI para detectar emociones nuevas
+# Generación de respuestas con OpenAI
+def generar_respuesta_con_openai(prompt):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Cambiar a "gpt-4" si tienes acceso
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.7
+        )
+        return response.choices[0].message['content'].strip()
+    except Exception as e:
+        print(f"Error al generar respuesta con OpenAI: {e}")
+        return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
+        
+# Si no hay suficientes coincidencias, usar OpenAI para detectar emociones nuevas
     if len(coincidencias) < 2:
         texto_usuario = " ".join(mensajes_usuario)
         prompt = (
@@ -151,21 +165,7 @@ def analizar_texto(mensajes_usuario):
         f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
         f"Él podrá ofrecerte una evaluación y un apoyo más completo."
     )
-
-# Generación de respuestas con OpenAI
-def generar_respuesta_con_openai(prompt):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Cambiar a "gpt-4" si tienes acceso
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=150,
-            temperature=0.7
-        )
-        return response.choices[0].message['content'].strip()
-    except Exception as e:
-        print(f"Error al generar respuesta con OpenAI: {e}")
-        return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
-
+    
 # Verificar escritura en disco
 def verificar_escritura_en_disco():
     try:
