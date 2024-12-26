@@ -31,6 +31,10 @@ app.add_middleware(
 DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
 PRUEBA_PATH = "/var/data/prueba_escritura.txt"
 
+if not os.path.exists("/var/data"):
+    os.makedirs("/var/data")
+    print("Directorio creado: /var/data")
+
 # Configuración de la base de datos SQLite
 def init_db():
     try:
@@ -56,70 +60,6 @@ def init_db():
         print(f"Base de datos creada o abierta en: {DB_PATH}")
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
-# Configuración de la base de datos SQLite
-def init_db():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS palabras_clave (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                sintoma TEXT UNIQUE NOT NULL,
-                cuadro TEXT NOT NULL
-            )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS interacciones (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id TEXT NOT NULL,
-                consulta TEXT NOT NULL,
-                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
-        conn.close()
-        print(f"Base de datos creada o abierta en: {DB_PATH}")
-    except Exception as e:
-        print(f"Error al inicializar la base de datos: {e}")
-
-
-def actualizar_estructura_bd():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-
-        # Renombrar tabla existente si aún tiene columnas antiguas
-        cursor.execute("PRAGMA table_info(palabras_clave)")
-        columnas = cursor.fetchall()
-        nombres_columnas = [columna[1] for columna in columnas]
-
-        if "palabra" in nombres_columnas and "categoria" in nombres_columnas:
-            cursor.execute("ALTER TABLE palabras_clave RENAME TO palabras_clave_old")
-            
-            # Crear nueva tabla con la estructura actualizada
-            cursor.execute("""
-                CREATE TABLE palabras_clave (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    sintoma TEXT UNIQUE NOT NULL,
-                    cuadro TEXT NOT NULL
-                )
-            """)
-            
-            # Migrar datos de la tabla antigua a la nueva
-            cursor.execute("""
-                INSERT INTO palabras_clave (sintoma, cuadro)
-                SELECT palabra, categoria FROM palabras_clave_old
-            """)
-            
-            # Eliminar la tabla antigua
-            cursor.execute("DROP TABLE palabras_clave_old")
-            print("Estructura de la base de datos actualizada exitosamente.")
-
-        conn.commit()
-        conn.close()
-    except sqlite3.Error as e:
-        print(f"Error al actualizar la estructura de la base de datos: {e}")
-
 
 # Registrar síntoma nuevo
 def registrar_sintoma(sintoma: str, cuadro: str):
