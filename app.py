@@ -176,8 +176,8 @@ def analizar_texto(mensajes_usuario):
 
     return (
         f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), parece estar relacionado con un {cuadro_probable} ({probabilidad:.2f}% de certeza)."
-        f" Emociones adicionales detectadas: {emociones_mencionadas}."
-        " Te recomiendo contactar a un profesional, como el Lic. Daniel O. Bustamante, al WhatsApp +54 911 3310-1186, para una evaluación más detallada."
+        + (f" Emociones adicionales detectadas: {emociones_mencionadas}." if emociones_detectadas else " No se detectaron emociones adicionales.")
+        + " Te recomiendo contactar a un profesional, como el Lic. Daniel O. Bustamante, al WhatsApp +54 911 3310-1186, para una evaluación más detallada."
     )
 
 def generar_respuesta_con_openai(prompt):
