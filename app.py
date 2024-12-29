@@ -241,28 +241,4 @@ def startup_event():
     init_db()
     actualizar_estructura_bd()
     inspeccionar_base_de_datos()
-    start_session_cleaner()
-
-# Verificar escritura en disco
-def verificar_escritura_en_disco():
-    try:
-        with open(PRUEBA_PATH, "w") as archivo:
-            archivo.write("Prueba de escritura exitosa.")
-        print("Prueba de escritura en disco exitosa.")
-    except Exception as e:
-        print(f"Error al escribir en el disco: {e}")
-
-def start_session_cleaner():
-    def cleaner():
-        while True:
-            current_time = time.time()
-            inactive_users = [
-                user_id for user_id, data in user_sessions.items()
-                if current_time - data["ultima_interaccion"] > SESSION_TIMEOUT
-            ]
-            for user_id in inactive_users:
-                user_sessions.pop(user_id, None)
-            time.sleep(60)
-
-    thread = threading.Thread(target=cleaner, daemon=True)
-    thread.start
+    start_session
