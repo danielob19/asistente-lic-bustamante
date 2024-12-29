@@ -343,4 +343,30 @@ async def upload_file(file: UploadFile = File(...)):
     """
     Permite subir un archivo de base de datos SQLite y reemplazar la existente.
     """
-    try
+    try:
+        with open(DB_PATH, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
+
+@app.get("/upload_form", response_class=HTMLResponse)
+async def upload_form():
+    """
+    Muestra un formulario para subir la base de datos.
+    """
+    return """
+    <!doctype html>
+    <html>
+    <head>
+        <title>Subir palabras_clave.db</title>
+    </head>
+    <body>
+        <h1>Subir un nuevo archivo palabras_clave.db</h1>
+        <form action="/upload_file" method="post" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <button type="submit">Subir</button>
+        </form>
+    </body>
+    </html>
+    """
