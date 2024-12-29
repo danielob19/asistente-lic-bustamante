@@ -137,6 +137,7 @@ def analizar_texto(mensajes_usuario):
     keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
     coincidencias = []
     sintomas_detectados = []
+    sintomas_sin_coincidencia = []
 
     for mensaje in mensajes_usuario:
         user_words = mensaje.lower().split()
@@ -147,6 +148,8 @@ def analizar_texto(mensajes_usuario):
             if palabra in keyword_to_cuadro:
                 coincidencias.append(keyword_to_cuadro[palabra])
                 sintomas_detectados.append(palabra)
+            else:
+                sintomas_sin_coincidencia.append(palabra)
 
     if len(coincidencias) < 2:
         texto_usuario = " ".join(mensajes_usuario)
@@ -167,7 +170,10 @@ def analizar_texto(mensajes_usuario):
             print(f"Error al usar OpenAI para detectar emociones: {e}")
 
     if not coincidencias:
-        return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
+        return (
+            f"No se encontraron suficientes coincidencias para determinar un cuadro psicológico. "
+            f"Síntomas sin coincidencias: {', '.join(set(sintomas_sin_coincidencia))}."
+        )
 
     category_counts = Counter(coincidencias)
     cuadro_probable, frecuencia = category_counts.most_common(1)[0]
@@ -175,6 +181,8 @@ def analizar_texto(mensajes_usuario):
 
     return (
         f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), parece estar relacionado con un {cuadro_probable}. "
+        f"Probabilidad estimada: {probabilidad:.2f}%. "
+        f"Síntomas sin coincidencias: {', '.join(set(sintomas_sin_coincidencia))}. "
         f"Te recomiendo contactar a un profesional, como el Lic. Daniel O. Bustamante, al WhatsApp +54 911 3310-1186, "
         f"para una evaluación más detallada."
     )
@@ -326,4 +334,3 @@ async def asistente(input_data: UserInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
