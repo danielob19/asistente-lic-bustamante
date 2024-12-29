@@ -96,14 +96,10 @@ def registrar_sintoma(sintoma: str, cuadro: str):
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("INSERT OR REPLACE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
+        cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
         conn.commit()
-        filas_afectadas = cursor.rowcount
         conn.close()
-        if filas_afectadas == 0:
-            print(f"El síntoma '{sintoma}' ya existe y no fue modificado.")
-        else:
-            print(f"Síntoma '{sintoma}' registrado o actualizado exitosamente.")
+        print(f"Síntoma registrado: {sintoma} con cuadro: {cuadro}")
     except Exception as e:
         print(f"Error al registrar síntoma: {e}")
 
@@ -171,17 +167,34 @@ def analizar_texto(mensajes_usuario):
             else:
                 sintomas_sin_coincidencia.append(palabra)
 
-    # Determinar el cuadro más frecuente
-    if coincidencias:
-        category_counts = Counter(coincidencias)
-        cuadro_probable, _ = category_counts.most_common(1)[0]
-
-        respuesta = (
-            f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), "
-            f"el cuadro probable es: {cuadro_probable}. "
+    if len(coincidencias) < 2:
+        texto_usuario = " ".join(mensajes_usuario)
+        prompt = (
+            f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
+            f"{texto_usuario}\n\n"
+            "Responde con una lista de emociones o estados emocionales separados por comas."
         )
-    else:
-        respuesta = "No se encontraron coincidencias suficientes para determinar un cuadro probable. "
+        try:
+            emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
+            for emocion in emociones_detectadas:
+                emocion = emocion.strip().lower()
+                if emocion and emocion not in keyword_to_cuadro:
+                    registrar_sintoma(emocion, "estado emocional detectado por IA")
+                    coincidencias.append("estado emocional detectado por IA")
+                    sintomas_detectados.append(emocion)
+        except Exception as e:
+            print(f"Error al usar OpenAI para detectar emociones: {e}")
+
+    if not coincidencias:
+        return "No se encontraron suficientes coincidencias para determinar un cuadro probable."
+
+    category_counts = Counter(coincidencias)
+    cuadro_probable, _ = category_counts.most_common(1)[0]
+
+    respuesta = (
+        f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), "
+        f"el cuadro probable es: {cuadro_probable}. "
+    )
 
     if sintomas_sin_coincidencia:
         respuesta += (
