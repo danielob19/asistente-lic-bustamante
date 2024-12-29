@@ -57,20 +57,194 @@ def init_db():
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
+def actualizar_estructura_bd():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute("PRAGMA table_info(palabras_clave)")
+        columnas = cursor.fetchall()
+        nombres_columnas = [columna[1] for columna in columnas]
+
+        if "palabra" in nombres_columnas and "categoria" in nombres_columnas:
+            cursor.execute("ALTER TABLE palabras_clave RENAME TO palabras_clave_old")
+            
+            cursor.execute("""
+                CREATE TABLE palabras_clave (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sintoma TEXT UNIQUE NOT NULL,
+                    cuadro TEXT NOT NULL
+                )
+            """)
+            
+            cursor.execute("""
+                INSERT INTO palabras_clave (sintoma, cuadro)
+                SELECT palabra, categoria FROM palabras_clave_old
+            """)
+            
+            cursor.execute("DROP TABLE palabras_clave_old")
+            print("Estructura de la base de datos actualizada exitosamente.")
+
+        conn.commit()
+        conn.close()
+    except sqlite3.Error as e:
+        print(f"Error al actualizar la estructura de la base de datos: {e}")
+
+# Registrar síntoma nuevo
+def registrar_sintoma(sintoma: str, cuadro: str):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error al registrar síntoma: {e}")
+
+# Obtener síntomas existentes
+def obtener_sintomas():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT sintoma, cuadro FROM palabras_clave")
+        sintomas = cursor.fetchall()
+        conn.close()
+        return sintomas
+    except Exception as e:
+        print(f"Error al obtener síntomas: {e}")
+        return []
+
+# Lista de palabras irrelevantes
+palabras_irrelevantes = {
+    "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "me siento", "tambien", "tambien tengo", "que", "de", "en", 
+    "por", "a", "me", "mi", "tengo", "mucho", "muy", "un", "poco", "tengo", "animicos", "si", "supuesto", "frecuentes", "verdad", "sé", "hoy", "quiero", 
+    "bastante", "mucho", "tambien", "gente", "frecuencia", "entendi", "hola", "estoy", "no", "entiendo", 
+    "buenas", "noches", "soy", "daniel", "mi", "numero", "de", "telefono", "es", "4782-6465", "me", "siento", 
+    "que", "opinas", "?"
+}
+
+# Análisis de texto del usuario
+def analizar_texto(mensajes_usuario):
+    """
+    Analiza los mensajes del usuario para detectar coincidencias con los síntomas almacenados
+    y usa OpenAI para detectar nuevos estados emocionales si no hay suficientes coincidencias.
+    """
+    saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
+    sintomas_existentes = obtener_sintomas()
+    if not sintomas_existentes:
+        return "No se encontraron síntomas para analizar."
+
+    keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
+    coincidencias = []
+    sintomas_detectados = []
+
+    for mensaje in mensajes_usuario:
+        user_words = mensaje.lower().split()
+        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
+        user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]
+
+        for palabra in user_words:
+            if palabra in keyword_to_cuadro:
+                coincidencias.append(keyword_to_cuadro[palabra])
+                sintomas_detectados.append(palabra)
+
+    if len(coincidencias) < 2:
+        texto_usuario = " ".join(mensajes_usuario)
+        prompt = (
+            f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
+            f"{texto_usuario}\n\n"
+            "Responde con una lista de emociones o estados emocionales separados por comas."
+        )
+        try:
+            emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
+            for emocion in emociones_detectadas:
+                emocion = emocion.strip().lower()
+                if emocion and emocion not in keyword_to_cuadro:
+                    registrar_sintoma(emocion, "estado emocional detectado por IA")
+                    coincidencias.append("estado emocional detectado por IA")
+                    sintomas_detectados.append(emocion)
+        except Exception as e:
+            print(f"Error al usar OpenAI para detectar emociones: {e}")
+
+    if not coincidencias:
+        return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
+
+    category_counts = Counter(coincidencias)
+    cuadro_probable, frecuencia = category_counts.most_common(1)[0]
+    probabilidad = (frecuencia / len(coincidencias)) * 100
+
+    return (
+        f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), parece estar relacionado con un {cuadro_probable}. "
+        f"Te recomiendo contactar a un profesional, como el Lic. Daniel O. Bustamante, al WhatsApp +54 911 3310-1186, "
+        f"para una evaluación más detallada."
+    )
+
+# Generación de respuestas con OpenAI con menor empatía
+def generar_respuesta_con_openai(prompt):
+    try:
+        prompt = f"{prompt}\nResponde de manera profesional, pero directa y objetiva."
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.6
+        )
+        return response.choices[0].message['content'].strip()
+    except Exception as e:
+        print(f"Error al generar respuesta con OpenAI: {e}")
+        return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
+
+# Verificar escritura en disco
+def verificar_escritura_en_disco():
+    try:
+        with open(PRUEBA_PATH, "w") as archivo:
+            archivo.write("Prueba de escritura exitosa.")
+    except Exception as e:
+        print(f"Error al escribir en el disco: {e}")
+
+# Clase para solicitudes del usuario
+class UserInput(BaseModel):
+    mensaje: str
+    user_id: str
+
+# Gestión de sesiones (en memoria)
+user_sessions = {}
+SESSION_TIMEOUT = 60
+
+@app.on_event("startup")
+def startup_event():
+    verificar_escritura_en_disco()
+    init_db()
+    actualizar_estructura_bd()
+    start_session_cleaner()
+
+def start_session_cleaner():
+    def cleaner():
+        while True:
+            current_time = time.time()
+            inactive_users = [
+                user_id for user_id, data in user_sessions.items()
+                if current_time - data["ultima_interaccion"] > SESSION_TIMEOUT
+            ]
+            for user_id in inactive_users:
+                user_sessions.pop(user_id, None)
+            time.sleep(60)
+
+    thread = threading.Thread(target=cleaner, daemon=True)
+    thread.start()
+
+@app.get("/")
+def read_root():
+    return {"message": "Bienvenido al asistente"}
+
 @app.get("/download/palabras_clave.db")
 async def download_file():
-    """
-    Permite al usuario descargar el archivo de base de datos.
-    """
     if not os.path.exists(DB_PATH):
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")
     return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
 
 @app.post("/upload_file")
 async def upload_file(file: UploadFile = File(...)):
-    """
-    Permite al usuario subir un nuevo archivo para reemplazar la base de datos existente.
-    """
     try:
         with open(DB_PATH, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
@@ -80,9 +254,6 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.get("/upload_form", response_class=HTMLResponse)
 async def upload_form():
-    """
-    Proporciona un formulario simple para que el usuario pueda subir el archivo de base de datos.
-    """
     return """
     <!doctype html>
     <html>
@@ -98,109 +269,6 @@ async def upload_form():
     </body>
     </html>
     """
-
-def registrar_sintoma(sintoma: str, cuadro: str):
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Error al registrar síntoma: {e}")
-
-def obtener_sintomas():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT sintoma, cuadro FROM palabras_clave")
-        sintomas = cursor.fetchall()
-        conn.close()
-        return sintomas
-    except Exception as e:
-        print(f"Error al obtener síntomas: {e}")
-        return []
-
-palabras_irrelevantes = {
-    "un", "una", "el", "la", "es", "son", "estoy", "siento", "me siento", "que", "de", "en",
-    "por", "a", "me", "mi", "tengo", "muy", "poco", "tambien", "si", "supuesto", "frecuentes", "verdad", "sé", "hoy",
-    "quiero", "mucho", "hola", "no", "entiendo", "buenas", "noches", "soy", "daniel", "mi", "numero", "telefono", "opinas", "?"
-}
-
-def analizar_texto(mensajes_usuario):
-    sintomas_existentes = obtener_sintomas()
-    if not sintomas_existentes:
-        return "No se encontraron síntomas para analizar."
-
-    keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
-    coincidencias = []
-    sintomas_detectados = []
-
-    for mensaje in mensajes_usuario:
-        user_words = mensaje.lower().split()
-        user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]
-
-        for palabra in user_words:
-            if palabra in keyword_to_cuadro:
-                coincidencias.append(keyword_to_cuadro[palabra])
-                sintomas_detectados.append(palabra)
-
-    texto_usuario = " ".join(mensajes_usuario)
-    emociones_detectadas = []
-
-    if len(coincidencias) < 2:
-        prompt = (
-            f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
-            f"{texto_usuario}\n\n"
-            "Responde con una lista de emociones o estados emocionales separados por comas."
-        )
-        try:
-            respuesta_openai = generar_respuesta_con_openai(prompt)
-            emociones_detectadas = [e.strip().lower() for e in respuesta_openai.split(",")]
-            for emocion in emociones_detectadas:
-                if emocion and emocion not in keyword_to_cuadro:
-                    registrar_sintoma(emocion, "estado emocional detectado por IA")
-                    coincidencias.append("estado emocional detectado por IA")
-                    sintomas_detectados.append(emocion)
-        except Exception as e:
-            print(f"Error al usar OpenAI para detectar emociones: {e}")
-
-    if not coincidencias:
-        return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
-
-    category_counts = Counter(coincidencias)
-    cuadro_probable, frecuencia = category_counts.most_common(1)[0]
-    probabilidad = (frecuencia / len(coincidencias)) * 100
-
-    emociones_detectadas_unicas = list(set(emociones_detectadas))
-    emociones_mencionadas = ", ".join(emociones_detectadas_unicas)
-
-    return (
-        f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), parece estar relacionado con un {cuadro_probable} ({probabilidad:.2f}% de certeza)."
-        + (f" Emociones adicionales detectadas: {emociones_mencionadas}." if emociones_detectadas_unicas else " No se detectaron emociones adicionales.")
-        + " Te recomiendo contactar a un profesional, como el Lic. Daniel O. Bustamante, al WhatsApp +54 911 3310-1186, para una evaluación más detallada."
-    )
-
-def generar_respuesta_con_openai(prompt):
-    try:
-        prompt = f"{prompt}\nResponde de manera profesional, pero directa y objetiva."
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=150,
-            temperature=0.6
-        )
-        return response.choices[0].message['content'].strip()
-    except Exception as e:
-        print(f"Error al generar respuesta con OpenAI: {e}")
-        return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
-
-class UserInput(BaseModel):
-    mensaje: str
-    user_id: str
-
-user_sessions = {}
-SESSION_TIMEOUT = 60
 
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
@@ -221,17 +289,28 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
-
         interacciones = user_sessions[user_id]["contador_interacciones"]
 
         if mensaje_usuario == "reiniciar":
-            user_sessions.pop(user_id, None)
-            return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
+            if user_id in user_sessions:
+                user_sessions.pop(user_id)
+                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
+            else:
+                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
+
+        if ("contacto" in mensaje_usuario or "numero" in mensaje_usuario or "turno" in mensaje_usuario or "telefono" in mensaje_usuario):
+            return {
+                "respuesta": (
+                    "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
+                    "+54 911 3310-1186. Él podrá responderte a la brevedad."
+                )
+            }
 
         if interacciones > 5:
             return {
                 "respuesta": (
-                    "Debo concluir nuestra conversación. Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una consulta profesional."
+                    "Si bien debo concluir nuestra conversación, te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
+                    "al WhatsApp +54 911 3310-1186. Un saludo."
                 )
             }
 
