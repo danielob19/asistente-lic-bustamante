@@ -241,4 +241,106 @@ def startup_event():
     init_db()
     actualizar_estructura_bd()
     inspeccionar_base_de_datos()
-    start_session
+    start_session_cleaner()
+
+# Verificar escritura en disco
+def verificar_escritura_en_disco():
+    """
+    Verifica si se puede escribir en el sistema de archivos persistente.
+    Crea y escribe en un archivo de prueba para confirmar que el almacenamiento está disponible.
+    """
+    try:
+        with open(PRUEBA_PATH, "w") as archivo:
+            archivo.write("Prueba de escritura exitosa.")
+        print("Prueba de escritura en disco exitosa.")
+    except Exception as e:
+        print(f"Error al escribir en el disco: {e}")
+
+# Limpiar sesiones inactivas
+def start_session_cleaner():
+    def cleaner():
+        while True:
+            current_time = time.time()
+            inactive_users = [
+                user_id for user_id, data in user_sessions.items()
+                if current_time - data["ultima_interaccion"] > SESSION_TIMEOUT
+            ]
+            for user_id in inactive_users:
+                user_sessions.pop(user_id, None)
+            time.sleep(60)
+
+    thread = threading.Thread(target=cleaner, daemon=True)
+    thread.start()
+
+@app.post("/asistente")
+async def asistente(input_data: UserInput):
+    try:
+        user_id = input_data.user_id
+        mensaje_usuario = input_data.mensaje.strip().lower()
+
+        if not mensaje_usuario:
+            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+
+        if user_id not in user_sessions:
+            user_sessions[user_id] = {
+                "contador_interacciones": 0,
+                "ultima_interaccion": time.time(),
+                "mensajes": []
+            }
+
+        user_sessions[user_id]["ultima_interaccion"] = time.time()
+        user_sessions[user_id]["contador_interacciones"] += 1
+        user_sessions[user_id]["mensajes"].append(mensaje_usuario)
+        interacciones = user_sessions[user_id]["contador_interacciones"]
+
+        if mensaje_usuario == "reiniciar":
+            if user_id in user_sessions:
+                user_sessions.pop(user_id)
+                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
+            else:
+                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
+
+        if ("contacto" in mensaje_usuario or "numero" in mensaje_usuario or "turno" in mensaje_usuario or "telefono" in mensaje_usuario):
+            return {
+                "respuesta": (
+                    "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
+                    "+54 911 3310-1186. Él podrá responderte a la brevedad."
+                )
+            }
+
+        if interacciones > 5:
+            return {
+                "respuesta": (
+                    "Si bien debo concluir nuestra conversación, te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
+                    "al WhatsApp +54 911 3310-1186. Un saludo."
+                )
+            }
+
+        if interacciones == 5:
+            mensajes = user_sessions[user_id]["mensajes"]
+            respuesta_analisis = analizar_texto(mensajes)
+            user_sessions[user_id]["mensajes"].clear()
+            return {"respuesta": respuesta_analisis}
+
+        prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
+        respuesta_ai = generar_respuesta_con_openai(prompt)
+        return {"respuesta": respuesta_ai}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+@app.get("/download/palabras_clave.db")
+async def download_file():
+    """
+    Permite descargar la base de datos SQLite.
+    """
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
+
+@app.post("/upload_file")
+async def upload_file(file: UploadFile = File(...)):
+    """
+    Permite subir un archivo de base de datos SQLite y reemplazar la existente.
+    """
+    try
