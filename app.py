@@ -173,8 +173,11 @@ def analizar_texto(mensajes_usuario):
     cuadro_probable, frecuencia = category_counts.most_common(1)[0]
     probabilidad = (frecuencia / len(coincidencias)) * 100
 
+    sintomas_restantes = [sintoma for sintoma in keyword_to_cuadro.keys() if sintoma not in sintomas_detectados]
+
     return (
         f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), parece estar relacionado con un {cuadro_probable}. "
+        f"Los síntomas no mencionados pero asociados incluyen: {', '.join(sintomas_restantes)}. "
         f"Te recomiendo contactar a un profesional, como el Lic. Daniel O. Bustamante, al WhatsApp +54 911 3310-1186, "
         f"para una evaluación más detallada."
     )
@@ -306,6 +309,12 @@ async def asistente(input_data: UserInput):
                 )
             }
 
+        if interacciones == 5:
+            mensajes = user_sessions[user_id]["mensajes"]
+            respuesta_analisis = analizar_texto(mensajes)
+            user_sessions[user_id]["mensajes"].clear()
+            return {"respuesta": respuesta_analisis}
+
         if interacciones > 5:
             return {
                 "respuesta": (
@@ -313,12 +322,6 @@ async def asistente(input_data: UserInput):
                     "al WhatsApp +54 911 3310-1186. Un saludo."
                 )
             }
-
-        if interacciones == 5:
-            mensajes = user_sessions[user_id]["mensajes"]
-            respuesta_analisis = analizar_texto(mensajes)
-            user_sessions[user_id]["mensajes"].clear()
-            return {"respuesta": respuesta_analisis}
 
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
