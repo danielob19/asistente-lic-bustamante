@@ -93,19 +93,21 @@ def actualizar_estructura_bd():
 
 # Registrar síntoma nuevo
 def registrar_sintoma(sintoma: str, cuadro: str):
+    """
+    Inserta un nuevo síntoma en la base de datos o lo actualiza si ya existe.
+    """
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
         conn.commit()
-        filas_afectadas = cursor.rowcount
-        conn.close()
-        if filas_afectadas == 0:
-            print(f"El síntoma '{sintoma}' ya existe en la base de datos.")
+        if cursor.rowcount > 0:
+            print(f"Síntoma '{sintoma}' registrado exitosamente con cuadro: {cuadro}.")
         else:
-            print(f"Síntoma '{sintoma}' registrado exitosamente.")
+            print(f"Síntoma '{sintoma}' ya existe y no se modificó.")
+        conn.close()
     except Exception as e:
-        print(f"Error al registrar síntoma: {e}")
+        print(f"Error al registrar síntoma '{sintoma}': {e}")
 
 # Obtener síntomas existentes
 def obtener_sintomas():
@@ -119,6 +121,20 @@ def obtener_sintomas():
     except Exception as e:
         print(f"Error al obtener síntomas: {e}")
         return []
+
+# Inspeccionar la base de datos
+def inspeccionar_base_de_datos():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(palabras_clave)")
+        estructura = cursor.fetchall()
+        conn.close()
+        print("Estructura de la tabla 'palabras_clave':")
+        for columna in estructura:
+            print(columna)
+    except Exception as e:
+        print(f"Error al inspeccionar la base de datos: {e}")
 
 # Lista de palabras irrelevantes
 palabras_irrelevantes = {
@@ -157,17 +173,34 @@ def analizar_texto(mensajes_usuario):
             else:
                 sintomas_sin_coincidencia.append(palabra)
 
-    # Determinar el cuadro más frecuente
-    if coincidencias:
-        category_counts = Counter(coincidencias)
-        cuadro_probable, _ = category_counts.most_common(1)[0]
-
-        respuesta = (
-            f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), "
-            f"el cuadro probable es: {cuadro_probable}. "
+    if len(coincidencias) < 2:
+        texto_usuario = " ".join(mensajes_usuario)
+        prompt = (
+            f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
+            f"{texto_usuario}\n\n"
+            "Responde con una lista de emociones o estados emocionales separados por comas."
         )
-    else:
-        respuesta = "No se encontraron coincidencias suficientes para determinar un cuadro probable. "
+        try:
+            emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
+            for emocion in emociones_detectadas:
+                emocion = emocion.strip().lower()
+                if emocion and emocion not in keyword_to_cuadro:
+                    registrar_sintoma(emocion, "estado emocional detectado por IA")
+                    coincidencias.append("estado emocional detectado por IA")
+                    sintomas_detectados.append(emocion)
+        except Exception as e:
+            print(f"Error al usar OpenAI para detectar emociones: {e}")
+
+    if not coincidencias:
+        return "No se encontraron suficientes coincidencias para determinar un cuadro probable."
+
+    category_counts = Counter(coincidencias)
+    cuadro_probable, _ = category_counts.most_common(1)[0]
+
+    respuesta = (
+        f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), "
+        f"el cuadro probable es: {cuadro_probable}. "
+    )
 
     if sintomas_sin_coincidencia:
         respuesta += (
@@ -207,6 +240,7 @@ def startup_event():
     verificar_escritura_en_disco()
     init_db()
     actualizar_estructura_bd()
+    inspeccionar_base_de_datos()
     start_session_cleaner()
 
 # Verificar escritura en disco
@@ -231,104 +265,4 @@ def start_session_cleaner():
             time.sleep(60)
 
     thread = threading.Thread(target=cleaner, daemon=True)
-    thread.start()
-
-@app.post("/asistente")
-async def asistente(input_data: UserInput):
-    try:
-        user_id = input_data.user_id
-        mensaje_usuario = input_data.mensaje.strip().lower()
-
-        if not mensaje_usuario:
-            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
-
-        if user_id not in user_sessions:
-            user_sessions[user_id] = {
-                "contador_interacciones": 0,
-                "ultima_interaccion": time.time(),
-                "mensajes": []
-            }
-
-        user_sessions[user_id]["ultima_interaccion"] = time.time()
-        user_sessions[user_id]["contador_interacciones"] += 1
-        user_sessions[user_id]["mensajes"].append(mensaje_usuario)
-        interacciones = user_sessions[user_id]["contador_interacciones"]
-
-        if mensaje_usuario == "reiniciar":
-            if user_id in user_sessions:
-                user_sessions.pop(user_id)
-                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
-            else:
-                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
-
-        if ("contacto" in mensaje_usuario or "numero" in mensaje_usuario or "turno" in mensaje_usuario or "telefono" in mensaje_usuario):
-            return {
-                "respuesta": (
-                    "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
-                    "+54 911 3310-1186. Él podrá responderte a la brevedad."
-                )
-            }
-
-        if interacciones > 5:
-            return {
-                "respuesta": (
-                    "Si bien debo concluir nuestra conversación, te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
-                    "al WhatsApp +54 911 3310-1186. Un saludo."
-                )
-            }
-
-        if interacciones == 5:
-            mensajes = user_sessions[user_id]["mensajes"]
-            respuesta_analisis = analizar_texto(mensajes)
-            user_sessions[user_id]["mensajes"].clear()
-            return {"respuesta": respuesta_analisis}
-
-        prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
-        respuesta_ai = generar_respuesta_con_openai(prompt)
-        return {"respuesta": respuesta_ai}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
-@app.get("/download/palabras_clave.db")
-async def download_file():
-    """
-    Permite descargar la base de datos SQLite.
-    """
-    if not os.path.exists(DB_PATH):
-        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
-    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
-
-@app.post("/upload_file")
-async def upload_file(file: UploadFile = File(...)):
-    """
-    Permite subir un archivo de base de datos SQLite y reemplazar la existente.
-    """
-    try:
-        # Guardar el archivo subido en la ubicación de la base de datos
-        with open(DB_PATH, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
-
-@app.get("/upload_form", response_class=HTMLResponse)
-async def upload_form():
-    """
-    Devuelve un formulario HTML simple para subir la base de datos.
-    """
-    return """
-    <!doctype html>
-    <html>
-    <head>
-        <title>Subir palabras_clave.db</title>
-    </head>
-    <body>
-        <h1>Subir un nuevo archivo palabras_clave.db</h1>
-        <form action="/upload_file" method="post" enctype="multipart/form-data">
-            <input type="file" name="file">
-            <button type="submit">Subir</button>
-        </form>
-    </body>
-    </html>
-    """
+    thread.start
