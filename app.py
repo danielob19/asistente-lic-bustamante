@@ -57,6 +57,7 @@ def init_db():
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
+# Actualizar estructura de la base de datos
 def actualizar_estructura_bd():
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -97,7 +98,12 @@ def registrar_sintoma(sintoma: str, cuadro: str):
         cursor = conn.cursor()
         cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
         conn.commit()
+        filas_afectadas = cursor.rowcount
         conn.close()
+        if filas_afectadas == 0:
+            print(f"El síntoma '{sintoma}' ya existe en la base de datos.")
+        else:
+            print(f"Síntoma '{sintoma}' registrado exitosamente.")
     except Exception as e:
         print(f"Error al registrar síntoma: {e}")
 
@@ -127,12 +133,12 @@ palabras_irrelevantes = {
 def analizar_texto(mensajes_usuario):
     """
     Analiza los mensajes del usuario para detectar coincidencias con los síntomas almacenados
-    y usa OpenAI para detectar nuevos estados emocionales si no hay suficientes coincidencias.
+    y muestra un cuadro probable y síntomas adicionales detectados.
     """
     saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
     sintomas_existentes = obtener_sintomas()
     if not sintomas_existentes:
-        return "No se encontraron síntomas para analizar."
+        return "No se encontraron síntomas en la base de datos para analizar."
 
     keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
     coincidencias = []
@@ -151,43 +157,28 @@ def analizar_texto(mensajes_usuario):
             else:
                 sintomas_sin_coincidencia.append(palabra)
 
-    if len(coincidencias) < 2:
-        texto_usuario = " ".join(mensajes_usuario)
-        prompt = (
-            f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
-            f"{texto_usuario}\n\n"
-            "Responde con una lista de emociones o estados emocionales separados por comas."
-        )
-        try:
-            emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
-            for emocion in emociones_detectadas:
-                emocion = emocion.strip().lower()
-                if emocion and emocion not in keyword_to_cuadro:
-                    registrar_sintoma(emocion, "estado emocional detectado por IA")
-                    coincidencias.append("estado emocional detectado por IA")
-                    sintomas_detectados.append(emocion)
-        except Exception as e:
-            print(f"Error al usar OpenAI para detectar emociones: {e}")
+    # Determinar el cuadro más frecuente
+    if coincidencias:
+        category_counts = Counter(coincidencias)
+        cuadro_probable, _ = category_counts.most_common(1)[0]
 
-    if not coincidencias:
-        return (
-            f"No se encontraron suficientes coincidencias para determinar un cuadro psicológico. "
-            f"Síntomas sin coincidencias: {', '.join(set(sintomas_sin_coincidencia))}."
+        respuesta = (
+            f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), "
+            f"el cuadro probable es: {cuadro_probable}. "
+        )
+    else:
+        respuesta = "No se encontraron coincidencias suficientes para determinar un cuadro probable. "
+
+    if sintomas_sin_coincidencia:
+        respuesta += (
+            f"Además, notamos síntomas de {', '.join(set(sintomas_sin_coincidencia))}, "
+            f"por lo que sugiero solicitar una consulta con el Lic. Daniel O. Bustamante escribiendo al WhatsApp "
+            f"+54 911 3310-1186 para una evaluación más detallada."
         )
 
-    category_counts = Counter(coincidencias)
-    cuadro_probable, frecuencia = category_counts.most_common(1)[0]
-    probabilidad = (frecuencia / len(coincidencias)) * 100
+    return respuesta
 
-    return (
-        f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), parece estar relacionado con un {cuadro_probable}. "
-        f"Probabilidad estimada: {probabilidad:.2f}%. "
-        f"Síntomas sin coincidencias: {', '.join(set(sintomas_sin_coincidencia))}. "
-        f"Te recomiendo contactar a un profesional, como el Lic. Daniel O. Bustamante, al WhatsApp +54 911 3310-1186, "
-        f"para una evaluación más detallada."
-    )
-
-# Generación de respuestas con OpenAI con menor empatía
+# Generación de respuestas con OpenAI
 def generar_respuesta_con_openai(prompt):
     try:
         prompt = f"{prompt}\nResponde de manera profesional, pero directa y objetiva."
@@ -201,14 +192,6 @@ def generar_respuesta_con_openai(prompt):
     except Exception as e:
         print(f"Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
-
-# Verificar escritura en disco
-def verificar_escritura_en_disco():
-    try:
-        with open(PRUEBA_PATH, "w") as archivo:
-            archivo.write("Prueba de escritura exitosa.")
-    except Exception as e:
-        print(f"Error al escribir en el disco: {e}")
 
 # Clase para solicitudes del usuario
 class UserInput(BaseModel):
@@ -226,6 +209,15 @@ def startup_event():
     actualizar_estructura_bd()
     start_session_cleaner()
 
+# Verificar escritura en disco
+def verificar_escritura_en_disco():
+    try:
+        with open(PRUEBA_PATH, "w") as archivo:
+            archivo.write("Prueba de escritura exitosa.")
+        print("Prueba de escritura en disco exitosa.")
+    except Exception as e:
+        print(f"Error al escribir en el disco: {e}")
+
 def start_session_cleaner():
     def cleaner():
         while True:
@@ -240,43 +232,6 @@ def start_session_cleaner():
 
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
-
-@app.get("/")
-def read_root():
-    return {"message": "Bienvenido al asistente"}
-
-@app.get("/download/palabras_clave.db")
-async def download_file():
-    if not os.path.exists(DB_PATH):
-        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
-    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
-
-@app.post("/upload_file")
-async def upload_file(file: UploadFile = File(...)):
-    try:
-        with open(DB_PATH, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
-
-@app.get("/upload_form", response_class=HTMLResponse)
-async def upload_form():
-    return """
-    <!doctype html>
-    <html>
-    <head>
-        <title>Subir palabras_clave.db</title>
-    </head>
-    <body>
-        <h1>Subir un nuevo archivo palabras_clave.db</h1>
-        <form action="/upload_file" method="post" enctype="multipart/form-data">
-            <input type="file" name="file">
-            <button type="submit">Subir</button>
-        </form>
-    </body>
-    </html>
-    """
 
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
@@ -334,3 +289,46 @@ async def asistente(input_data: UserInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+@app.get("/download/palabras_clave.db")
+async def download_file():
+    """
+    Permite descargar la base de datos SQLite.
+    """
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
+
+@app.post("/upload_file")
+async def upload_file(file: UploadFile = File(...)):
+    """
+    Permite subir un archivo de base de datos SQLite y reemplazar la existente.
+    """
+    try:
+        # Guardar el archivo subido en la ubicación de la base de datos
+        with open(DB_PATH, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
+
+@app.get("/upload_form", response_class=HTMLResponse)
+async def upload_form():
+    """
+    Devuelve un formulario HTML simple para subir la base de datos.
+    """
+    return """
+    <!doctype html>
+    <html>
+    <head>
+        <title>Subir palabras_clave.db</title>
+    </head>
+    <body>
+        <h1>Subir un nuevo archivo palabras_clave.db</h1>
+        <form action="/upload_file" method="post" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <button type="submit">Subir</button>
+        </form>
+    </body>
+    </html>
+    """
