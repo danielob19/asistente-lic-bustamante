@@ -56,39 +56,13 @@ def init_db():
         print(f"Base de datos creada o abierta en: {DB_PATH}")
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
-# Configuración de la base de datos SQLite
-def init_db():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS palabras_clave (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                sintoma TEXT UNIQUE NOT NULL,
-                cuadro TEXT NOT NULL
-            )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS interacciones (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id TEXT NOT NULL,
-                consulta TEXT NOT NULL,
-                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
-        conn.close()
-        print(f"Base de datos creada o abierta en: {DB_PATH}")
-    except Exception as e:
-        print(f"Error al inicializar la base de datos: {e}")
 
-
+# Actualizar estructura de la base de datos
 def actualizar_estructura_bd():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
-        # Renombrar tabla existente si aún tiene columnas antiguas
         cursor.execute("PRAGMA table_info(palabras_clave)")
         columnas = cursor.fetchall()
         nombres_columnas = [columna[1] for columna in columnas]
@@ -96,7 +70,6 @@ def actualizar_estructura_bd():
         if "palabra" in nombres_columnas and "categoria" in nombres_columnas:
             cursor.execute("ALTER TABLE palabras_clave RENAME TO palabras_clave_old")
             
-            # Crear nueva tabla con la estructura actualizada
             cursor.execute("""
                 CREATE TABLE palabras_clave (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,13 +78,11 @@ def actualizar_estructura_bd():
                 )
             """)
             
-            # Migrar datos de la tabla antigua a la nueva
             cursor.execute("""
                 INSERT INTO palabras_clave (sintoma, cuadro)
                 SELECT palabra, categoria FROM palabras_clave_old
             """)
             
-            # Eliminar la tabla antigua
             cursor.execute("DROP TABLE palabras_clave_old")
             print("Estructura de la base de datos actualizada exitosamente.")
 
@@ -120,7 +91,6 @@ def actualizar_estructura_bd():
     except sqlite3.Error as e:
         print(f"Error al actualizar la estructura de la base de datos: {e}")
 
-
 # Registrar síntoma nuevo
 def registrar_sintoma(sintoma: str, cuadro: str):
     try:
@@ -128,7 +98,12 @@ def registrar_sintoma(sintoma: str, cuadro: str):
         cursor = conn.cursor()
         cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
         conn.commit()
+        filas_afectadas = cursor.rowcount
         conn.close()
+        if filas_afectadas == 0:
+            print(f"El síntoma '{sintoma}' ya existe en la base de datos.")
+        else:
+            print(f"Síntoma '{sintoma}' registrado exitosamente.")
     except Exception as e:
         print(f"Error al registrar síntoma: {e}")
 
@@ -158,81 +133,65 @@ palabras_irrelevantes = {
 def analizar_texto(mensajes_usuario):
     """
     Analiza los mensajes del usuario para detectar coincidencias con los síntomas almacenados
-    y usa OpenAI para detectar nuevos estados emocionales si no hay suficientes coincidencias.
+    y muestra un cuadro probable y síntomas adicionales detectados.
     """
     saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
     sintomas_existentes = obtener_sintomas()
     if not sintomas_existentes:
-        return "No se encontraron síntomas para analizar."
+        return "No se encontraron síntomas en la base de datos para analizar."
 
     keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
     coincidencias = []
     sintomas_detectados = []
+    sintomas_sin_coincidencia = []
 
-    # Procesar cada mensaje del usuario
     for mensaje in mensajes_usuario:
-        user_words = mensaje.lower().split()  # Convierte el mensaje en una lista de palabras
-        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]  # Elimina saludos comunes
-        user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]  # Elimina palabras irrelevantes
+        user_words = mensaje.lower().split()
+        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
+        user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]
 
         for palabra in user_words:
             if palabra in keyword_to_cuadro:
                 coincidencias.append(keyword_to_cuadro[palabra])
                 sintomas_detectados.append(palabra)
+            else:
+                sintomas_sin_coincidencia.append(palabra)
 
-    # Si no hay suficientes coincidencias, usar OpenAI para detectar emociones nuevas
-    if len(coincidencias) < 2:
-        texto_usuario = " ".join(mensajes_usuario)
-        prompt = (
-            f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
-            f"{texto_usuario}\n\n"
-            "Responde con una lista de emociones o estados emocionales separados por comas."
+    # Determinar el cuadro más frecuente
+    if coincidencias:
+        category_counts = Counter(coincidencias)
+        cuadro_probable, _ = category_counts.most_common(1)[0]
+
+        respuesta = (
+            f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), "
+            f"el cuadro probable es: {cuadro_probable}. "
         )
-        try:
-            emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
-            for emocion in emociones_detectadas:
-                emocion = emocion.strip().lower()
-                if emocion and emocion not in keyword_to_cuadro:
-                    registrar_sintoma(emocion, "estado emocional detectado por IA")
-                    coincidencias.append("estado emocional detectado por IA")
-                    sintomas_detectados.append(emocion)
-        except Exception as e:
-            print(f"Error al usar OpenAI para detectar emociones: {e}")
+    else:
+        respuesta = "No se encontraron coincidencias suficientes para determinar un cuadro probable. "
 
-    if not coincidencias:
-        return "No se encontraron suficientes coincidencias para determinar un cuadro psicológico."
+    if sintomas_sin_coincidencia:
+        respuesta += (
+            f"Además, notamos síntomas de {', '.join(set(sintomas_sin_coincidencia))}, "
+            f"por lo que sugiero solicitar una consulta con el Lic. Daniel O. Bustamante escribiendo al WhatsApp "
+            f"+54 911 3310-1186 para una evaluación más detallada."
+        )
 
-    category_counts = Counter(coincidencias)
-    cuadro_probable, frecuencia = category_counts.most_common(1)[0]
-    probabilidad = (frecuencia / len(coincidencias)) * 100
-
-    return (
-        f"En base a los síntomas referidos ({', '.join(set(sintomas_detectados))}), pareciera tratarse de una afección o cuadro relacionado con un {cuadro_probable}. "
-        f"Por lo que te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. "
-        f"Él podrá ofrecerte una evaluación y un apoyo más completo."
-    )
+    return respuesta
 
 # Generación de respuestas con OpenAI
 def generar_respuesta_con_openai(prompt):
     try:
+        prompt = f"{prompt}\nResponde de manera profesional, pero directa y objetiva."
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Cambiar a "gpt-4" si tienes acceso
+            model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=150,
-            temperature=0.7
+            temperature=0.6
         )
         return response.choices[0].message['content'].strip()
     except Exception as e:
         print(f"Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
-
-# Verificar escritura en disco
-def verificar_escritura_en_disco():
-    try:
-        with open(PRUEBA_PATH, "w") as archivo:
-            archivo.write("Prueba de escritura exitosa.")
-    except Exception as e:
-        print(f"Error al escribir en el disco: {e}")
 
 # Clase para solicitudes del usuario
 class UserInput(BaseModel):
@@ -241,16 +200,24 @@ class UserInput(BaseModel):
 
 # Gestión de sesiones (en memoria)
 user_sessions = {}
-SESSION_TIMEOUT = 60  # Tiempo de inactividad en segundos
+SESSION_TIMEOUT = 60
 
 @app.on_event("startup")
 def startup_event():
     verificar_escritura_en_disco()
     init_db()
-    actualizar_estructura_bd()  # Actualiza la estructura de la base de datos si es necesario
+    actualizar_estructura_bd()
     start_session_cleaner()
 
-# Limpieza de sesiones inactivas
+# Verificar escritura en disco
+def verificar_escritura_en_disco():
+    try:
+        with open(PRUEBA_PATH, "w") as archivo:
+            archivo.write("Prueba de escritura exitosa.")
+        print("Prueba de escritura en disco exitosa.")
+    except Exception as e:
+        print(f"Error al escribir en el disco: {e}")
+
 def start_session_cleaner():
     def cleaner():
         while True:
@@ -266,48 +233,6 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
-# Endpoint inicial
-@app.get("/")
-def read_root():
-    return {"message": "Bienvenido al asistente"}
-
-# Endpoint para descargar el archivo de base de datos
-@app.get("/download/palabras_clave.db")
-async def download_file():
-    if not os.path.exists(DB_PATH):
-        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
-    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
-
-# Endpoint para subir el archivo de base de datos
-@app.post("/upload_file")
-async def upload_file(file: UploadFile = File(...)):
-    try:
-        with open(DB_PATH, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
-
-# Formulario para subir archivo
-@app.get("/upload_form", response_class=HTMLResponse)
-async def upload_form():
-    return """
-    <!doctype html>
-    <html>
-    <head>
-        <title>Subir palabras_clave.db</title>
-    </head>
-    <body>
-        <h1>Subir un nuevo archivo palabras_clave.db</h1>
-        <form action="/upload_file" method="post" enctype="multipart/form-data">
-            <input type="file" name="file">
-            <button type="submit">Subir</button>
-        </form>
-    </body>
-    </html>
-    """
-
-# Endpoint principal para interacción con el asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -347,7 +272,7 @@ async def asistente(input_data: UserInput):
         if interacciones > 5:
             return {
                 "respuesta": (
-                    "Si bien debo concluir nuestra conversación, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
+                    "Si bien debo concluir nuestra conversación, te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
                     "al WhatsApp +54 911 3310-1186. Un saludo."
                 )
             }
@@ -365,3 +290,45 @@ async def asistente(input_data: UserInput):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
+@app.get("/download/palabras_clave.db")
+async def download_file():
+    """
+    Permite descargar la base de datos SQLite.
+    """
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
+
+@app.post("/upload_file")
+async def upload_file(file: UploadFile = File(...)):
+    """
+    Permite subir un archivo de base de datos SQLite y reemplazar la existente.
+    """
+    try:
+        # Guardar el archivo subido en la ubicación de la base de datos
+        with open(DB_PATH, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
+
+@app.get("/upload_form", response_class=HTMLResponse)
+async def upload_form():
+    """
+    Devuelve un formulario HTML simple para subir la base de datos.
+    """
+    return """
+    <!doctype html>
+    <html>
+    <head>
+        <title>Subir palabras_clave.db</title>
+    </head>
+    <body>
+        <h1>Subir un nuevo archivo palabras_clave.db</h1>
+        <form action="/upload_file" method="post" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <button type="submit">Subir</button>
+        </form>
+    </body>
+    </html>
+    """
