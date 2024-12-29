@@ -96,14 +96,14 @@ def registrar_sintoma(sintoma: str, cuadro: str):
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
+        cursor.execute("INSERT OR REPLACE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
         conn.commit()
         filas_afectadas = cursor.rowcount
         conn.close()
         if filas_afectadas == 0:
-            print(f"El síntoma '{sintoma}' ya existe en la base de datos.")
+            print(f"El síntoma '{sintoma}' ya existe y no fue modificado.")
         else:
-            print(f"Síntoma '{sintoma}' registrado exitosamente.")
+            print(f"Síntoma '{sintoma}' registrado o actualizado exitosamente.")
     except Exception as e:
         print(f"Error al registrar síntoma: {e}")
 
@@ -119,6 +119,20 @@ def obtener_sintomas():
     except Exception as e:
         print(f"Error al obtener síntomas: {e}")
         return []
+
+# Inspeccionar la base de datos
+def inspeccionar_base_de_datos():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(palabras_clave)")
+        estructura = cursor.fetchall()
+        conn.close()
+        print("Estructura de la tabla 'palabras_clave':")
+        for columna in estructura:
+            print(columna)
+    except Exception as e:
+        print(f"Error al inspeccionar la base de datos: {e}")
 
 # Lista de palabras irrelevantes
 palabras_irrelevantes = {
@@ -207,6 +221,7 @@ def startup_event():
     verificar_escritura_en_disco()
     init_db()
     actualizar_estructura_bd()
+    inspeccionar_base_de_datos()
     start_session_cleaner()
 
 # Verificar escritura en disco
