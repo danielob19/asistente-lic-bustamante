@@ -21,7 +21,7 @@ app = FastAPI()
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Cambiar "*" a una lista de dominios específicos si es necesario
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -308,12 +308,6 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        if interacciones == 5:
-            mensajes = user_sessions[user_id]["mensajes"]
-            respuesta_analisis = analizar_texto(mensajes)
-            user_sessions[user_id]["mensajes"].clear()
-            return {"respuesta": respuesta_analisis}
-
         if interacciones > 5:
             return {
                 "respuesta": (
@@ -321,6 +315,12 @@ async def asistente(input_data: UserInput):
                     "al WhatsApp +54 911 3310-1186. Un saludo."
                 )
             }
+
+        if interacciones == 5:
+            mensajes = user_sessions[user_id]["mensajes"]
+            respuesta_analisis = analizar_texto(mensajes)
+            user_sessions[user_id]["mensajes"].clear()
+            return {"respuesta": respuesta_analisis}
 
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
