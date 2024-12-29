@@ -171,10 +171,9 @@ def analizar_texto(mensajes_usuario):
 
     category_counts = Counter(coincidencias)
     cuadro_probable, frecuencia = category_counts.most_common(1)[0]
-    sintomas_otros = [sintoma for sintoma in sintomas_detectados]
 
     return (
-        f"Con base en los síntomas mencionados ({', '.join(sintomas_otros)}), parece estar relacionado con un {cuadro_probable}. "
+        f"Con base en los síntomas mencionados ({', '.join(set(sintomas_detectados))}), parece estar relacionado con un {cuadro_probable}. "
         f"Te recomiendo contactar a un profesional, como el Lic. Daniel O. Bustamante, al WhatsApp +54 911 3310-1186, "
         f"para una evaluación más detallada."
     )
