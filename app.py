@@ -172,11 +172,12 @@ def analizar_texto(mensajes_usuario):
     cuadro_probable, frecuencia = category_counts.most_common(1)[0]
     probabilidad = (frecuencia / len(coincidencias)) * 100
 
-    emociones_mencionadas = ", ".join(set(emociones_detectadas))
+    emociones_detectadas_unicas = list(set(emociones_detectadas))
+    emociones_mencionadas = ", ".join(emociones_detectadas_unicas)
 
     return (
         f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), parece estar relacionado con un {cuadro_probable} ({probabilidad:.2f}% de certeza)."
-        + (f" Emociones adicionales detectadas: {emociones_mencionadas}." if emociones_detectadas else " No se detectaron emociones adicionales.")
+        + (f" Emociones adicionales detectadas: {emociones_mencionadas}." if emociones_detectadas_unicas else " No se detectaron emociones adicionales.")
         + " Te recomiendo contactar a un profesional, como el Lic. Daniel O. Bustamante, al WhatsApp +54 911 3310-1186, para una evaluación más detallada."
     )
 
@@ -246,3 +247,4 @@ async def asistente(input_data: UserInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
