@@ -142,7 +142,7 @@ palabras_irrelevantes = {
     "por", "a", "me", "mi", "tengo", "mucho", "muy", "un", "poco", "tengo", "animicos", "si", "supuesto", "frecuentes", "verdad", "sé", "hoy", "quiero", 
     "bastante", "mucho", "tambien", "gente", "frecuencia", "entendi", "hola", "estoy", "no", "entiendo", 
     "buenas", "noches", "soy", "daniel", "mi", "numero", "de", "telefono", "es", "4782-6465", "me", "siento", "para", "mucha", "y", "sufro", "vida", 
-    "que", "opinas", "?"
+    "que", "opinas", "?", "reinicia", "con", "del", "psicologo", "contactarme", "necesito", "lic"
 }
 
 # Análisis de texto del usuario
