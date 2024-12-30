@@ -300,7 +300,7 @@ async def asistente(input_data: UserInput):
             else:
                 return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
 
-        if ("contacto" in mensaje_usuario or "numero" in mensaje_usuario or "turno" in mensaje_usuario or "telefono" in mensaje_usuario):
+        if ("contacto" in mensaje_usuario or "numero" in mensaje_usuario or "turno" in mensaje_usuario or "whatsapp" in mensaje_usuario or "telefono" in mensaje_usuario):
             return {
                 "respuesta": (
                     "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
