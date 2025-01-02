@@ -231,11 +231,33 @@ class UserInput(BaseModel):
 
 # Gestión de sesiones (en memoria)
 user_sessions = {}
-SESSION_TIMEOUT = 60
+SESSION_TIMEOUT = 60  # Tiempo en segundos para limpiar sesiones inactivas
 
 @app.on_event("startup")
 def startup_event():
     init_db()
+    # Inicia un hilo para limpiar sesiones inactivas
+    start_session_cleaner()
+
+# Función para limpiar sesiones inactivas
+def start_session_cleaner():
+    """
+    Limpia las sesiones inactivas después de un tiempo definido (SESSION_TIMEOUT).
+    """
+    def cleaner():
+        while True:
+            current_time = time.time()
+            inactive_users = [
+                user_id for user_id, session in user_sessions.items()
+                if current_time - session["ultima_interaccion"] > SESSION_TIMEOUT
+            ]
+            for user_id in inactive_users:
+                del user_sessions[user_id]
+            time.sleep(30)  # Intervalo para revisar las sesiones
+
+    # Ejecutar la limpieza de sesiones en un hilo separado
+    thread = threading.Thread(target=cleaner, daemon=True)
+    thread.start()
 
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
@@ -248,6 +270,7 @@ async def asistente(input_data: UserInput):
 
         registrar_interaccion(user_id, mensaje_usuario)
 
+        # Inicializa la sesión del usuario si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
@@ -255,6 +278,7 @@ async def asistente(input_data: UserInput):
                 "mensajes": []
             }
 
+        # Actualiza la sesión del usuario
         user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
