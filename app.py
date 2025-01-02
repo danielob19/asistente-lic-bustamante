@@ -274,7 +274,6 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-
         if user_sessions[user_id]["contador_interacciones"] >= 5:
             mensajes = user_sessions[user_id]["mensajes"]
             respuesta_analisis = analizar_texto(mensajes)
