@@ -151,7 +151,7 @@ palabras_irrelevantes = {
 def analizar_texto(mensajes_usuario):
     """
     Analiza los mensajes del usuario para detectar coincidencias con los síntomas almacenados
-    y muestra un cuadro probable y síntomas adicionales detectados.
+    y muestra un cuadro probable y emociones o patrones de conducta adicionales detectados.
     """
     sintomas_existentes = obtener_sintomas()
     if not sintomas_existentes:
@@ -159,7 +159,7 @@ def analizar_texto(mensajes_usuario):
 
     keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
     coincidencias = []
-    sintomas_detectados = []
+    emociones_detectadas = []
     sintomas_sin_coincidencia = []
 
     for mensaje in mensajes_usuario:
@@ -169,42 +169,41 @@ def analizar_texto(mensajes_usuario):
         for palabra in user_words:
             if palabra in keyword_to_cuadro:
                 coincidencias.append(keyword_to_cuadro[palabra])
-                sintomas_detectados.append(palabra)
             else:
                 sintomas_sin_coincidencia.append(palabra)
 
+    # Generar emociones detectadas a partir de mensajes sin coincidencia
     if len(coincidencias) < 2:
         texto_usuario = " ".join(mensajes_usuario)
         prompt = (
-            f"Analiza el siguiente mensaje y detecta emociones o estados psicológicos implícitos:\n\n"
+            f"Analiza el siguiente mensaje y detecta emociones o patrones de conducta humanos implícitos:\n\n"
             f"{texto_usuario}\n\n"
-            "Responde con una lista de emociones o estados emocionales separados por comas."
+            "Responde con una lista de emociones o patrones de conducta separados por comas."
         )
         try:
             emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
-            for emocion in emociones_detectadas:
-                emocion = emocion.strip().lower()
-                if emocion:
-                    registrar_emocion(emocion, texto_usuario)
-                    coincidencias.append("estado emocional detectado por IA")
-                    sintomas_detectados.append(emocion)
+            emociones_detectadas = [
+                emocion.strip().lower() for emocion in emociones_detectadas
+                if emocion.strip().lower() not in palabras_irrelevantes
+            ]
         except Exception as e:
             print(f"Error al usar OpenAI para detectar emociones: {e}")
 
-    if not coincidencias:
+    if not coincidencias and not emociones_detectadas:
         return "No se encontraron suficientes coincidencias para determinar un cuadro probable."
 
-    category_counts = Counter(coincidencias)
-    cuadro_probable, _ = category_counts.most_common(1)[0]
+    respuesta = ""
+    if coincidencias:
+        category_counts = Counter(coincidencias)
+        cuadro_probable, _ = category_counts.most_common(1)[0]
+        respuesta = (
+            f"Con base en los síntomas detectados ({', '.join(set(coincidencias))}), "
+            f"el cuadro probable es: {cuadro_probable}. "
+        )
 
-    respuesta = (
-        f"Con base en los síntomas detectados ({', '.join(set(sintomas_detectados))}), "
-        f"el cuadro probable es: {cuadro_probable}. "
-    )
-
-    if sintomas_sin_coincidencia:
+    if emociones_detectadas:
         respuesta += (
-            f"Además, notamos síntomas de {', '.join(set(sintomas_sin_coincidencia))}, "
+            f"Además, notamos emociones o patrones de conducta humanos como {', '.join(set(emociones_detectadas))}, "
             f"por lo que sugiero solicitar una consulta con el Lic. Daniel O. Bustamante escribiendo al WhatsApp "
             f"+54 911 3310-1186 para una evaluación más detallada."
         )
