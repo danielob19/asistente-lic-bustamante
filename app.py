@@ -1,3 +1,4 @@
+
 import os
 import time
 import threading
@@ -233,13 +234,10 @@ class UserInput(BaseModel):
 user_sessions = {}
 SESSION_TIMEOUT = 60
 
-# Aquí van todas las demás funciones y decoradores...
-
 @app.on_event("startup")
 def startup_event():
     init_db()
 
-# Ruta /asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
