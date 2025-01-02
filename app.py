@@ -299,16 +299,24 @@ async def asistente(input_data: UserInput):
                     "+54 911 3310-1186. Él estará encantado de responderte."
                 )
             }
-
+    # Manejo para análisis de texto después de 5 interacciones
+        if user_sessions[user_id]["contador_interacciones"] == 3:
+            return {
+                "respuesta": (
+                    "Quedan 3 interacciones mas"
+                )
+            }
+            
         # Manejo para análisis de texto después de 5 interacciones
-        if user_sessions[user_id]["contador_interacciones"] == 5:
+        if user_sessions[user_id]["contador_interacciones"] == 6:
             mensajes = user_sessions[user_id]["mensajes"]
             respuesta_analisis = analizar_texto(mensajes)
             user_sessions[user_id]["mensajes"].clear()
             return {"respuesta": respuesta_analisis}
 
-        # Manejo para análisis de texto después de 5 interacciones
-        if user_sessions[user_id]["contador_interacciones"] >= 6:
+        
+        # Cortar interaccion despues de 7
+        if user_sessions[user_id]["contador_interacciones"] >= 7:
             return {
                 "respuesta": (
                     "Si bien debo concluir nuestra conversación, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
