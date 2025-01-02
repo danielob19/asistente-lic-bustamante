@@ -1,13 +1,13 @@
 import os
 import time
 import threading
-import sqlite3
+import psycopg2
+from psycopg2 import sql
 import openai
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
-import shutil
 from collections import Counter
 
 # Configuración de la clave de API de OpenAI
@@ -15,104 +15,102 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     raise ValueError("OPENAI_API_KEY no está configurada en las variables de entorno.")
 
+# Configuración de la URL de la base de datos PostgreSQL
+DATABASE_URL = "postgresql://my_postgres_db_oahe_user:AItPOENiOHIGPNva0eiCT0kK1od4UhZf@dpg-ctqqj0bqf0us73f4ar1g-a/my_postgres_db_oahe"
+
 # Inicialización de FastAPI
 app = FastAPI()
 
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Cambiar "*" a una lista de dominios específicos si es necesario
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Ruta para la base de datos
-DB_PATH = "/var/data/palabras_clave.db"  # Cambia esta ruta según el disco persistente
-PRUEBA_PATH = "/var/data/prueba_escritura.txt"
-
-# Configuración de la base de datos SQLite
+# Configuración de la base de datos PostgreSQL
 def init_db():
+    """
+    Crea las tablas necesarias si no existen en PostgreSQL.
+    """
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS palabras_clave (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 sintoma TEXT UNIQUE NOT NULL,
                 cuadro TEXT NOT NULL
-            )
+            );
         """)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS interacciones (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 user_id TEXT NOT NULL,
                 consulta TEXT NOT NULL,
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
+            );
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS emociones_detectadas (
+                id SERIAL PRIMARY KEY,
+                emocion TEXT NOT NULL,
+                contexto TEXT NOT NULL,
+                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
         """)
         conn.commit()
         conn.close()
-        print(f"Base de datos creada o abierta en: {DB_PATH}")
+        print("Base de datos inicializada en PostgreSQL.")
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
-# Actualizar estructura de la base de datos
-def actualizar_estructura_bd():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-
-        cursor.execute("PRAGMA table_info(palabras_clave)")
-        columnas = cursor.fetchall()
-        nombres_columnas = [columna[1] for columna in columnas]
-
-        if "palabra" in nombres_columnas and "categoria" in nombres_columnas:
-            cursor.execute("ALTER TABLE palabras_clave RENAME TO palabras_clave_old")
-            
-            cursor.execute("""
-                CREATE TABLE palabras_clave (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    sintoma TEXT UNIQUE NOT NULL,
-                    cuadro TEXT NOT NULL
-                )
-            """)
-            
-            cursor.execute("""
-                INSERT INTO palabras_clave (sintoma, cuadro)
-                SELECT palabra, categoria FROM palabras_clave_old
-            """)
-            
-            cursor.execute("DROP TABLE palabras_clave_old")
-            print("Estructura de la base de datos actualizada exitosamente.")
-
-        conn.commit()
-        conn.close()
-    except sqlite3.Error as e:
-        print(f"Error al actualizar la estructura de la base de datos: {e}")
-
-# Registrar síntoma nuevo
+# Registrar un síntoma
 def registrar_sintoma(sintoma: str, cuadro: str):
     """
-    Inserta un nuevo síntoma en la base de datos o lo actualiza si ya existe.
+    Inserta un nuevo síntoma en la base de datos PostgreSQL o lo actualiza si ya existe.
     """
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
-        cursor.execute("INSERT OR IGNORE INTO palabras_clave (sintoma, cuadro) VALUES (?, ?)", (sintoma, cuadro))
+        cursor.execute("""
+            INSERT INTO palabras_clave (sintoma, cuadro) 
+            VALUES (%s, %s)
+            ON CONFLICT (sintoma) DO NOTHING;
+        """, (sintoma, cuadro))
         conn.commit()
-        if cursor.rowcount > 0:
-            print(f"Síntoma '{sintoma}' registrado exitosamente con cuadro: {cuadro}.")
-        else:
-            print(f"Síntoma '{sintoma}' ya existe y no se modificó.")
         conn.close()
+        print(f"Síntoma '{sintoma}' registrado exitosamente con cuadro: {cuadro}.")
     except Exception as e:
         print(f"Error al registrar síntoma '{sintoma}': {e}")
 
+# Registrar una emoción detectada
+def registrar_emocion(emocion: str, contexto: str):
+    """
+    Registra una emoción detectada en la base de datos PostgreSQL.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO emociones_detectadas (emocion, contexto) 
+            VALUES (%s, %s);
+        """, (emocion, contexto))
+        conn.commit()
+        conn.close()
+        print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
+    except Exception as e:
+        print(f"Error al registrar emoción '{emocion}': {e}")
+
 # Obtener síntomas existentes
 def obtener_sintomas():
+    """
+    Obtiene todos los síntomas almacenados en la base de datos PostgreSQL.
+    """
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         cursor.execute("SELECT sintoma, cuadro FROM palabras_clave")
         sintomas = cursor.fetchall()
@@ -122,19 +120,22 @@ def obtener_sintomas():
         print(f"Error al obtener síntomas: {e}")
         return []
 
-# Inspeccionar la base de datos
-def inspeccionar_base_de_datos():
+# Registrar una interacción
+def registrar_interaccion(user_id: str, consulta: str):
+    """
+    Registra una interacción del usuario en la base de datos PostgreSQL.
+    """
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
-        cursor.execute("PRAGMA table_info(palabras_clave)")
-        estructura = cursor.fetchall()
+        cursor.execute("""
+            INSERT INTO interacciones (user_id, consulta) 
+            VALUES (%s, %s);
+        """, (user_id, consulta))
+        conn.commit()
         conn.close()
-        print("Estructura de la tabla 'palabras_clave':")
-        for columna in estructura:
-            print(columna)
     except Exception as e:
-        print(f"Error al inspeccionar la base de datos: {e}")
+        print(f"Error al registrar interacción: {e}")
 
 # Lista de palabras irrelevantes
 palabras_irrelevantes = {
@@ -151,7 +152,6 @@ def analizar_texto(mensajes_usuario):
     Analiza los mensajes del usuario para detectar coincidencias con los síntomas almacenados
     y muestra un cuadro probable y síntomas adicionales detectados.
     """
-    saludos_comunes = {"hola", "buenos", "buenas", "saludos", "qué", "tal", "hey", "hola!"}
     sintomas_existentes = obtener_sintomas()
     if not sintomas_existentes:
         return "No se encontraron síntomas en la base de datos para analizar."
@@ -163,7 +163,6 @@ def analizar_texto(mensajes_usuario):
 
     for mensaje in mensajes_usuario:
         user_words = mensaje.lower().split()
-        user_words = [palabra for palabra in user_words if palabra not in saludos_comunes]
         user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]
 
         for palabra in user_words:
@@ -184,8 +183,8 @@ def analizar_texto(mensajes_usuario):
             emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
             for emocion in emociones_detectadas:
                 emocion = emocion.strip().lower()
-                if emocion and emocion not in keyword_to_cuadro:
-                    registrar_sintoma(emocion, "estado emocional detectado por IA")
+                if emocion:
+                    registrar_emocion(emocion, texto_usuario)
                     coincidencias.append("estado emocional detectado por IA")
                     sintomas_detectados.append(emocion)
         except Exception as e:
@@ -214,7 +213,6 @@ def analizar_texto(mensajes_usuario):
 # Generación de respuestas con OpenAI
 def generar_respuesta_con_openai(prompt):
     try:
-        prompt = f"{prompt}\nResponde de manera profesional, pero directa y objetiva."
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
@@ -237,40 +235,7 @@ SESSION_TIMEOUT = 60
 
 @app.on_event("startup")
 def startup_event():
-    verificar_escritura_en_disco()
     init_db()
-    actualizar_estructura_bd()
-    inspeccionar_base_de_datos()
-    start_session_cleaner()
-
-# Verificar escritura en disco
-def verificar_escritura_en_disco():
-    """
-    Verifica si se puede escribir en el sistema de archivos persistente.
-    Crea y escribe en un archivo de prueba para confirmar que el almacenamiento está disponible.
-    """
-    try:
-        with open(PRUEBA_PATH, "w") as archivo:
-            archivo.write("Prueba de escritura exitosa.")
-        print("Prueba de escritura en disco exitosa.")
-    except Exception as e:
-        print(f"Error al escribir en el disco: {e}")
-
-# Limpiar sesiones inactivas
-def start_session_cleaner():
-    def cleaner():
-        while True:
-            current_time = time.time()
-            inactive_users = [
-                user_id for user_id, data in user_sessions.items()
-                if current_time - data["ultima_interaccion"] > SESSION_TIMEOUT
-            ]
-            for user_id in inactive_users:
-                user_sessions.pop(user_id, None)
-            time.sleep(60)
-
-    thread = threading.Thread(target=cleaner, daemon=True)
-    thread.start()
 
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
@@ -281,92 +246,11 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
+        registrar_interaccion(user_id, mensaje_usuario)
+
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
-                "mensajes": []
-            }
+                "mens
 
-        user_sessions[user_id]["ultima_interaccion"] = time.time()
-        user_sessions[user_id]["contador_interacciones"] += 1
-        user_sessions[user_id]["mensajes"].append(mensaje_usuario)
-        interacciones = user_sessions[user_id]["contador_interacciones"]
-
-        if mensaje_usuario == "reiniciar":
-            if user_id in user_sessions:
-                user_sessions.pop(user_id)
-                return {"respuesta": "La conversación ha sido reiniciada. Empezá de nuevo cuando quieras."}
-            else:
-                return {"respuesta": "No se encontró una sesión activa. Empezá una nueva conversación cuando quieras."}
-
-        if ("contacto" in mensaje_usuario or "numero" in mensaje_usuario or "turno" in mensaje_usuario or "whatsapp" in mensaje_usuario or "telefono" in mensaje_usuario):
-            return {
-                "respuesta": (
-                    "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
-                    "+54 911 3310-1186. Él podrá responderte a la brevedad."
-                )
-            }
-
-        if interacciones > 5:
-            return {
-                "respuesta": (
-                    "Si bien debo concluir nuestra conversación, te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
-                    "al WhatsApp +54 911 3310-1186. Un saludo."
-                )
-            }
-
-        if interacciones == 5:
-            mensajes = user_sessions[user_id]["mensajes"]
-            respuesta_analisis = analizar_texto(mensajes)
-            user_sessions[user_id]["mensajes"].clear()
-            return {"respuesta": respuesta_analisis}
-
-        prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
-        respuesta_ai = generar_respuesta_con_openai(prompt)
-        return {"respuesta": respuesta_ai}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
-@app.get("/download/palabras_clave.db")
-async def download_file():
-    """
-    Permite descargar la base de datos SQLite.
-    """
-    if not os.path.exists(DB_PATH):
-        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
-    return FileResponse(DB_PATH, media_type="application/octet-stream", filename="palabras_clave.db")
-
-@app.post("/upload_file")
-async def upload_file(file: UploadFile = File(...)):
-    """
-    Permite subir un archivo de base de datos SQLite y reemplazar la existente.
-    """
-    try:
-        with open(DB_PATH, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        return {"message": "Archivo subido exitosamente.", "filename": file.filename}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
-
-@app.get("/upload_form", response_class=HTMLResponse)
-async def upload_form():
-    """
-    Muestra un formulario para subir la base de datos.
-    """
-    return """
-    <!doctype html>
-    <html>
-    <head>
-        <title>Subir palabras_clave.db</title>
-    </head>
-    <body>
-        <h1>Subir un nuevo archivo palabras_clave.db</h1>
-        <form action="/upload_file" method="post" enctype="multipart/form-data">
-            <input type="file" name="file">
-            <button type="submit">Subir</button>
-        </form>
-    </body>
-    </html>
-    """
