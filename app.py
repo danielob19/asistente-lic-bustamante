@@ -301,11 +301,20 @@ async def asistente(input_data: UserInput):
             }
 
         # Manejo para análisis de texto después de 5 interacciones
-        if user_sessions[user_id]["contador_interacciones"] >= 5:
+        if user_sessions[user_id]["contador_interacciones"] == 5:
             mensajes = user_sessions[user_id]["mensajes"]
             respuesta_analisis = analizar_texto(mensajes)
             user_sessions[user_id]["mensajes"].clear()
             return {"respuesta": respuesta_analisis}
+
+        # Manejo para análisis de texto después de 5 interacciones
+        if user_sessions[user_id]["contador_interacciones"] == 6:
+            return {
+                "respuesta": (
+                    "Si bien debo concluir nuestra conversación, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
+                    "al WhatsApp +54 911 3310-1186. Un saludo."
+                )
+            }
 
         # Genera una respuesta normal para otros mensajes
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
