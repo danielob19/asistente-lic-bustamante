@@ -260,6 +260,21 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
 
+        if (
+    "contacto" in mensaje_usuario or
+    "número" in mensaje_usuario or
+    "turno" in mensaje_usuario or
+    "whatsapp" in mensaje_usuario or
+    "teléfono" in mensaje_usuario
+):
+    return {
+        "respuesta": (
+            "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
+            "+54 911 3310-1186. Él podrá responderte a la brevedad."
+        )
+    }
+
+
         if user_sessions[user_id]["contador_interacciones"] >= 5:
             mensajes = user_sessions[user_id]["mensajes"]
             respuesta_analisis = analizar_texto(mensajes)
