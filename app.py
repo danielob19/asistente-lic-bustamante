@@ -263,10 +263,12 @@ async def asistente(input_data: UserInput):
         # Proporciona el número de contacto si el usuario lo solicita
         if (
             "contacto" in mensaje_usuario or
+            "numero" in mensaje_usuario or
             "número" in mensaje_usuario or
             "turno" in mensaje_usuario or
             "whatsapp" in mensaje_usuario or
-            "teléfono" in mensaje_usuario
+            "teléfono" in mensaje_usuario or
+            "telefono" in mensaje_usuario
         ):
             return {
                 "respuesta": (
