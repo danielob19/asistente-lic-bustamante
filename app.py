@@ -233,10 +233,13 @@ class UserInput(BaseModel):
 user_sessions = {}
 SESSION_TIMEOUT = 60
 
+# Aquí van todas las demás funciones y decoradores...
+
 @app.on_event("startup")
 def startup_event():
     init_db()
 
+# Ruta /asistente
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -252,5 +255,22 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
-                "mens
+                "mensajes": []
+            }
 
+        user_sessions[user_id]["ultima_interaccion"] = time.time()
+        user_sessions[user_id]["contador_interacciones"] += 1
+        user_sessions[user_id]["mensajes"].append(mensaje_usuario)
+
+        if user_sessions[user_id]["contador_interacciones"] >= 5:
+            mensajes = user_sessions[user_id]["mensajes"]
+            respuesta_analisis = analizar_texto(mensajes)
+            user_sessions[user_id]["mensajes"].clear()
+            return {"respuesta": respuesta_analisis}
+
+        prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
+        respuesta_ai = generar_respuesta_con_openai(prompt)
+        return {"respuesta": respuesta_ai}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
