@@ -260,6 +260,7 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
 
+        # Proporciona el número de contacto si el usuario lo solicita
         if (
             "contacto" in mensaje_usuario or
             "número" in mensaje_usuario or
@@ -269,17 +270,19 @@ async def asistente(input_data: UserInput):
         ):
             return {
                 "respuesta": (
-                    "Para contactar al Lic. Daniel O. Bustamante, te sugiero enviarle un mensaje al WhatsApp "
-                    "+54 911 3310-1186. Él podrá responderte a la brevedad."
+                    "Para contactar al Lic. Daniel O. Bustamante, puedes enviarle un mensaje al WhatsApp "
+                    "+54 911 3310-1186. Él estará encantado de responderte."
                 )
             }
 
+        # Manejo para análisis de texto después de 5 interacciones
         if user_sessions[user_id]["contador_interacciones"] >= 5:
             mensajes = user_sessions[user_id]["mensajes"]
             respuesta_analisis = analizar_texto(mensajes)
             user_sessions[user_id]["mensajes"].clear()
             return {"respuesta": respuesta_analisis}
 
+        # Genera una respuesta normal para otros mensajes
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
         return {"respuesta": respuesta_ai}
