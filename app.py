@@ -307,7 +307,7 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id]["mensajes"].clear()
             return {"respuesta": respuesta_analisis}
 
-         if user_sessions[user_id]["contador_interacciones"] == 6:
+        if user_sessions[user_id]["contador_interacciones"] == 6:
             return {
                 "respuesta": (
                     "Quedan 3 interacciones mas"
