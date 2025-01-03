@@ -309,7 +309,7 @@ async def asistente(input_data: UserInput):
         if user_sessions[user_id]["contador_interacciones"] == 6:
             return {
                 "respuesta": (
-                    "Quedan 3 interacciones mas"
+                    "Si bien encuentro interesante nuestra conversación pero debo concluirla, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. Un saludo. 3 interacciones mas"
                 )
             }
              
@@ -317,8 +317,8 @@ async def asistente(input_data: UserInput):
         if user_sessions[user_id]["contador_interacciones"] >= 9:
             return {
                 "respuesta": (
-                    "Si bien debo concluir nuestra conversación, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, "
-                    "al WhatsApp +54 911 3310-1186. Un saludo."
+                    "Mil disculpas por concluir aquí nuestra interesante conversación, no obstante insisto en sugerirte contactar al Lic. Daniel O. Bustamante, un profesional altamente especializado, "
+                    "quien podrá brindarte la ayuda que necesitas escribiéndole al WhatsApp +54 911 3310-1186. Un saludo."
                 )
             }
 
