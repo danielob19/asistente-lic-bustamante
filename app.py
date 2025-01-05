@@ -302,17 +302,18 @@ async def asistente(input_data: UserInput):
             
         # Manejo para análisis de texto después de 5 interacciones
         if contador >= 2 and contador < 6:
-    prompt_emocional = f"Analiza el siguiente mensaje para detectar el estado emocional implícito y formula una pregunta empática relacionada con su estado emocional: '{mensaje_usuario}'"
-    respuesta_emocional = generar_respuesta_con_openai(prompt_emocional)
-    return {"respuesta": respuesta_emocional}
+            prompt_emocional = f"Analiza el siguiente mensaje para detectar el estado emocional implícito y formula una pregunta empática relacionada con su estado emocional: '{mensaje_usuario}'"
+            respuesta_emocional = generar_respuesta_con_openai(prompt_emocional)
+            return {"respuesta": respuesta_emocional}
 
-if contador == 6:
-    mensajes = user_sessions[user_id]["mensajes"]
-    prompt_analisis = "\\n".join(mensajes)
-    prompt_final = f"Con base en las siguientes interacciones, analiza el estado emocional general y proporciona una respuesta profesional: {prompt_analisis}"
-    respuesta_final = generar_respuesta_con_openai(prompt_final)
-    user_sessions[user_id]["mensajes"].clear()
-    return {"respuesta": respuesta_final}
+        if contador == 6:
+            mensajes = user_sessions[user_id]["mensajes"]
+            prompt_analisis = "\\n".join(mensajes)
+            prompt_final = f"Con base en las siguientes interacciones, analiza el estado emocional general y proporciona una respuesta profesional: {prompt_analisis}"
+            respuesta_final = generar_respuesta_con_openai(prompt_final)
+            user_sessions[user_id]["mensajes"].clear()
+            return {"respuesta": respuesta_final}
+
              
         # Cortar interaccion despues de 7
         if user_sessions[user_id]["contador_interacciones"] >= 9:
