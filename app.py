@@ -192,6 +192,7 @@ def analizar_texto(mensajes_usuario):
         return "No se encontraron suficientes coincidencias para determinar un cuadro probable."
 
     respuesta = ""
+    
     if coincidencias:
         category_counts = Counter(coincidencias)
         cuadro_probable, _ = category_counts.most_common(1)[0]
