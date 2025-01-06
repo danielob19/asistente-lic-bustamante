@@ -259,6 +259,7 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
+# Comportamiento del Asistente - Endpoint
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -303,32 +304,26 @@ async def asistente(input_data: UserInput):
         try:
             emocion_detectada = generar_respuesta_con_openai(prompt_emocion)
             emocion_detectada = emocion_detectada.strip().lower()
-            user_sessions[user_id]["emociones_detectadas"].append(emocion_detectada)
-            registrar_sintoma(emocion_detectada, "emoción detectada automáticamente")
+
+            if emocion_detectada and emocion_detectada not in user_sessions[user_id]["emociones_detectadas"]:
+                user_sessions[user_id]["emociones_detectadas"].append(emocion_detectada)
+                registrar_sintoma(emocion_detectada, "emoción detectada automáticamente")
         except Exception as e:
             print(f"Error al analizar emoción con OpenAI: {e}")
-            emocion_detectada = None
-
-        # Indagar sobre la emoción detectada
-        if emocion_detectada and user_sessions[user_id]["contador_interacciones"] < 6:
-            return {
-                "respuesta": (
-                    f"Detecté un estado emocional implícito relacionado con '{emocion_detectada}'. "
-                    "¿Podrías contarme más sobre cómo te sientes al respecto?"
-                )
-            }
 
         # Respuesta especial en la interacción 6
         if user_sessions[user_id]["contador_interacciones"] == 6:
             if len(coincidencias) >= 2:
                 cuadro_probable = Counter(coincidencias).most_common(1)[0][0]
-                respuesta = (
-                    f"Detecté que tus mensajes reflejan un cuadro probable relacionado con '{cuadro_probable}'. "
-                    f"Además, emociones recientes detectadas como: {', '.join(set(user_sessions[user_id]['emociones_detectadas']))}. "
-                    "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una consulta profesional y detallada. "
-                    "¿Te gustaría continuar nuestra conversación un poco más?"
-                )
-                return {"respuesta": respuesta}
+                emociones = ', '.join(set(user_sessions[user_id]["emociones_detectadas"]))
+                return {
+                    "respuesta": (
+                        f"Detecté que tus mensajes reflejan un cuadro probable relacionado con '{cuadro_probable}'. "
+                        f"Además, emociones recientes detectadas como: {emociones}. "
+                        "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una consulta profesional y detallada. "
+                        "Si necesitas, podemos seguir conversando un poco más para explorar más tus emociones."
+                    )
+                }
 
         # Continuar con 3 interacciones adicionales si el usuario lo desea
         if 6 < user_sessions[user_id]["contador_interacciones"] < 9:
@@ -347,13 +342,15 @@ async def asistente(input_data: UserInput):
                 if coincidencias
                 else "No se pudo determinar un cuadro específico."
             )
-            respuesta = (
-                f"En base a tus mensajes, detectamos un cuadro probable relacionado con '{cuadro_probable}'. "
-                f"También notamos emociones recientes como: {', '.join(set(user_sessions[user_id]['emociones_detectadas']))}. "
-                "Te recomendamos encarecidamente contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una consulta detallada. "
-                "Con esto concluimos nuestra conversación. Aguardamos con gusto tu contacto."
-            )
-            return {"respuesta": respuesta}
+            emociones = ', '.join(set(user_sessions[user_id]["emociones_detectadas"]))
+            return {
+                "respuesta": (
+                    f"En base a tus mensajes, detectamos un cuadro probable relacionado con '{cuadro_probable}'. "
+                    f"También notamos emociones recientes como: {emociones}. "
+                    "Te recomendamos encarecidamente contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una consulta detallada. "
+                    "Con esto concluimos nuestra conversación. Aguardamos con gusto tu contacto."
+                )
+            }
 
         # Respuesta normal si no se alcanzaron condiciones especiales
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
