@@ -1,11 +1,14 @@
-import os
+Import os
 import time
 import threading
 import psycopg2
+from psycopg2 import sql
 import openai
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
+from collections import Counter
 
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -30,25 +33,182 @@ app.add_middleware(
 # Configuración de la base de datos PostgreSQL
 def init_db():
     """
-    Inicializa la base de datos creando las tablas necesarias.
+    Crea las tablas necesarias si no existen en PostgreSQL.
     """
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
-        cursor.execute(
-            """
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS palabras_clave (
+                id SERIAL PRIMARY KEY,
+                sintoma TEXT UNIQUE NOT NULL,
+                cuadro TEXT NOT NULL
+            );
+        """)
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS interacciones (
                 id SERIAL PRIMARY KEY,
                 user_id TEXT NOT NULL,
                 consulta TEXT NOT NULL,
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-            """
-        )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS emociones_detectadas (
+                id SERIAL PRIMARY KEY,
+                emocion TEXT NOT NULL,
+                contexto TEXT NOT NULL,
+                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        conn.commit()
+        conn.close()
+        print("Base de datos inicializada en PostgreSQL.")
+    except Exception as e:
+        print(f"Error al inicializar la base de datos: {e}")
+
+# Registrar un síntoma
+def registrar_sintoma(sintoma: str, cuadro: str):
+    """
+    Inserta un nuevo síntoma en la base de datos PostgreSQL o lo actualiza si ya existe.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO palabras_clave (sintoma, cuadro) 
+            VALUES (%s, %s)
+            ON CONFLICT (sintoma) DO NOTHING;
+        """, (sintoma, cuadro))
+        conn.commit()
+        conn.close()
+        print(f"Síntoma '{sintoma}' registrado exitosamente con cuadro: {cuadro}.")
+    except Exception as e:
+        print(f"Error al registrar síntoma '{sintoma}': {e}")
+
+# Registrar una emoción detectada
+def registrar_emocion(emocion: str, contexto: str):
+    """
+    Registra una emoción detectada en la base de datos PostgreSQL.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO emociones_detectadas (emocion, contexto) 
+            VALUES (%s, %s);
+        """, (emocion, contexto))
+        conn.commit()
+        conn.close()
+        print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
+    except Exception as e:
+        print(f"Error al registrar emoción '{emocion}': {e}")
+
+# Obtener síntomas existentes
+def obtener_sintomas():
+    """
+    Obtiene todos los síntomas almacenados en la base de datos PostgreSQL.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("SELECT sintoma, cuadro FROM palabras_clave")
+        sintomas = cursor.fetchall()
+        conn.close()
+        return sintomas
+    except Exception as e:
+        print(f"Error al obtener síntomas: {e}")
+        return []
+
+# Registrar una interacción
+def registrar_interaccion(user_id: str, consulta: str):
+    """
+    Registra una interacción del usuario en la base de datos PostgreSQL.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO interacciones (user_id, consulta) 
+            VALUES (%s, %s);
+        """, (user_id, consulta))
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"Error al inicializar la base de datos: {e}")
+        print(f"Error al registrar interacción: {e}")
+
+# Lista de palabras irrelevantes
+palabras_irrelevantes = {
+    "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "me siento", "tambien", "tambien tengo", "que", "de", "en", 
+    "por", "a", "me", "mi", "tengo", "mucho", "muy", "un", "poco", "tengo", "animicos", "si", "supuesto", "frecuentes", "verdad", "sé", "hoy", "quiero", 
+    "bastante", "mucho", "tambien", "gente", "frecuencia", "entendi", "hola", "estoy", "no", "vos", "entiendo", 
+    "buenas", "noches", "soy", "daniel", "mi", "numero", "de", "telefono", "es", "4782-6465", "me", "siento", "para", "mucha", "y", "sufro", "vida", 
+    "que", "opinas", "¿","?", "reinicia", "con", "del", "psicologo", "contactarme", "necesito", "lic", "me", "contacto", "número", "gracias", "bustamante", "whatsapp", "bustamane", "das"
+}
+
+# Análisis de texto del usuario
+def analizar_texto(mensajes_usuario):
+    """
+    Analiza los mensajes del usuario para detectar coincidencias con los síntomas almacenados
+    y muestra un cuadro probable y emociones o patrones de conducta adicionales detectados.
+    """
+    sintomas_existentes = obtener_sintomas()
+    if not sintomas_existentes:
+        return "No se encontraron síntomas en la base de datos para analizar."
+
+    keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
+    coincidencias = []
+    emociones_detectadas = []
+    sintomas_sin_coincidencia = []
+
+    for mensaje in mensajes_usuario:
+        user_words = mensaje.lower().split()
+        user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]
+
+        for palabra in user_words:
+            if palabra in keyword_to_cuadro:
+                coincidencias.append(keyword_to_cuadro[palabra])
+            else:
+                sintomas_sin_coincidencia.append(palabra)
+
+    # Generar emociones detectadas a partir de mensajes sin coincidencia
+    if len(coincidencias) < 2:
+        texto_usuario = " ".join(mensajes_usuario)
+        prompt = (
+            f"Analiza el siguiente mensaje y detecta emociones o patrones de conducta humanos implícitos:\n\n"
+            f"{texto_usuario}\n\n"
+            "Responde con una lista de emociones o patrones de conducta separados por comas."
+        )
+        try:
+            emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
+            emociones_detectadas = [
+                emocion.strip().lower() for emocion in emociones_detectadas
+                if emocion.strip().lower() not in palabras_irrelevantes
+            ]
+        except Exception as e:
+            print(f"Error al usar OpenAI para detectar emociones: {e}")
+
+    if not coincidencias and not emociones_detectadas:
+        return "No se encontraron suficientes coincidencias para determinar un cuadro probable."
+
+    respuesta = ""
+    
+    if coincidencias:
+        category_counts = Counter(coincidencias)
+        cuadro_probable, _ = category_counts.most_common(1)[0]
+        respuesta = (
+            f"Con base en los síntomas detectados ({', '.join(set(coincidencias))}), "
+            f"el cuadro probable es: {cuadro_probable}. "
+        )
+
+    if emociones_detectadas:
+        respuesta += (
+            f"Además, notamos emociones o patrones de conducta humanos como {', '.join(set(emociones_detectadas))}, "
+            f"por lo que sugiero solicitar una consulta con el Lic. Daniel O. Bustamante escribiendo al WhatsApp "
+            f"+54 911 3310-1186 para una evaluación más detallada."
+        )
+
+    return respuesta
 
 # Generación de respuestas con OpenAI
 def generar_respuesta_con_openai(prompt):
@@ -59,14 +219,10 @@ def generar_respuesta_con_openai(prompt):
             max_tokens=150,
             temperature=0.6
         )
-        content = response.choices[0].message['content'].strip()
-        if content:
-            return content
-        else:
-            return "Lo siento, no pude procesar tu solicitud. ¿Podrías intentar reformular tu mensaje?"
+        return response.choices[0].message['content'].strip()
     except Exception as e:
         print(f"Error al generar respuesta con OpenAI: {e}")
-        return "Lo siento, hubo un problema al procesar tu solicitud. Por favor, intenta nuevamente."
+        return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
 # Clase para solicitudes del usuario
 class UserInput(BaseModel):
@@ -80,9 +236,14 @@ SESSION_TIMEOUT = 60  # Tiempo en segundos para limpiar sesiones inactivas
 @app.on_event("startup")
 def startup_event():
     init_db()
+    # Inicia un hilo para limpiar sesiones inactivas
     start_session_cleaner()
 
+# Función para limpiar sesiones inactivas
 def start_session_cleaner():
+    """
+    Limpia las sesiones inactivas después de un tiempo definido (SESSION_TIMEOUT).
+    """
     def cleaner():
         while True:
             current_time = time.time()
@@ -92,7 +253,9 @@ def start_session_cleaner():
             ]
             for user_id in inactive_users:
                 del user_sessions[user_id]
-            time.sleep(30)
+            time.sleep(30)  # Intervalo para revisar las sesiones
+
+    # Ejecutar la limpieza de sesiones en un hilo separado
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
@@ -100,11 +263,14 @@ def start_session_cleaner():
 async def asistente(input_data: UserInput):
     try:
         user_id = input_data.user_id
-        mensaje_usuario = input_data.mensaje.strip()
+        mensaje_usuario = input_data.mensaje.strip().lower()
 
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
+        registrar_interaccion(user_id, mensaje_usuario)
+
+        # Inicializa la sesión del usuario si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
@@ -112,29 +278,55 @@ async def asistente(input_data: UserInput):
                 "mensajes": []
             }
 
+        # Actualiza la sesión del usuario
         user_sessions[user_id]["ultima_interaccion"] = time.time()
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
 
-        contador = user_sessions[user_id]["contador_interacciones"]
-
-        if contador >= 2 and contador < 6:
-            prompt_emocional = f"Analiza el siguiente mensaje para detectar el estado emocional implícito y formula una pregunta empática relacionada con su estado emocional: '{mensaje_usuario}'"
-            respuesta_emocional = generar_respuesta_con_openai(prompt_emocional)
-            if "no pude procesar" in respuesta_emocional.lower():
-                respuesta_emocional = "Parece que estás pasando por un momento difícil. ¿Te gustaría contarme más sobre cómo te sientes?"
-            return {"respuesta": respuesta_emocional}
-
-        if contador == 6:
+        # Proporciona el número de contacto si el usuario lo solicita
+        if (
+            "contacto" in mensaje_usuario or
+            "numero" in mensaje_usuario or
+            "número" in mensaje_usuario or
+            "turno" in mensaje_usuario or
+            "whatsapp" in mensaje_usuario or
+            "teléfono" in mensaje_usuario or
+            "telefono" in mensaje_usuario
+        ):
+            return {
+                "respuesta": (
+                    "Para contactar al Lic. Daniel O. Bustamante, puedes enviarle un mensaje al WhatsApp "
+                    "+54 911 3310-1186. Él estará encantado de responderte."
+                )
+            }
+            
+        # Manejo para análisis de texto después de 5 interacciones
+        if user_sessions[user_id]["contador_interacciones"] == 5:
             mensajes = user_sessions[user_id]["mensajes"]
-            prompt_analisis = "\\n".join(mensajes)
-            prompt_final = f"Con base en las siguientes interacciones, analiza el estado emocional general y proporciona una respuesta profesional: {prompt_analisis}"
-            respuesta_final = generar_respuesta_con_openai(prompt_final)
+            respuesta_analisis = analizar_texto(mensajes)
             user_sessions[user_id]["mensajes"].clear()
-            return {"respuesta": respuesta_final}
+            return {"respuesta": respuesta_analisis}
 
-        return {"respuesta": "Gracias por compartir. ¿Hay algo más que quieras decirme?"}
+        if user_sessions[user_id]["contador_interacciones"] == 6:
+            return {
+                "respuesta": (
+                    "Si bien encuentro interesante nuestra conversación pero debo concluirla, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. Un saludo. 3 interacciones mas"
+                )
+            }
+             
+        # Cortar interaccion despues de 7
+        if user_sessions[user_id]["contador_interacciones"] >= 9:
+            return {
+                "respuesta": (
+                    "Mil disculpas por tener que concluir aquí nuestra interesante conversación, no obstante insisto en sugerirte contactar al Lic. Daniel O. Bustamante, un profesional altamente especializado, "
+                    "quien podrá brindarte la ayuda que necesitas escribiéndole al WhatsApp +54 911 3310-1186. Un saludo."
+                )
+            }
+
+        # Genera una respuesta normal para otros mensajes
+        prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
+        respuesta_ai = generar_respuesta_con_openai(prompt)
+        return {"respuesta": respuesta_ai}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
