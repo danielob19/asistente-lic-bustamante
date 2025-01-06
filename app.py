@@ -192,7 +192,6 @@ def analizar_texto(mensajes_usuario):
         return "No se encontraron suficientes coincidencias para determinar un cuadro probable."
 
     respuesta = ""
-    
     if coincidencias:
         category_counts = Counter(coincidencias)
         cuadro_probable, _ = category_counts.most_common(1)[0]
@@ -259,7 +258,6 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
-# Comportamiento del Asistente - Endpoint
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -276,8 +274,7 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
-                "mensajes": [],
-                "emociones_detectadas": []
+                "mensajes": []
             }
 
         # Actualiza la sesión del usuario
@@ -285,84 +282,47 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
 
-        # Comparar con la tabla `palabras_clave`
-        sintomas_existentes = obtener_sintomas()
-        keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
-        coincidencias = []
-
-        user_words = mensaje_usuario.split()
-        for palabra in user_words:
-            if palabra in keyword_to_cuadro:
-                coincidencias.append(keyword_to_cuadro[palabra])
-
-        # Detectar emociones con OpenAI
-        prompt_emocion = (
-            f"Analiza el siguiente mensaje del usuario y detecta el estado emocional implícito o sentimientos expresados:\n\n"
-            f"{mensaje_usuario}\n\n"
-            "Responde con una sola emoción o sentimiento dominante (por ejemplo: tristeza, ansiedad, enojo, etc.)."
-        )
-        try:
-            emocion_detectada = generar_respuesta_con_openai(prompt_emocion)
-            emocion_detectada = emocion_detectada.strip().lower()
-
-            if emocion_detectada and emocion_detectada not in user_sessions[user_id]["emociones_detectadas"]:
-                user_sessions[user_id]["emociones_detectadas"].append(emocion_detectada)
-                registrar_sintoma(emocion_detectada, "emoción detectada automáticamente")
-        except Exception as e:
-            print(f"Error al analizar emoción con OpenAI: {e}")
-
-        # Respuesta especial en la interacción 5
+        # Proporciona el número de contacto si el usuario lo solicita
+        if (
+            "contacto" in mensaje_usuario or
+            "numero" in mensaje_usuario or
+            "número" in mensaje_usuario or
+            "turno" in mensaje_usuario or
+            "whatsapp" in mensaje_usuario or
+            "teléfono" in mensaje_usuario or
+            "telefono" in mensaje_usuario
+        ):
+            return {
+                "respuesta": (
+                    "Para contactar al Lic. Daniel O. Bustamante, puedes enviarle un mensaje al WhatsApp "
+                    "+54 911 3310-1186. Él estará encantado de responderte."
+                )
+            }
+            
+        # Manejo para análisis de texto después de 5 interacciones
         if user_sessions[user_id]["contador_interacciones"] == 5:
-            if len(coincidencias) >= 2:
-                cuadro_probable = Counter(coincidencias).most_common(1)[0][0]
-                return {
-                    "respuesta": (
-                        f"Detecté que tus mensajes reflejan un cuadro probable relacionado con '{cuadro_probable}'. "
-                        f"¿Te gustaría hablar más sobre cómo te sientes?"
-                    )
-                }
+            mensajes = user_sessions[user_id]["mensajes"]
+            respuesta_analisis = analizar_texto(mensajes)
+            user_sessions[user_id]["mensajes"].clear()
+            return {"respuesta": respuesta_analisis}
 
-        # Respuesta especial en la interacción 6
         if user_sessions[user_id]["contador_interacciones"] == 6:
-            if len(coincidencias) >= 2:
-                cuadro_probable = Counter(coincidencias).most_common(1)[0][0]
-                emociones = ', '.join(set(user_sessions[user_id]["emociones_detectadas"]))
-                return {
-                    "respuesta": (
-                        f"Detecté que tus mensajes reflejan un cuadro probable relacionado con '{cuadro_probable}'. "
-                        f"Además, emociones recientes detectadas como: {emociones}. "
-                        "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una consulta profesional y detallada."
-                    )
-                }
-
-        # Continuar con 3 interacciones adicionales si el usuario lo desea
-        if 6 < user_sessions[user_id]["contador_interacciones"] < 9:
             return {
                 "respuesta": (
-                    "Entiendo que podrías necesitar más apoyo para manejar lo que estás sintiendo. "
-                    "Estoy aquí para seguir conversando. Recuerda que siempre puedes contactar al Lic. Daniel O. Bustamante al "
-                    "WhatsApp +54 911 3310-1186 para una ayuda más personalizada."
+                    "Si bien encuentro interesante nuestra conversación pero debo concluirla, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. Un saludo. 3 interacciones mas"
+                )
+            }
+             
+        # Cortar interaccion despues de 7
+        if user_sessions[user_id]["contador_interacciones"] >= 9:
+            return {
+                "respuesta": (
+                    "Mil disculpas por tener que concluir aquí nuestra interesante conversación, no obstante insisto en sugerirte contactar al Lic. Daniel O. Bustamante, un profesional altamente especializado, "
+                    "quien podrá brindarte la ayuda que necesitas escribiéndole al WhatsApp +54 911 3310-1186. Un saludo."
                 )
             }
 
-        # Respuesta final en la interacción 9
-        if user_sessions[user_id]["contador_interacciones"] == 9:
-            cuadro_probable = (
-                Counter(coincidencias).most_common(1)[0][0]
-                if coincidencias
-                else "No se pudo determinar un cuadro específico."
-            )
-            emociones = ', '.join(set(user_sessions[user_id]["emociones_detectadas"]))
-            return {
-                "respuesta": (
-                    f"En base a tus mensajes, detectamos un cuadro probable relacionado con '{cuadro_probable}'. "
-                    f"También notamos emociones recientes como: {emociones}. "
-                    "Te recomendamos encarecidamente contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una consulta detallada. "
-                    "Con esto concluimos nuestra conversación. Aguardamos con gusto tu contacto."
-                )
-            }
-
-        # Respuesta normal si no se alcanzaron condiciones especiales
+        # Genera una respuesta normal para otros mensajes
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
         return {"respuesta": respuesta_ai}
