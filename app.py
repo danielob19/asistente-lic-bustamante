@@ -295,7 +295,7 @@ async def asistente(input_data: UserInput):
             if palabra in keyword_to_cuadro:
                 coincidencias.append(keyword_to_cuadro[palabra])
 
-        # Análisis del estado emocional implícito con OpenAI
+        # Detectar emociones con OpenAI
         prompt_emocion = (
             f"Analiza el siguiente mensaje del usuario y detecta el estado emocional implícito o sentimientos expresados:\n\n"
             f"{mensaje_usuario}\n\n"
@@ -311,6 +311,17 @@ async def asistente(input_data: UserInput):
         except Exception as e:
             print(f"Error al analizar emoción con OpenAI: {e}")
 
+        # Respuesta especial en la interacción 5
+        if user_sessions[user_id]["contador_interacciones"] == 5:
+            if len(coincidencias) >= 2:
+                cuadro_probable = Counter(coincidencias).most_common(1)[0][0]
+                return {
+                    "respuesta": (
+                        f"Detecté que tus mensajes reflejan un cuadro probable relacionado con '{cuadro_probable}'. "
+                        f"¿Te gustaría hablar más sobre cómo te sientes?"
+                    )
+                }
+
         # Respuesta especial en la interacción 6
         if user_sessions[user_id]["contador_interacciones"] == 6:
             if len(coincidencias) >= 2:
@@ -320,8 +331,7 @@ async def asistente(input_data: UserInput):
                     "respuesta": (
                         f"Detecté que tus mensajes reflejan un cuadro probable relacionado con '{cuadro_probable}'. "
                         f"Además, emociones recientes detectadas como: {emociones}. "
-                        "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una consulta profesional y detallada. "
-                        "Si necesitas, podemos seguir conversando un poco más para explorar más tus emociones."
+                        "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una consulta profesional y detallada."
                     )
                 }
 
