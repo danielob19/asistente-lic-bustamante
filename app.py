@@ -288,6 +288,12 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id]["contador_interacciones"] += 1
         user_sessions[user_id]["mensajes"].append(mensaje_usuario)
 
+        # Respuesta específica para "¿atienden estos casos?"
+        if "atienden estos casos" in mensaje_usuario:
+            return {
+                "respuesta": "Sí obvio, el Lic. Daniel O. Bustamante atiende todo tipo de cuadro clínico psicológico. Si necesitas ayuda, no dudes en contactarlo al Whatsapp (+54) 9 11 3310-1186."
+            }
+
         # Proporciona el número de contacto si el usuario lo solicita
         if (
             "contacto" in mensaje_usuario or
