@@ -92,14 +92,14 @@ def registrar_emocion(emocion: str, contexto: str):
     Registra una emoción detectada en la base de datos PostgreSQL.
     """
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO emociones_detectadas (emocion, contexto) 
-            VALUES (%s, %s);
-        """, (emocion, contexto))
-        conn.commit()
-        conn.close()
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO emociones_detectadas (emocion, contexto) 
+                    VALUES (%s, %s)
+                    ON CONFLICT (emocion) DO NOTHING;
+                """, (emocion.strip().lower(), contexto.strip()))
+                conn.commit()
         print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
     except Exception as e:
         print(f"Error al registrar emoción '{emocion}': {e}")
