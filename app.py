@@ -185,8 +185,14 @@ def analizar_texto(mensajes_usuario):
                 emocion.strip().lower() for emocion in emociones_detectadas
                 if emocion.strip().lower() not in palabras_irrelevantes
             ]
+
+            # Registrar cada emoción detectada como síntoma en la base de datos
+            for emocion in emociones_detectadas:
+                registrar_sintoma(emocion, "patrón emocional detectado")
+
         except Exception as e:
             print(f"Error al usar OpenAI para detectar emociones: {e}")
+
 
     if not coincidencias and not emociones_detectadas:
         return "No se encontraron suficientes coincidencias para determinar un cuadro probable."
