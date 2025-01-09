@@ -295,7 +295,7 @@ async def asistente(input_data: UserInput):
         # Respuesta específica para "¿atienden estos casos?"
         if "atienden estos casos" in mensaje_usuario:
             return {
-                "respuesta": "Sí obvio, el Lic. Daniel O. Bustamante atiende todo tipo de cuadro clínico psicológico. Si necesitas ayuda, no dudes en contactarlo al Whatsapp (+54) 9 11 3310-1186."
+                "respuesta": "Sí, el Lic. Daniel O. Bustamante atiende este tipo de casos. Si necesitas ayuda, no dudes en contactarlo al WhatsApp (+54) 9 11 3310-1186."
             }
 
         # Proporciona el número de contacto si el usuario lo solicita
@@ -322,39 +322,53 @@ async def asistente(input_data: UserInput):
             session["mensajes"].clear()
             return {"respuesta": respuesta_analisis}
 
-        # Manejo de interacciones 6-9
-        if 6 <= contador <= 9:
+        # Manejo de interacciones 6, 7 y 8
+        if 6 <= contador <= 8:
             nuevas_emociones = analizar_emociones_y_patrones(
                 mensajes=[mensaje_usuario],
                 emociones_acumuladas=session["emociones_detectadas"]
             )
             session["emociones_detectadas"].extend(nuevas_emociones)
 
-            if contador == 9:
-                emociones_todas = ", ".join(set(session["emociones_detectadas"]))
+            if nuevas_emociones:
+                emociones_texto = ", ".join(nuevas_emociones)
                 return {
                     "respuesta": (
-                        f"Si bien encuentro muy interesante nuestra conversación pero debo concluirla. No obstante en base "
-                        f"a los síntomas detectados (cuadro de depresión), el cuadro probable es: cuadro de depresión. "
-                        f"Además, notamos emociones o patrones de conducta humanos como {emociones_todas}, por lo que insisto "
-                        f"en sugerirte solicitar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
-                        f"+54 911 3310-1186 para una evaluación más detallada. Un saludo!"
+                        f"Estoy notando emociones como {emociones_texto}. ¿Podrías contarme un poco más sobre cómo te sientes al respecto? "
+                        "Estoy aquí para entender mejor y apoyarte en este momento."
+                    )
+                }
+            else:
+                return {
+                    "respuesta": (
+                        "Quiero asegurarme de comprenderte mejor. ¿Podrías compartir un poco más sobre lo que estás sintiendo o lo que te preocupa en este momento?"
                     )
                 }
 
+        # Manejo de interacción 9
+        if contador == 9:
+            emociones_todas = ", ".join(set(session["emociones_detectadas"]))
             return {
                 "respuesta": (
-                    "Estamos detectando emociones y patrones en esta interacción. Continúa para obtener un análisis completo."
+                    f"Si bien encuentro muy interesante nuestra conversación pero debo concluirla. No obstante en base "
+                    f"a los síntomas detectados (cuadro de depresión), el cuadro probable es: cuadro de depresión. "
+                    f"Además, notamos emociones o patrones de conducta humanos como {emociones_todas}, por lo que insisto "
+                    f"en sugerirte solicitar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
+                    f"+54 911 3310-1186 para una evaluación más detallada. Un saludo!"
                 )
             }
 
         # Manejo de interacción 10 (última interacción)
         if contador == 10:
-            if "gracias" in mensaje_usuario or "adiós" in mensaje_usuario or "chau" in mensaje_usuario or "saludo" in mensaje_usuario:
-                return {
-                    "respuesta": "¡Gracias por tu mensaje! Te deseamos lo mejor. No dudes en contactar al Lic. Daniel O. Bustamante si necesitas más ayuda. ¡Un saludo cordial!"
-                }
+            return {
+                "respuesta": (
+                    "Sugiero solicitar una consulta al Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
+                    "(+54) 9 11 3310-1186. Aguardamos tu mensaje. ¡Un saludo cordial!"
+                )
+            }
 
+        # Responder con la misma respuesta después de la interacción 10
+        if contador > 10:
             return {
                 "respuesta": (
                     "Sugiero solicitar una consulta al Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
