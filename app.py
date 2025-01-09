@@ -369,3 +369,47 @@ async def asistente(input_data: UserInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+
+def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
+    """
+    Detecta emociones y patrones de conducta en los mensajes, buscando coincidencias en la tabla `palabras_clave`.
+    Si no hay coincidencias, usa OpenAI para detectarlas y las registra en la base de datos.
+    """
+    try:
+        # Obtener síntomas almacenados
+        sintomas_existentes = obtener_sintomas()
+        keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
+        emociones_detectadas = []
+
+        for mensaje in mensajes:
+            user_words = mensaje.lower().split()
+            user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]
+
+            for palabra in user_words:
+                if palabra in keyword_to_cuadro:
+                    emociones_detectadas.append(keyword_to_cuadro[palabra])
+        
+        # Si no hay coincidencias, usar OpenAI para detectar emociones
+        if not emociones_detectadas:
+            texto_usuario = " ".join(mensajes)
+            prompt = (
+                f"Analiza el siguiente mensaje y detecta emociones o patrones de conducta humanos implícitos:\n\n"
+                f"{texto_usuario}\n\n"
+                "Responde con una lista de emociones o patrones de conducta separados por comas."
+            )
+            emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
+            emociones_detectadas = [
+                emocion.strip().lower() for emocion in emociones_detectadas
+                if emocion.strip().lower() not in palabras_irrelevantes
+            ]
+
+            # Registrar nuevas emociones en la base de datos
+            for emocion in emociones_detectadas:
+                registrar_sintoma(emocion, "patrón emocional detectado")
+
+        return emociones_detectadas
+
+    except Exception as e:
+        print(f"Error al analizar emociones y patrones: {e}")
+        return []
