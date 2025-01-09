@@ -331,19 +331,19 @@ async def asistente(input_data: UserInput):
             session["emociones_detectadas"].extend(nuevas_emociones)
 
             if nuevas_emociones:
-                emociones_texto = ", ".join(nuevas_emociones)
-                return {
-                    "respuesta": (
-                        f"Estoy notando emociones como {emociones_texto}. ¿Podrías contarme un poco más sobre cómo te sientes al respecto? "
-                        "Estoy aquí para entender mejor y apoyarte en este momento."
-                    )
+                emocion_principal = nuevas_emociones[0] if nuevas_emociones else "eso"
+                preguntas = {
+                    6: f"¿Por qué razón sientes {emocion_principal}?",
+                    7: f"¿En qué momentos notas que sientes {emocion_principal}?",
+                    8: f"¿Qué cosas o situaciones te producen {emocion_principal}?"
                 }
-            else:
-                return {
-                    "respuesta": (
-                        "Quiero asegurarme de comprenderte mejor. ¿Podrías compartir un poco más sobre lo que estás sintiendo o lo que te preocupa en este momento?"
-                    )
-                }
+                return {"respuesta": preguntas[contador]}
+
+            return {
+                "respuesta": (
+                    "Quiero asegurarme de comprenderte mejor. ¿Podrías compartir un poco más sobre lo que estás sintiendo o lo que te preocupa en este momento?"
+                )
+            }
 
         # Manejo de interacción 9
         if contador == 9:
