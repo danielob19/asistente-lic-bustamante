@@ -280,13 +280,17 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
-                "mensajes": []
+                "mensajes": [],
+                "emociones_detectadas": []  # Para almacenar emociones detectadas
             }
 
         # Actualiza la sesión del usuario
-        user_sessions[user_id]["ultima_interaccion"] = time.time()
-        user_sessions[user_id]["contador_interacciones"] += 1
-        user_sessions[user_id]["mensajes"].append(mensaje_usuario)
+        session = user_sessions[user_id]
+        session["ultima_interaccion"] = time.time()
+        session["contador_interacciones"] += 1
+        session["mensajes"].append(mensaje_usuario)
+
+        contador = session["contador_interacciones"]
 
         # Respuesta específica para "¿atienden estos casos?"
         if "atienden estos casos" in mensaje_usuario:
@@ -310,27 +314,35 @@ async def asistente(input_data: UserInput):
                     "+54 911 3310-1186. Él estará encantado de responderte."
                 )
             }
-            
+
         # Manejo para análisis de texto después de 5 interacciones
-        if user_sessions[user_id]["contador_interacciones"] == 5:
-            mensajes = user_sessions[user_id]["mensajes"]
+        if contador == 5:
+            mensajes = session["mensajes"]
             respuesta_analisis = analizar_texto(mensajes)
-            user_sessions[user_id]["mensajes"].clear()
+            session["mensajes"].clear()
             return {"respuesta": respuesta_analisis}
 
-        if user_sessions[user_id]["contador_interacciones"] == 6:
+        # Manejo de interacciones 6, 7, 8 y resumen en la 9
+        if 6 <= contador <= 9:
+            nuevas_emociones = analizar_emociones_y_patrones(
+                mensajes=[mensaje_usuario],
+                emociones_acumuladas=session["emociones_detectadas"]
+            )
+            session["emociones_detectadas"].extend(nuevas_emociones)
+
+            if contador == 9:
+                emociones_todas = ", ".join(set(session["emociones_detectadas"]))
+                return {
+                    "respuesta": (
+                        f"Con base en nuestras interacciones, detectamos emociones y patrones de conducta como: "
+                        f"{emociones_todas}. Para un análisis más profundo, contacta al Lic. Daniel O. Bustamante al WhatsApp "
+                        f"+54 911 3310-1186. Un saludo."
+                    )
+                }
+
             return {
                 "respuesta": (
-                    "Si bien encuentro interesante nuestra conversación pero debo concluirla, no obstante te sugiero contactar al Lic. Daniel O. Bustamante, un profesional especializado, al WhatsApp +54 911 3310-1186. Un saludo."
-                )
-            }
-             
-        # Cortar interaccion despues de 7
-        if user_sessions[user_id]["contador_interacciones"] >= 9:
-            return {
-                "respuesta": (
-                    "Mil disculpas por tener que concluir aquí nuestra interesante conversación, no obstante insisto en sugerirte contactar al Lic. Daniel O. Bustamante, un profesional altamente especializado, "
-                    "quien podrá brindarte la ayuda que necesitas escribiéndole al WhatsApp +54 911 3310-1186. Un saludo."
+                    "Estamos detectando emociones y patrones en esta interacción. Continúa para obtener un análisis completo."
                 )
             }
 
@@ -341,3 +353,47 @@ async def asistente(input_data: UserInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+
+def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
+    """
+    Detecta emociones y patrones de conducta en los mensajes, buscando coincidencias en la tabla `palabras_clave`.
+    Si no hay coincidencias, usa OpenAI para detectarlas y las registra en la base de datos.
+    """
+    try:
+        # Obtener síntomas almacenados
+        sintomas_existentes = obtener_sintomas()
+        keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
+        emociones_detectadas = []
+
+        for mensaje in mensajes:
+            user_words = mensaje.lower().split()
+            user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]
+
+            for palabra in user_words:
+                if palabra in keyword_to_cuadro:
+                    emociones_detectadas.append(keyword_to_cuadro[palabra])
+        
+        # Si no hay coincidencias, usar OpenAI para detectar emociones
+        if not emociones_detectadas:
+            texto_usuario = " ".join(mensajes)
+            prompt = (
+                f"Analiza el siguiente mensaje y detecta emociones o patrones de conducta humanos implícitos:\n\n"
+                f"{texto_usuario}\n\n"
+                "Responde con una lista de emociones o patrones de conducta separados por comas."
+            )
+            emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
+            emociones_detectadas = [
+                emocion.strip().lower() for emocion in emociones_detectadas
+                if emocion.strip().lower() not in palabras_irrelevantes
+            ]
+
+            # Registrar nuevas emociones en la base de datos
+            for emocion in emociones_detectadas:
+                registrar_sintoma(emocion, "patrón emocional detectado")
+
+        return emociones_detectadas
+
+    except Exception as e:
+        print(f"Error al analizar emociones y patrones: {e}")
+        return []
