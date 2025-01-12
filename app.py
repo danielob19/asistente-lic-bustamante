@@ -78,7 +78,7 @@ def registrar_sintoma(sintoma: str, cuadro: str):
         cursor.execute("""
             INSERT INTO palabras_clave (sintoma, cuadro) 
             VALUES (%s, %s)
-            ON CONFLICT (sintoma) DO UPDATE SET cuadro = EXCLUDED.cuadro;
+            ON CONFLICT (sintoma) DO NOTHING;
         """, (sintoma, cuadro))
         conn.commit()
         conn.close()
@@ -394,7 +394,7 @@ async def asistente(input_data: UserInput):
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     """
     Detecta emociones y patrones de conducta en los mensajes, buscando coincidencias en la tabla `palabras_clave`.
-    Si no hay coincidencias, usa OpenAI para detectarlas y devuelve un mensaje que invite al usuario a profundizar.
+    Si no hay coincidencias, usa OpenAI para detectarlas y las registra en la base de datos.
     """
     try:
         # Obtener síntomas almacenados
@@ -409,7 +409,7 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
             for palabra in user_words:
                 if palabra in keyword_to_cuadro:
                     emociones_detectadas.append(keyword_to_cuadro[palabra])
-
+        
         # Si no hay coincidencias, usar OpenAI para detectar emociones
         if not emociones_detectadas:
             texto_usuario = " ".join(mensajes)
@@ -428,21 +428,11 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
             for emocion in emociones_detectadas:
                 registrar_emocion(emocion, texto_usuario)
 
-        if emociones_detectadas:
-            # Construir una respuesta para invitar al usuario a explayarse
-            emociones_formateadas = ", ".join(emociones_detectadas)
-            respuesta = (
-                f"Detectamos las siguientes emociones o patrones de conducta: {emociones_formateadas}. "
-                "¿Podrías ampliar o describir más detalladamente cómo estas emociones están afectando tu situación? "
-                "Esto nos ayudará a comprender mejor tu estado emocional."
-            )
-            return respuesta
-
-        return "No se detectaron emociones específicas. ¿Puedes compartir más detalles sobre cómo te sientes?"
+        return emociones_detectadas
 
     except Exception as e:
         print(f"Error al analizar emociones y patrones: {e}")
-        return "Hubo un problema al analizar las emociones. Por favor, intenta nuevamente."
+        return []
 
 # Generación de respuestas con OpenAI
 def generar_respuesta_con_openai(prompt):
@@ -474,3 +464,4 @@ def registrar_emocion(emocion: str, contexto: str):
         print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
     except Exception as e:
         print(f"Error al registrar emoción '{emocion}': {e}")
+
