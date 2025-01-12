@@ -394,7 +394,7 @@ async def asistente(input_data: UserInput):
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     """
     Detecta emociones y patrones de conducta en los mensajes, buscando coincidencias en la tabla `palabras_clave`.
-    Si no hay coincidencias, usa OpenAI para detectarlas y las registra en la base de datos.
+    Si no hay coincidencias, usa OpenAI para detectarlas y devuelve un mensaje que invite al usuario a profundizar.
     """
     try:
         # Obtener síntomas almacenados
@@ -409,7 +409,7 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
             for palabra in user_words:
                 if palabra in keyword_to_cuadro:
                     emociones_detectadas.append(keyword_to_cuadro[palabra])
-        
+
         # Si no hay coincidencias, usar OpenAI para detectar emociones
         if not emociones_detectadas:
             texto_usuario = " ".join(mensajes)
@@ -428,11 +428,21 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
             for emocion in emociones_detectadas:
                 registrar_emocion(emocion, texto_usuario)
 
-        return emociones_detectadas
+        if emociones_detectadas:
+            # Construir una respuesta para invitar al usuario a explayarse
+            emociones_formateadas = ", ".join(emociones_detectadas)
+            respuesta = (
+                f"Detectamos las siguientes emociones o patrones de conducta: {emociones_formateadas}. "
+                "¿Podrías ampliar o describir más detalladamente cómo estas emociones están afectando tu situación? "
+                "Esto nos ayudará a comprender mejor tu estado emocional."
+            )
+            return respuesta
+
+        return "No se detectaron emociones específicas. ¿Puedes compartir más detalles sobre cómo te sientes?"
 
     except Exception as e:
         print(f"Error al analizar emociones y patrones: {e}")
-        return []
+        return "Hubo un problema al analizar las emociones. Por favor, intenta nuevamente."
 
 # Generación de respuestas con OpenAI
 def generar_respuesta_con_openai(prompt):
