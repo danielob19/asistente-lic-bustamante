@@ -78,7 +78,7 @@ def registrar_sintoma(sintoma: str, cuadro: str):
         cursor.execute("""
             INSERT INTO palabras_clave (sintoma, cuadro) 
             VALUES (%s, %s)
-            ON CONFLICT (sintoma) DO NOTHING;
+            ON CONFLICT (sintoma) DO UPDATE SET cuadro = EXCLUDED.cuadro;
         """, (sintoma, cuadro))
         conn.commit()
         conn.close()
