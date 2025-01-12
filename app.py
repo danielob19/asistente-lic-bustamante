@@ -322,7 +322,7 @@ async def asistente(input_data: UserInput):
             session["mensajes"].clear()
             return {
                 "respuesta": (
-                    f"{respuesta_analisis} Si necesitas un análisis más profundo, te recomiendo contactar al Lic. Daniel O. Bustamante al WhatsApp "
+                    f"{respuesta_analisis} Si necesitas un análisis más profundo, también te recomiendo contactar al Lic. Daniel O. Bustamante al WhatsApp "
                     f"+54 911 3310-1186 para una evaluación más detallada."
                 )
             }
