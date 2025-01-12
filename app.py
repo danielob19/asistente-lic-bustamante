@@ -426,10 +426,41 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
 
             # Registrar nuevas emociones en la base de datos
             for emocion in emociones_detectadas:
-                registrar_sintoma(emocion, "patrón emocional detectado")
+                registrar_emocion(emocion, texto_usuario)
 
         return emociones_detectadas
 
     except Exception as e:
         print(f"Error al analizar emociones y patrones: {e}")
         return []
+
+# Generación de respuestas con OpenAI
+def generar_respuesta_con_openai(prompt):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.6
+        )
+        return response.choices[0].message['content'].strip()
+    except Exception as e:
+        print(f"Error al generar respuesta con OpenAI: {e}")
+        return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
+
+# Registrar una emoción detectada
+def registrar_emocion(emocion: str, contexto: str):
+    """
+    Registra una emoción detectada en la base de datos PostgreSQL.
+    """
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO emociones_detectadas (emocion, contexto) 
+                    VALUES (%s, %s);
+                """, (emocion.strip().lower(), contexto.strip()))
+                conn.commit()
+        print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
+    except Exception as e:
+        print(f"Error al registrar emoción '{emocion}': {e}")
