@@ -293,8 +293,8 @@ async def asistente(input_data: UserInput):
         if mensaje_usuario in ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]:
             return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
 
-        # Manejo para "no necesito nada más" (sin insistir y no contabilizar)
-        if "no necesito nada más" in mensaje_usuario or mensaje_usuario.strip() == "no" or "estoy bien" in mensaje_usuario:
+        # Manejo para "ok", "en nada más" o "no necesito nada más" (sin insistir, ni contabilizar)
+        if mensaje_usuario in ["ok", "en nada más", "no necesito nada más", "estoy bien", "nada más"]:
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
 
         # Manejo para "solo un síntoma y no más" (responder como en la 5ª interacción y finalizar)
