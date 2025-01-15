@@ -290,7 +290,7 @@ async def asistente(input_data: UserInput):
         session["ultima_interaccion"] = time.time()
 
         # Manejo para "no necesito nada más" (sin insistir y no contabilizar)
-        if "no necesito nada más" in mensaje_usuario or "estoy bien" in mensaje_usuario:
+        if "no necesito nada más" in mensaje_usuario or mensaje_usuario.strip() == "no" or "estoy bien" in mensaje_usuario:
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
 
         # Manejo para "solo un síntoma y no más" (responder como en la 5ª interacción y finalizar)
