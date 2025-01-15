@@ -291,20 +291,18 @@ async def asistente(input_data: UserInput):
 
         # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
         if mensaje_usuario in ["no sé", "ninguna", "ni la menor idea"]:
-            # Verificar si ya hay síntomas en la sesión
-            if session["mensajes"]:  # Si hay al menos un mensaje (síntoma descrito previamente)
+            if session["contador_interacciones"] >= 9 or session["mensajes"]:  # Si ya se alcanzó un análisis previo
                 emociones_todas = ", ".join(set(session.get("emociones_detectadas", [])[:3]))  # Limitar a 3 emociones
                 return {
                     "respuesta": (
-                        f"Si bien encuentro muy interesante nuestra conversación pero debo concluirla. No obstante en base "
-                        f"a los síntomas detectados (cuadro de depresión), el cuadro probable es: cuadro de depresión. "
-                        f"Además, notamos emociones o patrones de conducta humanos como {emociones_todas}, por lo que sugiero "
-                        f"solicitar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
-                        f"+54 911 3310-1186 para una evaluación más detallada. Un saludo!"
+                        f"Si bien encuentro muy interesante nuestra conversación, debo concluirla. No obstante en base "
+                        f"a los síntomas detectados, el cuadro probable es: cuadro de depresión. Además, notamos emociones "
+                        f"como {emociones_todas}. Te recomiendo contactar al Lic. Daniel O. Bustamante escribiendo al WhatsApp "
+                        f"+54 911 3310-1186 para una evaluación más detallada. Un saludo."
                     )
                 }
             else:
-                # Si no hay síntomas previos, finalizar de manera neutral
+                # Si no hay un análisis previo, cerrar la conversación de manera neutral
                 return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
 
         # Manejo para mensajes de cierre (sin insistir ni contabilizar interacciones)
