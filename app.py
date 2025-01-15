@@ -273,6 +273,7 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
+        # Registrar interacción en la base de datos
         registrar_interaccion(user_id, mensaje_usuario)
 
         # Inicializa la sesión del usuario si no existe
@@ -281,12 +282,31 @@ async def asistente(input_data: UserInput):
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "mensajes": [],
-                "emociones_detectadas": []  # Para almacenar emociones detectadas
+                "emociones_detectadas": [] # Para almacenar emociones detectadas
             }
 
         # Actualiza la sesión del usuario
         session = user_sessions[user_id]
         session["ultima_interaccion"] = time.time()
+
+        # Manejo para "no necesito nada más" (sin insistir y no contabilizar)
+        if "no necesito nada más" in mensaje_usuario or "estoy bien" in mensaje_usuario:
+            return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
+
+        # Manejo para "solo un síntoma y no más" (responder como en la 5ª interacción y finalizar)
+        if "no quiero dar más síntomas" in mensaje_usuario or "solo este síntoma" in mensaje_usuario:
+            mensajes = session["mensajes"]
+            mensajes.append(mensaje_usuario)
+            respuesta_analisis = analizar_texto(mensajes)
+            session["mensajes"].clear()
+            return {
+                "respuesta": (
+                    f"{respuesta_analisis} Si necesitas un análisis más profundo, también te recomiendo contactar al Lic. Daniel O. Bustamante al WhatsApp "
+                    f"+54 911 3310-1186 para una evaluación más detallada."
+                )
+            }
+
+        # Incrementa el contador de interacciones
         session["contador_interacciones"] += 1
         session["mensajes"].append(mensaje_usuario)
 
@@ -344,7 +364,6 @@ async def asistente(input_data: UserInput):
                 }
                 return {"respuesta": preguntas[contador]}
 
-            # Si no se detectan emociones nuevas, continuar indagando
             return {
                 "respuesta": (
                     "Estoy aquí para entender mejor lo que estás sintiendo. ¿Podrías compartir más detalles sobre lo que te preocupa o cómo te sientes en este momento?"
@@ -448,6 +467,7 @@ def generar_respuesta_con_openai(prompt):
         print(f"Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
+
 # Registrar una emoción detectada
 def registrar_emocion(emocion: str, contexto: str):
     """
@@ -464,4 +484,3 @@ def registrar_emocion(emocion: str, contexto: str):
         print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
     except Exception as e:
         print(f"Error al registrar emoción '{emocion}': {e}")
-
