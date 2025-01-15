@@ -290,7 +290,7 @@ async def asistente(input_data: UserInput):
         session["ultima_interaccion"] = time.time()
 
         # Manejo para mensajes de cierre (sin insistir ni contabilizar interacciones)
-        if mensaje_usuario in ["ok", "en nada", "en nada más", "nada más", "no necesito nada más", "estoy bien"]:
+        if mensaje_usuario in ["ok", "en nada", "en nada mas", "nada mas", "no necesito nada mas", "estoy bien"]:
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
 
         # Respuesta específica para saludos simples
