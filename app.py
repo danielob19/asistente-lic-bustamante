@@ -289,6 +289,24 @@ async def asistente(input_data: UserInput):
         session = user_sessions[user_id]
         session["ultima_interaccion"] = time.time()
 
+        # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
+        if mensaje_usuario in ["no sé", "ninguna", "ni la menor idea"]:
+            # Verificar si ya hay síntomas en la sesión
+            if session["mensajes"]:  # Si hay al menos un mensaje (síntoma descrito previamente)
+                emociones_todas = ", ".join(set(session.get("emociones_detectadas", [])[:3]))  # Limitar a 3 emociones
+                return {
+                    "respuesta": (
+                        f"Si bien encuentro muy interesante nuestra conversación pero debo concluirla. No obstante en base "
+                        f"a los síntomas detectados (cuadro de depresión), el cuadro probable es: cuadro de depresión. "
+                        f"Además, notamos emociones o patrones de conducta humanos como {emociones_todas}, por lo que sugiero "
+                        f"solicitar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
+                        f"+54 911 3310-1186 para una evaluación más detallada. Un saludo!"
+                    )
+                }
+            else:
+                # Si no hay síntomas previos, finalizar de manera neutral
+                return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
+
         # Manejo para mensajes de cierre (sin insistir ni contabilizar interacciones)
         if mensaje_usuario in ["ok", "gracias", "en nada", "en nada mas", "nada mas", "no necesito nada mas", "estoy bien"]:
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
@@ -309,7 +327,7 @@ async def asistente(input_data: UserInput):
                     f"+54 911 3310-1186 para una evaluación más detallada."
                 )
             }
-
+        
         # Incrementa el contador de interacciones
         session["contador_interacciones"] += 1
         session["mensajes"].append(mensaje_usuario)
@@ -376,7 +394,7 @@ async def asistente(input_data: UserInput):
 
         # Manejo de interacción 9
         if contador == 9:
-            emociones_todas = ", ".join(set(session["emociones_detectadas"]))
+            emociones_todas = ", ".join(set(session["emociones_detectadas"][:3])) # Limitar a las primeras 3 emociones
             return {
                 "respuesta": (
                     f"Si bien encuentro muy interesante nuestra conversación pero debo concluirla. No obstante en base "
