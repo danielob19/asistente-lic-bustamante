@@ -289,6 +289,10 @@ async def asistente(input_data: UserInput):
         session = user_sessions[user_id]
         session["ultima_interaccion"] = time.time()
 
+        # Respuesta específica para saludos simples
+        if mensaje_usuario in ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]:
+            return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
+
         # Manejo para "no necesito nada más" (sin insistir y no contabilizar)
         if "no necesito nada más" in mensaje_usuario or mensaje_usuario.strip() == "no" or "estoy bien" in mensaje_usuario:
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
