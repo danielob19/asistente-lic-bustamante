@@ -395,17 +395,30 @@ async def asistente(input_data: UserInput):
         # Manejo de interacción 9
         if contador == 9:
             # Obtener el cuadro probable basado en los síntomas detectados
-            cuadro_probable = obtener_cuadro_probable(session.get("emociones_detectadas", []))
-            emociones_todas = ", ".join(set(session.get("emociones_detectadas", [])[:3]))  # Limitar a las primeras 3 emociones
-            return {
-                "respuesta": (
-                    f"Si bien encuentro muy interesante nuestra conversación pero debo concluirla. No obstante, en base "
-                    f"a los síntomas detectados, el cuadro probable es: {cuadro_probable}. "
-                    f"Además, notamos emociones o patrones de conducta humanos como {emociones_todas}, por lo que insisto "
-                    f"en sugerirte solicitar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
-                    f"+54 911 3310-1186 para una evaluación más detallada. Un saludo!"
-                )
-            }
+            emociones_detectadas = session.get("emociones_detectadas", [])
+            cuadro_probable = obtener_cuadro_probable(emociones_detectadas)
+
+            # Validar si hay datos suficientes para un diagnóstico
+            if cuadro_probable and cuadro_probable != "no identificado":
+                emociones_todas = ", ".join(set(emociones_detectadas[:3]))  # Limitar a las primeras 3 emociones
+                return {
+                    "respuesta": (
+                        f"Si bien encuentro muy interesante nuestra conversación pero debo concluirla. No obstante, en base "
+                        f"a los síntomas detectados, el cuadro probable es: {cuadro_probable}. "
+                        f"Además, notamos emociones o patrones de conducta humanos como {emociones_todas}, por lo que insisto "
+                        f"en sugerirte solicitar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
+                        f"+54 911 3310-1186 para una evaluación más detallada. Un saludo!"
+                    )
+                }
+            else:
+                return {
+                    "respuesta": (
+                        "Si bien encuentro muy interesante nuestra conversación pero debo concluirla. No obstante, no se pudo "
+                        "determinar un cuadro probable con los datos disponibles. Te recomiendo contactar al Lic. Daniel O. Bustamante "
+                        "escribiéndole al WhatsApp +54 911 3310-1186 para una evaluación más detallada. Un saludo!"
+                    )
+                }
+
 
         # Manejo de interacción 10 (última interacción)
         if contador == 10:
