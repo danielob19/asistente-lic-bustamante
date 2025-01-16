@@ -295,6 +295,15 @@ async def asistente(input_data: UserInput):
                 # Obtener el cuadro probable basado en los síntomas detectados
                 cuadro_probable = obtener_cuadro_probable(session.get("emociones_detectadas", []))
                 emociones_todas = ", ".join(set(session.get("emociones_detectadas", [])[:3]))  # Limitar a 3 emociones
+                
+                # Agregar manejo si no se puede identificar un cuadro probable
+                if not cuadro_probable or cuadro_probable == "no identificado":
+                    return {
+                        "respuesta": (
+                            "Entiendo que no tengas una respuesta clara en este momento. Si sientes que necesitas más ayuda, "
+                            "puedes comunicarte con el Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186. Estoy aquí si quieres seguir conversando."
+                        )
+                    }
                 return {
                     "respuesta": (
                         f"Si bien encuentro muy interesante nuestra conversación, debo concluirla. No obstante, en base a los síntomas "
