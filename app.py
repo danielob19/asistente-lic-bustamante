@@ -292,13 +292,15 @@ async def asistente(input_data: UserInput):
         # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
         if mensaje_usuario in ["no sé", "ninguna", "ni la menor idea"]:
             if session["contador_interacciones"] >= 9 or session["mensajes"]:  # Si ya se alcanzó un análisis previo
+                # Obtener el cuadro probable basado en los síntomas detectados
+                cuadro_probable = obtener_cuadro_probable(session.get("emociones_detectadas", []))
                 emociones_todas = ", ".join(set(session.get("emociones_detectadas", [])[:3]))  # Limitar a 3 emociones
                 return {
                     "respuesta": (
-                        f"Si bien encuentro muy interesante nuestra conversación, debo concluirla. No obstante en base "
-                        f"a los síntomas detectados, el cuadro probable es: cuadro de depresión. Además, notamos emociones "
-                        f"como {emociones_todas}. Te recomiendo contactar al Lic. Daniel O. Bustamante escribiendo al WhatsApp "
-                        f"+54 911 3310-1186 para una evaluación más detallada. Un saludo."
+                        f"Si bien encuentro muy interesante nuestra conversación, debo concluirla. No obstante, en base a los síntomas "
+                        f"detectados, el cuadro probable es: {cuadro_probable}. Además, notamos emociones como {emociones_todas}. "
+                        f"Te recomiendo contactar al Lic. Daniel O. Bustamante escribiendo al WhatsApp +54 911 3310-1186 para una evaluación "
+                        f"más detallada. Un saludo."
                     )
                 }
             else:
