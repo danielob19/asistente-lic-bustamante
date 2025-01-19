@@ -469,11 +469,13 @@ async def asistente(input_data: UserInput):
 
             respuesta = (
                 f"En base a tus descripciones ({', '.join(emociones_negativas)}), "
-                f"el cuadro probable sería: {cuadro_probable}. "
+                f"el cuadro probable sería: {cuadro_probable}. Sugiero analizar la causa del malestar con "
+                f"Lic. Daniel O. Bustamante. Su WatsApp es (+54) 9 11 3310-1186. "
             )
             if nuevos_sintomas:
                 respuesta += f"Además, notamos síntomas adicionales: {', '.join(nuevos_sintomas)}. "
-            respuesta += "Te sugiero consultarme para una evaluación más detallada."
+            respuesta += "Te sugiero realizar una consulta con el Lic. Daniel O. Bustamante solicitándola al WhatsApp "
+                    "(+54) 9 11 3310-1186 para una evaluación más detallada."
 
             session["mensajes"].clear()
             return {"respuesta": respuesta}
@@ -483,7 +485,7 @@ async def asistente(input_data: UserInput):
         if contador == 10:
             return {
                 "respuesta": (
-                    "Sugiero solicitar una consulta al Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
+                    "Sugiero solicitar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
                     "(+54) 9 11 3310-1186. Aguardamos tu mensaje. ¡Un saludo cordial!"
                 )
             }
