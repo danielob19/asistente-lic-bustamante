@@ -400,14 +400,29 @@ async def asistente(input_data: UserInput):
         # Manejo para análisis de texto después de 5 interacciones
         if contador == 5:
             mensajes = session["mensajes"]
-            respuesta_analisis = analizar_texto(mensajes)
+            emociones_negativas = []
+            for mensaje in mensajes:
+                emociones_negativas.extend(detectar_emociones_negativas(mensaje))
+
+            # Registrar emociones en la base de datos
+            for emocion in emociones_negativas:
+                registrar_emocion(emocion, "interacción 5")
+
+            # Obtener cuadro probable en base a emociones detectadas
+            cuadros_probables = [
+                cuadro for emocion, cuadro in obtener_sintomas() if emocion in emociones_negativas
+            ]
+            cuadro_probable = cuadros_probables[0] if cuadros_probables else "no identificado"
+
+            respuesta = (
+                f"En base a tus descripciones ({', '.join(emociones_negativas)}), "
+                f"el cuadro probable sería: {cuadro_probable}. "
+            )
+            if len(emociones_negativas) == 0:
+                respuesta += "No detecté emociones negativas claras en esta interacción. "
+
             session["mensajes"].clear()
-            return {
-                "respuesta": (
-                    f"{respuesta_analisis} Si necesitas un análisis más profundo, también te recomiendo contactar al Lic. Daniel O. Bustamante al WhatsApp "
-                    f"+54 911 3310-1186 para una evaluación más detallada."
-                )
-            }
+            return {"respuesta": respuesta}
 
         # Manejo de interacciones 6, 7 y 8
         if 6 <= contador <= 8:
