@@ -447,6 +447,15 @@ async def asistente(input_data: UserInput):
                 )
             }
 
+        # Validar si se detectaron emociones o cuadros antes de generar la respuesta final
+        if not session.get("emociones_detectadas") and not session.get("mensajes"):
+            return {
+                "respuesta": (
+                    "No se pudieron identificar emociones claras en tu mensaje. Si sientes que necesitas ayuda, no dudes "
+                    "en buscar apoyo profesional o compartir más detalles sobre lo que estás experimentando."
+                )
+            }
+
         # Genera una respuesta normal para otros mensajes
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
