@@ -459,14 +459,15 @@ async def asistente(input_data: UserInput):
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     """
     Detecta emociones y patrones de conducta en los mensajes, buscando coincidencias en la tabla `palabras_clave`.
-    Si no hay coincidencias, usa OpenAI para detectarlas y las registra en la base de datos.
+    Si no hay coincidencias, usa OpenAI para detectar emociones negativas y las registra en la base de datos.
     """
     try:
-        # Obtener síntomas almacenados
+        # Obtener síntomas almacenados en la tabla `palabras_clave`
         sintomas_existentes = obtener_sintomas()
         keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
         emociones_detectadas = []
 
+        # Buscar coincidencias en la tabla `palabras_clave`
         for mensaje in mensajes:
             user_words = mensaje.lower().split()
             user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]
@@ -474,14 +475,14 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
             for palabra in user_words:
                 if palabra in keyword_to_cuadro:
                     emociones_detectadas.append(keyword_to_cuadro[palabra])
-        
-        # Si no hay coincidencias, usar OpenAI para detectar emociones
+
+        # Si no hay coincidencias, usar OpenAI para detectar emociones negativas
         if not emociones_detectadas:
             texto_usuario = " ".join(mensajes)
             prompt = (
-                f"Analiza el siguiente mensaje y detecta emociones o patrones de conducta humanos implícitos:\n\n"
+                f"Analiza el siguiente mensaje y detecta únicamente emociones humanas negativas. "
+                f"Devuelve una lista de emociones negativas separadas por comas:\n\n"
                 f"{texto_usuario}\n\n"
-                "Responde con una lista de emociones o patrones de conducta separados por comas."
             )
             emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
             emociones_detectadas = [
@@ -498,6 +499,7 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     except Exception as e:
         print(f"Error al analizar emociones y patrones: {e}")
         return []
+
 
 # Generación de respuestas con OpenAI
 def generar_respuesta_con_openai(prompt):
