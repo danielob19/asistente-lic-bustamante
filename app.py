@@ -403,30 +403,48 @@ async def asistente(input_data: UserInput):
 
         # Manejo de interacción 9
         if contador == 9:
-            # Obtener el cuadro probable basado en los síntomas detectados
-            emociones_detectadas = session.get("emociones_detectadas", [])
-            cuadro_probable = obtener_cuadro_probable(emociones_detectadas)
+            # Obtener síntomas y cuadros detectados hasta ahora
+            mensajes = session["mensajes"]
+            sintomas_existentes = obtener_sintomas()
+            keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
 
-            # Validar si hay datos suficientes para un diagnóstico
-            if cuadro_probable and cuadro_probable != "no identificado":
-                emociones_todas = ", ".join(set(emociones_detectadas[:3]))  # Limitar a las primeras 3 emociones
-                return {
-                    "respuesta": (
-                        f"Si bien encuentro muy interesante nuestra conversación pero debo concluirla. No obstante, en base "
-                        f"a los síntomas detectados, el cuadro probable es: {cuadro_probable}. "
-                        f"Además, notamos emociones o patrones de conducta humanos como {emociones_todas}, por lo que insisto "
-                        f"en sugerirte solicitar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
-                        f"+54 911 3310-1186 para una evaluación más detallada. Un saludo!"
-                    )
-                }
-            else:
-                return {
-                    "respuesta": (
-                        "Si bien encuentro muy interesante nuestra conversación pero debo concluirla. No obstante, no se pudo "
-                        "determinar un cuadro probable con los datos disponibles. Te recomiendo contactar al Lic. Daniel O. Bustamante "
-                        "escribiéndole al WhatsApp +54 911 3310-1186 para una evaluación más detallada. Un saludo!"
-                    )
-                }
+            coincidencias = []
+            nuevos_sintomas = []
+
+            for mensaje in mensajes:
+                user_words = mensaje.lower().split()
+                user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]
+
+                for palabra in user_words:
+                    if palabra in keyword_to_cuadro:
+                        coincidencias.append(keyword_to_cuadro[palabra])
+                    else:
+                        nuevos_sintomas.append(palabra)
+
+            # Contar categorías de cuadros detectados
+            cuadro_probable = None
+            if coincidencias:
+                category_counts = Counter(coincidencias)
+                cuadro_probable, _ = category_counts.most_common(1)[0]
+
+            # Generar respuesta para la interacción 9
+            respuesta = (
+                f"Hemos detectado los siguientes síntomas hasta ahora: {', '.join(set(coincidencias))}. "
+            )
+            if nuevos_sintomas:
+                respuesta += f"También hemos notado nuevos posibles síntomas: {', '.join(set(nuevos_sintomas))}. "
+
+            if cuadro_probable:
+                respuesta += (
+                    f"Con base en estos síntomas, el cuadro probable sigue siendo: {cuadro_probable}. "
+                )
+
+            respuesta += (
+                "Te sugiero nuevamente contactar al Lic. Daniel O. Bustamante escribiendo al WhatsApp "
+                "+54 911 3310-1186 para una evaluación más detallada."
+            )
+
+            return {"respuesta": respuesta}
 
 
         # Manejo de interacción 10 (última interacción)
