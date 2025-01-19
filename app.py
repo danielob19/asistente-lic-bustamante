@@ -18,6 +18,20 @@ if not openai.api_key:
 # Configuración de la URL de la base de datos PostgreSQL
 DATABASE_URL = "postgresql://my_postgres_db_oahe_user:AItPOENiOHIGPNva0eiCT0kK1od4UhZf@dpg-ctqqj0bqf0us73f4ar1g-a/my_postgres_db_oahe"
 
+# Generación de respuestas con OpenAI
+def generar_respuesta_con_openai(prompt):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.6
+        )
+        return response.choices[0].message['content'].strip()
+    except Exception as e:
+        print(f"Error al generar respuesta con OpenAI: {e}")
+        return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
+
 # Inicialización de FastAPI
 app = FastAPI()
 
@@ -215,20 +229,6 @@ def analizar_texto(mensajes_usuario):
 
     return respuesta
 
-# Generación de respuestas con OpenAI
-def generar_respuesta_con_openai(prompt):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=150,
-            temperature=0.6
-        )
-        return response.choices[0].message['content'].strip()
-    except Exception as e:
-        print(f"Error al generar respuesta con OpenAI: {e}")
-        return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
-
 # Clase para solicitudes del usuario
 class UserInput(BaseModel):
     mensaje: str
@@ -291,12 +291,11 @@ async def asistente(input_data: UserInput):
 
         # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
         if mensaje_usuario in ["no sé", "ninguna", "ni la menor idea"]:
-            if session["contador_interacciones"] >= 9 or session["mensajes"]:  # Si ya se alcanzó un análisis previo
-                # Obtener el cuadro probable basado en los síntomas detectados
+            # Verificar si ya se alcanzaron suficientes interacciones para un análisis
+            if session["contador_interacciones"] >= 9 or session["mensajes"]:
                 cuadro_probable = obtener_cuadro_probable(session.get("emociones_detectadas", []))
                 emociones_todas = ", ".join(set(session.get("emociones_detectadas", [])[:3]))  # Limitar a 3 emociones
-                
-                # Agregar manejo si no se puede identificar un cuadro probable
+
                 if not cuadro_probable or cuadro_probable == "no identificado":
                     return {
                         "respuesta": (
@@ -312,9 +311,10 @@ async def asistente(input_data: UserInput):
                         f"más detallada. Un saludo."
                     )
                 }
-            else:
-                # Si no hay un análisis previo, cerrar la conversación de manera neutral
-                return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
+
+            # Si no hay un análisis previo, responder de manera neutral
+            return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
+
 
         # Manejo para mensajes de cierre (sin insistir ni contabilizar interacciones)
         if mensaje_usuario in ["ok", "gracias", "en nada", "en nada mas", "nada mas", "no necesito nada mas", "estoy bien"]:
@@ -480,9 +480,10 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
         if not emociones_detectadas:
             texto_usuario = " ".join(mensajes)
             prompt = (
-                f"Analiza el siguiente mensaje y detecta únicamente emociones humanas negativas. "
-                f"Devuelve una lista de emociones negativas separadas por comas:\n\n"
+                f"Analiza el siguiente mensaje y detecta emociones negativas o patrones emocionales humanos. "
+                f"Si no hay emociones claras, responde 'emociones ambiguas'.\n\n"
                 f"{texto_usuario}\n\n"
+                "Responde con una lista de emociones negativas separadas por comas."
             )
             emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
             emociones_detectadas = [
@@ -499,21 +500,6 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     except Exception as e:
         print(f"Error al analizar emociones y patrones: {e}")
         return []
-
-
-# Generación de respuestas con OpenAI
-def generar_respuesta_con_openai(prompt):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=150,
-            temperature=0.6
-        )
-        return response.choices[0].message['content'].strip()
-    except Exception as e:
-        print(f"Error al generar respuesta con OpenAI: {e}")
-        return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
 
 # Registrar una emoción detectada
