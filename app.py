@@ -449,47 +449,33 @@ async def asistente(input_data: UserInput):
 
         # Manejo de interacción 9
         if contador == 9:
-            # Obtener síntomas y cuadros detectados hasta ahora
             mensajes = session["mensajes"]
-            sintomas_existentes = obtener_sintomas()
-            keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
-
-            coincidencias = []
+            emociones_negativas = []
             nuevos_sintomas = []
 
+            # Detectar emociones negativas en los mensajes
             for mensaje in mensajes:
-                user_words = mensaje.lower().split()
-                user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]
+                emociones_negativas.extend(detectar_emociones_negativas(mensaje))
 
-                for palabra in user_words:
-                    if palabra in keyword_to_cuadro:
-                        coincidencias.append(keyword_to_cuadro[palabra])
-                    else:
-                        nuevos_sintomas.append(palabra)
+            # Registrar emociones en la base de datos
+            for emocion in emociones_negativas:
+                registrar_emocion(emocion, "interacción 9")
 
-            # Contar categorías de cuadros detectados
-            cuadro_probable = None
-            if coincidencias:
-                category_counts = Counter(coincidencias)
-                cuadro_probable, _ = category_counts.most_common(1)[0]
+            # Obtener cuadros probables en base a emociones detectadas
+            cuadros_probables = [
+                cuadro for emocion, cuadro in obtener_sintomas() if emocion in emociones_negativas
+            ]
+            cuadro_probable = cuadros_probables[0] if cuadros_probables else "no identificado"
 
-            # Generar respuesta para la interacción 9
             respuesta = (
-                f"Hemos detectado los siguientes síntomas hasta ahora: {', '.join(set(coincidencias))}. "
+                f"En base a tus descripciones ({', '.join(emociones_negativas)}), "
+                f"el cuadro probable sería: {cuadro_probable}. "
             )
             if nuevos_sintomas:
-                respuesta += f"También hemos notado nuevos posibles síntomas: {', '.join(set(nuevos_sintomas))}. "
+                respuesta += f"Además, notamos síntomas adicionales: {', '.join(nuevos_sintomas)}. "
+            respuesta += "Te sugiero consultarme para una evaluación más detallada."
 
-            if cuadro_probable:
-                respuesta += (
-                    f"Con base en estos síntomas, el cuadro probable sigue siendo: {cuadro_probable}. "
-                )
-
-            respuesta += (
-                "Te sugiero nuevamente contactar al Lic. Daniel O. Bustamante escribiendo al WhatsApp "
-                "+54 911 3310-1186 para una evaluación más detallada."
-            )
-
+            session["mensajes"].clear()
             return {"respuesta": respuesta}
 
 
