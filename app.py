@@ -323,14 +323,20 @@ async def asistente(input_data: UserInput):
         # Detectar intención con OpenAI
         prompt = (
             f"Un usuario dice: '{mensaje_usuario}'. "
-            "¿Está buscando recomendaciones de un psicólogo o necesita ayuda profesional? "
+            "¿Está buscando un psicólogo o recomendación profesional para terapia? "
             "Responde 'sí' si es el caso, y 'no' si no lo es."
         )
         respuesta_ai = generar_respuesta_con_openai(prompt)
 
-        # Variable para almacenar si se debe recomendar
-        recomendar = "sí" in respuesta_ai.lower()
-
+        if "sí" in respuesta_ai.lower():
+            # Si OpenAI detecta intención, recomendarte a ti directamente
+            return {
+                "respuesta": (
+                    "Te recomiendo al Lic. Daniel O. Bustamante, un psicólogo con experiencia en el área. "
+                    "Puedes contactarlo directamente al WhatsApp +54 9 11 3310-1186 para más información o para agendar una consulta."
+                )
+            }
+            
         # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
         if mensaje_usuario in ["no sé", "ninguna", "ni la menor idea"]:
             # Verificar si ya se alcanzaron suficientes interacciones para un análisis
