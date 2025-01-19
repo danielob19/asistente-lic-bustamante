@@ -181,13 +181,13 @@ def analizar_texto(mensajes_usuario):
         # Filtrar palabras irrelevantes y descartar palabras cortas (como "se", "las")
         user_words = [
             palabra for palabra in user_words
-            if palabra not in palabras_irrelevantes and len(palabra) > 2
+            if palabra not in palabras_irrelevantes and len(palabra) > 2 and palabra.isalpha()
         ]
 
         for palabra in user_words:
             if palabra in keyword_to_cuadro:
                 coincidencias.append(keyword_to_cuadro[palabra])
-            else:
+            elif palabra not in nuevos_sintomas:
                 nuevos_sintomas.append(palabra)
 
 
