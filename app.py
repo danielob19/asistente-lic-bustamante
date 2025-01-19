@@ -32,6 +32,31 @@ def generar_respuesta_con_openai(prompt):
         print(f"Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
+# Función para detectar emociones negativas usando OpenAI
+def detectar_emociones_negativas(mensaje):
+    prompt = (
+        f"Analiza el siguiente mensaje y detecta exclusivamente emociones humanas negativas. "
+        f"Devuelve una lista separada por comas con las emociones detectadas. "
+        f"Si no hay emociones negativas, responde con 'ninguna'.\n\n"
+        f"Mensaje: {mensaje}"
+    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=50,
+            temperature=0.0
+        )
+        emociones = response.choices[0].message['content'].strip().lower()
+        if emociones == "ninguna":
+            return []
+        return [emocion.strip() for emocion in emociones.split(",")]
+
+    except Exception as e:
+        print(f"Error al detectar emociones negativas: {e}")
+        return []
+
+
 # Inicialización de FastAPI
 app = FastAPI()
 
