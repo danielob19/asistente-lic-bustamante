@@ -470,7 +470,6 @@ async def asistente(input_data: UserInput):
             respuesta = (
                 f"En base a tus descripciones ({', '.join(emociones_negativas)}), "
                 f"el cuadro probable sería: {cuadro_probable}. "
-                "Te sugiero consultar al Lic. Daniel O. Bustamante al WhatsApp +54 9 11 3310-1186 para una evaluación más profunda de tu malestar."
             )
             if nuevos_sintomas:
                 respuesta += f"Además, notamos síntomas adicionales: {', '.join(nuevos_sintomas)}. "
