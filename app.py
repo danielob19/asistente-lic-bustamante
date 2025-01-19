@@ -175,15 +175,21 @@ def analizar_texto(mensajes_usuario):
     emociones_detectadas = []
     sintomas_sin_coincidencia = []
 
-    for mensaje in mensajes_usuario:
+    # Procesar mensajes del usuario para detectar síntomas
+    for mensaje in mensajes:
         user_words = mensaje.lower().split()
-        user_words = [palabra for palabra in user_words if palabra not in palabras_irrelevantes]
+        # Filtrar palabras irrelevantes y descartar palabras cortas (como "se", "las")
+        user_words = [
+            palabra for palabra in user_words
+            if palabra not in palabras_irrelevantes and len(palabra) > 2
+        ]
 
         for palabra in user_words:
             if palabra in keyword_to_cuadro:
                 coincidencias.append(keyword_to_cuadro[palabra])
             else:
-                sintomas_sin_coincidencia.append(palabra)
+                nuevos_sintomas.append(palabra)
+
 
     # Generar emociones detectadas a partir de mensajes sin coincidencia
     if len(coincidencias) < 2:
