@@ -419,7 +419,7 @@ async def asistente(input_data: UserInput):
         ):
             return {
                 "respuesta": (
-                    "El Lic. Daniel O. Bustamante,es un excelente epecialista en psicología clínica, seguramente te ayudará, puedes enviarle un mensaje al WhatsApp "
+                    "El Lic. Daniel O. Bustamante, es un excelente epecialista en psicología clínica, seguramente te ayudará, puedes enviarle un mensaje al WhatsApp "
                     "+54 911 3310-1186. Él estará encantado de responderte."
                 )
             }
