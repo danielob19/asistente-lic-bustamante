@@ -1,3 +1,6 @@
+NUEVO CODIGO PARA MEJORAR EN 19 DE ENERO 2025 EN MADRUGADA 
+MEJORAR ampliar respuesta en el texto del código con mi whatsapp aconsejando consultarme etc. 
+
 import os
 import time
 import threading
@@ -320,23 +323,6 @@ async def asistente(input_data: UserInput):
         session = user_sessions[user_id]
         session["ultima_interaccion"] = time.time()
 
-        # Detectar intención con OpenAI
-        prompt = (
-            f"Un usuario dice: '{mensaje_usuario}'. "
-            "¿Está buscando un psicólogo o recomendación profesional para terapia? "
-            "Responde 'sí' si es el caso, y 'no' si no lo es."
-        )
-        respuesta_ai = generar_respuesta_con_openai(prompt)
-
-        if "sí" in respuesta_ai.lower():
-            # Si OpenAI detecta intención, recomendarte a ti directamente
-            return {
-                "respuesta": (
-                    "Te recomiendo al Lic. Daniel O. Bustamante, un psicólogo con experiencia en el área. "
-                    "Puedes contactarlo directamente al WhatsApp +54 9 11 3310-1186 para más información o para agendar una consulta."
-                )
-            }
-            
         # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
         if mensaje_usuario in ["no sé", "ninguna", "ni la menor idea"]:
             # Verificar si ya se alcanzaron suficientes interacciones para un análisis
@@ -490,7 +476,7 @@ async def asistente(input_data: UserInput):
             )
             if nuevos_sintomas:
                 respuesta += f"Además, notamos síntomas adicionales: {', '.join(nuevos_sintomas)}. "
-            respuesta += "Te sugiero consultar al Lic. Daniel O. Bustamante al WhatsApp +54 9 11 3310-1186 para una evaluación más profunda de tu malestar."
+            respuesta += "Te sugiero consultar al Lic. Daniel O. Bustamnante al WhatsApp +54 9 11 3310-1186 para una evaluación más profunda de tu malestar."
 
             session["mensajes"].clear()
             return {"respuesta": respuesta}
