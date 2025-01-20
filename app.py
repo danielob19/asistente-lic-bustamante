@@ -404,6 +404,27 @@ async def asistente(input_data: UserInput):
                 )
             }
 
+         # Proporciona el número de contacto si el usuario lo solicita
+        if (
+            "especialista" in mensaje_usuario or
+            "mejor psicólogo" in mensaje_usuario or
+            "mejor psicologo" in mensaje_usuario or
+            "mejor terapeuta" in mensaje_usuario or
+            "mejor psicoterapeuta" in mensaje_usuario or
+            "el mejor" in mensaje_usuario or
+            "a quien me recomendas" in mensaje_usuario or
+            "que opinas" in mensaje_usuario or
+            "qué opinas" in mensaje_usuario or
+            "que me recomendas" in mensaje_usuario
+        ):
+            return {
+                "respuesta": (
+                    "El Lic. Daniel O. Bustamante,es un excelente epecialista en psicología clínica, seguramente te ayudará, puedes enviarle un mensaje al WhatsApp "
+                    "+54 911 3310-1186. Él estará encantado de responderte."
+                )
+            }
+
+
         # Manejo para análisis de texto después de 5 interacciones
         if contador == 5:
             mensajes = session["mensajes"]
