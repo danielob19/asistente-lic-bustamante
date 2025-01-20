@@ -1,6 +1,3 @@
-NUEVO CODIGO PARA MEJORAR EN 19 DE ENERO 2025 EN MADRUGADA 
-MEJORAR ampliar respuesta en el texto del código con mi whatsapp aconsejando consultarme etc. 
-
 import os
 import time
 import threading
