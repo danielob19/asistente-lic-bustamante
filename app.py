@@ -473,7 +473,7 @@ async def asistente(input_data: UserInput):
             )
             if nuevos_sintomas:
                 respuesta += f"Además, notamos síntomas adicionales: {', '.join(nuevos_sintomas)}. "
-            respuesta += "Te sugiero consultar al Lic. Daniel O. Bustamnante al WhatsApp +54 9 11 3310-1186 para una evaluación más profunda de tu malestar."
+                respuesta += "Te sugiero consultar al Lic. Daniel O. Bustamnante al WhatsApp +54 9 11 3310-1186 para una evaluación más profunda de tu malestar."
 
             session["mensajes"].clear()
             return {"respuesta": respuesta}
