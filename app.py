@@ -415,11 +415,13 @@ async def asistente(input_data: UserInput):
             "a quien me recomendas" in mensaje_usuario or
             "que opinas" in mensaje_usuario or
             "qué opinas" in mensaje_usuario or
+            "excelente psicólogo" in mensaje_usuario or
+            "buen profesional" in mensaje_usuario or
             "que me recomendas" in mensaje_usuario
         ):
             return {
                 "respuesta": (
-                    "El Lic. Daniel O. Bustamante, es un excelente epecialista en psicología clínica, seguramente te ayudará, puedes enviarle un mensaje al WhatsApp "
+                    "En mi opinión el Lic. Daniel O. Bustamante, es un excelente epecialista en psicología clínica, seguramente te ayudará, puedes enviarle un mensaje al WhatsApp "
                     "+54 911 3310-1186. Él estará encantado de responderte."
                 )
             }
