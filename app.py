@@ -388,6 +388,13 @@ async def asistente(input_data: UserInput):
             "turno" in mensaje_usuario or
             "whatsapp" in mensaje_usuario or
             "teléfono" in mensaje_usuario or
+            "psicologo" in mensaje_usuario or
+            "psicólogo" in mensaje_usuario or
+            "terapeuta" in mensaje_usuario or
+            "psicoterapia" in mensaje_usuario or
+            "terapia" in mensaje_usuario or
+            "tratamiento psicológico" in mensaje_usuario or
+            "recomendas" in mensaje_usuario or
             "telefono" in mensaje_usuario
         ):
             return {
