@@ -7,13 +7,14 @@ import openai
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
-from pydantic import BaseModel
 from collections import Counter
+from pydantic import BaseModel
 
-# Clase para solicitudes del usuario
+# Modelo para solicitudes del usuario
 class UserInput(BaseModel):
-    mensaje: str
     user_id: str
+    mensaje: str
+
             
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
