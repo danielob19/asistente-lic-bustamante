@@ -125,6 +125,28 @@ def registrar_sintoma(sintoma: str, cuadro: str):
     except Exception as e:
         print(f"Error al registrar síntoma '{sintoma}': {e}")
 
+# ============================================================
+# Función: Registrar historial emocional
+# Descripción: Guarda una emoción detectada para un usuario en
+#              la tabla historial_emocional.
+# ============================================================
+def registrar_historial_emocional(user_id: str, emocion: str):
+    """
+    Registra una emoción detectada en la tabla historial_emocional.
+    """
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO historial_emocional (user_id, emocion) 
+                    VALUES (%s, %s);
+                """, (user_id, emocion))
+                conn.commit()
+        print(f"Emoción '{emocion}' registrada para el usuario '{user_id}'.")
+    except Exception as e:
+        print(f"Error al registrar emoción: {e}")
+
+
 # Registrar una emoción detectada
 def registrar_emocion(emocion: str, contexto: str):
     """
