@@ -132,19 +132,31 @@ def registrar_sintoma(sintoma: str, cuadro: str):
 # ============================================================
 def registrar_historial_emocional(user_id: str, emocion: str):
     """
-    Registra una emoción detectada en la tabla historial_emocional.
+    Registra una emoción detectada en la tabla historial_emocional, evitando duplicados recientes.
     """
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
+                # Verificar si ya existe un registro reciente de esta emoción
                 cursor.execute("""
-                    INSERT INTO historial_emocional (user_id, emocion) 
-                    VALUES (%s, %s);
+                    SELECT id FROM historial_emocional
+                    WHERE user_id = %s AND emocion = %s AND fecha::date = CURRENT_DATE;
                 """, (user_id, emocion))
-                conn.commit()
-        print(f"Emoción '{emocion}' registrada para el usuario '{user_id}'.")
+                registro_existente = cursor.fetchone()
+
+                # Solo registrar si no existe un registro reciente
+                if not registro_existente:
+                    cursor.execute("""
+                        INSERT INTO historial_emocional (user_id, emocion)
+                        VALUES (%s, %s);
+                    """, (user_id, emocion))
+                    conn.commit()
+                    print(f"Emoción '{emocion}' registrada para el usuario '{user_id}'.")
+                else:
+                    print(f"Emoción '{emocion}' ya registrada hoy para el usuario '{user_id}'.")
     except Exception as e:
         print(f"Error al registrar emoción: {e}")
+
         
 # ============================================================
 # Función: Obtener historial emocional
@@ -153,14 +165,14 @@ def registrar_historial_emocional(user_id: str, emocion: str):
 # ============================================================
 def obtener_historial_emocional(user_id: str):
     """
-    Recupera el historial emocional de un usuario desde la tabla historial_emocional.
+    Recupera el historial emocional de un usuario desde la tabla historial_emocional, eliminando duplicados.
     """
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    SELECT emocion, fecha 
-                    FROM historial_emocional 
+                    SELECT DISTINCT emocion, fecha
+                    FROM historial_emocional
                     WHERE user_id = %s
                     ORDER BY fecha DESC
                     LIMIT 5;
@@ -169,7 +181,6 @@ def obtener_historial_emocional(user_id: str):
     except Exception as e:
         print(f"Error al obtener historial emocional: {e}")
         return []
-
 
 # Registrar una emoción detectada
 def registrar_emocion(emocion: str, contexto: str):
