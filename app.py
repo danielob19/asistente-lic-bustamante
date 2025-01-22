@@ -350,6 +350,31 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
+        # ===========================================
+        # Recuperar historial emocional del usuario
+        # ===========================================
+        historial = obtener_historial_emocional(user_id)
+        if historial:
+            ultimas_emociones = [f"{emocion} el {fecha.strftime('%d/%m/%Y')}" for emocion, fecha in historial]
+            introduccion = (
+                f"Hola de nuevo, noto que en nuestras últimas conversaciones mencionaste emociones como "
+                f"{', '.join(ultimas_emociones)}. ¿Cómo te sientes hoy?"
+            )
+        else:
+            introduccion = "Hola, ¿cómo te sientes hoy?"
+
+        # ===========================================
+        # Simulación: Detectar emoción en el mensaje
+        # ===========================================
+        emocion_detectada = "alegría"  # Reemplazar con lógica real de detección
+        registrar_historial_emocional(user_id, emocion_detectada)
+
+        # Continuar con la lógica existente
+        respuesta_asistente = "Respuesta procesada del asistente aquí."
+
+        return {"respuesta": f"{introduccion} Por cierto, detecté que podrías estar sintiendo {emocion_detectada}. {respuesta_asistente}"}
+
+
         # Registrar interacción en la base de datos
         registrar_interaccion(user_id, mensaje_usuario)
 
