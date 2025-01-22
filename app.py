@@ -163,35 +163,38 @@ def registrar_historial_emocional(user_id: str, emocion: str):
 # Descripción: Recupera las últimas emociones registradas de un
 #              usuario desde la tabla historial_emocional.
 # ============================================================
-def obtener_historial_emocional(user_id: str):
-    """
-    Recupera el historial emocional de un usuario desde la tabla historial_emocional,
-    eliminando duplicados en emociones por fecha.
-    """
+@app.post("/asistente")
+async def asistente(input_data: UserInput):
     try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    SELECT emocion, fecha
-                    FROM historial_emocional
-                    WHERE user_id = %s
-                    ORDER BY fecha DESC
-                """, (user_id,))
-                registros = cursor.fetchall()
-                
-                # Filtrar duplicados por emoción y fecha
-                emociones_filtradas = []
-                emociones_unicas = set()
-                for emocion, fecha in registros:
-                    clave = (emocion, fecha.date())  # Usar emoción y fecha como clave
-                    if clave not in emociones_unicas:
-                        emociones_filtradas.append((emocion, fecha))
-                        emociones_unicas.add(clave)
+        user_id = input_data.user_id
+        mensaje_usuario = input_data.mensaje.strip().lower()
 
-                return emociones_filtradas[:5]  # Limitar a las últimas 5 emociones
+        # Recuperar el historial emocional filtrado
+        historial = obtener_historial_emocional(user_id)
+
+        # Formatear el historial emocional para la respuesta
+        if historial:
+            ultimas_emociones = [f"{emocion} el {fecha.strftime('%d/%m/%Y')}" for emocion, fecha in historial]
+
+            # Verifica si la emoción detectada ya está en el historial mostrado
+            emocion_detectada = "alegría"  # Aquí puedes usar tu lógica de detección real
+            if not any(f"{emocion_detectada} el {fecha.strftime('%d/%m/%Y')}" in ultimas_emociones for _, fecha in historial):
+                ultimas_emociones.append(f"{emocion_detectada} el {fecha.strftime('%d/%m/%Y')}")
+
+            introduccion = (
+                f"Hola de nuevo, noto que en nuestras últimas conversaciones mencionaste emociones como "
+                f"{', '.join(ultimas_emociones)}. ¿Cómo te sientes hoy?"
+            )
+        else:
+            introduccion = "Hola, ¿cómo te sientes hoy?"
+
+        # Respuesta final
+        respuesta_final = f"{introduccion} Respuesta procesada del asistente aquí."
+        return {"respuesta": respuesta_final}
+
     except Exception as e:
-        print(f"Error al obtener historial emocional: {e}")
-        return []
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
 
 # Registrar una emoción detectada
 def registrar_emocion(emocion: str, contexto: str):
