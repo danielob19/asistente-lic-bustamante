@@ -7,15 +7,9 @@ import openai
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
-from collections import Counter
 from pydantic import BaseModel
+from collections import Counter
 
-# Modelo para solicitudes del usuario
-class UserInput(BaseModel):
-    user_id: str
-    mensaje: str
-
-            
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
@@ -130,77 +124,6 @@ def registrar_sintoma(sintoma: str, cuadro: str):
         print(f"Síntoma '{sintoma}' registrado exitosamente con cuadro: {cuadro}.")
     except Exception as e:
         print(f"Error al registrar síntoma '{sintoma}': {e}")
-
-# ============================================================
-# Función: Registrar historial emocional
-# Descripción: Guarda una emoción detectada para un usuario en
-#              la tabla historial_emocional.
-# ============================================================
-def registrar_historial_emocional(user_id: str, emocion: str):
-    """
-    Registra una emoción detectada en la tabla historial_emocional, evitando duplicados recientes.
-    """
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Verificar si ya existe un registro reciente de esta emoción
-                cursor.execute("""
-                    SELECT id FROM historial_emocional
-                    WHERE user_id = %s AND emocion = %s AND fecha::date = CURRENT_DATE;
-                """, (user_id, emocion))
-                registro_existente = cursor.fetchone()
-
-                # Solo registrar si no existe un registro reciente
-                if not registro_existente:
-                    cursor.execute("""
-                        INSERT INTO historial_emocional (user_id, emocion)
-                        VALUES (%s, %s);
-                    """, (user_id, emocion))
-                    conn.commit()
-                    print(f"Emoción '{emocion}' registrada para el usuario '{user_id}'.")
-                else:
-                    print(f"Emoción '{emocion}' ya registrada hoy para el usuario '{user_id}'.")
-    except Exception as e:
-        print(f"Error al registrar emoción: {e}")
-
-        
-# ============================================================
-# Función: Obtener historial emocional
-# Descripción: Recupera las últimas emociones registradas de un
-#              usuario desde la tabla historial_emocional.
-# ============================================================
-@app.post("/asistente")
-async def asistente(input_data: UserInput):
-    try:
-        user_id = input_data.user_id
-        mensaje_usuario = input_data.mensaje.strip().lower()
-
-        # Recuperar el historial emocional filtrado
-        historial = obtener_historial_emocional(user_id)
-
-        # Formatear el historial emocional para la respuesta
-        if historial:
-            ultimas_emociones = [f"{emocion} el {fecha.strftime('%d/%m/%Y')}" for emocion, fecha in historial]
-
-            # Verifica si la emoción detectada ya está en el historial mostrado
-            emocion_detectada = "alegría"  # Aquí puedes usar tu lógica de detección real
-            if not any(f"{emocion_detectada} el {fecha.strftime('%d/%m/%Y')}" in ultimas_emociones for _, fecha in historial):
-                ultimas_emociones.append(f"{emocion_detectada} el {fecha.strftime('%d/%m/%Y')}")
-
-            introduccion = (
-                f"Hola de nuevo, noto que en nuestras últimas conversaciones mencionaste emociones como "
-                f"{', '.join(ultimas_emociones)}. ¿Cómo te sientes hoy?"
-            )
-        else:
-            introduccion = "Hola, ¿cómo te sientes hoy?"
-
-        # Respuesta final
-        respuesta_final = f"{introduccion} Respuesta procesada del asistente aquí."
-        return {"respuesta": respuesta_final}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
 
 # Registrar una emoción detectada
 def registrar_emocion(emocion: str, contexto: str):
@@ -337,6 +260,11 @@ def analizar_texto(mensajes_usuario):
 
     return respuesta
 
+# Clase para solicitudes del usuario
+class UserInput(BaseModel):
+    mensaje: str
+    user_id: str
+
 # Gestión de sesiones (en memoria)
 user_sessions = {}
 SESSION_TIMEOUT = 60  # Tiempo en segundos para limpiar sesiones inactivas
@@ -375,38 +303,6 @@ async def asistente(input_data: UserInput):
 
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
-
-        # Recuperar el historial emocional filtrado
-        historial = obtener_historial_emocional(user_id)
-
-        # Formatear el historial emocional para la respuesta
-        if historial:
-            ultimas_emociones = [f"{emocion} el {fecha.strftime('%d/%m/%Y')}" for emocion, fecha in historial]
-
-            # Detectar emoción (simulación)
-            emocion_detectada = "alegría"  # Reemplazar con lógica de detección real
-
-            # Evitar redundancia en emociones detectadas
-            if not any(f"{emocion_detectada} el {fecha.strftime('%d/%m/%Y')}" in ultimas_emociones for _, fecha in historial):
-                ultimas_emociones.append(f"{emocion_detectada} el {fecha.strftime('%d/%m/%Y')}")
-
-            introduccion = (
-                f"Hola de nuevo, noto que en nuestras últimas conversaciones mencionaste emociones como "
-                f"{', '.join(ultimas_emociones)}. ¿Cómo te sientes hoy?"
-            )
-        else:
-            introduccion = "Hola, ¿cómo te sientes hoy?"
-
-        # Registrar emoción detectada
-        registrar_historial_emocional(user_id, emocion_detectada)
-
-        # Respuesta final
-        respuesta_final = f"{introduccion} Por cierto, detecté que podrías estar sintiendo {emocion_detectada}."
-        return {"respuesta": respuesta_final}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
-
 
         # Registrar interacción en la base de datos
         registrar_interaccion(user_id, mensaje_usuario)
