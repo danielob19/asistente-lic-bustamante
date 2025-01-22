@@ -10,6 +10,11 @@ from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from collections import Counter
 
+# Clase para solicitudes del usuario
+class UserInput(BaseModel):
+    mensaje: str
+    user_id: str
+            
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
@@ -331,11 +336,6 @@ def analizar_texto(mensajes_usuario):
 
     return respuesta
 
-# Clase para solicitudes del usuario
-class UserInput(BaseModel):
-    mensaje: str
-    user_id: str
-
 # Gestión de sesiones (en memoria)
 user_sessions = {}
 SESSION_TIMEOUT = 60  # Tiempo en segundos para limpiar sesiones inactivas
@@ -375,12 +375,20 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # ===========================================
-        # Recuperar historial emocional del usuario
-        # ===========================================
+        # Recuperar el historial emocional filtrado
         historial = obtener_historial_emocional(user_id)
+
+        # Formatear el historial emocional para la respuesta
         if historial:
             ultimas_emociones = [f"{emocion} el {fecha.strftime('%d/%m/%Y')}" for emocion, fecha in historial]
+
+            # Detectar emoción (simulación)
+            emocion_detectada = "alegría"  # Reemplazar con lógica de detección real
+
+            # Evitar redundancia en emociones detectadas
+            if not any(f"{emocion_detectada} el {fecha.strftime('%d/%m/%Y')}" in ultimas_emociones for _, fecha in historial):
+                ultimas_emociones.append(f"{emocion_detectada} el {fecha.strftime('%d/%m/%Y')}")
+
             introduccion = (
                 f"Hola de nuevo, noto que en nuestras últimas conversaciones mencionaste emociones como "
                 f"{', '.join(ultimas_emociones)}. ¿Cómo te sientes hoy?"
@@ -388,16 +396,15 @@ async def asistente(input_data: UserInput):
         else:
             introduccion = "Hola, ¿cómo te sientes hoy?"
 
-        # ===========================================
-        # Simulación: Detectar emoción en el mensaje
-        # ===========================================
-        emocion_detectada = "alegría"  # Reemplazar con lógica real de detección
+        # Registrar emoción detectada
         registrar_historial_emocional(user_id, emocion_detectada)
 
-        # Continuar con la lógica existente
-        respuesta_asistente = "Respuesta procesada del asistente aquí."
+        # Respuesta final
+        respuesta_final = f"{introduccion} Por cierto, detecté que podrías estar sintiendo {emocion_detectada}."
+        return {"respuesta": respuesta_final}
 
-        return {"respuesta": f"{introduccion} Por cierto, detecté que podrías estar sintiendo {emocion_detectada}. {respuesta_asistente}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 
         # Registrar interacción en la base de datos
