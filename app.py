@@ -165,19 +165,30 @@ def registrar_historial_emocional(user_id: str, emocion: str):
 # ============================================================
 def obtener_historial_emocional(user_id: str):
     """
-    Recupera el historial emocional de un usuario desde la tabla historial_emocional, eliminando duplicados.
+    Recupera el historial emocional de un usuario desde la tabla historial_emocional,
+    eliminando duplicados en emociones por fecha.
     """
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    SELECT DISTINCT emocion, fecha
+                    SELECT emocion, fecha
                     FROM historial_emocional
                     WHERE user_id = %s
                     ORDER BY fecha DESC
-                    LIMIT 5;
                 """, (user_id,))
-                return cursor.fetchall()
+                registros = cursor.fetchall()
+                
+                # Filtrar duplicados por emoción y fecha
+                emociones_filtradas = []
+                emociones_unicas = set()
+                for emocion, fecha in registros:
+                    clave = (emocion, fecha.date())  # Usar emoción y fecha como clave
+                    if clave not in emociones_unicas:
+                        emociones_filtradas.append((emocion, fecha))
+                        emociones_unicas.add(clave)
+
+                return emociones_filtradas[:5]  # Limitar a las últimas 5 emociones
     except Exception as e:
         print(f"Error al obtener historial emocional: {e}")
         return []
