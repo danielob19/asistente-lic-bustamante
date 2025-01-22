@@ -145,6 +145,30 @@ def registrar_historial_emocional(user_id: str, emocion: str):
         print(f"Emoción '{emocion}' registrada para el usuario '{user_id}'.")
     except Exception as e:
         print(f"Error al registrar emoción: {e}")
+        
+# ============================================================
+# Función: Obtener historial emocional
+# Descripción: Recupera las últimas emociones registradas de un
+#              usuario desde la tabla historial_emocional.
+# ============================================================
+def obtener_historial_emocional(user_id: str):
+    """
+    Recupera el historial emocional de un usuario desde la tabla historial_emocional.
+    """
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT emocion, fecha 
+                    FROM historial_emocional 
+                    WHERE user_id = %s
+                    ORDER BY fecha DESC
+                    LIMIT 5;
+                """, (user_id,))
+                return cursor.fetchall()
+    except Exception as e:
+        print(f"Error al obtener historial emocional: {e}")
+        return []
 
 
 # Registrar una emoción detectada
