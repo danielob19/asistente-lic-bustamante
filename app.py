@@ -132,6 +132,8 @@ def registrar_sintoma(sintoma: str, cuadro: str):
         print(f"Error al registrar síntoma '{sintoma}': {e}")
 
 # Registrar una emoción detectada
+# Esta función analiza el mensaje para detectar emociones negativas usando OpenAI.
+# Registra automáticamente cada emoción detectada en la base de datos llamando a `registrar_emocion`.
 def registrar_emocion(emocion: str, contexto: str):
     """
     Registra una emoción detectada en la base de datos PostgreSQL.
@@ -596,8 +598,9 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
         print(f"Error al analizar emociones y patrones: {e}")
         return []
 
-
 # Registrar una emoción detectada
+# Esta función es responsable de insertar emociones detectadas en la base de datos PostgreSQL.
+# Es utilizada por `detectar_emociones_negativas` y otras partes del código para registrar emociones.
 def registrar_emocion(emocion: str, contexto: str):
     """
     Registra una emoción detectada en la base de datos PostgreSQL.
