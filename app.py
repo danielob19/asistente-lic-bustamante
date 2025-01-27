@@ -328,6 +328,11 @@ async def asistente(input_data: UserInput):
         # Registrar interacción en la base de datos
         registrar_interaccion(user_id, mensaje_usuario)
 
+        # Manejo de frases cortas o de cierre
+        respuesta_cierre = interpretar_respuesta_corta(mensaje_usuario)
+        if respuesta_cierre:
+            return {"respuesta": respuesta_cierre}
+
         # Inicializa la sesión del usuario si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {
