@@ -32,6 +32,19 @@ def generar_respuesta_con_openai(prompt):
         print(f"Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
+# Manejo de frases de confirmación o cierre
+def interpretar_respuesta_corta(mensaje):
+    """
+    Interpreta mensajes cortos como 'no no', 'ok ok', 'ahh ok ok', etc.,
+    y responde de manera acorde al contexto.
+    """
+    mensaje = mensaje.strip().lower()
+    # Conjunto de frases comunes para cierres o confirmaciones
+    frases_cierre = {"ok", "ok ok", "ahh ok", "ahh ok ok", "gracias", "no no", "no no ok"}
+    if mensaje in frases_cierre:
+        return "Entendido, quedo a tu disposición. ¿Algo más en lo que pueda ayudarte?"
+    return None  # Si no es una frase de cierre, no responde aquí
+
 # Función para detectar emociones negativas usando OpenAI y Registro
 def detectar_emociones_negativas(mensaje):
     prompt = (
