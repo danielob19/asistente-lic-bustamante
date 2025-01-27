@@ -40,7 +40,7 @@ def interpretar_respuesta_corta(mensaje):
     """
     mensaje = mensaje.strip().lower()
     # Conjunto de frases comunes para cierres o confirmaciones
-    frases_cierre = {"ok", "ok ok", "ahh ok", "ahh ok ok", "gracias", "no no", "no no ok"}
+    frases_cierre = {"ok", "ok ok", "ahh ok", "ahh ok ok", "gracias", "nada más", "gracias por todo", "todo bien", "estoy bien", "no no", "no no ok"}
     if mensaje in frases_cierre:
         return "Entendido, quedo a tu disposición. ¿Algo más en lo que pueda ayudarte?"
     return None  # Si no es una frase de cierre, no responde aquí
