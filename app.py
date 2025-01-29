@@ -575,6 +575,11 @@ def manejar_interaccion_usuario(mensaje_usuario):
     """
     mensaje_usuario = mensaje_usuario.lower().strip()
 
+    # Manejo de saludos
+    saludos = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]
+    if mensaje_usuario in saludos:
+        return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
+
     # Detección de preguntas generales para mejorar la continuidad
     preguntas_generales = [
         "quiero hacerte una pregunta", "tengo una pregunta", "puedo preguntarte algo", "necesito preguntarte algo"
@@ -591,7 +596,7 @@ def manejar_interaccion_usuario(mensaje_usuario):
         return {"respuesta": "El costo de la sesión debe consultarse directamente con el Lic. Daniel O. Bustamante. Puedes escribirle al WhatsApp +54 911 3310-1186 para obtener más información."}
 
     # Si no coincide con ninguno de los casos anteriores, procesar normalmente
-    return procesar_mensaje(mensaje_usuario)
+    return None  # Permite que el asistente siga con su lógica normal
 
 
 def procesar_mensaje(mensaje_usuario):
