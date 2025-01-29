@@ -587,49 +587,54 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
     """
     Mejora la continuidad de la conversación y la detección de contexto en preguntas específicas.
     """
-    try:
-        mensaje_usuario = mensaje_usuario.lower().strip()
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
 
-        # Manejo de saludos
-        saludos = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches", "que tal?", "cómo estás?"]
-        if mensaje_usuario in saludos:
-            return {"respuesta": "¡Hola! ¿Cómo te sientes hoy?"}
+    mensaje_usuario = mensaje_usuario.lower().strip()
 
-        # Detección de preguntas generales
-        preguntas_generales = [
-            "quiero hacerte una pregunta", "tengo una pregunta", "puedo preguntarte algo", 
-            "necesito preguntarte algo", "una pregunta"
-        ]
-        if mensaje_usuario in preguntas_generales:
-            return {"respuesta": "¡Por supuesto! ¿Cuál es tu pregunta?"}
+    # Manejo de saludos
+    saludos = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches", "que tal?", "cómo estás?"]
+    if mensaje_usuario in saludos:
+        return {"respuesta": "¡Hola! ¿Cómo te sientes hoy?"}
 
-        # Detección de preguntas sobre costos de la sesión
-        preguntas_costo = [
-            "cuánto cuesta la sesión", "cuál es el precio de la consulta", "cuál es el costo del tratamiento",
-            "cuánto cobran por sesión", "precio sesión", "tarifa consulta", "honorarios sesión"
-        ]
-        if any(frase in mensaje_usuario for frase in preguntas_costo):
-            return {"respuesta": "El costo de la sesión debe consultarse directamente con el Lic. Daniel O. Bustamante. Puedes escribirle al WhatsApp +54 911 3310-1186 para obtener más información."}
+    # Detección de respuestas sobre estado emocional
+    if "me siento" in mensaje_usuario or "estoy" in mensaje_usuario:
+        return {"respuesta": "Me alegra saberlo. ¿En qué puedo ayudarte hoy?"}
 
-        # Detección de consultas sobre contacto o WhatsApp
-        preguntas_contacto = [
-            "teléfono de bustamante", "whatsapp de bustamante", "número de bustamante", "número del psicólogo", 
-            "contacto de bustamante", "contactar a bustamante", "cómo contacto a bustamante", "teléfono del psicólogo"
-        ]
-        if any(frase in mensaje_usuario for frase in preguntas_contacto):
-            return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante enviándole un mensaje al WhatsApp +54 911 3310-1186."}
+    # Detección de preguntas generales
+    preguntas_generales = [
+        "quiero hacerte una pregunta", "tengo una pregunta", "puedo preguntarte algo", 
+        "necesito preguntarte algo", "una pregunta"
+    ]
+    if mensaje_usuario in preguntas_generales:
+        return {"respuesta": "¡Por supuesto! ¿Cuál es tu pregunta?"}
 
-        # Cierre profesional después de la décima interacción
-        if contador >= 10:
-            return {"respuesta": "Hemos llegado a un punto donde es recomendable que un profesional continúe la conversación. Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más detallada. ¡Gracias por tu tiempo!"}
+    # Detección de preguntas sobre costos de la sesión
+    preguntas_costo = [
+        "cuánto cuesta la sesión", "cuál es el precio de la consulta", "cuál es el costo del tratamiento",
+        "cuánto cobran por sesión", "precio sesión", "tarifa consulta", "honorarios sesión"
+    ]
+    if any(frase in mensaje_usuario for frase in preguntas_costo):
+        return {"respuesta": "El costo de la sesión debe consultarse directamente con el Lic. Daniel O. Bustamante. Puedes escribirle al WhatsApp +54 911 3310-1186 para obtener más información."}
 
-        # Si no hay coincidencia, responder de forma genérica en lugar de devolver None
-        logger.warning(f"No se encontró coincidencia en manejar_interaccion_usuario para el mensaje: '{mensaje_usuario}'")
-        return {"respuesta": "Lo siento, no entendí bien tu consulta. ¿Podrías reformularla?"}
+    # Detección de consultas sobre contacto o WhatsApp
+    preguntas_contacto = [
+        "teléfono de bustamante", "whatsapp de bustamante", "número de bustamante", "número del psicólogo", 
+        "contacto de bustamante", "contactar a bustamante", "cómo contacto a bustamante", "teléfono del psicólogo",
+        "necesito el teléfono del psicólogo"
+    ]
+    if any(frase in mensaje_usuario for frase in preguntas_contacto):
+        return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante enviándole un mensaje al WhatsApp +54 911 3310-1186."}
 
-    except Exception as e:
-        logger.error(f"Error en manejar_interaccion_usuario: {e}", exc_info=True)
-        return {"respuesta": "Lo siento, ocurrió un error al procesar tu solicitud."}
+    # Cierre profesional después de la décima interacción
+    if contador >= 10:
+        return {"respuesta": "Hemos llegado a un punto donde es recomendable que un profesional continúe la conversación. Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más detallada. ¡Gracias por tu tiempo!"}
+
+    # Si no hay coincidencia, responder de forma genérica en lugar de devolver None
+    logger.warning(f"No se encontró coincidencia en manejar_interaccion_usuario para el mensaje: '{mensaje_usuario}'")
+    return {"respuesta": "Lo siento, no entendí bien tu consulta. ¿Podrías reformularla?"}
+
 
 def procesar_mensaje(mensaje_usuario):
     """
