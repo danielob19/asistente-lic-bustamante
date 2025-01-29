@@ -591,9 +591,9 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
         mensaje_usuario = mensaje_usuario.lower().strip()
 
         # Manejo de saludos
-        saludos = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]
+        saludos = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches", "que tal?", "cómo estás?"]
         if mensaje_usuario in saludos:
-            return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
+            return {"respuesta": "¡Hola! ¿Cómo te sientes hoy?"}
 
         # Detección de preguntas generales
         preguntas_generales = [
@@ -623,14 +623,13 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
         if contador >= 10:
             return {"respuesta": "Hemos llegado a un punto donde es recomendable que un profesional continúe la conversación. Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más detallada. ¡Gracias por tu tiempo!"}
 
-        # Si no hay coincidencia, loggear el mensaje antes de devolver None
+        # Si no hay coincidencia, responder de forma genérica en lugar de devolver None
         logger.warning(f"No se encontró coincidencia en manejar_interaccion_usuario para el mensaje: '{mensaje_usuario}'")
-        return None  # Permite que el asistente siga con su lógica normal
+        return {"respuesta": "Lo siento, no entendí bien tu consulta. ¿Podrías reformularla?"}
 
     except Exception as e:
         logger.error(f"Error en manejar_interaccion_usuario: {e}", exc_info=True)
         return {"respuesta": "Lo siento, ocurrió un error al procesar tu solicitud."}
-
 
 def procesar_mensaje(mensaje_usuario):
     """
