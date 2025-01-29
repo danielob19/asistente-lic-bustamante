@@ -518,7 +518,9 @@ async def asistente(input_data: UserInput):
         return {"respuesta": respuesta_ai}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        # Log detallado del error para depuración
+        print(f"Error procesando la solicitud con user_id={input_data.user_id} y mensaje='{input_data.mensaje}': {e}")
+        raise HTTPException(status_code=500, detail="Error interno en el servidor. Consulte los logs para más detalles.")
 
 
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
