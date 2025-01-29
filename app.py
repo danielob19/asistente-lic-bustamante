@@ -42,7 +42,7 @@ def interpretar_respuesta_corta(mensaje):
         f"Un usuario ha enviado el mensaje: '{mensaje}'. Este mensaje es corto y parece ser una confirmación o cierre. "
         "Responde de manera profesional y empática, confirmando que estás disponible para cualquier otra consulta."
     )
-    return interactuar_con_openai(prompt)
+    return generar_respuesta_con_openai(prompt)
 
 # Función para detectar emociones negativas usando OpenAI y Registro
 def detectar_emociones_negativas(mensaje):
@@ -226,7 +226,7 @@ def analizar_texto(mensajes_usuario):
     )
 
     # Generar respuesta con OpenAI
-    respuesta = interactuar_con_openai(prompt)
+    respuesta = generar_respuesta_con_openai(prompt)
 
     # Registrar emociones o patrones detectados en la base de datos (opcional, si aplica)
     return respuesta
