@@ -636,3 +636,5 @@ def registrar_emocion(emocion: str, contexto: str):
         print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
     except Exception as e:
         print(f"Error al registrar emoción '{emocion}': {e}"
+
+
