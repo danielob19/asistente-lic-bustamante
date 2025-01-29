@@ -505,22 +505,22 @@ async def asistente(input_data: UserInput):
 
         # Validar si se detectaron emociones o cuadros antes de generar la respuesta final
         if not session.get("emociones_detectadas") and not session.get("mensajes"):
-            return {
-                "respuesta": (
-                    "No se pudieron identificar emociones claras en tu mensaje. Si sientes que necesitas ayuda, no dudes "
-                    "en buscar apoyo profesional o compartir más detalles sobre lo que estás experimentando."
-                )
-            }
+            prompt = (
+                f"El usuario envió el mensaje: '{mensaje_usuario}', pero no se pudieron identificar emociones claras ni mensajes relevantes. "
+                "Responde de manera profesional, empática y general para invitar al usuario a seguir compartiendo detalles."
+            )
+            respuesta_ai = generar_respuesta_con_openai(prompt)
+            return {"respuesta": respuesta_ai}
 
         # Genera una respuesta normal para otros mensajes
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
         return {"respuesta": respuesta_ai}
 
-    except Exception as e:
-        # Log detallado del error para depuración
-        print(f"Error procesando la solicitud con user_id={input_data.user_id} y mensaje='{input_data.mensaje}': {e}")
-        raise HTTPException(status_code=500, detail="Error interno en el servidor. Consulte los logs para más detalles.")
+        except Exception as e:
+            # Log detallado del error para depuración
+            print(f"Error procesando la solicitud con user_id={input_data.user_id} y mensaje='{input_data.mensaje}': {e}")
+            raise HTTPException(status_code=500, detail="Error interno en el servidor. Consulte los logs para más detalles.")
 
 
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
