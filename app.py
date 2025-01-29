@@ -325,6 +325,11 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
+        # Nuevo manejo de coherencia en preguntas y costos
+        respuesta_especial = manejar_interaccion_usuario(mensaje_usuario)
+        if respuesta_especial:
+            return respuesta_especial
+
         # Registrar interacción en la base de datos
         registrar_interaccion(user_id, mensaje_usuario)
 
@@ -372,7 +377,6 @@ async def asistente(input_data: UserInput):
             # Si no hay un análisis previo, responder de manera neutral
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
 
-
         # Manejo para mensajes de cierre (sin insistir ni contabilizar interacciones)
         if mensaje_usuario in ["ok", "gracias", "en nada", "en nada mas", "nada mas", "no necesito nada mas", "estoy bien"]:
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
@@ -404,30 +408,6 @@ async def asistente(input_data: UserInput):
         if "atienden estos casos" in mensaje_usuario:
             return {
                 "respuesta": "Sí, el Lic. Daniel O. Bustamante atiende este tipo de casos. Si necesitas ayuda, no dudes en contactarlo al WhatsApp (+54) 9 11 3310-1186."
-            }
-
-        # Proporciona el número de contacto si el usuario lo solicita
-        if (
-            "contacto" in mensaje_usuario or
-            "numero" in mensaje_usuario or
-            "número" in mensaje_usuario or
-            "turno" in mensaje_usuario or
-            "whatsapp" in mensaje_usuario or
-            "teléfono" in mensaje_usuario or
-            "psicologo" in mensaje_usuario or
-            "psicólogo" in mensaje_usuario or
-            "terapeuta" in mensaje_usuario or
-            "psicoterapia" in mensaje_usuario or
-            "terapia" in mensaje_usuario or
-            "tratamiento psicológico" in mensaje_usuario or
-            "recomendas" in mensaje_usuario or
-            "telefono" in mensaje_usuario
-        ):
-            return {
-                "respuesta": (
-                    "Para contactar al Lic. Daniel O. Bustamante, puedes enviarle un mensaje al WhatsApp "
-                    "+54 911 3310-1186. Él estará encantado de responderte."
-                )
             }
 
          # Proporciona el número de contacto si el usuario lo solicita
@@ -480,28 +460,47 @@ async def asistente(input_data: UserInput):
             session["mensajes"].clear()
             return {"respuesta": respuesta}
 
-        # Manejo de interacciones 6, 7 y 8
+        # Manejo de interacciones 6, 7 y 8 con OpenAI y PostgreSQL
         if 6 <= contador <= 8:
-            nuevas_emociones = analizar_emociones_y_patrones(
-                mensajes=[mensaje_usuario],
-                emociones_acumuladas=session["emociones_detectadas"]
-            )
-            session["emociones_detectadas"].extend(nuevas_emociones)
+            # Verifica primero si el usuario está haciendo una pregunta específica
+            respuesta_especial = manejar_interaccion_usuario(mensaje_usuario)
+            if respuesta_especial:
+                return respuesta_especial
 
-            if nuevas_emociones:
-                emocion_principal = nuevas_emociones[0] if nuevas_emociones else "algo que estás sintiendo"
-                preguntas = {
-                    6: f"¿Por qué razón crees que sientes {emocion_principal}?",
-                    7: f"¿En qué momentos notas que sientes {emocion_principal}?",
-                    8: f"¿Qué situaciones o personas podrían estar generando {emocion_principal}?"
-                }
-                return {"respuesta": preguntas[contador]}
+            # Detectar emociones negativas en el mensaje del usuario con OpenAI
+            emociones_detectadas = detectar_emociones_negativas(mensaje_usuario)
+    
+            # Registrar emociones detectadas en la base de datos
+            for emocion in emociones_detectadas:
+                registrar_emocion(emocion, mensaje_usuario)
 
-            return {
-                "respuesta": (
-                    "Estoy aquí para entender mejor lo que estás sintiendo. ¿Podrías compartir más detalles sobre lo que te preocupa o cómo te sientes en este momento?"
+            # Buscar coincidencias con cuadros clínicos en la base de datos
+            cuadros_probables = [
+                cuadro for sintoma, cuadro in obtener_sintomas() if sintoma in mensaje_usuario
+            ]
+
+            # Generar respuesta dinámica según el análisis realizado
+            if cuadros_probables:
+                cuadro_principal = cuadros_probables[0]  # Tomamos el más relevante
+                respuesta = (
+                    f"En base a tu mensaje, hemos identificado un cuadro probable asociado a: **{cuadro_principal}**. "
                 )
-            }
+            else:
+                respuesta = "No detectamos una coincidencia clara con cuadros clínicos conocidos, pero sí observamos: "
+
+            if emociones_detectadas:
+                respuesta += f"**Emociones identificadas:** {', '.join(emociones_detectadas)}."
+
+            else:
+                respuesta += "No se han identificado emociones negativas específicas."
+
+            respuesta += (
+                " Para una evaluación más detallada, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp "
+                "+54 911 3310-1186."
+            )
+
+            return {"respuesta": respuesta}
+
 
         # Manejo de interacción 9
         if contador == 9:
@@ -569,6 +568,38 @@ async def asistente(input_data: UserInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+def manejar_interaccion_usuario(mensaje_usuario):
+    """
+    Mejora la continuidad de la conversación y la detección de contexto en preguntas específicas.
+    """
+    mensaje_usuario = mensaje_usuario.lower().strip()
+
+    # Detección de preguntas generales para mejorar la continuidad
+    preguntas_generales = [
+        "quiero hacerte una pregunta", "tengo una pregunta", "puedo preguntarte algo", "necesito preguntarte algo"
+    ]
+    if mensaje_usuario in preguntas_generales:
+        return {"respuesta": "¡Por supuesto! ¿Cuál es tu pregunta?"}
+
+    # Detección de preguntas sobre costos de la sesión
+    preguntas_costo = [
+        "cuánto cuesta la sesión", "cuál es el precio de la consulta", "cuál es el costo del tratamiento",
+        "cuánto cobran por sesión", "precio sesión", "tarifa consulta", "honorarios sesión"
+    ]
+    if any(frase in mensaje_usuario for frase in preguntas_costo):
+        return {"respuesta": "El costo de la sesión debe consultarse directamente con el Lic. Daniel O. Bustamante. Puedes escribirle al WhatsApp +54 911 3310-1186 para obtener más información."}
+
+    # Si no coincide con ninguno de los casos anteriores, procesar normalmente
+    return procesar_mensaje(mensaje_usuario)
+
+
+def procesar_mensaje(mensaje_usuario):
+    """
+    Lógica normal del asistente para responder preguntas o continuar con la conversación.
+    """
+    # Aquí iría la lógica normal del asistente para procesar el mensaje
+    return {"respuesta": "No entendí bien tu consulta, ¿puedes reformularla?"}
 
 
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
