@@ -9,6 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from collections import Counter
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -324,6 +328,16 @@ async def asistente(input_data: UserInput):
 
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+
+        # Manejo de errores en la función de interacción
+        try:
+            respuesta_especial = manejar_interaccion_usuario(mensaje_usuario, contador=1)
+        except Exception as e:
+            logger.error(f"Error en manejar_interaccion_usuario: {e}")
+            respuesta_especial = None
+
+        if respuesta_especial:
+            return respuesta_especial
 
         # Nuevo manejo de coherencia en preguntas y costos
         respuesta_especial = manejar_interaccion_usuario(mensaje_usuario)
