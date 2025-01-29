@@ -36,13 +36,14 @@ def generar_respuesta_con_openai(prompt):
 def interpretar_respuesta_corta(mensaje):
     """
     Interpreta mensajes cortos como 'no no', 'ok ok', 'ahh ok ok', etc.,
-    utilizando OpenAI para generar la respuesta.
+    y responde de manera acorde al contexto.
     """
-    prompt = (
-        f"Un usuario ha enviado el mensaje: '{mensaje}'. Este mensaje es corto y parece ser una confirmación o cierre. "
-        "Responde de manera profesional y empática, confirmando que estás disponible para cualquier otra consulta."
-    )
-    return generar_respuesta_con_openai(prompt)
+    mensaje = mensaje.strip().lower()
+    # Conjunto de frases comunes para cierres o confirmaciones
+    frases_cierre = {"ok", "ok ok", "ahh ok", "ahh ok ok", "gracias", "nada más", "gracias por todo", "todo bien", "estoy bien", "no no", "no no ok"}
+    if mensaje in frases_cierre:
+        return "Entendido, quedo a tu disposición. ¿Algo más en lo que pueda ayudarte?"
+    return None  # Si no es una frase de cierre, no responde aquí
 
 # Función para detectar emociones negativas usando OpenAI y Registro
 def detectar_emociones_negativas(mensaje):
@@ -208,27 +209,76 @@ palabras_irrelevantes = {
 # Análisis de texto del usuario
 def analizar_texto(mensajes_usuario):
     """
-    Analiza los mensajes del usuario utilizando OpenAI para interpretar síntomas,
-    emociones y patrones detectados, además de la base de datos existente.
+    Analiza los mensajes del usuario para detectar coincidencias con los síntomas almacenados
+    y muestra un cuadro probable y emociones o patrones de conducta adicionales detectados.
     """
     sintomas_existentes = obtener_sintomas()
+    if not sintomas_existentes:
+        return "No se encontraron síntomas en la base de datos para analizar."
+
     keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
+    coincidencias = []
+    emociones_detectadas = []
+    sintomas_sin_coincidencia = []
 
-    # Unir mensajes en un texto único para análisis con OpenAI
-    texto_usuario = " ".join(mensajes_usuario)
+    # Procesar mensajes del usuario para detectar síntomas
+    for mensaje in mensajes:
+        user_words = mensaje.lower().split()
+        # Filtrar palabras irrelevantes y descartar palabras cortas (como "se", "las")
+        user_words = [
+            palabra for palabra in user_words
+            if palabra not in palabras_irrelevantes and len(palabra) > 2 and palabra.isalpha()
+        ]
 
-    # Crear un prompt dinámico para OpenAI
-    prompt = (
-        f"El usuario ha descrito los siguientes síntomas o problemas: '{texto_usuario}'. "
-        f"Con base en esta descripción, detecta posibles patrones emocionales, síntomas relevantes, "
-        f"y sugiere un cuadro probable. La base de datos contiene los siguientes síntomas: {', '.join(keyword_to_cuadro.keys())}. "
-        f"Si encuentras coincidencias con la base de datos, úsalas para sugerir un cuadro. De lo contrario, genera una respuesta adecuada."
-    )
+        for palabra in user_words:
+            if palabra in keyword_to_cuadro:
+                coincidencias.append(keyword_to_cuadro[palabra])
+            elif palabra not in nuevos_sintomas:
+                nuevos_sintomas.append(palabra)
 
-    # Generar respuesta con OpenAI
-    respuesta = generar_respuesta_con_openai(prompt)
 
-    # Registrar emociones o patrones detectados en la base de datos (opcional, si aplica)
+    # Generar emociones detectadas a partir de mensajes sin coincidencia
+    if len(coincidencias) < 2:
+        texto_usuario = " ".join(mensajes_usuario)
+        prompt = (
+            f"Analiza el siguiente mensaje y detecta emociones o patrones de conducta humanos implícitos:\n\n"
+            f"{texto_usuario}\n\n"
+            "Responde con una lista de emociones o patrones de conducta separados por comas."
+        )
+        try:
+            emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
+            emociones_detectadas = [
+                emocion.strip().lower() for emocion in emociones_detectadas
+                if emocion.strip().lower() not in palabras_irrelevantes
+            ]
+
+            # Registrar cada emoción detectada como síntoma en la base de datos
+            for emocion in emociones_detectadas:
+                registrar_sintoma(emocion, "patrón emocional detectado")
+
+        except Exception as e:
+            print(f"Error al usar OpenAI para detectar emociones: {e}")
+
+
+    if not coincidencias and not emociones_detectadas:
+        return "No se encontraron suficientes coincidencias para determinar un cuadro probable."
+
+    respuesta = ""
+    if coincidencias:
+        category_counts = Counter(coincidencias)
+        cuadro_probable, _ = category_counts.most_common(1)[0]
+        respuesta = (
+            f"Con base en los síntomas detectados ({', '.join(set(coincidencias))}), "
+            f"el cuadro probable es: {cuadro_probable}. "
+        )
+
+    if emociones_detectadas:
+        respuesta += (
+            f"Además, notamos emociones o patrones de conducta humanos como {', '.join(set(emociones_detectadas))}, "
+            f"por lo que sugiero solicitar una consulta con el Lic. Daniel O. Bustamante escribiendo al WhatsApp "
+            f"+54 911 3310-1186 para una evaluación más detallada."
+        )
+
     return respuesta
 
 # Clase para solicitudes del usuario
@@ -380,7 +430,7 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        # Proporciona el número de contacto si el usuario lo solicita
+         # Proporciona el número de contacto si el usuario lo solicita
         if (
             "especialista" in mensaje_usuario or
             "mejor psicólogo" in mensaje_usuario or
@@ -503,42 +553,23 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        # Genera una respuesta con OpenAI, eligiendo el prompt adecuado según la información disponible
+        # Validar si se detectaron emociones o cuadros antes de generar la respuesta final
         if not session.get("emociones_detectadas") and not session.get("mensajes"):
-            prompt = (
-                f"El usuario envió el mensaje: '{mensaje_usuario}'. No se identificaron emociones claras ni mensajes relevantes. "
-                "Responde de manera profesional, empática y motiva al usuario a compartir más detalles sobre lo que siente o necesita."
-            )
-        else:
-            emociones_detectadas = session.get("emociones_detectadas", [])
-            prompt = (
-                f"El usuario envió el mensaje: '{mensaje_usuario}'. Se detectaron emociones o patrones como: {', '.join(emociones_detectadas)}. "
-                "Responde de manera empática, brindando orientación profesional y adaptada a las emociones mencionadas."
-            )
+            return {
+                "respuesta": (
+                    "No se pudieron identificar emociones claras en tu mensaje. Si sientes que necesitas ayuda, no dudes "
+                    "en buscar apoyo profesional o compartir más detalles sobre lo que estás experimentando."
+                )
+            }
 
-        # Log del prompt para depuración
-        print(f"Prompt enviado a OpenAI: {prompt}")
-
-
-        # Generar la respuesta con OpenAI
+        # Genera una respuesta normal para otros mensajes
+        prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
-
-        # Log de respuesta generada
-        print(f"Respuesta generada para user_id={user_id}: {respuesta_ai}")
-
         return {"respuesta": respuesta_ai}
 
-
     except Exception as e:
-        # Log detallado del error para depuración
-        user_id = getattr(input_data, "user_id", "desconocido")  # Evita errores si input_data es inválido
-        mensaje_usuario = getattr(input_data, "mensaje", "desconocido")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
-        print(f"Error procesando la solicitud con user_id={user_id} y mensaje='{mensaje_usuario}': {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error interno en el servidor. Consulte los logs para más detalles."
-        )
 
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     """
@@ -604,4 +635,4 @@ def registrar_emocion(emocion: str, contexto: str):
                 conn.commit()
         print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
     except Exception as e:
-        print(f"Error al registrar emoción '{emocion}': {e}")
+        print(f"Error al registrar emoción '{emocion}': {e}"
