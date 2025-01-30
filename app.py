@@ -10,9 +10,19 @@ from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from collections import Counter
 import logging
+import unicodedata
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+def normalizar_texto(texto):
+    """
+    Normaliza el texto eliminando acentos y convirtiéndolo a minúsculas.
+    """
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', texto.lower())
+        if unicodedata.category(c) != 'Mn'
+    )
 
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -51,6 +61,10 @@ def interpretar_respuesta_corta(mensaje):
 
 # Función para detectar emociones negativas usando OpenAI y Registro
 def detectar_emociones_negativas(mensaje):
+    """
+    Usa OpenAI para analizar emociones negativas en un mensaje y devolverlas.
+    Además, registra automáticamente las emociones detectadas en la base de datos.
+    """
     prompt = (
         f"Analiza el siguiente mensaje y detecta exclusivamente emociones humanas negativas. "
         f"Devuelve una lista separada por comas con las emociones detectadas. "
@@ -67,19 +81,16 @@ def detectar_emociones_negativas(mensaje):
         emociones = response.choices[0].message['content'].strip().lower()
         if emociones == "ninguna":
             return []
-        
         emociones_detectadas = [emocion.strip() for emocion in emociones.split(",")]
-
-        # Registrar emociones nuevas en la base de datos
-        for emocion in emociones_detectadas:
-            registrar_emocion(emocion, mensaje)
+        
+        # Registrar emociones en la base de datos
+        registrar_emociones_en_bd(emociones_detectadas, mensaje)
         
         return emociones_detectadas
-
     except Exception as e:
         print(f"Error al detectar emociones negativas: {e}")
         return []
-
+        
 # Inicialización de FastAPI
 app = FastAPI()
 
