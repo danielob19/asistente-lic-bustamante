@@ -162,22 +162,26 @@ def registrar_sintoma(sintoma: str, cuadro: str):
 # Registrar una emoción detectada
 # Esta función analiza el mensaje para detectar emociones negativas usando OpenAI.
 # Registra automáticamente cada emoción detectada en la base de datos llamando a `registrar_emocion`.
-def registrar_emocion(emocion: str, contexto: str):
+def registrar_emocion(emociones, contexto):
     """
-    Registra una emoción detectada en la base de datos PostgreSQL.
+    Registra una o varias emociones detectadas en la base de datos PostgreSQL.
     """
+    if not emociones:
+        return  # No hay emociones que registrar
+
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("""
-                    INSERT INTO emociones_detectadas (emocion, contexto) 
-                    VALUES (%s, %s)
-                    ON CONFLICT (emocion) DO NOTHING;
-                """, (emocion.strip().lower(), contexto.strip()))
+                for emocion in emociones:
+                    cursor.execute("""
+                        INSERT INTO emociones_detectadas (emocion, contexto) 
+                        VALUES (%s, %s)
+                        ON CONFLICT (emocion) DO NOTHING;
+                    """, (emocion.strip().lower(), contexto.strip()))
                 conn.commit()
-        print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
+        print(f"Emociones registradas exitosamente: {', '.join(emociones)} con contexto: {contexto}.")
     except Exception as e:
-        print(f"Error al registrar emoción '{emocion}': {e}")
+        print(f"Error al registrar emociones '{', '.join(emociones)}': {e}")
 
 # Obtener síntomas existentes
 def obtener_sintomas():
@@ -602,17 +606,29 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
 
-    mensaje_usuario = mensaje_usuario.lower().strip()
+    mensaje_usuario = normalizar_texto(mensaje_usuario.strip())
 
     # Manejo de saludos
-    saludos = ["hola", "buenas", "buenos dias", "buenos días", "buenas tardes", "buenas noches", "que tal?", "cómo estás", "como estas?"]
+    saludos = ["hola", "buenas", "buenos dias", "buenas tardes", "buenas noches", "que tal", "como estas", "hola que tal"]
     if mensaje_usuario in saludos:
         return {"respuesta": "¡Hola! ¿Cómo te sientes hoy?"}
-
-    # Detección de respuestas sobre estado emocional
-    if "me siento" in mensaje_usuario or "estoy" in mensaje_usuario:
-        return {"respuesta": "Me alegra saberlo. ¿En qué puedo ayudarte hoy?"}
-
+    
+    # Detección de emociones negativas con OpenAI
+    emociones_detectadas = detectar_emociones_negativas(mensaje_usuario)
+    
+    # Interacción 5 y 9: Mencionar emociones y cuadro clínico probable
+    if contador in [5, 9]:
+        cuadro_probable = "no identificado"  # Aquí puedes incluir lógica para detectar cuadros clínicos
+        respuesta = ""
+        if emociones_detectadas:
+            respuesta += f"He detectado estas emociones: {', '.join(emociones_detectadas)}. "
+        respuesta += f"El cuadro clínico probable es: {cuadro_probable}. "
+        respuesta += "Si necesitas apoyo, no dudes en contactarme directamente para que podamos conversar más a fondo."
+        return {"respuesta": respuesta}
+    
+    if emociones_detectadas:
+        return {"respuesta": f"Lamento que te sientas así. He detectado estas emociones: {', '.join(emociones_detectadas)}. Si necesitas apoyo, no dudes en contactarme directamente para que podamos conversar más a fondo."}
+    
     # Detección de preguntas generales
     preguntas_generales = [
         "quiero hacerte una pregunta", "tengo una pregunta", "puedo preguntarte algo", 
@@ -627,7 +643,7 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
         "cuanto cobran por sesion", "precio sesion", "tarifa consulta", "honorarios sesion"
     ]
     if any(frase in mensaje_usuario for frase in preguntas_costo):
-        return {"respuesta": "El costo de la sesión debe consultarse directamente con el Lic. Daniel O. Bustamante. Puedes escribirle al WhatsApp +54 911 3310-1186 para obtener más información."}
+        return {"respuesta": "El costo de la sesión debe consultarse directamente conmigo. Puedes escribirme para obtener más información."}
 
     # Detección de consultas sobre contacto o WhatsApp
     preguntas_contacto = [
@@ -636,12 +652,12 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
         "necesito el telefono del psicologo"
     ]
     if any(frase in mensaje_usuario for frase in preguntas_contacto):
-        return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante enviándole un mensaje al WhatsApp +54 911 3310-1186."}
+        return {"respuesta": "Puedes contactarme directamente enviándome un mensaje al WhatsApp."}
 
     # Cierre profesional después de la décima interacción
     if contador >= 10:
-        return {"respuesta": "Hemos llegado a un punto donde es recomendable que un profesional continúe la conversación. Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más detallada. ¡Gracias por tu tiempo!"}
-
+        return {"respuesta": "Hemos llegado a un punto donde es recomendable continuar la conversación de manera más personal. Te sugiero contactarme directamente para seguir conversando. ¡Gracias por tu tiempo!"}
+    
     # Si no hay coincidencia, responder de forma genérica en lugar de devolver None
     logger.warning(f"No se encontró coincidencia en manejar_interaccion_usuario para el mensaje: '{mensaje_usuario}'")
     return {"respuesta": "Lo siento, no entendí bien tu consulta. ¿Podrías reformularla?"}
@@ -699,26 +715,4 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     except Exception as e:
         print(f"Error al analizar emociones y patrones: {e}")
         return []
-
-# Registrar una emoción detectada
-# Esta función es responsable de insertar emociones detectadas en la base de datos PostgreSQL.
-# Es utilizada por `detectar_emociones_negativas` y otras partes del código para registrar emociones.
-def registrar_emocion(emocion: str, contexto: str):
-    """
-    Registra una emoción detectada en la base de datos PostgreSQL.
-    Si la emoción ya existe, no realiza la inserción.
-    """
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    INSERT INTO emociones_detectadas (emocion, contexto) 
-                    VALUES (%s, %s)
-                    ON CONFLICT (emocion) DO NOTHING;
-                """, (emocion.strip().lower(), contexto.strip()))
-                conn.commit()
-        print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
-    except Exception as e:
-        print(f"Error al registrar emoción '{emocion}': {e}")
-
 
