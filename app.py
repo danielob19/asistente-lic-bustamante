@@ -594,7 +594,7 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
     mensaje_usuario = mensaje_usuario.lower().strip()
 
     # Manejo de saludos
-    saludos = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches", "que tal?", "cómo estás?"]
+    saludos = ["hola", "buenas", "buenos dias", "buenos días", "buenas tardes", "buenas noches", "que tal?", "cómo estás", "como estas?"]
     if mensaje_usuario in saludos:
         return {"respuesta": "¡Hola! ¿Cómo te sientes hoy?"}
 
@@ -612,17 +612,17 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
 
     # Detección de preguntas sobre costos de la sesión
     preguntas_costo = [
-        "cuánto cuesta la sesión", "cuál es el precio de la consulta", "cuál es el costo del tratamiento",
-        "cuánto cobran por sesión", "precio sesión", "tarifa consulta", "honorarios sesión"
+        "cuanto cuesta la sesion", "cual es el precio de la consulta", "cual es el costo del tratamiento",
+        "cuanto cobran por sesion", "precio sesion", "tarifa consulta", "honorarios sesion"
     ]
     if any(frase in mensaje_usuario for frase in preguntas_costo):
         return {"respuesta": "El costo de la sesión debe consultarse directamente con el Lic. Daniel O. Bustamante. Puedes escribirle al WhatsApp +54 911 3310-1186 para obtener más información."}
 
     # Detección de consultas sobre contacto o WhatsApp
     preguntas_contacto = [
-        "teléfono de bustamante", "whatsapp de bustamante", "número de bustamante", "número del psicólogo", 
-        "contacto de bustamante", "contactar a bustamante", "cómo contacto a bustamante", "teléfono del psicólogo",
-        "necesito el teléfono del psicólogo"
+        "telefono de bustamante", "whatsapp de bustamante", "numero de bustamante", "numero del psicologo", 
+        "contacto de bustamante", "contactar a bustamante", "como contacto a bustamante", "telefono del psicologo",
+        "necesito el telefono del psicologo"
     ]
     if any(frase in mensaje_usuario for frase in preguntas_contacto):
         return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante enviándole un mensaje al WhatsApp +54 911 3310-1186."}
