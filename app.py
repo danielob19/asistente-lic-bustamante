@@ -649,14 +649,6 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
     logger.warning(f"No se encontró coincidencia en manejar_interaccion_usuario para el mensaje: '{mensaje_usuario}'")
     return {"respuesta": "Lo siento, no entendí bien tu consulta. ¿Podrías reformularla?"}
 
-def procesar_mensaje(mensaje_usuario):
-    """
-    Lógica normal del asistente para responder preguntas o continuar con la conversación.
-    """
-    # Aquí iría la lógica normal del asistente para procesar el mensaje
-    return {"respuesta": "No entendí bien tu consulta, ¿puedes reformularla?"}
-
-
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     """
     Detecta emociones y patrones de conducta en los mensajes, buscando coincidencias en la tabla `palabras_clave`.
