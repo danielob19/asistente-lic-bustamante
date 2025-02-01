@@ -354,7 +354,7 @@ async def asistente(input_data: UserInput):
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
          # Respuesta específica para saludos simples
-        if mensaje_usuario in ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]:
+        if mensaje_usuario in ["hola", "hola que tal", "buenas", "buenos días", "buenas tardes", "buenas noches"]:
             return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
 
         # Manejo de errores en la función de interacción
