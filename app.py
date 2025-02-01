@@ -353,6 +353,10 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
+         # Respuesta específica para saludos simples
+        if mensaje_usuario in ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]:
+            return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
+
         # Manejo de errores en la función de interacción
         try:
             respuesta_especial = manejar_interaccion_usuario(mensaje_usuario, contador=1)
@@ -418,11 +422,7 @@ async def asistente(input_data: UserInput):
         # Manejo para mensajes de cierre (sin insistir ni contabilizar interacciones)
         if mensaje_usuario in ["ok", "gracias", "en nada", "en nada mas", "nada mas", "no necesito nada mas", "estoy bien"]:
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
-
-        # Respuesta específica para saludos simples
-        if mensaje_usuario in ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]:
-            return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
-
+       
         # Manejo para "solo un síntoma y no más" (responder como en la 5ª interacción y finalizar)
         if "no quiero dar más síntomas" in mensaje_usuario or "solo este síntoma" in mensaje_usuario:
             mensajes = session["mensajes"]
