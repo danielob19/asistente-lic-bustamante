@@ -173,6 +173,7 @@ def init_db():
         print(f"Error al inicializar la base de datos: {e}")
 
 def detectar_emociones_negativas(mensaje):
+    mensaje = normalizar_texto(mensaje)  # Normaliza el mensaje antes de analizarlo
     emociones_negativas, _ = detectar_emociones(mensaje)
     return emociones_negativas
 
