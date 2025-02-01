@@ -588,10 +588,10 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
     preguntas_contacto = [
         "telefono de bustamante", "whatsapp de bustamante", "numero de bustamante", "numero del psicologo", 
         "contacto de bustamante", "contactar a bustamante", "como contacto a bustamante", "telefono del psicologo",
-        "necesito el telefono del psicologo", "a que numero", "cual es el numero"
+        "necesito el telefono del psicologo", "a que numero", "psicologo", "cual es el numero"
     ]
     if any(frase in mensaje_usuario for frase in preguntas_contacto):
-        return {"respuesta": "Puedes contactarme directamente enviándome un mensaje al WhatsApp +54 911 3310-1186."}
+        return {"respuesta": "Si lo deseas puedes contactar al Lic. Daniel O. Bustamante -Psicólogo Clínico- enviándole un mensaje al WhatsApp +54 911 3310-1186."}
 
     # Cierre profesional después de la décima interacción
     if contador >= 10:
