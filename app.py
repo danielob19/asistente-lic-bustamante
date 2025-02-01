@@ -478,7 +478,7 @@ async def asistente(input_data: UserInput):
                 emociones_negativas.extend(detectar_emociones_negativas(mensaje))
             session["emociones_interaccion_1_5"].extend(emociones_negativas)
             if len(emociones_negativas) < 2:
-        respuesta = "Aún no he detectado suficientes indicaciones emocionales. ¿Podrías contarme más sobre cómo te sientes?"
+                respuesta = "Aún no he detectado suficientes indicaciones emocionales. ¿Podrías contarme más sobre cómo te sientes?"
             else:
                 cuadros_probables = [cuadro for sintoma, cuadro in obtener_sintomas() if sintoma in ' '.join(emociones_negativas)]
                 cuadro_probable = cuadros_probables[0] if cuadros_probables else "no identificado"
