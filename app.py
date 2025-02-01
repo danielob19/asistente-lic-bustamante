@@ -613,11 +613,16 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
         return {"respuesta": respuesta}
 
     # Detección de preguntas sobre contacto o WhatsApp
+    mensaje_usuario = normalizar_texto(mensaje_usuario)  # Asegurar que el mensaje esté sin acentos y en minúsculas
+
     if any(frase in mensaje_usuario for frase in [
-        "cómo te contacto", "cómo puedo contactarte", "necesito tu número", "cómo hablar contigo", 
-        "quiero comunicarme contigo", "contacto", "whatsapp", "teléfono", "a qué número puedo llamarte",
-        "cómo puedo comunicarme contigo", "cuál es tu número", "cómo pedir una consulta", 
-        "quiero una sesión", "necesito hablar con un psicólogo", "dame tu contacto"
+        normalizar_texto("cómo te contacto"), normalizar_texto("cómo puedo contactarte"),
+        normalizar_texto("necesito tu número"), normalizar_texto("cómo hablar contigo"),
+        normalizar_texto("quiero comunicarme contigo"), normalizar_texto("contacto"),
+        normalizar_texto("whatsapp"), normalizar_texto("teléfono"), normalizar_texto("a qué número puedo llamarte"),
+        normalizar_texto("cómo puedo comunicarme contigo"), normalizar_texto("cuál es tu número"),
+        normalizar_texto("cómo pedir una consulta"), normalizar_texto("quiero una sesión"),
+        normalizar_texto("necesito hablar con un psicólogo"), normalizar_texto("dame tu contacto")
     ]):
         return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante -Psicólogo Clínico- enviándole un mensaje al WhatsApp +54 911 3310-1186."}
 
