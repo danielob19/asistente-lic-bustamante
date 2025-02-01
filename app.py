@@ -588,11 +588,11 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
     emociones_negativas, emociones_neutrales_positivas = detectar_emociones(mensaje_usuario)
     
     if emociones_negativas:
-    respuesta = (
-        f"Entiendo que puedas estar sintiendo {', '.join(emociones_negativas)}. "
-        f"¿Te gustaría contarme un poco más sobre lo que estás experimentando?"
-    )
-    return {"respuesta": respuesta}
+        respuesta = (
+            f"Entiendo que puedas estar sintiendo {', '.join(emociones_negativas)}. "
+            f"¿Te gustaría contarme un poco más sobre lo que estás experimentando?"
+        )
+        return {"respuesta": respuesta}
     
     if emociones_neutrales_positivas:
         return {"respuesta": f"He detectado estas emociones: {', '.join(emociones_neutrales_positivas)}. ¡Estoy aquí para ayudarte en lo que necesites!"}
