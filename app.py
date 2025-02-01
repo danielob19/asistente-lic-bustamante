@@ -606,7 +606,7 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
         respuesta += f"El cuadro clínico probable es: {cuadro_probable}. "
         respuesta += "Si necesitas apoyo, no dudes en contactarme directamente para que podamos conversar más a fondo."
         return {"respuesta": respuesta}
-    
+
     # Detección de preguntas sobre contacto o WhatsApp
     if any(frase in mensaje_usuario for frase in [
         "cómo te contacto", "cómo puedo contactarte", "necesito tu número", "cómo hablar contigo", 
