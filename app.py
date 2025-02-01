@@ -512,36 +512,20 @@ async def asistente(input_data: UserInput):
 
         # Manejo de interacción 9
         if contador == 9:
-            mensajes = session["mensajes"]
-            emociones_negativas = []
-            nuevos_sintomas = []
-
-            # Detectar emociones negativas en los mensajes
-            for mensaje in mensajes:
-                emociones_negativas.extend(detectar_emociones_negativas(mensaje))
-
-            # Registrar emociones en la base de datos
-            for emocion in emociones_negativas:
-                registrar_emocion(emocion, "interacción 9")
-
-            # Obtener cuadros probables en base a emociones detectadas
-            cuadros_probables = [
-                cuadro for emocion, cuadro in obtener_sintomas() if emocion in emociones_negativas
-            ]
+            emociones_1_5 = session.get("emociones_interaccion_1_5", [])
+            emociones_6_8 = session.get("emociones_interaccion_6_8", [])
+            todas_emociones = list(set(emociones_1_5 + emociones_6_8))
+            cuadros_probables = [cuadro for sintoma, cuadro in obtener_sintomas() if sintoma in ' '.join(todas_emociones)]
             cuadro_probable = cuadros_probables[0] if cuadros_probables else "no identificado"
-
             respuesta = (
-                f"En base a tus descripciones ({', '.join(emociones_negativas)}), "
-                f"el cuadro probable sería: {cuadro_probable}. "
+                f"En base a tus descripciones iniciales ({', '.join(set(emociones_1_5))}) y a la profundización que hemos realizado "
+                f"({', '.join(set(emociones_6_8))}), el cuadro probable es: {cuadro_probable}. Te recomiendo "
+                f"consultar al Lic. Daniel O. Bustamante escribiéndole al WhatsApp +54 911 3310-1186 para una evaluación más detallada."
             )
-            if nuevos_sintomas:
-                respuesta += f"Además, notamos síntomas adicionales: {', '.join(nuevos_sintomas)}. "
-            respuesta += "Te sugiero consultar al Lic. Daniel O. Bustamante, escribiéndole al WhatsApp +54 9 11 3310-1186 para una evaluación más profunda."
-
             session["mensajes"].clear()
             return {"respuesta": respuesta}
 
-
+            
         # Manejo de interacción 10 (última interacción)
         if contador == 10:
             return {
