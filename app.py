@@ -47,17 +47,36 @@ def generar_respuesta_con_openai(prompt):
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
 # Manejo de frases de confirmación o cierre
-def interpretar_respuesta_corta(mensaje):
-    """
-    Interpreta mensajes cortos como 'no no', 'ok ok', 'ahh ok ok', etc.,
-    y responde de manera acorde al contexto.
-    """
-    mensaje = mensaje.strip().lower()
-    # Conjunto de frases comunes para cierres o confirmaciones
-    frases_cierre = {"ok", "ok ok", "ahh ok", "ahh ok ok", "gracias", "nada más", "gracias por todo", "todo bien", "estoy bien", "no no", "no no ok"}
-    if mensaje in frases_cierre:
-        return "Entendido, quedo a tu disposición. ¿Algo más en lo que pueda ayudarte?"
-    return None  # Si no es una frase de cierre, no responde aquí
+def interpretar_respuesta_corta_openai(mensaje):
+    prompt = (
+        f"Interpreta el siguiente mensaje y clasifícalo en una de estas categorías: "
+        f"'agradecimiento', 'despedida', 'confirmación', 'pregunta' o 'otro'. "
+        f"Si es una despedida o un agradecimiento, responde con un mensaje corto adecuado. "
+        f"Si es una pregunta o requiere más contexto, responde con 'otro'.\n\n"
+        f"Mensaje: {mensaje}"
+    )
+    
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=20,
+            temperature=0.3
+        )
+        clasificacion = response.choices[0].message['content'].strip().lower()
+
+        # Definir respuestas en función de la clasificación de OpenAI
+        if "agradecimiento" in clasificacion:
+            return "De nada, estoy a tu disposición. ¡Que tengas un excelente día!"
+        elif "despedida" in clasificacion:
+            return "Entendido, quedo a tu disposición. ¡Hasta la próxima!"
+        elif "confirmación" in clasificacion:
+            return "Perfecto, si necesitas más ayuda, dime."
+        else:
+            return None  # No responde aquí, continúa con el flujo normal
+    except Exception as e:
+        print(f"Error al interpretar respuesta corta con OpenAI: {e}")
+        return None
 
 # Función para detectar emociones negativas usando OpenAI y Registro
 def detectar_emociones(mensaje):
