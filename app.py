@@ -493,43 +493,20 @@ async def asistente(input_data: UserInput):
 
         # Manejo de interacciones 6, 7 y 8 con OpenAI y PostgreSQL
         if 6 <= contador <= 8:
-            # Verifica primero si el usuario está haciendo una pregunta específica
-            respuesta_especial = manejar_interaccion_usuario(mensaje_usuario)
-            if respuesta_especial:
-                return respuesta_especial
-
-            # Detectar emociones negativas en el mensaje del usuario con OpenAI
-            emociones_detectadas = detectar_emociones_negativas(mensaje_usuario)
-    
-            # Registrar emociones detectadas en la base de datos
-            for emocion in emociones_detectadas:
-                registrar_emocion(emocion, mensaje_usuario)
-
-            # Buscar coincidencias con cuadros clínicos en la base de datos
-            cuadros_probables = [
-                cuadro for sintoma, cuadro in obtener_sintomas() if sintoma in mensaje_usuario
-            ]
-
-            # Generar respuesta dinámica según el análisis realizado
-            if cuadros_probables:
-                cuadro_principal = cuadros_probables[0]  # Tomamos el más relevante
-                respuesta = (
-                    f"En base a tu mensaje, hemos identificado un cuadro probable asociado a: **{cuadro_principal}**. "
-                )
-            else:
-                respuesta = "No detectamos una coincidencia clara con cuadros clínicos conocidos, pero sí observamos: "
-
-            if emociones_detectadas:
-                respuesta += f"**Emociones identificadas:** {', '.join(emociones_detectadas)}."
-
-            else:
-                respuesta += "No se han identificado emociones negativas específicas."
-
-            respuesta += (
-                " Para una evaluación más detallada, te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp "
-                "+54 911 3310-1186."
+            prompt_seguimiento = (
+                f"El usuario acaba de decir: '{mensaje_usuario}'. "
+                f"Formúla una pregunta que profundice en el origen de sus emociones negativas o patrones de conducta, "
+                f"por ejemplo: '¿Podrías contarme más sobre cuándo comenzó este sentimiento o cómo te afecta en tu día a día?'"
             )
-
+            pregunta_seguimiento = generar_respuesta_con_openai(prompt_seguimiento)
+            emociones_actuales = detectar_emociones_negativas(mensaje_usuario)
+            session["emociones_interaccion_6_8"].extend(emociones_actuales)
+            for emocion in emociones_actuales:
+                registrar_emocion([emocion], mensaje_usuario)
+            respuesta = (
+                f"He notado algunas emociones en tu mensaje ({', '.join(emociones_actuales) if emociones_actuales else 'no se detectaron emociones claras'}). "
+                f"{pregunta_seguimiento}"
+            )
             return {"respuesta": respuesta}
 
 
