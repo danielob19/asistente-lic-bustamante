@@ -380,6 +380,11 @@ async def asistente(input_data: UserInput):
         if any(palabra in mensaje_usuario for palabra in ["hola", "qué tal", "buenas", "cómo estás", "cómo va"]):
             return {"respuesta": "¡Hola! Espero que estés bien. ¿En qué puedo ayudarte hoy?"}
 
+        # Manejo de frases cortas o de cierre con OpenAI
+        respuesta_corta = interpretar_respuesta_corta_openai(mensaje_usuario)
+        if respuesta_corta:
+            return {"respuesta": respuesta_corta}
+
         # Manejo de errores en la función de interacción
         try:
             respuesta_especial = manejar_interaccion_usuario(mensaje_usuario, contador=1)
@@ -397,11 +402,6 @@ async def asistente(input_data: UserInput):
 
         # Registrar interacción en la base de datos
         registrar_interaccion(user_id, mensaje_usuario)
-
-        # Manejo de frases cortas o de cierre
-        respuesta_cierre = interpretar_respuesta_corta(mensaje_usuario)
-        if respuesta_cierre:
-            return {"respuesta": respuesta_cierre}
 
         # Inicializa la sesión del usuario si no existe
         if user_id not in user_sessions:
