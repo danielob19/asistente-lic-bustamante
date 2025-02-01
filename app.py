@@ -528,21 +528,15 @@ async def asistente(input_data: UserInput):
             
         # Manejo de interacción 10 (última interacción)
         if contador == 10:
-            return {
-                "respuesta": (
-                    "Sugiero solicitar una consulta al Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
-                    "(+54) 9 11 3310-1186. Aguardamos tu mensaje. ¡Un saludo cordial!"
-                )
-            }
-
-        # Responder con la misma respuesta después de la interacción 10
+            respuesta = (
+                "Si bien nuestra charla ha sido muy interesante, es momento de concluirla. Te invito a que para una evaluación "
+                "más profunda contactes al Lic. Daniel O. Bustamante al WhatsApp (+54) 9 11 3310-1186, quien podrá brindarte la "
+                "ayuda profesional que necesitas. ¡Gracias por tu tiempo!"
+            )
+            return {"respuesta": respuesta}
         if contador > 10:
-            return {
-                "respuesta": (
-                    "Sugiero solicitar una consulta al Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
-                    "(+54) 9 11 3310-1186. Aguardamos tu mensaje. ¡Un saludo cordial!"
-                )
-            }
+            return {"respuesta": "Te recomiendo contactar al Lic. Daniel O. Bustamante al WhatsApp (+54) 9 11 3310-1186. ¡Gracias por tu tiempo!"}
+
 
         # Validar si se detectaron emociones o cuadros antes de generar la respuesta final
         if not session.get("emociones_detectadas") and not session.get("mensajes"):
