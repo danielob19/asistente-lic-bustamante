@@ -48,35 +48,39 @@ def generar_respuesta_con_openai(prompt):
 
 # Manejo de frases de confirmación o cierre
 def interpretar_respuesta_corta_openai(mensaje):
+    """
+    Utiliza OpenAI para interpretar respuestas cortas y determinar si son saludos, agradecimientos, despedidas o preguntas.
+    Si es un agradecimiento, responde de forma adecuada en lugar de dar una respuesta genérica.
+    """
     prompt = (
-        f"Interpreta el siguiente mensaje y clasifícalo en una de estas categorías: "
-        f"'agradecimiento', 'despedida', 'confirmación', 'pregunta' o 'otro'. "
-        f"Si es una despedida o un agradecimiento, responde con un mensaje corto adecuado. "
-        f"Si es una pregunta o requiere más contexto, responde con 'otro'.\n\n"
-        f"Mensaje: {mensaje}"
+        f"El usuario ha dicho: '{mensaje}'. ¿Es un saludo, un agradecimiento, una despedida o una pregunta real? "
+        f"Responde únicamente con una de estas opciones: 'saludo', 'agradecimiento', 'despedida', 'pregunta', 'otro'."
     )
-    
+
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=20,
+            max_tokens=10,
             temperature=0.3
         )
         clasificacion = response.choices[0].message['content'].strip().lower()
 
-        # Definir respuestas en función de la clasificación de OpenAI
-        if "agradecimiento" in clasificacion:
-            return "De nada, estoy a tu disposición. ¡Que tengas un excelente día!"
+        if "saludo" in clasificacion:
+            return "¡Hola! Espero que estés bien. ¿En qué puedo ayudarte hoy?"
+        elif "agradecimiento" in clasificacion:
+            return "De nada, estoy aquí para lo que necesites. 😊"
         elif "despedida" in clasificacion:
-            return "Entendido, quedo a tu disposición. ¡Hasta la próxima!"
-        elif "confirmación" in clasificacion:
-            return "Perfecto, si necesitas más ayuda, dime."
+            return "¡Un placer ayudarte! Que tengas un excelente día. 🌟"
+        elif "pregunta" in clasificacion:
+            return None  # Deja que el flujo normal continúe
         else:
-            return None  # No responde aquí, continúa con el flujo normal
+            return None  # Evita respuestas erróneas o repetitivas
+
     except Exception as e:
-        print(f"Error al interpretar respuesta corta con OpenAI: {e}")
-        return None
+        print(f"Error en la interpretación con OpenAI: {e}")
+        return None  # Si falla, sigue con el flujo estándar
+
 
 # Función para detectar emociones negativas usando OpenAI y Registro
 def detectar_emociones(mensaje):
