@@ -373,8 +373,8 @@ async def asistente(input_data: UserInput):
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
          # Respuesta específica para saludos simples
-        if mensaje_usuario in ["hola", "hola que tal", "buenas", "buenos días", "buenas tardes", "buenas noches"]:
-            return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
+        if any(palabra in mensaje_usuario for palabra in ["hola", "qué tal", "buenas", "cómo estás", "cómo va"]):
+            return {"respuesta": "¡Hola! Espero que estés bien. ¿En qué puedo ayudarte hoy?"}
 
         # Manejo de errores en la función de interacción
         try:
@@ -588,7 +588,11 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
     emociones_negativas, emociones_neutrales_positivas = detectar_emociones(mensaje_usuario)
     
     if emociones_negativas:
-        return {"respuesta": f"He detectado estas emociones negativas: {', '.join(emociones_negativas)}. Si necesitas apoyo, no dudes en contactarme directamente para que podamos conversar más a fondo."}
+    respuesta = (
+        f"Entiendo que puedas estar sintiendo {', '.join(emociones_negativas)}. "
+        f"¿Te gustaría contarme un poco más sobre lo que estás experimentando?"
+    )
+    return {"respuesta": respuesta}
     
     if emociones_neutrales_positivas:
         return {"respuesta": f"He detectado estas emociones: {', '.join(emociones_neutrales_positivas)}. ¡Estoy aquí para ayudarte en lo que necesites!"}
@@ -604,13 +608,14 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
         return {"respuesta": respuesta}
     
     # Detección de preguntas sobre contacto o WhatsApp
-    preguntas_contacto = [
-        "telefono de bustamante", "whatsapp de bustamante", "numero de bustamante", "numero del psicologo", 
-        "contacto de bustamante", "contactar a bustamante", "como contacto a bustamante", "telefono del psicologo",
-        "necesito el telefono del psicologo", "a que numero", "psicologo", "cual es el numero"
-    ]
-    if any(frase in mensaje_usuario for frase in preguntas_contacto):
-        return {"respuesta": "Si lo deseas puedes contactar al Lic. Daniel O. Bustamante -Psicólogo Clínico- enviándole un mensaje al WhatsApp +54 911 3310-1186."}
+    if any(frase in mensaje_usuario for frase in [
+        "cómo te contacto", "cómo puedo contactarte", "necesito tu número", "cómo hablar contigo", 
+        "quiero comunicarme contigo", "contacto", "whatsapp", "teléfono", "a qué número puedo llamarte",
+        "cómo puedo comunicarme contigo", "cuál es tu número", "cómo pedir una consulta", 
+        "quiero una sesión", "necesito hablar con un psicólogo", "dame tu contacto"
+    ]):
+        return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante -Psicólogo Clínico- enviándole un mensaje al WhatsApp +54 911 3310-1186."}
+
 
     # Cierre profesional después de la décima interacción
     if contador >= 10:
