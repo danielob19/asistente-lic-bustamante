@@ -19,9 +19,10 @@ def normalizar_texto(texto):
     """
     Normaliza el texto eliminando acentos y convirtiéndolo a minúsculas.
     """
+    texto = texto.strip().lower()  # Convierte a minúsculas
     return ''.join(
-        c for c in unicodedata.normalize('NFD', texto.lower())
-        if unicodedata.category(c) != 'Mn'
+        c for c in unicodedata.normalize('NFD', texto)
+        if unicodedata.category(c) != 'Mn'  # Elimina acentos
     )
 
 # Configuración de la clave de API de OpenAI
@@ -371,7 +372,7 @@ def start_session_cleaner():
 async def asistente(input_data: UserInput):
     try:
         user_id = input_data.user_id
-        mensaje_usuario = input_data.mensaje.strip().lower()
+        mensaje_usuario = normalizar_texto(input_data.mensaje)  # Ahora elimina acentos y pasa a minúsculas
 
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
