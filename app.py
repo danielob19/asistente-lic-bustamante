@@ -89,6 +89,8 @@ def detectar_emociones(mensaje):
     Usa OpenAI para analizar emociones en un mensaje y clasificarlas como negativas o neutrales/positivas.
     Registra automáticamente las emociones negativas en la base de datos.
     """
+    mensaje = normalizar_texto(mensaje)  # Normaliza el texto antes de enviarlo a OpenAI
+    
     prompt = (
         f"Analiza el siguiente mensaje y detecta emociones humanas. "
         f"Clasifícalas en 'negativas' o 'neutrales/positivas'. "
@@ -104,10 +106,11 @@ def detectar_emociones(mensaje):
             temperature=0.0
         )
         emociones = response.choices[0].message['content'].strip().lower()
+
         if emociones == "ninguna":
             return [], []
-        
-        emociones_detectadas = [e.strip() for e in emociones.split(",")]
+
+        emociones_detectadas = [normalizar_texto(e.strip()) for e in emociones.split(",")]
         emociones_negativas = [e for e in emociones_detectadas if "negativa" in e]
         emociones_neutrales_positivas = [e for e in emociones_detectadas if "neutro" in e or "positivo" in e]
         
