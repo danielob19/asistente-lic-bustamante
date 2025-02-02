@@ -481,6 +481,7 @@ async def asistente(input_data: UserInput):
             "especialista" in mensaje_usuario or
             "mejor psicólogo" in mensaje_usuario or
             "mejor psicologo" in mensaje_usuario or
+            "psicologo" in mensaje_usuario or
             "mejor terapeuta" in mensaje_usuario or
             "mejor psicoterapeuta" in mensaje_usuario or
             "el mejor" in mensaje_usuario or
