@@ -621,13 +621,21 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
     mensaje_usuario = normalizar_texto(mensaje_usuario)  # Asegurar que el mensaje esté sin acentos y en minúsculas
 
     if any(frase in mensaje_usuario for frase in [
+        # Frases para solicitar contacto
         normalizar_texto("cómo te contacto"), normalizar_texto("cómo puedo contactarte"),
         normalizar_texto("necesito tu número"), normalizar_texto("cómo hablar contigo"),
         normalizar_texto("quiero comunicarme contigo"), normalizar_texto("contacto"),
         normalizar_texto("whatsapp"), normalizar_texto("teléfono"), normalizar_texto("a qué número puedo llamarte"),
         normalizar_texto("cómo puedo comunicarme contigo"), normalizar_texto("cuál es tu número"),
         normalizar_texto("cómo pedir una consulta"), normalizar_texto("quiero una sesión"),
-        normalizar_texto("necesito hablar con un psicólogo"), normalizar_texto("dame tu contacto")
+        normalizar_texto("necesito hablar con un psicólogo"), normalizar_texto("dame tu contacto"),
+
+        # Frases para búsqueda de psicólogo o terapia
+        normalizar_texto("busco un psicologo"), normalizar_texto("necesito un psicologo"),
+        normalizar_texto("quiero hacer terapia"), normalizar_texto("necesito hacer terapia"),
+        normalizar_texto("quiero un terapeuta"), normalizar_texto("quiero hablar con un psicologo"),
+        normalizar_texto("me recomiendas un psicologo"), normalizar_texto("dame el contacto de un psicologo"),
+        normalizar_texto("psicologo"), normalizar_texto("terapia"), normalizar_texto("terapeuta")
     ]):
         return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante -Psicólogo Clínico- enviándole un mensaje al WhatsApp +54 911 3310-1186."}
 
