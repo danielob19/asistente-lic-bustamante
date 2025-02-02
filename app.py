@@ -73,6 +73,10 @@ def interpretar_respuesta_corta_openai(mensaje):
             return "De nada, estoy aquí para lo que necesites. 😊"
         elif "despedida" in clasificacion:
             return "¡Un placer ayudarte! Que tengas un excelente día. 🌟"
+        elif "perdon" in mensaje:
+            return "No hay problema, ¿en qué puedo ayudarte?"
+        elif "equivoque" in mensaje:
+            return "No hay problema, ¿en qué puedo ayudarte?"
         elif "pregunta" in clasificacion:
             return None  # Deja que el flujo normal continúe
         else:
