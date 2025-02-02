@@ -639,6 +639,15 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
     ]):
         return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante -Psicólogo Clínico- enviándole un mensaje al WhatsApp +54 911 3310-1186."}
 
+    # Detectar si buscan específicamente una psicóloga mujer
+    if any(frase in mensaje_usuario for frase in [
+        normalizar_texto("busco una psicologa mujer"), normalizar_texto("quiero una psicologa"),
+        normalizar_texto("necesito una terapeuta mujer"), normalizar_texto("psicologa mujer"),
+        normalizar_texto("psicologa femenina"), normalizar_texto("terapeuta mujer"),
+        normalizar_texto("psicologa especialista mujer")
+    ]):
+        return {"respuesta": "Por el momento, solo puedo proporcionarte el contacto del Lic. Daniel O. Bustamante -Psicólogo Clínico-. ¿Te gustaría que te ayude con algo más?"}
+
 
     # Cierre profesional después de la décima interacción
     if contador >= 10:
