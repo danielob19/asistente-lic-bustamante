@@ -618,31 +618,6 @@ def manejar_interaccion_9(mensaje_usuario: str) -> dict:
             f"al WhatsApp +54 911 3310-1186 para una evaluación más detallada."
         )
     }
-def manejar_interaccion_usuario(mensaje_usuario: str, contador: int) -> dict:
-    """
-    Maneja todas las interacciones avanzadas.
-    """
-    emociones_negativas = detectar_emociones(mensaje_usuario)
-
-    if emociones_negativas:
-        return {
-            "respuesta": (
-                f"Entiendo que puedas estar sintiendo {', '.join(emociones_negativas)}. "
-                "¿Te gustaría contarme más sobre lo que estás experimentando?"
-            )
-        }
-
-    if contador == 5:
-        return manejar_interaccion_5(mensaje_usuario)
-
-    if contador == 9:
-        return manejar_interaccion_9(mensaje_usuario)
-
-    if contador == 10:
-        return manejar_interaccion_10(mensaje_usuario)
-
-    return {"respuesta": generar_respuesta_openai(mensaje_usuario)}
-
 
 def obtener_sintomas():
     """
