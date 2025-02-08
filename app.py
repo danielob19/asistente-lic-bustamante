@@ -187,23 +187,28 @@ def actualizar_sesion(user_id: str, mensaje: str):
         session["contador_interacciones"] += 1
 
 @app.on_event("startup")
+
 def limpiar_sesiones_inactivas():
     """
-    Inicia un proceso en segundo plano que elimina sesiones inactivas después de cierto tiempo.
+    Inicia un hilo que elimina sesiones inactivas después de cierto tiempo.
     """
-    def limpiar():
-        while True:
-            tiempo_actual = time.time()
-            usuarios_inactivos = [
-                user_id for user_id, session in user_sessions.items()
-                if tiempo_actual - session["ultima_interaccion"] > SESSION_TIMEOUT
-            ]
-            for user_id in usuarios_inactivos:
-                del user_sessions[user_id]
-            time.sleep(60)  # Revisa sesiones cada minuto
-
-    thread = threading.Thread(target=limpiar, daemon=True)
+    thread = threading.Thread(target=_ejecutar_limpieza_sesiones, daemon=True)
     thread.start()
+
+def _ejecutar_limpieza_sesiones():
+    """
+    Función en segundo plano para limpiar sesiones inactivas.
+    """
+    while True:
+        tiempo_actual = time.time()
+        usuarios_inactivos = [
+            user_id for user_id, session in user_sessions.items()
+            if tiempo_actual - session["ultima_interaccion"] > SESSION_TIMEOUT
+        ]
+        for user_id in usuarios_inactivos:
+            del user_sessions[user_id]
+        time.sleep(60)  # Revisar cada minuto
+
     
 def manejar_interaccion_usuario(mensaje_usuario: str, contador: int) -> dict:
     """
