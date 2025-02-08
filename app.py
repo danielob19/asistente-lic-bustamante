@@ -28,9 +28,7 @@ if not openai.api_key:
     raise ValueError("OPENAI_API_KEY no está configurada en las variables de entorno.")
 
 # Configuración de la URL de la base de datos PostgreSQL
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL no está configurada en las variables de entorno.")
+DATABASE_URL = "postgresql://my_postgres_db_oahe_user:AItPOENiOHIGPNva0eiCT0kK1od4UhZf@dpg-ctqqj0bqf0us73f4ar1g-a/my_postgres_db_oahe"
 
 def conectar_db():
     """
