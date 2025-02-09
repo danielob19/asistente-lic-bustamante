@@ -344,16 +344,33 @@ def start_session_cleaner():
 async def asistente(input_data: UserInput):
     try:
         user_id = input_data.user_id
-        mensaje_usuario = input_data.mensaje.strip().lower()
+        mensaje_usuario = normalizar_texto(input_data.mensaje.strip())  # 🔹 Aplicamos normalización
 
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # 🔹 **Detección Manual de Solicitudes de Contacto (Interceptar Antes de OpenAI)**
-        palabras_contacto = ["número", "teléfono", "whatsapp", "contacto", "cómo lo contacto", "cómo me comunico", "cómo puedo comunicarme", "quiero comunicarme", "cómo los contacto"]
-        
-        if any(palabra in mensaje_usuario for palabra in palabras_contacto):
-            if "bustamante" in mensaje_usuario or "psicólogo" in mensaje_usuario or "licenciado" in mensaje_usuario:
+        # 🔹 **Primero, preguntamos a OpenAI si el usuario está pidiendo el contacto**
+        prompt_detectar = [
+            {"role": "system", "content": (
+                "Eres un asistente que detecta cuándo un usuario está pidiendo un número de contacto. "
+                "Si el usuario pide un número de teléfono, WhatsApp o contacto de alguien, responde con: 'SOLICITUD_CONTACTO'. "
+                "Si no lo está pidiendo, responde solo con 'NINGUNA'. No agregues más texto en la respuesta."
+            )},
+            {"role": "user", "content": mensaje_usuario}
+        ]
+
+        response_detectar = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=prompt_detectar,
+            max_tokens=5,
+            temperature=0.0
+        )
+
+        decision_ai = response_detectar.choices[0].message['content'].strip()
+
+        # 🔹 **Si OpenAI detecta que el usuario está pidiendo un contacto, damos la respuesta directamente**
+        if decision_ai == "SOLICITUD_CONTACTO":
+            if "bustamante" in mensaje_usuario or "psicologo" in mensaje_usuario or "licenciado" in mensaje_usuario:
                 return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante a través de WhatsApp: +54 911 3310-1186."}
             else:
                 return {"respuesta": "Puedes contactarnos directamente a través de WhatsApp: +54 911 3310-1186."}
@@ -371,27 +388,26 @@ async def asistente(input_data: UserInput):
         # Contexto de la conversación (últimos 5 mensajes)
         historial = session["historial"][-5:]
 
-        # 🔹 **Instrucciones para OpenAI**
-        prompt = [
+        # 🔹 **Instrucciones para OpenAI para la conversación normal**
+        prompt_conversacion = [
             {"role": "system", "content": (
                 "Eres un asistente profesional especializado en psicología. "
                 "Responde de manera empática y profesional a cualquier mensaje. "
-                "No menciones información de contacto en tus respuestas. "
-                "Si el usuario pregunta por contacto, responde de forma neutral sin ofrecer ningún número."
+                "No menciones información de contacto en tus respuestas."
             )}
         ]
-        prompt.extend(historial)
-        prompt.append({"role": "user", "content": mensaje_usuario})
+        prompt_conversacion.extend(historial)
+        prompt_conversacion.append({"role": "user", "content": mensaje_usuario})
 
         # 🔹 **Enviar el mensaje a OpenAI SOLO SI NO ES UNA SOLICITUD DE CONTACTO**
-        response = openai.ChatCompletion.create(
+        response_conversacion = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=prompt,
+            messages=prompt_conversacion,
             max_tokens=150,
             temperature=0.3
         )
 
-        respuesta_ai = response.choices[0].message['content'].strip()
+        respuesta_ai = response_conversacion.choices[0].message['content'].strip()
 
         # 🔹 **Actualizar historial de conversación**
         session["historial"].append({"role": "user", "content": mensaje_usuario})
@@ -410,6 +426,7 @@ async def asistente(input_data: UserInput):
     except Exception as e:
         logger.error(f"Error en /asistente: {e}")
         raise HTTPException(status_code=500, detail="Error interno en el servidor")
+
 
 
 def manejar_interaccion_usuario(mensaje_usuario, contador):
