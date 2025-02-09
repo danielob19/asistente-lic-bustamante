@@ -352,12 +352,14 @@ async def asistente(input_data: UserInput):
         # 🔹 **Primero, preguntamos a OpenAI si el usuario está pidiendo el contacto**
         prompt_detectar = [
             {"role": "system", "content": (
-                "Eres un asistente que detecta cuándo un usuario está pidiendo un número de contacto. "
-                "Si el usuario pide un número de teléfono, WhatsApp o contacto de alguien, responde con: 'SOLICITUD_CONTACTO'. "
-                "Si no lo está pidiendo, responde solo con 'NINGUNA'. No agregues más texto en la respuesta."
+                "Eres un asistente que analiza si el usuario está pidiendo un número de contacto. "
+                "Si el usuario pregunta por un número de teléfono, WhatsApp o contacto, responde EXACTAMENTE con 'SOLICITUD_CONTACTO'. "
+                "Si no lo está pidiendo, responde EXACTAMENTE con 'NINGUNA'. "
+                "No agregues explicaciones, solo devuelve 'SOLICITUD_CONTACTO' o 'NINGUNA'."
             )},
             {"role": "user", "content": mensaje_usuario}
         ]
+
 
         response_detectar = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -369,11 +371,9 @@ async def asistente(input_data: UserInput):
         decision_ai = response_detectar.choices[0].message['content'].strip()
 
         # 🔹 **Si OpenAI detecta que el usuario está pidiendo un contacto, damos la respuesta directamente**
-        if decision_ai == "SOLICITUD_CONTACTO":
-            if "bustamante" in mensaje_usuario or "psicologo" in mensaje_usuario or "licenciado" in mensaje_usuario:
-                return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante a través de WhatsApp: +54 911 3310-1186."}
-            else:
-                return {"respuesta": "Puedes contactarnos directamente a través de WhatsApp: +54 911 3310-1186."}
+        if "SOLICITUD_CONTACTO" in decision_ai:
+            return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante a través de WhatsApp: +54 911 3310-1186."}
+
 
         # 🔹 **Inicializar sesión del usuario si no existe**
         if user_id not in user_sessions:
@@ -393,8 +393,10 @@ async def asistente(input_data: UserInput):
             {"role": "system", "content": (
                 "Eres un asistente profesional especializado en psicología. "
                 "Responde de manera empática y profesional a cualquier mensaje. "
-                "No menciones información de contacto en tus respuestas."
+                "Si el usuario pregunta por un número de contacto, responde con 'SOLICITUD_CONTACTO'. "
+                "De lo contrario, responde normalmente."
             )}
+
         ]
         prompt_conversacion.extend(historial)
         prompt_conversacion.append({"role": "user", "content": mensaje_usuario})
@@ -458,14 +460,6 @@ def manejar_interaccion_usuario(mensaje_usuario, contador):
         respuesta += "Si necesitas apoyo, no dudes en contactarme directamente para que podamos conversar más a fondo."
         return {"respuesta": respuesta}
     
-    # Detección de preguntas sobre contacto o WhatsApp
-    preguntas_contacto = [
-        "telefono de bustamante", "whatsapp de bustamante", "numero de bustamante", "numero del psicologo", 
-        "contacto de bustamante", "contactar a bustamante", "como contacto a bustamante", "telefono del psicologo",
-        "necesito el telefono del psicologo", "a que numero", "cual es el numero"
-    ]
-    if any(frase in mensaje_usuario for frase in preguntas_contacto):
-        return {"respuesta": "Puedes contactarme directamente enviándome un mensaje al WhatsApp +54 911 3310-1186."}
 
     # Cierre profesional después de la décima interacción
     if contador >= 10:
