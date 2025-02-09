@@ -344,12 +344,19 @@ def start_session_cleaner():
 async def asistente(input_data: UserInput):
     try:
         user_id = input_data.user_id
-        mensaje_usuario = input_data.mensaje.strip()
+        mensaje_usuario = input_data.mensaje.strip().lower()
 
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # Inicializar sesión del usuario si no existe
+        # 🔹 **Detección Manual de Solicitudes de Contacto en Cualquier Momento**
+        if any(palabra in mensaje_usuario for palabra in ["número", "teléfono", "whatsapp", "contacto", "cómo lo contacto", "cómo me comunico"]):
+            if "bustamante" in mensaje_usuario or "psicólogo" in mensaje_usuario or "licenciado" in mensaje_usuario:
+                return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante a través de WhatsApp: **+54 911 3310-1186**."}
+            else:
+                return {"respuesta": "Puedes contactarnos directamente a través de WhatsApp: **[+54 911 3310-1186]**."}
+
+        # 🔹 **Inicializar sesión del usuario si no existe**
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "historial": [],
@@ -367,9 +374,7 @@ async def asistente(input_data: UserInput):
             {"role": "system", "content": (
                 "Eres un asistente profesional especializado en psicología. "
                 "Responde de manera empática y profesional a cualquier mensaje. "
-                "Si el usuario pregunta por el número de contacto del Lic. Bustamante o el contacto de soporte, "
-                "responde con el número adecuado. "
-                "Si la pregunta no es sobre contacto, responde con normalidad."
+                "No menciones información de contacto en tus respuestas."
             )}
         ]
         prompt.extend(historial)
@@ -385,20 +390,14 @@ async def asistente(input_data: UserInput):
 
         respuesta_ai = response.choices[0].message['content'].strip()
 
-        # 🔹 **Verificación de seguridad (Por si OpenAI no sigue las reglas)**
-        if "bustamante" in mensaje_usuario.lower() or "psicólogo" in mensaje_usuario.lower():
-            respuesta_ai = "Puedes contactar al Lic. Daniel O. Bustamante a través de WhatsApp: **+54 911 3310-1186**."
-        elif "contacto" in mensaje_usuario.lower() or "whatsapp" in mensaje_usuario.lower():
-            respuesta_ai = "Puedes contactarnos directamente a través de WhatsApp: **[+54 911 3310-1186]**."
-
-        # Actualizar historial de conversación
+        # 🔹 **Actualizar historial de conversación**
         session["historial"].append({"role": "user", "content": mensaje_usuario})
         session["historial"].append({"role": "assistant", "content": respuesta_ai})
 
         # Limitar historial a 10 mensajes para no sobrecargar memoria
         session["historial"] = session["historial"][-10:]
 
-        # Buscar emociones negativas en la respuesta de OpenAI
+        # 🔹 **Buscar emociones negativas en la respuesta de OpenAI**
         emociones_negativas, _ = detectar_emociones(respuesta_ai)
         if emociones_negativas:
             registrar_emocion(emociones_negativas, mensaje_usuario)
@@ -408,6 +407,7 @@ async def asistente(input_data: UserInput):
     except Exception as e:
         logger.error(f"Error en /asistente: {e}")
         raise HTTPException(status_code=500, detail="Error interno en el servidor")
+
 
 def manejar_interaccion_usuario(mensaje_usuario, contador):
     """
