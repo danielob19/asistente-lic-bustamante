@@ -349,12 +349,14 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
-        # 🔹 **Detección Manual de Solicitudes de Contacto en Cualquier Momento**
-        if any(palabra in mensaje_usuario for palabra in ["número", "teléfono", "whatsapp", "contacto", "cómo lo contacto", "cómo me comunico"]):
+        # 🔹 **Detección Manual de Solicitudes de Contacto (Interceptar Antes de OpenAI)**
+        palabras_contacto = ["número", "teléfono", "whatsapp", "contacto", "cómo lo contacto", "cómo me comunico", "cómo puedo comunicarme", "quiero comunicarme", "cómo los contacto"]
+        
+        if any(palabra in mensaje_usuario for palabra in palabras_contacto):
             if "bustamante" in mensaje_usuario or "psicólogo" in mensaje_usuario or "licenciado" in mensaje_usuario:
-                return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante a través de WhatsApp: **+54 911 3310-1186**."}
+                return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante a través de WhatsApp: +54 911 3310-1186."}
             else:
-                return {"respuesta": "Puedes contactarnos directamente a través de WhatsApp: **[+54 911 3310-1186]**."}
+                return {"respuesta": "Puedes contactarnos directamente a través de WhatsApp: +54 911 3310-1186."}
 
         # 🔹 **Inicializar sesión del usuario si no existe**
         if user_id not in user_sessions:
@@ -374,13 +376,14 @@ async def asistente(input_data: UserInput):
             {"role": "system", "content": (
                 "Eres un asistente profesional especializado en psicología. "
                 "Responde de manera empática y profesional a cualquier mensaje. "
-                "No menciones información de contacto en tus respuestas."
+                "No menciones información de contacto en tus respuestas. "
+                "Si el usuario pregunta por contacto, responde de forma neutral sin ofrecer ningún número."
             )}
         ]
         prompt.extend(historial)
         prompt.append({"role": "user", "content": mensaje_usuario})
 
-        # 🔹 **Enviar el mensaje a OpenAI**
+        # 🔹 **Enviar el mensaje a OpenAI SOLO SI NO ES UNA SOLICITUD DE CONTACTO**
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=prompt,
