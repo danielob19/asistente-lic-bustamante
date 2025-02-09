@@ -389,7 +389,7 @@ async def asistente(input_data: UserInput):
         if "bustamante" in mensaje_usuario.lower() or "psicólogo" in mensaje_usuario.lower():
             respuesta_ai = "Puedes contactar al Lic. Daniel O. Bustamante a través de WhatsApp: **+54 911 3310-1186**."
         elif "contacto" in mensaje_usuario.lower() or "whatsapp" in mensaje_usuario.lower():
-            respuesta_ai = "Puedes contactarnos directamente a través de WhatsApp: **[TU NÚMERO AQUÍ]**."
+            respuesta_ai = "Puedes contactarnos directamente a través de WhatsApp: **[+54 911 3310-1186]**."
 
         # Actualizar historial de conversación
         session["historial"].append({"role": "user", "content": mensaje_usuario})
