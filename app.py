@@ -368,7 +368,7 @@ async def asistente(input_data: UserInput):
             temperature=0.0
         )
 
-        decision_ai = response_detectar.choices[0].message['content'].strip()
+        decision_ai = response_detectar.choices[0].message['content'].strip().upper()
 
         # 🔹 **Si OpenAI detecta que el usuario está pidiendo un contacto, damos la respuesta directamente**
         if "SOLICITUD_CONTACTO" in decision_ai:
