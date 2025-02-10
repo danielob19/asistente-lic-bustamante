@@ -1,6 +1,3 @@
-CODIGO DEL 25 DE ENERO DEL 2025 
-
-
 import os
 import time
 import threading
