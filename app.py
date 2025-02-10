@@ -513,8 +513,8 @@ async def asistente(input_data: UserInput):
         if contador == 10:
             return {
                 "respuesta": (
-                    "Sugiero solicitar una consulta al Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
-                    "(+54) 9 11 3310-1186. Aguardamos tu mensaje. ¡Un saludo cordial!"
+                    "Hemos llegado al final de nuestra conversación. Para un seguimiento más personalizado, te recomiendo "
+                    "contactar al Lic. Daniel O. Bustamante al WhatsApp: +54 911 3310-1186. ¡Gracias por tu tiempo!"
                 )
             }
 
