@@ -478,10 +478,15 @@ async def asistente(input_data: UserInput):
 
         # Manejo de interacciones 6, 7 y 8
         if 6 <= contador <= 8:
-            # Obtener la última emoción detectada
+            # 🔹 Verificar si el usuario simplemente agradece
+            agradecimientos = {"gracias", "muy amable", "te agradezco", "muchas gracias", "ok gracias"}
+    
+            if mensaje_usuario in agradecimientos:
+                return {"respuesta": "De nada, estoy para ayudarte. Que tengas un buen día."}
+
+            # 🔹 Si el usuario no está agradeciendo, continuar normalmente con la conversación
             ultima_emocion = session["emociones_detectadas"][-1] if session["emociones_detectadas"] else "lo que mencionaste"
 
-            # Variaciones en la respuesta
             respuestas_posibles = [
                 f"Entiendo que sientas {ultima_emocion}. ¿Cómo afecta {ultima_emocion} en tu vida cotidiana?",
                 f"A veces {ultima_emocion} puede ser difícil de manejar. ¿Te das cuenta en qué momentos lo sentís con más intensidad?",
@@ -494,11 +499,10 @@ async def asistente(input_data: UserInput):
                 f"Entiendo que {ultima_emocion} puede ser desafiante. ¿Cómo reaccionás ante ello en el día a día?",
                 f"A veces, {ultima_emocion} nos hace ver las cosas de una manera particular. ¿Cómo afecta tu perspectiva sobre lo que te rodea?"
             ]
-
-            # Seleccionar una respuesta aleatoria
+        
             respuesta_variable = random.choice(respuestas_posibles)
-
             return {"respuesta": respuesta_variable}
+
 
         # Manejo para la interacción 9 (igual a la 5, sin pedir más síntomas)
         if contador == 9:
