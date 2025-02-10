@@ -130,27 +130,29 @@ def registrar_sintoma(sintoma: str, cuadro: str):
 def registrar_emocion(emocion: str, contexto: str):
     """
     Registra una emoción detectada en la base de datos PostgreSQL.
-    Si la emoción ya existe, actualiza el contexto solo si es diferente.
+    Evita insertar duplicados y actualiza el contexto si ya existe.
     """
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("""
-                    INSERT INTO emociones_detectadas (emocion, contexto)
-                    VALUES (%s, %s)
-                    ON CONFLICT (emocion) 
-                    DO UPDATE SET contexto = 
-                    CASE 
-                        WHEN emociones_detectadas.contexto != EXCLUDED.contexto 
-                        THEN emociones_detectadas.contexto || '; ' || EXCLUDED.contexto
-                        ELSE emociones_detectadas.contexto
-                    END;
-                """, (emocion.strip().lower(), contexto.strip()))
+                # Verificar si la emoción ya existe
+                cursor.execute("SELECT contexto FROM emociones_detectadas WHERE emocion = %s;", (emocion.strip().lower(),))
+                resultado = cursor.fetchone()
+
+                if resultado:
+                    # Si la emoción ya existe, actualizar el contexto
+                    nuevo_contexto = resultado[0] + "; " + contexto.strip()
+                    cursor.execute("UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s;", 
+                                   (nuevo_contexto, emocion.strip().lower()))
+                else:
+                    # Si la emoción no existe, insertarla
+                    cursor.execute("INSERT INTO emociones_detectadas (emocion, contexto) VALUES (%s, %s);", 
+                                   (emocion.strip().lower(), contexto.strip()))
+
                 conn.commit()
-        print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
+        print(f"Emoción '{emocion}' registrada o actualizada con contexto: {contexto}.")
     except Exception as e:
         print(f"Error al registrar emoción '{emocion}': {e}")
-
 
 # Obtener síntomas existentes
 def obtener_sintomas():
