@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from collections import Counter
-from random import choice
+import random
 
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
