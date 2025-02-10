@@ -476,30 +476,37 @@ async def asistente(input_data: UserInput):
             return {"respuesta": respuesta_variable}
 
 
-        # Manejo de interacciones 6, 7 y 8
+        # 🔹 Manejo de interacciones 6, 7 y 8
         if 6 <= contador <= 8:
-            # 🔹 Verificar si el usuario simplemente agradece
+            # Verificar si el usuario agradece
             agradecimientos = {"gracias", "muy amable", "te agradezco", "muchas gracias", "ok gracias"}
-    
+            
             if mensaje_usuario in agradecimientos:
                 return {"respuesta": "De nada, estoy para ayudarte. Que tengas un buen día."}
-
-            # 🔹 Si el usuario no está agradeciendo, continuar normalmente con la conversación
-            ultima_emocion = session["emociones_detectadas"][-1] if session["emociones_detectadas"] else "lo que mencionaste"
-
+        
+            # Si el usuario no está agradeciendo, continuar con la conversación
+            ultima_emocion = session["emociones_detectadas"][-1] if session["emociones_detectadas"] else None
+        
+            if not ultima_emocion:
+                return {
+                    "respuesta": "Parece que hay algo que te preocupa. ¿Querés contarme más sobre cómo te sentís últimamente?"
+                }
+        
+            # 🔹 Respuestas dinámicas basadas en la emoción detectada
             respuestas_posibles = [
-                f"Entiendo que sientas {ultima_emocion}. ¿Cómo afecta {ultima_emocion} en tu vida cotidiana?",
-                f"A veces {ultima_emocion} puede ser difícil de manejar. ¿Te das cuenta en qué momentos lo sentís con más intensidad?",
-                f"Cuando experimentás {ultima_emocion}, ¿cómo impacta en tus relaciones o en tu rutina?",
-                f"Comprendo que {ultima_emocion} pueda ser una carga. ¿Hay algo específico que lo detone o lo agrave?",
-                f"Sé que {ultima_emocion} no es fácil. ¿Notaste algún patrón en cuándo o cómo aparece?",
-                f"Gracias por compartirlo. ¿Cómo describirías el efecto de {ultima_emocion} en tu bienestar general?",
-                f"Noté que mencionaste {ultima_emocion}. ¿Te gustaría hablar sobre cómo afrontarlo?",
-                f"Cuando sentís {ultima_emocion}, ¿hay algo que hagas para aliviarlo o sentirte mejor?",
-                f"Entiendo que {ultima_emocion} puede ser desafiante. ¿Cómo reaccionás ante ello en el día a día?",
-                f"A veces, {ultima_emocion} nos hace ver las cosas de una manera particular. ¿Cómo afecta tu perspectiva sobre lo que te rodea?"
+                f"Entiendo que sientas {ultima_emocion}. ¿Cómo crees que afecta esto a tu día a día?",
+                f"A veces, sentir {ultima_emocion} puede ser abrumador. ¿Hay momentos en los que lo sentís con mayor intensidad?",
+                f"Cuando experimentás {ultima_emocion}, ¿hay algo que te ayude a sentirte mejor?",
+                f"Sé que {ultima_emocion} no es fácil de manejar. ¿Cómo te sentís cuando aparece?",
+                f"Gracias por compartirlo. ¿Dirías que {ultima_emocion} ha cambiado en intensidad con el tiempo?",
+                f"Noté que mencionaste {ultima_emocion}. ¿Cómo te afecta en tus relaciones o en tu trabajo?",
+                f"Cuando te sentís {ultima_emocion}, ¿hay algo que intentes hacer para aliviarlo?",
+                f"Comprendo que {ultima_emocion} puede generar malestar. ¿Te gustaría explorar estrategias para sobrellevarlo?",
+                f"Experimentar {ultima_emocion} puede ser difícil. ¿Sentís que hay algo en particular que lo detona?",
+                f"A veces, {ultima_emocion} puede afectar nuestra rutina diaria. ¿Te pasa algo así?"
             ]
         
+            # Seleccionar una respuesta aleatoria
             respuesta_variable = random.choice(respuestas_posibles)
             return {"respuesta": respuesta_variable}
 
