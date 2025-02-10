@@ -130,31 +130,25 @@ def registrar_sintoma(sintoma: str, cuadro: str):
 def registrar_emocion(emocion: str, contexto: str):
     """
     Registra una emoción detectada en la base de datos PostgreSQL.
-    Si la emoción ya existe, agrega el nuevo contexto solo si es diferente.
+    Si la emoción ya existe, actualiza el contexto solo si es diferente.
     """
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                # Verificar si la emoción ya existe
-                cursor.execute("SELECT contexto FROM emociones_detectadas WHERE emocion = %s", (emocion.strip().lower(),))
-                resultado = cursor.fetchone()
-
-                if resultado:
-                    contexto_existente = resultado[0]
-
-                    # Verificar si el nuevo contexto ya está registrado
-                    if contexto not in contexto_existente:
-                        nuevo_contexto = f"{contexto_existente}; {contexto}"
-                        cursor.execute("UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s", 
-                                       (nuevo_contexto, emocion.strip().lower()))
-                else:
-                    # Si no existe, la inserta normalmente
-                    cursor.execute("INSERT INTO emociones_detectadas (emocion, contexto) VALUES (%s, %s)", 
-                                   (emocion.strip().lower(), contexto.strip()))
-
+                cursor.execute("""
+                    INSERT INTO emociones_detectadas (emocion, contexto)
+                    VALUES (%s, %s)
+                    ON CONFLICT (emocion) 
+                    DO UPDATE SET contexto = 
+                    CASE 
+                        WHEN emociones_detectadas.contexto != EXCLUDED.contexto 
+                        THEN emociones_detectadas.contexto || '; ' || EXCLUDED.contexto
+                        ELSE emociones_detectadas.contexto
+                    END;
+                """, (emocion.strip().lower(), contexto.strip()))
                 conn.commit()
         print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
-    except psycopg2.Error as e:
+    except Exception as e:
         print(f"Error al registrar emoción '{emocion}': {e}")
 
 
