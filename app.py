@@ -130,6 +130,7 @@ def registrar_sintoma(sintoma: str, cuadro: str):
 def registrar_emocion(emocion: str, contexto: str):
     """
     Registra una emoción detectada en la base de datos PostgreSQL.
+    Evita insertar duplicados y actualiza el contexto si ya existe.
     """
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
@@ -137,12 +138,14 @@ def registrar_emocion(emocion: str, contexto: str):
                 cursor.execute("""
                     INSERT INTO emociones_detectadas (emocion, contexto) 
                     VALUES (%s, %s)
-                    ON CONFLICT (emocion) DO NOTHING;
+                    ON CONFLICT (emocion) DO UPDATE 
+                    SET contexto = EXCLUDED.contexto || '; ' || emociones_detectadas.contexto;
                 """, (emocion.strip().lower(), contexto.strip()))
                 conn.commit()
         print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
     except Exception as e:
         print(f"Error al registrar emoción '{emocion}': {e}")
+
 
 # Obtener síntomas existentes
 def obtener_sintomas():
