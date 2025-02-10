@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from collections import Counter
-import random
+from random import choice
 
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -618,8 +618,7 @@ async def asistente(input_data: UserInput):
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
         return {"respuesta": respuesta_ai}
-
-
+        
 
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     """
