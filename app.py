@@ -306,6 +306,18 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
+# Manejo de respuestas repetitivas
+def evitar_repeticion(respuesta, historial):
+    respuestas_alternativas = [
+        "Entiendo. ¿Podrías contarme más sobre cómo te sientes?",
+        "Gracias por compartirlo. ¿Cómo ha sido tu experiencia con esto?",
+        "Eso parece importante. ¿Te ha pasado antes?"
+    ]
+    if respuesta in historial:
+        return random.choice(respuestas_alternativas)
+    historial.append(respuesta)
+    return respuesta
+
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -324,7 +336,7 @@ async def asistente(input_data: UserInput):
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "mensajes": [],
-                "emociones_detectadas": [] # Para almacenar emociones detectadas
+                "emociones_detectadas": [], # Para almacenar emociones detectadas
                 "ultimas_respuestas": []
             }
 
@@ -333,20 +345,12 @@ async def asistente(input_data: UserInput):
         session["ultima_interaccion"] = time.time()
         
         # Detectar negaciones o correcciones
-        if "no" in mensaje_usuario or "no dije" in mensaje_usuario:
+        if any(negacion in mensaje_usuario for negacion in ["no dije", "no eso", "no es así", "eso no", "no fue lo que dije"]):
             return {"respuesta": "Entiendo, gracias por aclararlo. ¿Cómo describirías lo que sientes?"}
 
-        # Manejo de respuestas repetitivas
-        def evitar_repeticion(respuesta, historial):
-            respuestas_alternativas = [
-                "Entiendo. ¿Podrías contarme más sobre cómo te sientes?",
-                "Gracias por compartirlo. ¿Cómo ha sido tu experiencia con esto?",
-                "Eso parece importante. ¿Te ha pasado antes?"
-            ]
-            if respuesta in historial:
-                return random.choice(respuestas_alternativas)
-            historial.append(respuesta)
-            return respuesta
+
+        respuesta_variable = random.choice(respuestas_variadas)
+        return {"respuesta": evitar_repeticion(respuesta_variable, session["ultimas_respuestas"])}
 
 
         # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
