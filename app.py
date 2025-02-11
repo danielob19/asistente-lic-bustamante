@@ -676,7 +676,12 @@ async def asistente(input_data: UserInput):
                     "en buscar apoyo profesional o compartir más detalles sobre lo que estás experimentando."
                 )
             }
-
+        
+        # Genera una respuesta normal para otros mensajes
+        prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
+        respuesta_ai = generar_respuesta_con_openai(prompt)
+        return {"respuesta": respuesta_ai}
+        
         # 📌 🔹 Si no hay emociones claras, generar una respuesta variada
         respuestas_variadas = [
             "Entiendo, cuéntame más sobre eso.",
@@ -687,11 +692,6 @@ async def asistente(input_data: UserInput):
 
         respuesta_variable = random.choice(respuestas_variadas)
         return {"respuesta": evitar_repeticion(respuesta_variable, session["ultimas_respuestas"])}
-        
-        # Genera una respuesta normal para otros mensajes
-        prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
-        respuesta_ai = generar_respuesta_con_openai(prompt)
-        return {"respuesta": respuesta_ai}
         
     except Exception as e:  # ✅ Capturar errores que ocurran dentro del try
         print(f"Error en la función asistente: {e}")
