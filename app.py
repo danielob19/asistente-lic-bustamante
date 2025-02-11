@@ -682,17 +682,6 @@ async def asistente(input_data: UserInput):
         respuesta_ai = generar_respuesta_con_openai(prompt)
         return {"respuesta": respuesta_ai}
         
-        # 📌 🔹 Si no hay emociones claras, generar una respuesta variada
-        respuestas_variadas = [
-            "Entiendo, cuéntame más sobre eso.",
-            "¿Cómo te hace sentir esto en tu día a día?",
-            "Eso parece difícil. ¿Cómo te afecta?",
-            "Gracias por compartirlo. ¿Quieres hablar más sobre eso?",
-        ]
-
-        respuesta_variable = random.choice(respuestas_variadas)
-        return {"respuesta": evitar_repeticion(respuesta_variable, session["ultimas_respuestas"])}
-        
     except Exception as e:  # ✅ Capturar errores que ocurran dentro del try
         print(f"Error en la función asistente: {e}")
         return {"respuesta": "Lo siento, ocurrió un error al procesar tu solicitud. Intenta de nuevo."}
