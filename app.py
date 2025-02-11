@@ -651,6 +651,15 @@ async def asistente(input_data: UserInput):
         
             respuesta_variable = random.choice(respuestas_repetitivas)
             return {"respuesta": respuesta_variable}
+
+        # 📌 🔹 Detectar emociones en el mensaje antes de continuar con otras validaciones
+        emociones_negativas = detectar_emociones_negativas(mensaje_usuario)
+        session["emociones_detectadas"].extend(emociones_negativas)
+
+        # 📌 🔹 Confirmar emociones detectadas antes de asumirlas y pedir confirmación al usuario
+        if emociones_negativas:
+            return {"respuesta": f"Hasta ahora mencionaste sentirte {', '.join(set(emociones_negativas))}. ¿Es correcto?"}
+
         
         # Validar si se detectaron emociones o cuadros antes de generar la respuesta final
         if not session.get("emociones_detectadas") and not session.get("mensajes"):
@@ -660,6 +669,17 @@ async def asistente(input_data: UserInput):
                     "en buscar apoyo profesional o compartir más detalles sobre lo que estás experimentando."
                 )
             }
+
+        # 📌 🔹 Si no hay emociones claras, generar una respuesta variada
+        respuestas_variadas = [
+            "Entiendo, cuéntame más sobre eso.",
+            "¿Cómo te hace sentir esto en tu día a día?",
+            "Eso parece difícil. ¿Cómo te afecta?",
+            "Gracias por compartirlo. ¿Quieres hablar más sobre eso?",
+        ]
+
+        respuesta_variable = random.choice(respuestas_variadas)
+        return {"respuesta": evitar_repeticion(respuesta_variable, session["ultimas_respuestas"])}
         
         # Genera una respuesta normal para otros mensajes
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
