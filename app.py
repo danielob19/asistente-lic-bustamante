@@ -481,9 +481,15 @@ async def asistente(input_data: UserInput):
             "Gracias por compartirlo. ¿Quieres hablar más sobre eso?",
         ]
 
-        respuesta_variable = random.choice(respuestas_variadas)
-        return {"respuesta": evitar_repeticion(respuesta_variable, session["ultimas_respuestas"])}
-
+        # Solo generar respuesta variada si no se detectaron emociones o cuadros probables
+        if not session.get("emociones_detectadas") and not session.get("mensajes"):
+            respuesta_variable = random.choice(respuestas_variadas)
+            return {"respuesta": evitar_repeticion(respuesta_variable, session["ultimas_respuestas"])}
+        
+        # Genera una respuesta normal para otros mensajes
+        prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
+        respuesta_ai = generar_respuesta_con_openai(prompt)
+        return {"respuesta": respuesta_ai}
         
         # Manejo para análisis de texto después de 5 interacciones
         if contador == 5:
