@@ -325,11 +325,29 @@ async def asistente(input_data: UserInput):
                 "ultima_interaccion": time.time(),
                 "mensajes": [],
                 "emociones_detectadas": [] # Para almacenar emociones detectadas
+                "ultimas_respuestas": []
             }
 
         # Actualiza la sesión del usuario
         session = user_sessions[user_id]
         session["ultima_interaccion"] = time.time()
+        
+        # Detectar negaciones o correcciones
+        if "no" in mensaje_usuario or "no dije" in mensaje_usuario:
+            return {"respuesta": "Entiendo, gracias por aclararlo. ¿Cómo describirías lo que sientes?"}
+
+        # Manejo de respuestas repetitivas
+        def evitar_repeticion(respuesta, historial):
+            respuestas_alternativas = [
+                "Entiendo. ¿Podrías contarme más sobre cómo te sientes?",
+                "Gracias por compartirlo. ¿Cómo ha sido tu experiencia con esto?",
+                "Eso parece importante. ¿Te ha pasado antes?"
+            ]
+            if respuesta in historial:
+                return random.choice(respuestas_alternativas)
+            historial.append(respuesta)
+            return respuesta
+
 
         # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
         if mensaje_usuario in ["no sé", "ninguna", "ni la menor idea"]:
@@ -443,6 +461,24 @@ async def asistente(input_data: UserInput):
                 )
             }
 
+        # Detectar emociones en el mensaje
+        emociones_negativas = detectar_emociones_negativas(mensaje_usuario)
+        session["emociones_detectadas"].extend(emociones_negativas)
+
+        # Confirmar emociones detectadas antes de asumirlas
+        if emociones_negativas:
+            return {"respuesta": f"Hasta ahora mencionaste sentirte {', '.join(set(emociones_negativas))}. ¿Es correcto?"}
+
+        # Generar una respuesta variada
+        respuestas_variadas = [
+            "Entiendo, cuéntame más sobre eso.",
+            "¿Cómo te hace sentir esto en tu día a día?",
+            "Eso parece difícil. ¿Cómo te afecta?",
+            "Gracias por compartirlo. ¿Quieres hablar más sobre eso?",
+        ]
+
+        respuesta_variable = random.choice(respuestas_variadas)
+        return {"respuesta": evitar_repeticion(respuesta_variable, session["ultimas_respuestas"])}
 
         
         # Manejo para análisis de texto después de 5 interacciones
