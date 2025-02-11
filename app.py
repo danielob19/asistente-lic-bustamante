@@ -349,6 +349,15 @@ async def asistente(input_data: UserInput):
             return {"respuesta": "Entiendo, gracias por aclararlo. ¿Cómo describirías lo que sientes?"}
 
 
+        # Definir respuestas_variadas antes de usarla
+        respuestas_variadas = [
+            "Entiendo, cuéntame más sobre eso.",
+            "¿Cómo te hace sentir esto en tu día a día?",
+            "Eso parece difícil. ¿Cómo te afecta?",
+            "Gracias por compartirlo. ¿Quieres hablar más sobre eso?",
+        ]
+        
+        # Ahora sí, usar respuestas_variadas sin errores
         respuesta_variable = random.choice(respuestas_variadas)
         return {"respuesta": evitar_repeticion(respuesta_variable, session["ultimas_respuestas"])}
 
