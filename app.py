@@ -349,19 +349,6 @@ async def asistente(input_data: UserInput):
             return {"respuesta": "Entiendo, gracias por aclararlo. ¿Cómo describirías lo que sientes?"}
 
 
-        # Definir respuestas_variadas antes de usarla
-        respuestas_variadas = [
-            "Entiendo, cuéntame más sobre eso.",
-            "¿Cómo te hace sentir esto en tu día a día?",
-            "Eso parece difícil. ¿Cómo te afecta?",
-            "Gracias por compartirlo. ¿Quieres hablar más sobre eso?",
-        ]
-        
-        # Ahora sí, usar respuestas_variadas sin errores
-        respuesta_variable = random.choice(respuestas_variadas)
-        return {"respuesta": evitar_repeticion(respuesta_variable, session["ultimas_respuestas"])}
-
-
         # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
         if mensaje_usuario in ["no sé", "ninguna", "ni la menor idea"]:
             # Verificar si ya se alcanzaron suficientes interacciones para un análisis
@@ -681,6 +668,18 @@ async def asistente(input_data: UserInput):
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
         return {"respuesta": respuesta_ai}
+        
+        # Definir respuestas_variadas antes de usarla
+        respuestas_variadas = [
+            "Entiendo, cuéntame más sobre eso.",
+            "¿Cómo te hace sentir esto en tu día a día?",
+            "Eso parece difícil. ¿Cómo te afecta?",
+            "Gracias por compartirlo. ¿Quieres hablar más sobre eso?",
+        ]
+        
+        # Ahora sí, usar respuestas_variadas sin errores
+        respuesta_variable = random.choice(respuestas_variadas)
+        return {"respuesta": evitar_repeticion(respuesta_variable, session["ultimas_respuestas"])}
         
     except Exception as e:  # ✅ Capturar errores que ocurran dentro del try
         print(f"Error en la función asistente: {e}")
