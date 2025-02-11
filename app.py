@@ -652,14 +652,6 @@ async def asistente(input_data: UserInput):
             respuesta_variable = random.choice(respuestas_repetitivas)
             return {"respuesta": respuesta_variable}
 
-        # 📌 🔹 Detectar emociones en el mensaje antes de continuar con otras validaciones
-        emociones_negativas = detectar_emociones_negativas(mensaje_usuario)
-        session["emociones_detectadas"].extend(emociones_negativas)
-
-        # 📌 🔹 Confirmar emociones detectadas antes de asumirlas y pedir confirmación al usuario
-        if emociones_negativas:
-            return {"respuesta": f"Hasta ahora mencionaste sentirte {', '.join(set(emociones_negativas))}. ¿Es correcto?"}
-
         
         # Validar si se detectaron emociones o cuadros antes de generar la respuesta final
         if not session.get("emociones_detectadas") and not session.get("mensajes"):
