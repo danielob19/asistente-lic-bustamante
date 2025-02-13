@@ -389,6 +389,10 @@ async def asistente(input_data: UserInput):
         if mensaje_usuario in agradecimientos:
             return {"respuesta": "De nada, estoy para ayudarte. Que tengas un buen día."}
 
+        # Detectar "igual" solo si la última respuesta fue una despedida o agradecimiento
+        if mensaje_usuario == "igual" and session["ultimas_respuestas"] and session["ultimas_respuestas"][-1] in mensajes_cierre:
+            return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
+
 
         # Manejo para "solo un síntoma y no más" (responder como en la 5ª interacción y finalizar)
         if "no quiero dar más síntomas" in mensaje_usuario or "solo este síntoma" in mensaje_usuario:
