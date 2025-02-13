@@ -489,98 +489,97 @@ async def asistente(input_data: UserInput):
         respuesta_ai = generar_respuesta_con_openai(prompt)
         return {"respuesta": respuesta_ai}
         
-        # Manejo para diagnóstico en la interacción 5 y 9
-        if contador == 5 or contador == 9:
-            print(f"🟠 Ejecutando diagnóstico en la interacción {contador}")
-    
+        # Manejo para análisis de texto después de 5 interacciones
+        if contador == 5:
             mensajes = session["mensajes"]
             emociones_negativas = []
-    
+        
             # Detectar emociones negativas en los mensajes
             for mensaje in mensajes:
-                emociones_detectadas = detectar_emociones_negativas(mensaje)
-                print(f"🔍 Emociones detectadas en mensaje '{mensaje}': {emociones_detectadas}")
-                emociones_negativas.extend(emociones_detectadas)
-    
+                emociones_negativas.extend(detectar_emociones_negativas(mensaje))
+        
             # Eliminar duplicados en emociones detectadas
             emociones_unicas = list(set(emociones_negativas))
-            print(f"🔍 Emociones únicas detectadas hasta ahora: {emociones_unicas}")
-    
+        
             # Registrar emociones en la base de datos
             for emocion in emociones_unicas:
-                registrar_emocion(emocion, f"interacción {contador}")
-    
-            # Obtener síntomas almacenados en la base de datos
-            sintomas_existentes = obtener_sintomas()
-            print(f"📌 Síntomas almacenados en la base de datos: {sintomas_existentes}")
-    
-            # Mapeo correcto entre emociones y cuadros clínicos
-            cuadros_probables = []
-            for sintoma, cuadro in sintomas_existentes:
-                if sintoma.lower() in emociones_unicas:  
-                    cuadros_probables.append(cuadro)
-    
+                registrar_emocion(emocion, "interacción 5")
+        
+            # Obtener cuadro probable en base a emociones detectadas
+            cuadros_probables = [
+                cuadro for emocion, cuadro in obtener_sintomas() if emocion in emociones_unicas
+            ]
             cuadro_probable = cuadros_probables[0] if cuadros_probables else "no identificado"
-            print(f"🔍 Cuadro probable identificado: {cuadro_probable}")
-    
-            # 🔹 Variaciones en la respuesta
-            if emociones_unicas:
-                respuestas_posibles = [
-                    f"Por lo que mencionaste ({', '.join(emociones_unicas)}), el cuadro probable es {cuadro_probable}. Si querés orientación profesional, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                    f"Según lo que describiste ({', '.join(emociones_unicas)}), parece que el cuadro probable es {cuadro_probable}. Para obtener ayuda adecuada, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
-                ]
-            else:
-                respuestas_posibles = [
-                    "No detecté emociones claras en tu mensaje, pero si querés orientación profesional, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
-                ]
-    
+        
+            # Asegurar que se brinde un cuadro probable
+            if cuadro_probable == "no identificado":
+                cuadro_probable = "No se puede determinar con certeza, pero podrías beneficiarte de una evaluación profesional."
+        
+            # Variaciones en la respuesta (sin pedir más síntomas)
+            respuestas_posibles = [
+                f"Según lo que mencionaste ({', '.join(emociones_unicas)}), el cuadro probable es {cuadro_probable}. Para orientación profesional, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
+                f"Tus palabras sugieren ({', '.join(emociones_unicas)}) un posible cuadro de {cuadro_probable}. Si deseas más claridad, podés escribir al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
+                f"Por lo que compartiste ({', '.join(emociones_unicas)}), parece que el cuadro probable es {cuadro_probable}. Si querés recibir apoyo profesional, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
+            ]
+        
+            # Seleccionar una respuesta aleatoria
             respuesta_variable = random.choice(respuestas_posibles)
             session["mensajes"].clear()
             return {"respuesta": respuesta_variable}
-    
-        # 🔹 Manejo de interacciones 6, 7 y 8
-        if 6 <= contador <= 8:
-            ultima_emocion = session["emociones_detectadas"][-1] if session["emociones_detectadas"] else None
-    
-            if not ultima_emocion:
-                return {"respuesta": "Te noto preocupado. ¿Cómo afecta esto a tu día a día?"}
-    
-            respuestas_posibles = [
-                f"Comprendo que sentir {ultima_emocion} no es fácil. ¿Cómo te afecta en tu rutina diaria?",
-                f"A veces, {ultima_emocion} puede hacer que todo parezca más difícil. ¿Hay algo que te ayude a sobrellevarlo?",
-                f"Sé que {ultima_emocion} puede ser agotador. ¿Cómo influye en tu estado de ánimo general?",
-                f"Experimentar {ultima_emocion} puede ser difícil. ¿Notaste algún patrón en cuándo suele aparecer?",
-                f"A veces, {ultima_emocion} nos hace ver las cosas de una manera distinta. ¿Cómo ha influido en tu percepción de lo que te rodea?"
+        
+        # Manejo para la interacción 9 (igual a la 5, sin pedir más síntomas)
+        if contador == 9:
+            mensajes = session["mensajes"]
+            emociones_negativas = []
+        
+            # Detectar emociones negativas en los mensajes
+            for mensaje in mensajes:
+                emociones_negativas.extend(detectar_emociones_negativas(mensaje))
+        
+            # Eliminar duplicados en emociones detectadas
+            emociones_unicas = list(set(emociones_negativas))
+        
+            # Registrar emociones en la base de datos
+            for emocion in emociones_unicas:
+                registrar_emocion(emocion, "interacción 9")
+        
+            # Obtener cuadro probable en base a emociones detectadas
+            cuadros_probables = [
+                cuadro for emocion, cuadro in obtener_sintomas() if emocion in emociones_unicas
             ]
-    
+            cuadro_probable = cuadros_probables[0] if cuadros_probables else "no identificado"
+        
+            # Asegurar que se brinde un cuadro probable
+            if cuadro_probable == "no identificado":
+                cuadro_probable = "No se puede determinar con certeza, pero podrías beneficiarte de una evaluación profesional."
+        
+            # Variaciones en la respuesta (sin pedir más síntomas)
+            respuestas_posibles = [
+                f"Después de analizar lo que mencionaste ({', '.join(emociones_unicas)}), el cuadro probable es {cuadro_probable}. Para recibir ayuda profesional, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
+                f"Por lo que mencionaste ({', '.join(emociones_unicas)}), el cuadro probable es {cuadro_probable}. Si querés hablar con un especialista, podés escribir al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186.",
+                f"Lo que compartiste ({', '.join(emociones_unicas)}) sugiere un cuadro relacionado con {cuadro_probable}. Para recibir orientación profesional, te sugiero contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
+            ]
+        
+            # Seleccionar una respuesta aleatoria
             respuesta_variable = random.choice(respuestas_posibles)
+            session["mensajes"].clear()
             return {"respuesta": respuesta_variable}
-    
-        # 🔹 Manejo de interacción 10 (cierre de conversación)
+        
+        # Manejo de interacción 10 (última interacción)
         if contador == 10:
             respuestas_finales = [
                 "Hemos llegado al final de nuestra conversación. Para un seguimiento más personalizado, te recomiendo contactar al Lic. Daniel O. Bustamante al WhatsApp: +54 911 3310-1186. ¡Gracias por tu tiempo!",
                 "Espero que esta conversación te haya sido útil. Si querés hablar con un profesional, podés comunicarte con el Lic. Daniel O. Bustamante al WhatsApp: +54 911 3310-1186.",
                 "Fue un placer charlar contigo. Si necesitás más orientación, te sugiero contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
             ]
-    
+        
             respuesta_variable = random.choice(respuestas_finales)
             return {"respuesta": respuesta_variable}
-    
-        # 🔹 Manejo de interacciones posteriores a la 10
-        if contador > 10:
-            respuestas_repetitivas = [
-                "Sugiero solicitar una consulta al Lic. Daniel O. Bustamante escribiéndole al WhatsApp (+54) 9 11 3310-1186. Aguardamos tu mensaje. ¡Un saludo cordial!",
-                "Si querés recibir más orientación, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                "No dudes en hablar con un profesional. Podés escribir al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
-            ]
-    
-            respuesta_variable = random.choice(respuestas_repetitivas)
-            return {"respuesta": respuesta_variable}
-    
-    except Exception as e:
-        print(f"❌ Error en la función asistente: {e}")
-        return {"respuesta": "Lo siento, ocurrió un error al procesar tu solicitud. Intenta de nuevo."}
+        
+        # Manejo de excepciones
+        def except_handler():
+            return {"respuesta": "Lo siento, ocurrió un error al procesar tu solicitud. Intenta de nuevo."}
+
         
 
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
