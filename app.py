@@ -469,9 +469,23 @@ async def asistente(input_data: UserInput):
         emociones_negativas = detectar_emociones_negativas(mensaje_usuario)
         session["emociones_detectadas"].extend(emociones_negativas)
 
-        # Confirmar emociones detectadas antes de asumirlas
-        if emociones_negativas:
-            return {"respuesta": f"Hasta ahora mencionaste sentirte {', '.join(set(emociones_negativas))}. ¿Es correcto?"}
+        # Evita repetir "Hasta ahora mencionaste..." en cada respuesta
+        if emociones_detectadas:
+            emociones_unicas = list(set(emociones_detectadas))
+            
+            # Verificar si la emoción es nueva y aún no ha sido mencionada recientemente
+            emociones_nuevas = [e for e in emociones_unicas if e not in session["emociones_detectadas"][-3:]]
+        
+            # Si hay emociones nuevas, pero sin repetir la confirmación constante
+            if emociones_nuevas:
+                session["emociones_detectadas"].extend(emociones_nuevas)
+                return {
+                    "respuesta": (
+                        f"Entiendo que puedes estar sintiéndote {' y '.join(emociones_nuevas)}. "
+                        "Si deseas hablar más al respecto, estoy aquí para escucharte."
+                    )
+                }
+
 
         # Generar una respuesta variada
         respuestas_variadas = [
