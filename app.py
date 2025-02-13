@@ -576,9 +576,9 @@ async def asistente(input_data: UserInput):
             respuesta_variable = random.choice(respuestas_finales)
             return {"respuesta": respuesta_variable}
         
-        # Manejo de excepciones
-        def except_handler():
-            return {"respuesta": "Lo siento, ocurrió un error al procesar tu solicitud. Intenta de nuevo."}
+    # Manejo de excepciones
+    def except_handler():
+        return {"respuesta": "Lo siento, ocurrió un error al procesar tu solicitud. Intenta de nuevo."}
 
         
 
