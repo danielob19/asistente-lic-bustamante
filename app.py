@@ -487,56 +487,30 @@ async def asistente(input_data: UserInput):
         respuesta_ai = generar_respuesta_con_openai(prompt)
         return {"respuesta": respuesta_ai}
         
-        # Manejo para análisis de texto después de 5 interacciones
-        if contador == 5:
-            mensajes = session["mensajes"]
-            emociones_negativas = []
+        # OpenAI siempre detecta emociones negativas antes de decidir si registrarlas
+        emociones_detectadas = detectar_emociones_negativas(mensaje_usuario)
+        session["emociones_detectadas"].extend(emociones_detectadas)
         
-            # Detectar emociones negativas en los mensajes
-            for mensaje in mensajes:
-                emociones_negativas.extend(detectar_emociones_negativas(mensaje))
+        # Listar emociones únicas detectadas
+        emociones_unicas = list(set(session["emociones_detectadas"]))
         
-            # Eliminar duplicados en emociones detectadas
-            emociones_unicas = list(set(emociones_negativas))
+        # Obtener cuadro probable si hay al menos 2 coincidencias de síntomas en la base de datos
+        coincidencias_sintomas = obtener_coincidencias_sintomas(emociones_unicas)
+        cuadro_probable = obtener_cuadro_probable(emociones_unicas) if len(coincidencias_sintomas) >= 2 else "No se pudo determinar un cuadro probable con suficiente precisión."
         
-            # Registrar emociones en la base de datos
-            for emocion in emociones_unicas:
-                registrar_emocion(emocion, "interacción 5")
+        # Registrar emociones en la base de datos solo si son nuevas
+        for emocion in emociones_unicas:
+            registrar_emocion(emocion, f"interacción {contador}")
         
-            # Obtener cuadro probable en base a emociones detectadas
-            cuadros_probables = [
-                cuadro for emocion, cuadro in obtener_sintomas() if emocion in emociones_unicas
-            ]
-            cuadro_probable = cuadros_probables[0] if cuadros_probables else "no identificado"
-        
-            # 🔹 Variaciones en la respuesta (sin pedir más síntomas)
-            respuestas_posibles = [
-                f"Por lo que mencionaste ({', '.join(emociones_unicas)}), el cuadro probable es {cuadro_probable}. Si querés orientación profesional, te sugiero contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                f"De acuerdo con lo que compartiste ({', '.join(emociones_unicas)}), podríamos estar ante {cuadro_probable}. Para hablar con un profesional, podés escribir al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186.",
-                f"Lo que describiste ({', '.join(emociones_unicas)}) sugiere un cuadro relacionado con {cuadro_probable}. Si querés más claridad, te recomiendo hablar con el Lic. Daniel O. Bustamante. Podés escribirle al WhatsApp +54 911 3310-1186.",
-                f"Según lo que mencionaste ({', '.join(emociones_unicas)}), parece que el cuadro probable es {cuadro_probable}. Para obtener ayuda adecuada, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                f"Teniendo en cuenta lo que contaste ({', '.join(emociones_unicas)}), el cuadro más probable es {cuadro_probable}. Para recibir una evaluación, te recomiendo hablar con el Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                f"Considerando tus palabras ({', '.join(emociones_unicas)}), el cuadro podría ser {cuadro_probable}. Para orientación personalizada, podés escribir al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186.",
-                f"Por lo que compartiste ({', '.join(emociones_unicas)}), el cuadro probable es {cuadro_probable}. Si querés recibir ayuda profesional, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                f"Basándome en lo que mencionaste ({', '.join(emociones_unicas)}), podríamos estar hablando de {cuadro_probable}. Para obtener más información, podés escribir al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186.",
-                f"Tomando en cuenta lo que describiste ({', '.join(emociones_unicas)}), el cuadro probable es {cuadro_probable}. Si querés orientación profesional, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
-            ]
-        
-            # Manejo de caso donde no se detectan emociones negativas
-            if not emociones_unicas:
-                respuestas_posibles = [
-                    f"Por lo que mencionaste, no se detectaron emociones negativas específicas, pero si querés recibir ayuda profesional, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                    f"Aunque no identifiqué emociones negativas claras, es recomendable hablar con un profesional si sentís que lo necesitás. Podés escribir al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186.",
-                    f"No detecté emociones específicas en tu mensaje, pero si estás atravesando un momento difícil, te sugiero contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186 para recibir ayuda adecuada.",
-                    f"Si bien no se identificaron emociones negativas concretas, es importante cuidar de tu bienestar. Si lo creés necesario, podés contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186.",
-                    f"Si tenés dudas sobre lo que estás sintiendo, lo mejor es hablar con un profesional. Podés comunicarte con el Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                ]
-        
-            # Seleccionar una respuesta aleatoria
-            respuesta_variable = random.choice(respuestas_posibles)
-        
-            session["mensajes"].clear()
-            return {"respuesta": respuesta_variable}
+        # Responder en las interacciones 5 y 9 con un resumen de emociones y diagnóstico probable
+        if contador in [5, 9]:
+            return {
+                "respuesta": (
+                    f"Hemos analizado lo que mencionaste y detectamos emociones como: {', '.join(emociones_unicas)}. "
+                    f"En base a esto, el cuadro probable es: {cuadro_probable}. "
+                    f"Si necesitas más orientación, te recomiendo contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
+                )
+            }
 
 
         # 🔹 Manejo de interacciones 6, 7 y 8
@@ -570,57 +544,6 @@ async def asistente(input_data: UserInput):
         
             # Seleccionar una respuesta aleatoria
             respuesta_variable = random.choice(respuestas_posibles)
-            return {"respuesta": respuesta_variable}
-
-
-        # Manejo para la interacción 9 (igual a la 5, sin pedir más síntomas)
-        if contador == 9:
-            mensajes = session["mensajes"]
-            emociones_negativas = []
-        
-            # Detectar emociones negativas en los mensajes
-            for mensaje in mensajes:
-                emociones_negativas.extend(detectar_emociones_negativas(mensaje))
-        
-            # Eliminar duplicados en emociones detectadas
-            emociones_unicas = list(set(emociones_negativas))
-        
-            # Registrar emociones en la base de datos
-            for emocion in emociones_unicas:
-                registrar_emocion(emocion, "interacción 9")
-        
-            # Obtener cuadro probable en base a emociones detectadas
-            cuadros_probables = [
-                cuadro for emocion, cuadro in obtener_sintomas() if emocion in emociones_unicas
-            ]
-            cuadro_probable = cuadros_probables[0] if cuadros_probables else "no identificado"
-        
-            # 🔹 Variaciones en la respuesta (sin pedir más síntomas)
-            respuestas_posibles = [
-                f"Después de analizar lo que mencionaste ({', '.join(emociones_unicas)}), el cuadro probable es {cuadro_probable}. Para recibir ayuda profesional, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                f"Por lo que mencionaste ({', '.join(emociones_unicas)}), el cuadro probable es {cuadro_probable}. Si querés hablar con un especialista, podés escribir al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186.",
-                f"Según lo que describiste ({', '.join(emociones_unicas)}), el cuadro probable podría estar relacionado con {cuadro_probable}. Para recibir orientación profesional, te sugiero contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                f"Teniendo en cuenta lo que compartiste ({', '.join(emociones_unicas)}), parece que el cuadro probable es {cuadro_probable}. Para obtener más información, podés comunicarte con el Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                f"Lo que mencionaste ({', '.join(emociones_unicas)}) sugiere que el cuadro probable es {cuadro_probable}. Para recibir ayuda profesional, podés escribir al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186.",
-                f"En base a lo que describiste ({', '.join(emociones_unicas)}), el cuadro probable es {cuadro_probable}. Si querés hablar con un profesional sobre esto, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                f"Por lo que compartiste ({', '.join(emociones_unicas)}), podríamos estar hablando de {cuadro_probable}. Para obtener un diagnóstico más preciso, te sugiero escribir al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                f"Tomando en cuenta lo que mencionaste ({', '.join(emociones_unicas)}), el cuadro probable es {cuadro_probable}. Para recibir asistencia personalizada, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
-            ]
-        
-            # Manejo de caso donde no se detectan emociones negativas
-            if not emociones_unicas:
-                respuestas_posibles = [
-                    f"Por lo que mencionaste, no se detectaron emociones negativas específicas, pero si querés recibir ayuda profesional, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                    f"Aunque no identifiqué emociones negativas claras, es recomendable hablar con un profesional si sentís que lo necesitás. Podés escribir al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186.",
-                    f"No detecté emociones específicas en tu mensaje, pero si estás atravesando un momento difícil, te sugiero contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186 para recibir ayuda adecuada.",
-                    f"Si bien no se identificaron emociones negativas concretas, es importante cuidar de tu bienestar. Si lo creés necesario, podés contactar al Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186.",
-                    f"Si tenés dudas sobre lo que estás sintiendo, lo mejor es hablar con un profesional. Podés comunicarte con el Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                ]
-        
-            # Seleccionar una respuesta aleatoria
-            respuesta_variable = random.choice(respuestas_posibles)
-        
-            session["mensajes"].clear()
             return {"respuesta": respuesta_variable}
 
 
