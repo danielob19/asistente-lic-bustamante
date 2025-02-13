@@ -332,30 +332,45 @@ async def asistente(input_data: UserInput):
 
         # Inicializa la sesión del usuario si no existe
         if user_id not in user_sessions:
+            print(f"⚠️ Nueva sesión creada para el usuario {user_id}")
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "mensajes": [],
-                "emociones_detectadas": [], # Para almacenar emociones detectadas
+                "emociones_detectadas": [],
                 "ultimas_respuestas": []
             }
-
+        else:
+            print(f"🟢 Sesión existente detectada para {user_id}")
+        
         # Actualiza la sesión del usuario
         session = user_sessions[user_id]
         session["ultima_interaccion"] = time.time()
         
+        # 🔍 Verificar estado antes del incremento
+        print(f"🔍 Antes de incrementar, interacciones de {user_id}: {session['contador_interacciones']}")
+        
+        # ✅ Incrementa el contador de interacciones **ANTES** de cualquier return
+        session["contador_interacciones"] += 1
+        session["mensajes"].append(mensaje_usuario)
+        
+        contador = session["contador_interacciones"]
+        
+        # 🔍 Verificar estado después del incremento
+        print(f"✅ Después de incrementar, interacciones de {user_id}: {contador}")
+        
+        # ⬇️ Ahora vienen las condiciones de respuesta, pero el contador **ya aumentó**
         # Detectar negaciones o correcciones
         if any(negacion in mensaje_usuario for negacion in ["no dije", "no eso", "no es así", "eso no", "no fue lo que dije"]):
             return {"respuesta": "Entiendo, gracias por aclararlo. ¿Cómo describirías lo que sientes?"}
-
-
+        
         # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
         if mensaje_usuario in ["no sé", "ninguna", "ni la menor idea"]:
             # Verificar si ya se alcanzaron suficientes interacciones para un análisis
             if session["contador_interacciones"] >= 9 or session["mensajes"]:
                 cuadro_probable = obtener_cuadro_probable(session.get("emociones_detectadas", []))
                 emociones_todas = ", ".join(set(session.get("emociones_detectadas", [])[:3]))  # Limitar a 3 emociones
-
+        
                 if not cuadro_probable or cuadro_probable == "no identificado":
                     return {
                         "respuesta": (
@@ -371,25 +386,23 @@ async def asistente(input_data: UserInput):
                         f"más detallada. Un saludo."
                     )
                 }
-
+        
             # Si no hay un análisis previo, responder de manera neutral
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
-
-
+        
         # Manejo para mensajes de cierre (sin insistir ni contabilizar interacciones)
         if mensaje_usuario in ["ok", "gracias", "en nada", "en nada mas", "nada mas", "no necesito nada mas", "estoy bien"]:
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
-
+        
         # Respuesta específica para saludos simples
         if mensaje_usuario in ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]:
             return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
-
+        
         # 🔹 Manejo de agradecimientos
         agradecimientos = {"gracias", "muy amable", "te agradezco", "muchas gracias", "ok gracias"}
         if mensaje_usuario in agradecimientos:
             return {"respuesta": "De nada, estoy para ayudarte. Que tengas un buen día."}
-
-
+        
         # Manejo para "solo un síntoma y no más" (responder como en la 5ª interacción y finalizar)
         if "no quiero dar más síntomas" in mensaje_usuario or "solo este síntoma" in mensaje_usuario:
             mensajes = session["mensajes"]
@@ -402,18 +415,7 @@ async def asistente(input_data: UserInput):
                     f"+54 911 3310-1186 para una evaluación más detallada."
                 )
             }
-        
-        # Incrementa el contador de interacciones
-        session["contador_interacciones"] += 1
-        session["mensajes"].append(mensaje_usuario)
 
-        contador = session["contador_interacciones"]
-
-        # Respuesta específica para "¿atienden estos casos?"
-        if "atienden estos casos" in mensaje_usuario:
-            return {
-                "respuesta": "Sí, el Lic. Daniel O. Bustamante atiende este tipo de casos. Si necesitas ayuda, no dudes en contactarlo al WhatsApp (+54) 9 11 3310-1186."
-            }
 
         # Proporciona el número de contacto si el usuario lo solicita
         if (
