@@ -412,7 +412,32 @@ async def asistente(input_data: UserInput):
         session["mensajes"].append(mensaje_usuario)
 
         contador = session["contador_interacciones"]
+        
+        # Asegurar que la lista de emociones está actualizada
+        emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
+        
+        if not isinstance(emociones_detectadas, list):
+            emociones_detectadas = []
+        
+        # Agregar emociones a la sesión sin causar errores
+        session["emociones_detectadas"].extend(emociones_detectadas)
+        
+        # 🔹 Mover la evaluación de la 5ta y 9na interacción aquí
+        if contador in [5, 9]:
+            cuadro_probable = obtener_cuadro_probable(session["emociones_detectadas"])
+            
+            if cuadro_probable == "no identificado" or len(obtener_coincidencias_sintomas(session["emociones_detectadas"])) < 2:
+                cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
+        
+            return {
+                "respuesta": (
+                    f"Hasta ahora mencionaste emociones como: {', '.join(session['emociones_detectadas'])}. "
+                    f"En base a esto, el cuadro probable es: {cuadro_probable}. "
+                    f"Si necesitas más orientación, te recomiendo contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
+                )
+            }
 
+        
         # Respuesta específica para "¿atienden estos casos?"
         if "atienden estos casos" in mensaje_usuario:
             return {
@@ -474,17 +499,6 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        # Detectar emociones, asegurando que siempre haya una lista válida
-        emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
-        
-        # Evita que la variable no esté asociada a un valor
-        if not isinstance(emociones_detectadas, list):
-            emociones_detectadas = []
-        
-        # Agregar emociones a la sesión sin causar errores
-        session["emociones_detectadas"].extend(emociones_detectadas)
-
-
         # Evita repetir "Hasta ahora mencionaste..." en cada respuesta
         if emociones_detectadas:
             emociones_unicas = list(set(emociones_detectadas))
@@ -536,21 +550,6 @@ async def asistente(input_data: UserInput):
         for emocion in emociones_unicas:
             registrar_emocion(emocion, f"interacción {contador}")
         
-        # Responder en las interacciones 5 y 9 con un resumen de emociones y diagnóstico probable
-        if contador in [5, 9]:
-            cuadro_probable = obtener_cuadro_probable(session["emociones_detectadas"])
-            if cuadro_probable == "no identificado" or len(obtener_coincidencias_sintomas(session["emociones_detectadas"])) < 2:
-                cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
-            return {
-                "respuesta": (
-                    f"Hasta ahora mencionaste emociones como: {', '.join(session['emociones_detectadas'])}. "
-                    f"En base a esto, el cuadro probable es: {cuadro_probable}. "
-                    f"Si necesitas más orientación, te recomiendo contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
-                )
-            }
-
-
-
         # 🔹 Manejo de interacciones 6, 7 y 8
         if 6 <= contador <= 8:
             # Si el usuario agradece, se cierra la conversación educadamente
