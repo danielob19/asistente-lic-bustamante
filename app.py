@@ -538,13 +538,19 @@ async def asistente(input_data: UserInput):
         
         # Responder en las interacciones 5 y 9 con un resumen de emociones y diagnóstico probable
         if contador in [5, 9]:
+            cuadro_probable = obtener_cuadro_probable(session["emociones_detectadas"])
+            if cuadro_probable == "no identificado" or len(obtener_coincidencias_sintomas(session["emociones_detectadas"])) < 2:
+                cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
             return {
                 "respuesta": (
-                    f"Hemos analizado lo que mencionaste y detectamos emociones como: {', '.join(emociones_unicas)}. "
+                    f"Hasta ahora mencionaste emociones como: {', '.join(session['emociones_detectadas'])}. "
                     f"En base a esto, el cuadro probable es: {cuadro_probable}. "
                     f"Si necesitas más orientación, te recomiendo contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
                 )
             }
+
+        return {"respuesta": generar_respuesta_con_openai(mensaje_usuario)}
+
 
 
         # 🔹 Manejo de interacciones 6, 7 y 8
