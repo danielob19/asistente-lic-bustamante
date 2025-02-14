@@ -318,6 +318,38 @@ def evitar_repeticion(respuesta, historial):
     historial.append(respuesta)
     return respuesta
 
+def obtener_cuadro_probable(emociones):
+    """
+    Analiza las emociones detectadas y devuelve un cuadro probable basado en la base de datos.
+    """
+    if not emociones:
+        return "no identificado"
+
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT cuadro FROM palabras_clave 
+            WHERE sintoma = ANY(%s);
+        """, (emociones,))
+        
+        resultados = cursor.fetchall()
+        conn.close()
+
+        if not resultados:
+            return "no identificado"
+
+        # Contar la frecuencia de cada cuadro probable y devolver el más común
+        contador_cuadros = Counter([resultado[0] for resultado in resultados])
+        cuadro_probable, _ = contador_cuadros.most_common(1)[0]
+
+        return cuadro_probable
+
+    except Exception as e:
+        print(f"Error al obtener cuadro probable: {e}")
+        return "no identificado"
+
+
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
