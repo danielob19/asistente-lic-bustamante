@@ -447,12 +447,14 @@ async def asistente(input_data: UserInput):
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
         
-        # 🔹 Mover la evaluación de la 5ta y 9na interacción aquí
+        # 🔹 Evaluación de cuadro probable en la 5ta y 9na interacción
         if contador in [5, 9]:
-            cuadro_probable = obtener_cuadro_probable(session["emociones_detectadas"])
-            
-            if cuadro_probable == "no identificado" or len(obtener_coincidencias_sintomas(session["emociones_detectadas"])) < 2:
+            coincidencias_sintomas = obtener_coincidencias_sintomas(session["emociones_detectadas"])
+        
+            if len(coincidencias_sintomas) < 2:
                 cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
+            else:
+                cuadro_probable = obtener_cuadro_probable(session["emociones_detectadas"])
         
             return {
                 "respuesta": (
@@ -462,6 +464,13 @@ async def asistente(input_data: UserInput):
                 )
             }
 
+        
+        if not isinstance(emociones_detectadas, list):
+            emociones_detectadas = []
+        
+        # Agregar emociones a la sesión sin causar errores
+        session["emociones_detectadas"].extend(emociones_detectadas)
+        
         
         # Respuesta específica para "¿atienden estos casos?"
         if "atienden estos casos" in mensaje_usuario:
