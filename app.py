@@ -1,8 +1,3 @@
-CODIGO 14 DE febrero de 2025 actualmente instalado  
-NO RESPETA INTERACCIÓN 5 y 9 
-SUGIERO: Mañana darle a GPT en archivo txt el código del 26 de enero (que respeta resumen interacción 5 y 9) y luego subir código actual también en txt PARA QUE REALICE COMPARACIÓN y recupere bloques que permitan respetar interacción 5 y 9 
-
-
 import os
 import time
 import threading
