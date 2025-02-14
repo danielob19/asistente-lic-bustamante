@@ -474,9 +474,16 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        # Detectar emociones en el mensaje
-        emociones_negativas = detectar_emociones_negativas(mensaje_usuario)
-        session["emociones_detectadas"].extend(emociones_negativas)
+        # Detectar emociones, asegurando que siempre haya una lista válida
+        emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
+        
+        # Evita que la variable no esté asociada a un valor
+        if not isinstance(emociones_detectadas, list):
+            emociones_detectadas = []
+        
+        # Agregar emociones a la sesión sin causar errores
+        session["emociones_detectadas"].extend(emociones_detectadas)
+
 
         # Evita repetir "Hasta ahora mencionaste..." en cada respuesta
         if emociones_detectadas:
