@@ -318,12 +318,12 @@ def evitar_repeticion(respuesta, historial):
     historial.append(respuesta)
     return respuesta
 
-def obtener_cuadro_probable(emociones):
+def obtener_coincidencias_sintomas(emociones):
     """
-    Analiza las emociones detectadas y devuelve un cuadro probable basado en la base de datos.
+    Busca coincidencias de síntomas en la base de datos y devuelve una lista de cuadros clínicos relacionados.
     """
     if not emociones:
-        return "no identificado"
+        return []
 
     try:
         conn = psycopg2.connect(DATABASE_URL)
@@ -336,18 +336,11 @@ def obtener_cuadro_probable(emociones):
         resultados = cursor.fetchall()
         conn.close()
 
-        if not resultados:
-            return "no identificado"
-
-        # Contar la frecuencia de cada cuadro probable y devolver el más común
-        contador_cuadros = Counter([resultado[0] for resultado in resultados])
-        cuadro_probable, _ = contador_cuadros.most_common(1)[0]
-
-        return cuadro_probable
+        return [resultado[0] for resultado in resultados] if resultados else []
 
     except Exception as e:
-        print(f"Error al obtener cuadro probable: {e}")
-        return "no identificado"
+        print(f"Error al obtener coincidencias de síntomas: {e}")
+        return []
 
 
 @app.post("/asistente")
