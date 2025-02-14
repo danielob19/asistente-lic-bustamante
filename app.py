@@ -549,8 +549,6 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        return {"respuesta": generar_respuesta_con_openai(mensaje_usuario)}
-
 
 
         # 🔹 Manejo de interacciones 6, 7 y 8
