@@ -339,15 +339,20 @@ async def asistente(input_data: UserInput):
         # Registrar interacción en la base de datos
         registrar_interaccion(user_id, mensaje_usuario)
 
-        # Inicializa la sesión del usuario si no existe
+        # Registrar sesión del usuario si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "mensajes": [],
-                "emociones_detectadas": [], # Para almacenar emociones detectadas
-                "ultimas_respuestas": []
+                "emociones_detectadas": []
             }
+
+        session = user_sessions[user_id]
+        session["ultima_interaccion"] = time.time()
+        session["contador_interacciones"] += 1
+        contador = session["contador_interacciones"]
+        session["mensajes"].append(mensaje_usuario)
 
         # Actualiza la sesión del usuario
         session = user_sessions[user_id]
@@ -431,23 +436,28 @@ async def asistente(input_data: UserInput):
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
         
-        # 🔹 Evaluación de cuadro probable en la 5ta y 9na interacción
+        # Evaluación de emociones y cuadro probable en la interacción 5 y 9
         if contador in [5, 9]:
-            coincidencias_sintomas = obtener_coincidencias_sintomas(session["emociones_detectadas"])
+            # Detectar emociones negativas en los mensajes acumulados
+            emociones_detectadas = detectar_emociones_negativas(" ".join(session["mensajes"]))
+            session["emociones_detectadas"].extend(emociones_detectadas)
         
-            if len(coincidencias_sintomas) < 2:
-                cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
+            # Buscar coincidencias en la base de datos para determinar el cuadro probable
+            coincidencias_sintomas = obtener_coincidencias_sintomas(emociones_detectadas)
+            if len(coincidencias_sintomas) >= 2:
+                cuadro_probable = Counter(coincidencias_sintomas).most_common(1)[0][0]
             else:
-                cuadro_probable = obtener_cuadro_probable(session["emociones_detectadas"])
+                cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
         
-            return {
-                "respuesta": (
-                    f"Hasta ahora mencionaste emociones como: {', '.join(session['emociones_detectadas'])}. "
-                    f"En base a esto, el cuadro probable es: {cuadro_probable}. "
-                    f"Si necesitas más orientación, te recomiendo contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
-                )
-            }
-
+            # Construcción de la respuesta con emociones y cuadro probable
+            respuesta = (
+                f"Detecté emociones negativas como: {', '.join(set(emociones_detectadas))}. "
+                f"Basado en esto, el cuadro probable es: {cuadro_probable}. "
+                f"Si deseas más orientación, te recomiendo contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
+            )
+        
+            session["mensajes"].clear()  # Limpiar mensajes después del análisis
+            return {"respuesta": respuesta}
         
         if not isinstance(emociones_detectadas, list):
             emociones_detectadas = []
