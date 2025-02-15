@@ -440,10 +440,13 @@ async def asistente(input_data: UserInput):
         if contador in [5, 9]:
             # Detectar emociones negativas en los mensajes acumulados
             emociones_detectadas = detectar_emociones_negativas(" ".join(session["mensajes"]))
-            session["emociones_detectadas"].extend(emociones_detectadas)
+            
+            # Evitar agregar duplicados en emociones detectadas
+            nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
+            session["emociones_detectadas"].extend(nuevas_emociones)
         
             # Buscar coincidencias en la base de datos para determinar el cuadro probable
-            coincidencias_sintomas = obtener_coincidencias_sintomas(emociones_detectadas)
+            coincidencias_sintomas = obtener_coincidencias_sintomas(session["emociones_detectadas"])
             if len(coincidencias_sintomas) >= 2:
                 cuadro_probable = Counter(coincidencias_sintomas).most_common(1)[0][0]
             else:
@@ -451,18 +454,13 @@ async def asistente(input_data: UserInput):
         
             # Construcción de la respuesta con emociones y cuadro probable
             respuesta = (
-                f"Detecté emociones negativas como: {', '.join(set(emociones_detectadas))}. "
+                f"Detecté emociones negativas como: {', '.join(set(session['emociones_detectadas']))}. "
                 f"Basado en esto, el cuadro probable es: {cuadro_probable}. "
                 f"Si deseas más orientación, te recomiendo contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
             )
         
             session["mensajes"].clear()  # Limpiar mensajes después del análisis
             return {"respuesta": respuesta}
-        
-        # Asegurar que emociones_detectadas sea una lista válida
-        if not emociones_detectadas:
-            emociones_detectadas = []
-
         
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
