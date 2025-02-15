@@ -154,22 +154,6 @@ def registrar_emocion(emocion: str, contexto: str):
     except Exception as e:
         print(f"Error al registrar emoción '{emocion}': {e}")
 
-# Obtener síntomas existentes
-def obtener_sintomas():
-    """
-    Obtiene todos los síntomas almacenados en la base de datos PostgreSQL.
-    """
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute("SELECT sintoma, cuadro FROM palabras_clave")
-        sintomas = cursor.fetchall()
-        conn.close()
-        return sintomas
-    except Exception as e:
-        print(f"Error al obtener síntomas: {e}")
-        return []
-
 # Registrar una interacción
 def registrar_interaccion(user_id: str, consulta: str):
     """
