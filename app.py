@@ -442,26 +442,33 @@ async def asistente(input_data: UserInput):
         # Evaluación de emociones y cuadro probable en la interacción 5 y 9
         if contador in [5, 9]:
             emociones_detectadas = detectar_emociones_negativas(" ".join(session["mensajes"]))
+            
+            # Evitar agregar duplicados en emociones detectadas
             nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
             session["emociones_detectadas"].extend(nuevas_emociones)
-
-            print(f"Emociones detectadas en interacción {contador}: {emociones_detectadas}")
+        
+            # Mostrar en consola para depuración
+            print(f"Interacción {contador}: {mensaje_usuario}")
+            print(f"Emociones detectadas en esta interacción: {emociones_detectadas}")
             print(f"Emociones acumuladas después del análisis: {session['emociones_detectadas']}")
-
+        
+            # Buscar coincidencias en la base de datos para determinar el cuadro probable
             coincidencias_sintomas = obtener_coincidencias_sintomas(session["emociones_detectadas"])
             if len(coincidencias_sintomas) >= 2:
                 cuadro_probable = Counter(coincidencias_sintomas).most_common(1)[0][0]
             else:
                 cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
-
+        
+            # Construcción de la respuesta con emociones y cuadro probable
             respuesta = (
                 f"Detecté emociones negativas como: {', '.join(set(session['emociones_detectadas']))}. "
                 f"Basado en esto, el cuadro probable es: {cuadro_probable}. "
                 f"Si deseas más orientación, te recomiendo contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
             )
-
-            session["mensajes"].clear()
+        
+            session["mensajes"].clear()  # Limpiar mensajes después del análisis
             return {"respuesta": respuesta}
+
 
         # Generar una respuesta empática con OpenAI si no se detecta otro tipo de respuesta
         respuesta_ai = generar_respuesta_con_openai(f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática.")
