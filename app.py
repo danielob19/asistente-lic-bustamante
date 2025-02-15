@@ -459,8 +459,10 @@ async def asistente(input_data: UserInput):
             session["mensajes"].clear()  # Limpiar mensajes después del análisis
             return {"respuesta": respuesta}
         
-        if not isinstance(emociones_detectadas, list):
+        # Asegurar que emociones_detectadas sea una lista válida
+        if not emociones_detectadas:
             emociones_detectadas = []
+
         
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
