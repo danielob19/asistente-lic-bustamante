@@ -1,15 +1,3 @@
-REINSTALE EL CODIGO DEL 29 DE ENERO (hoy 09 de febrero)
-ESTE CODIGO NO SIRVE PARA NADA!
-CODIGO MEJORADO 02 FEBRERO 205 – ACTUALMENTE INSTALADO
-PROBAR: 
-Si respeta número de sesiones
-Si dá el numero de teléfono de bustamante
-Si recaba información de emociones negativas 
-Si dá diagnostico en 5ta y 9na. Interacción
-Si registra Emociones Negativas nuevas en Postgresql
-
-
-
 import os
 import time
 import threading
