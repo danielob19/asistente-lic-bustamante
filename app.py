@@ -37,7 +37,7 @@ def generar_respuesta_con_openai(prompt):
 def detectar_emociones_negativas(mensaje):
     prompt = (
         f"Analiza el siguiente mensaje y detecta exclusivamente emociones humanas negativas. "
-        f"Devuelve una lista separada por comas con las emociones detectadas. "
+        f"Devuelve una lista separada por comas con las emociones detectadas, sin texto adicional. "
         f"Si no hay emociones negativas, responde con 'ninguna'.\n\n"
         f"Mensaje: {mensaje}"
     )
@@ -49,14 +49,18 @@ def detectar_emociones_negativas(mensaje):
             temperature=0.0
         )
         emociones = response.choices[0].message['content'].strip().lower()
-        if emociones == "ninguna":
+
+        # Limpiar el formato de la respuesta
+        emociones = emociones.replace("emociones negativas detectadas:", "").strip()
+        emociones = [emocion.strip() for emocion in emociones.split(",") if emocion.strip()]
+
+        if "ninguna" in emociones:
             return []
-        return [emocion.strip() for emocion in emociones.split(",")]
+        return emociones
 
     except Exception as e:
         print(f"Error al detectar emociones negativas: {e}")
         return []
-
 
 # Inicialización de FastAPI
 app = FastAPI()
