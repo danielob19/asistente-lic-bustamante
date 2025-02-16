@@ -438,21 +438,34 @@ async def asistente(input_data: UserInput):
             session["emociones_detectadas"].extend(nuevas_emociones)
         
             # Mostrar en consola para depuración
-            print(f"Interacción {contador}: {mensaje_usuario}")
+            print("\n===== DEPURACIÓN - INTERACCIÓN 5 o 9 =====")
+            print(f"Interacción: {contador}")
+            print(f"Mensaje del usuario: {mensaje_usuario}")
             print(f"Emociones detectadas en esta interacción: {emociones_detectadas}")
-            print(f"Emociones acumuladas después del análisis: {session['emociones_detectadas']}")
+            print(f"Emociones acumuladas hasta ahora: {session['emociones_detectadas']}")
         
             # Buscar coincidencias en la base de datos para determinar el cuadro probable
-            coincidencias_sintomas = obtener_coincidencias_sintomas(session["emociones_detectadas"])
+            coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
             
             # Depuración: Verificar qué síntomas devuelve la base de datos
-            print(f"Coincidencias de síntomas en la BD para emociones {session['emociones_detectadas']}: {coincidencias_sintomas}")
-            
+            print(f"Coincidencias encontradas en la BD: {coincidencias_sintomas}")
+        
             if len(coincidencias_sintomas) >= 2:
                 cuadro_probable = Counter(coincidencias_sintomas).most_common(1)[0][0]
             else:
                 cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
-
+        
+            print(f"Cuadro probable determinado: {cuadro_probable}")
+            print("========================================\n")
+        
+            respuesta = (
+                f"Parece que has mencionado emociones como: {', '.join(set(session['emociones_detectadas']))}. "
+                f"Según esto, el cuadro más probable es: {cuadro_probable}. "
+                f"Si necesitas más orientación, no dudes en contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186. Estoy aquí para ayudarte."
+            )
+        
+            session["mensajes"].clear()
+            return {"respuesta": respuesta}
         
             # Construcción de la respuesta con emociones y cuadro probable
             respuesta = (
