@@ -405,6 +405,17 @@ async def asistente(input_data: UserInput):
         # Actualiza la sesión del usuario
         session = user_sessions[user_id]
         session["ultima_interaccion"] = time.time()
+        session["contador_interacciones"] += 1  # ✅ Incrementar contador aquí
+        contador = session["contador_interacciones"]
+        session["mensajes"].append(mensaje_usuario)
+
+        # 🔍 DEPURACIÓN: Mostrar estado actual de la sesión
+        print("\n===== DEPURACIÓN - SESIÓN DEL USUARIO =====")
+        print(f"Usuario ID: {user_id}")
+        print(f"Interacción actual: {contador}")
+        print(f"Mensajes en la sesión: {session['mensajes']}")
+        print(f"Emociones acumuladas antes del análisis: {session['emociones_detectadas']}")
+        print("========================================\n")
         
         # Detectar negaciones o correcciones
         if any(negacion in mensaje_usuario for negacion in ["no dije", "no eso", "no es así", "eso no", "no fue lo que dije"]):
@@ -469,11 +480,6 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        # Incrementa el contador de interacciones
-        session["contador_interacciones"] += 1
-        session["mensajes"].append(mensaje_usuario)
-
-        contador = session["contador_interacciones"]
         
         # Asegurar que la lista de emociones está actualizada
         emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
@@ -487,33 +493,33 @@ async def asistente(input_data: UserInput):
         # Evaluación de emociones y cuadro probable en la interacción 5 y 9
         if contador in [5, 9]:
             emociones_detectadas = detectar_emociones_negativas(" ".join(session["mensajes"]))
-        
+            
             # Evitar agregar duplicados en emociones detectadas
             nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
             session["emociones_detectadas"].extend(nuevas_emociones)
-        
-            # Mostrar información en consola para depuración
+
+            # 🔍 DEPURACIÓN: Mostrar emociones detectadas
             print("\n===== DEPURACIÓN - INTERACCIÓN 5 o 9 =====")
             print(f"Interacción: {contador}")
             print(f"Mensaje del usuario: {mensaje_usuario}")
             print(f"Emociones detectadas en esta interacción: {emociones_detectadas}")
             print(f"Emociones acumuladas hasta ahora: {session['emociones_detectadas']}")
-        
+
             # Buscar coincidencias en la base de datos para determinar el cuadro probable
             coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
-        
-            # Mostrar en consola lo que devuelve la base de datos
+
+            # 🔍 DEPURACIÓN: Mostrar síntomas encontrados en la BD
             print(f"Coincidencias encontradas en la BD: {coincidencias_sintomas}")
-        
+
             if len(coincidencias_sintomas) >= 2:
                 cuadro_probable = Counter(coincidencias_sintomas).most_common(1)[0][0]
             else:
                 cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
-        
-            # Mostrar el cuadro probable determinado
+
+            # 🔍 DEPURACIÓN: Mostrar cuadro probable determinado
             print(f"Cuadro probable determinado: {cuadro_probable}")
             print("========================================\n")
-        
+
             # Respuesta con formato más natural para el usuario
             respuesta = (
                 f"He notado que mencionaste emociones como: {', '.join(set(session['emociones_detectadas']))}. "
@@ -521,9 +527,15 @@ async def asistente(input_data: UserInput):
                 f"Si necesitas más orientación, puedes contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186. "
                 f"Estoy aquí para ayudarte en lo que necesites."
             )
-        
+
             session["mensajes"].clear()  # Limpiar mensajes después del análisis
             return {"respuesta": respuesta}
+
+        # 🔹 Generar respuesta con OpenAI si no es la interacción 5 o 9
+        prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
+        respuesta_ai = generar_respuesta_con_openai(prompt)
+
+        return {"respuesta": respuesta_ai}
         
         
         # Respuesta específica para "¿atienden estos casos?"
