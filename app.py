@@ -477,29 +477,46 @@ async def asistente(input_data: UserInput):
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
         
-        # 🔹 Evaluación de cuadro probable en la 5ta y 9na interacción
+        # Evaluación de emociones y cuadro probable en la interacción 5 y 9
         if contador in [5, 9]:
-            coincidencias_sintomas = obtener_coincidencias_sintomas(session["emociones_detectadas"])
+            emociones_detectadas = detectar_emociones_negativas(" ".join(session["mensajes"]))
         
-            if len(coincidencias_sintomas) < 2:
-                cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
+            # Evitar agregar duplicados en emociones detectadas
+            nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
+            session["emociones_detectadas"].extend(nuevas_emociones)
+        
+            # Mostrar información en consola para depuración
+            print("\n===== DEPURACIÓN - INTERACCIÓN 5 o 9 =====")
+            print(f"Interacción: {contador}")
+            print(f"Mensaje del usuario: {mensaje_usuario}")
+            print(f"Emociones detectadas en esta interacción: {emociones_detectadas}")
+            print(f"Emociones acumuladas hasta ahora: {session['emociones_detectadas']}")
+        
+            # Buscar coincidencias en la base de datos para determinar el cuadro probable
+            coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
+        
+            # Mostrar en consola lo que devuelve la base de datos
+            print(f"Coincidencias encontradas en la BD: {coincidencias_sintomas}")
+        
+            if len(coincidencias_sintomas) >= 2:
+                cuadro_probable = Counter(coincidencias_sintomas).most_common(1)[0][0]
             else:
-                cuadro_probable = obtener_cuadro_probable(session["emociones_detectadas"])
+                cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
         
-            return {
-                "respuesta": (
-                    f"Hasta ahora mencionaste emociones como: {', '.join(session['emociones_detectadas'])}. "
-                    f"En base a esto, el cuadro probable es: {cuadro_probable}. "
-                    f"Si necesitas más orientación, te recomiendo contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
-                )
-            }
-
+            # Mostrar el cuadro probable determinado
+            print(f"Cuadro probable determinado: {cuadro_probable}")
+            print("========================================\n")
         
-        if not isinstance(emociones_detectadas, list):
-            emociones_detectadas = []
+            # Respuesta con formato más natural para el usuario
+            respuesta = (
+                f"He notado que mencionaste emociones como: {', '.join(set(session['emociones_detectadas']))}. "
+                f"Basándome en esto, el cuadro más probable es: {cuadro_probable}. "
+                f"Si necesitas más orientación, puedes contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186. "
+                f"Estoy aquí para ayudarte en lo que necesites."
+            )
         
-        # Agregar emociones a la sesión sin causar errores
-        session["emociones_detectadas"].extend(emociones_detectadas)
+            session["mensajes"].clear()  # Limpiar mensajes después del análisis
+            return {"respuesta": respuesta}
         
         
         # Respuesta específica para "¿atienden estos casos?"
