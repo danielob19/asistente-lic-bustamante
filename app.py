@@ -289,30 +289,45 @@ def evitar_repeticion(respuesta, historial):
 
 # Obtener coincidencias de síntomas en la base de datos y registrar nuevas emociones
 def obtener_coincidencias_sintomas_y_registrar(emociones):
+    """
+    Busca coincidencias de síntomas en la base de datos y devuelve una lista de cuadros clínicos relacionados.
+    Si una emoción no tiene coincidencias, la registra en la base de datos para futura clasificación.
+    """
     if not emociones:
         return []
+
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
-        # Buscar coincidencias en la base de datos con ILIKE para permitir coincidencias parciales
+        # Construcción de la consulta con ILIKE para permitir coincidencias parciales
         consulta = "SELECT sintoma, cuadro FROM palabras_clave WHERE " + " OR ".join(["sintoma ILIKE %s" for _ in emociones])
-        cursor.execute(consulta, [f"%{emocion}%" for emocion in emociones])
+        valores = [f"%{emocion.lower()}%" for emocion in emociones]
+
+        print("\n===== DEPURACIÓN SQL =====")
+        print("Consulta SQL:", consulta)
+        print("Valores enviados:", valores)
+
+        cursor.execute(consulta, valores)
         resultados = cursor.fetchall()
-        
+
         cuadros_probables = [resultado[1] for resultado in resultados]
         sintomas_existentes = [resultado[0] for resultado in resultados]
-        
+
+        print("Síntomas encontrados en la BD:", sintomas_existentes)
+        print("Cuadros clínicos encontrados:", cuadros_probables)
+
         # Identificar emociones que no están en la base de datos y registrarlas
         emociones_nuevas = [emocion for emocion in emociones if emocion not in sintomas_existentes]
         for emocion in emociones_nuevas:
+            print(f"Registrando nueva emoción en BD: {emocion}")
             cursor.execute("INSERT INTO palabras_clave (sintoma, cuadro) VALUES (%s, NULL)", (emocion,))
-        
+
         conn.commit()
         conn.close()
-        
+
         return cuadros_probables if cuadros_probables else []
-    
+
     except Exception as e:
         print(f"Error al obtener coincidencias de síntomas o registrar nuevos síntomas: {e}")
         return []
