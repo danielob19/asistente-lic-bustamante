@@ -22,13 +22,20 @@ DATABASE_URL = "postgresql://my_postgres_db_oahe_user:AItPOENiOHIGPNva0eiCT0kK1o
 # Generación de respuestas con OpenAI
 def generar_respuesta_con_openai(prompt):
     try:
+        print("\n===== DEPURACIÓN - GENERACIÓN DE RESPUESTA CON OPENAI =====")
+        print(f"Prompt enviado a OpenAI: {prompt}")
+
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=150,
             temperature=0.3
         )
-        return response.choices[0].message['content'].strip()
+        
+        respuesta = response.choices[0].message['content'].strip()
+        print(f"Respuesta generada por OpenAI: {respuesta}\n")
+        return respuesta
+
     except Exception as e:
         print(f"Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
