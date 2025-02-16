@@ -454,10 +454,15 @@ async def asistente(input_data: UserInput):
         
             # Buscar coincidencias en la base de datos para determinar el cuadro probable
             coincidencias_sintomas = obtener_coincidencias_sintomas(session["emociones_detectadas"])
+            
+            # Depuración: Verificar qué síntomas devuelve la base de datos
+            print(f"Coincidencias de síntomas en la BD para emociones {session['emociones_detectadas']}: {coincidencias_sintomas}")
+            
             if len(coincidencias_sintomas) >= 2:
                 cuadro_probable = Counter(coincidencias_sintomas).most_common(1)[0][0]
             else:
                 cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
+
         
             # Construcción de la respuesta con emociones y cuadro probable
             respuesta = (
