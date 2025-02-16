@@ -9,21 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from collections import Counter
-import logging
-import unicodedata
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
-def normalizar_texto(texto):
-    """
-    Normaliza el texto eliminando acentos y convirtiéndolo a minúsculas.
-    """
-    texto = texto.strip().lower()  # Convierte a minúsculas
-    return ''.join(
-        c for c in unicodedata.normalize('NFD', texto)
-        if unicodedata.category(c) != 'Mn'  # Elimina acentos
-    )
 
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -47,59 +32,12 @@ def generar_respuesta_con_openai(prompt):
         print(f"Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
-# Manejo de frases de confirmación o cierre
-def interpretar_respuesta_corta_openai(mensaje):
-    """
-    Utiliza OpenAI para interpretar respuestas cortas y determinar si son saludos, agradecimientos, despedidas o preguntas.
-    Si es un agradecimiento, responde de forma adecuada en lugar de dar una respuesta genérica.
-    """
+# Función para detectar emociones negativas usando OpenAI
+def detectar_emociones_negativas(mensaje):
     prompt = (
-        f"El usuario ha dicho: '{mensaje}'. ¿Es un saludo, un agradecimiento, una despedida o una pregunta real? "
-        f"Responde únicamente con una de estas opciones: 'saludo', 'agradecimiento', 'despedida', 'pregunta', 'otro'."
-    )
-
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=10,
-            temperature=0.3
-        )
-        clasificacion = response.choices[0].message['content'].strip().lower()
-
-        if "saludo" in clasificacion:
-            return "¡Hola! Espero que estés bien. ¿En qué puedo ayudarte hoy?"
-        elif "agradecimiento" in clasificacion:
-            return "De nada, estoy aquí para lo que necesites. 😊"
-        elif "despedida" in clasificacion:
-            return "¡Un placer ayudarte! Que tengas un excelente día. 🌟"
-        elif "perdon" in mensaje:
-            return "No hay problema, ¿en qué puedo ayudarte?"
-        elif "equivoque" in mensaje:
-            return "No hay problema, ¿en qué puedo ayudarte?"
-        elif "pregunta" in clasificacion:
-            return None  # Deja que el flujo normal continúe
-        else:
-            return None  # Evita respuestas erróneas o repetitivas
-
-    except Exception as e:
-        print(f"Error en la interpretación con OpenAI: {e}")
-        return None  # Si falla, sigue con el flujo estándar
-
-
-# Función para detectar emociones negativas usando OpenAI y Registro
-def detectar_emociones(mensaje):
-    """
-    Usa OpenAI para analizar emociones en un mensaje y clasificarlas como negativas o neutrales/positivas.
-    Registra automáticamente las emociones negativas en la base de datos.
-    """
-    mensaje = normalizar_texto(mensaje)  # Normaliza el texto antes de enviarlo a OpenAI
-    
-    prompt = (
-        f"Analiza el siguiente mensaje y detecta emociones humanas. "
-        f"Clasifícalas en 'negativas' o 'neutrales/positivas'. "
-        f"Devuelve una lista separada por comas con las emociones detectadas y su categoría. "
-        f"Si no hay emociones, responde con 'ninguna'.\n\n"
+        f"Analiza el siguiente mensaje y detecta exclusivamente emociones humanas negativas. "
+        f"Devuelve una lista separada por comas con las emociones detectadas. "
+        f"Si no hay emociones negativas, responde con 'ninguna'.\n\n"
         f"Mensaje: {mensaje}"
     )
     try:
@@ -110,22 +48,14 @@ def detectar_emociones(mensaje):
             temperature=0.0
         )
         emociones = response.choices[0].message['content'].strip().lower()
-
         if emociones == "ninguna":
-            return [], []
+            return []
+        return [emocion.strip() for emocion in emociones.split(",")]
 
-        emociones_detectadas = [normalizar_texto(e.strip()) for e in emociones.split(",")]
-        emociones_negativas = [e for e in emociones_detectadas if "negativa" in e]
-        emociones_neutrales_positivas = [e for e in emociones_detectadas if "neutro" in e or "positivo" in e]
-        
-        # Registrar solo emociones negativas en la base de datos
-        if emociones_negativas:
-            registrar_emocion(emociones_negativas, mensaje)
-        
-        return emociones_negativas, emociones_neutrales_positivas
     except Exception as e:
-        print(f"Error al detectar emociones: {e}")
-        return [], []
+        print(f"Error al detectar emociones negativas: {e}")
+        return []
+
 
 # Inicialización de FastAPI
 app = FastAPI()
@@ -176,11 +106,6 @@ def init_db():
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
-def detectar_emociones_negativas(mensaje):
-    mensaje = normalizar_texto(mensaje)  # Normaliza el mensaje antes de analizarlo
-    emociones_negativas, _ = detectar_emociones(mensaje)
-    return emociones_negativas
-
 # Registrar un síntoma
 def registrar_sintoma(sintoma: str, cuadro: str):
     """
@@ -201,28 +126,22 @@ def registrar_sintoma(sintoma: str, cuadro: str):
         print(f"Error al registrar síntoma '{sintoma}': {e}")
 
 # Registrar una emoción detectada
-# Esta función analiza el mensaje para detectar emociones negativas usando OpenAI.
-# Registra automáticamente cada emoción detectada en la base de datos llamando a `registrar_emocion`.
-def registrar_emocion(emociones, contexto):
+def registrar_emocion(emocion: str, contexto: str):
     """
-    Registra una o varias emociones detectadas en la base de datos PostgreSQL.
+    Registra una emoción detectada en la base de datos PostgreSQL.
     """
-    if not emociones:
-        return  # No hay emociones que registrar
-
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                for emocion in emociones:
-                    cursor.execute("""
-                        INSERT INTO emociones_detectadas (emocion, contexto) 
-                        VALUES (%s, %s)
-                        ON CONFLICT (emocion) DO NOTHING;
-                    """, (emocion.strip().lower(), contexto.strip()))
+                cursor.execute("""
+                    INSERT INTO emociones_detectadas (emocion, contexto) 
+                    VALUES (%s, %s)
+                    ON CONFLICT (emocion) DO NOTHING;
+                """, (emocion.strip().lower(), contexto.strip()))
                 conn.commit()
-        print(f"Emociones registradas exitosamente: {', '.join(emociones)} con contexto: {contexto}.")
+        print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
     except Exception as e:
-        print(f"Error al registrar emociones '{', '.join(emociones)}': {e}")
+        print(f"Error al registrar emoción '{emocion}': {e}")
 
 # Obtener síntomas existentes
 def obtener_sintomas():
@@ -261,7 +180,7 @@ def registrar_interaccion(user_id: str, consulta: str):
 palabras_irrelevantes = {
     "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "me siento", "tambien", "tambien tengo", "que", "de", "en", 
     "por", "a", "me", "mi", "tengo", "mucho", "muy", "un", "poco", "tengo", "animicos", "si", "supuesto", "frecuentes", "verdad", "sé", "hoy", "quiero", 
-    "bastante", "mucho", "tambien", "gente", "frecuencia", "entendi", "estoy", "vos", "entiendo", 
+    "bastante", "mucho", "tambien", "gente", "frecuencia", "entendi", "hola", "estoy", "vos", "entiendo", 
     "soy", "mi", "de", "es", "4782-6465", "me", "siento", "para", "mucha", "y", "sufro", "vida", 
     "que", "opinas", "¿","?", "reinicia", "con", "del", "necesito", "me", "das"
 }
@@ -380,34 +299,10 @@ def start_session_cleaner():
 async def asistente(input_data: UserInput):
     try:
         user_id = input_data.user_id
-        mensaje_usuario = normalizar_texto(input_data.mensaje)  # Ahora elimina acentos y pasa a minúsculas
+        mensaje_usuario = input_data.mensaje.strip().lower()
 
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
-
-         # Respuesta específica para saludos simples
-        if any(palabra in mensaje_usuario for palabra in ["hola", "qué tal", "buenas", "cómo estás", "cómo va"]):
-            return {"respuesta": "¡Hola! Espero que estés bien. ¿En qué puedo ayudarte hoy?"}
-
-        # Manejo de frases cortas o de cierre con OpenAI
-        respuesta_corta = interpretar_respuesta_corta_openai(mensaje_usuario)
-        if respuesta_corta:
-            return {"respuesta": respuesta_corta}
-
-        # Manejo de errores en la función de interacción
-        try:
-            respuesta_especial = manejar_interaccion_usuario(mensaje_usuario, contador=1)
-        except Exception as e:
-            logger.error(f"Error en manejar_interaccion_usuario: {e}")
-            respuesta_especial = None
-
-        if respuesta_especial:
-            return respuesta_especial
-
-        # Nuevo manejo de coherencia en preguntas y costos
-        respuesta_especial = manejar_interaccion_usuario(mensaje_usuario)
-        if respuesta_especial:
-            return respuesta_especial
 
         # Registrar interacción en la base de datos
         registrar_interaccion(user_id, mensaje_usuario)
@@ -451,10 +346,15 @@ async def asistente(input_data: UserInput):
             # Si no hay un análisis previo, responder de manera neutral
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
 
+
         # Manejo para mensajes de cierre (sin insistir ni contabilizar interacciones)
         if mensaje_usuario in ["ok", "gracias", "en nada", "en nada mas", "nada mas", "no necesito nada mas", "estoy bien"]:
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
-       
+
+        # Respuesta específica para saludos simples
+        if mensaje_usuario in ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]:
+            return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
+
         # Manejo para "solo un síntoma y no más" (responder como en la 5ª interacción y finalizar)
         if "no quiero dar más síntomas" in mensaje_usuario or "solo este síntoma" in mensaje_usuario:
             mensajes = session["mensajes"]
@@ -480,12 +380,35 @@ async def asistente(input_data: UserInput):
                 "respuesta": "Sí, el Lic. Daniel O. Bustamante atiende este tipo de casos. Si necesitas ayuda, no dudes en contactarlo al WhatsApp (+54) 9 11 3310-1186."
             }
 
+        # Proporciona el número de contacto si el usuario lo solicita
+        if (
+            "contacto" in mensaje_usuario or
+            "numero" in mensaje_usuario or
+            "número" in mensaje_usuario or
+            "turno" in mensaje_usuario or
+            "whatsapp" in mensaje_usuario or
+            "teléfono" in mensaje_usuario or
+            "psicologo" in mensaje_usuario or
+            "psicólogo" in mensaje_usuario or
+            "terapeuta" in mensaje_usuario or
+            "psicoterapia" in mensaje_usuario or
+            "terapia" in mensaje_usuario or
+            "tratamiento psicológico" in mensaje_usuario or
+            "recomendas" in mensaje_usuario or
+            "telefono" in mensaje_usuario
+        ):
+            return {
+                "respuesta": (
+                    "Para contactar al Lic. Daniel O. Bustamante, puedes enviarle un mensaje al WhatsApp "
+                    "+54 911 3310-1186. Él estará encantado de responderte."
+                )
+            }
+
          # Proporciona el número de contacto si el usuario lo solicita
         if (
             "especialista" in mensaje_usuario or
             "mejor psicólogo" in mensaje_usuario or
             "mejor psicologo" in mensaje_usuario or
-            "psicologo" in mensaje_usuario or
             "mejor terapeuta" in mensaje_usuario or
             "mejor psicoterapeuta" in mensaje_usuario or
             "el mejor" in mensaje_usuario or
@@ -506,70 +429,103 @@ async def asistente(input_data: UserInput):
 
         # Manejo para análisis de texto después de 5 interacciones
         if contador == 5:
+            mensajes = session["mensajes"]
             emociones_negativas = []
-            for mensaje in session["mensajes"]:
+            for mensaje in mensajes:
                 emociones_negativas.extend(detectar_emociones_negativas(mensaje))
-            session["emociones_interaccion_1_5"].extend(emociones_negativas)
-            if len(emociones_negativas) < 2:
-                respuesta = "Aún no he detectado suficientes indicaciones emocionales. ¿Podrías contarme más sobre cómo te sientes?"
-            else:
-                cuadros_probables = [cuadro for sintoma, cuadro in obtener_sintomas() if sintoma in ' '.join(emociones_negativas)]
-                cuadro_probable = cuadros_probables[0] if cuadros_probables else "no identificado"
-                respuesta = (
-                    f"Con base en tus descripciones ({', '.join(set(emociones_negativas))}), "
-                    f"el cuadro probable es: {cuadro_probable}. Te recomiendo consultar al Lic. Daniel O. Bustamante "
-                    f"al WhatsApp +54 911 3310-1186 para una evaluación más detallada."
-                )
+
+            # Registrar emociones en la base de datos
+            for emocion in emociones_negativas:
+                registrar_emocion(emocion, "interacción 5")
+
+            # Obtener cuadro probable en base a emociones detectadas
+            cuadros_probables = [
+                cuadro for emocion, cuadro in obtener_sintomas() if emocion in emociones_negativas
+            ]
+            cuadro_probable = cuadros_probables[0] if cuadros_probables else "no identificado"
+
+            respuesta = (
+                f"En base a tus descripciones ({', '.join(emociones_negativas)}), "
+                f"el cuadro probable sería: {cuadro_probable}. "
+            )
+            if len(emociones_negativas) == 0:
+                respuesta += "No detecté emociones negativas claras en esta interacción. "
+
             session["mensajes"].clear()
             return {"respuesta": respuesta}
 
-
-        # Manejo de interacciones 6, 7 y 8 con OpenAI y PostgreSQL
+        # Manejo de interacciones 6, 7 y 8
         if 6 <= contador <= 8:
-            prompt_seguimiento = (
-                f"El usuario acaba de decir: '{mensaje_usuario}'. "
-                f"Formúla una pregunta que profundice en el origen de sus emociones negativas o patrones de conducta, "
-                f"por ejemplo: '¿Podrías contarme más sobre cuándo comenzó este sentimiento o cómo te afecta en tu día a día?'"
+            nuevas_emociones = analizar_emociones_y_patrones(
+                mensajes=[mensaje_usuario],
+                emociones_acumuladas=session["emociones_detectadas"]
             )
-            pregunta_seguimiento = generar_respuesta_con_openai(prompt_seguimiento)
-            emociones_actuales = detectar_emociones_negativas(mensaje_usuario)
-            session["emociones_interaccion_6_8"].extend(emociones_actuales)
-            for emocion in emociones_actuales:
-                registrar_emocion([emocion], mensaje_usuario)
-            respuesta = (
-                f"He notado algunas emociones en tu mensaje ({', '.join(emociones_actuales) if emociones_actuales else 'no se detectaron emociones claras'}). "
-                f"{pregunta_seguimiento}"
-            )
-            return {"respuesta": respuesta}
+            session["emociones_detectadas"].extend(nuevas_emociones)
 
+            if nuevas_emociones:
+                emocion_principal = nuevas_emociones[0] if nuevas_emociones else "algo que estás sintiendo"
+                preguntas = {
+                    6: f"¿Por qué razón crees que sientes {emocion_principal}?",
+                    7: f"¿En qué momentos notas que sientes {emocion_principal}?",
+                    8: f"¿Qué situaciones o personas podrían estar generando {emocion_principal}?"
+                }
+                return {"respuesta": preguntas[contador]}
+
+            return {
+                "respuesta": (
+                    "Estoy aquí para entender mejor lo que estás sintiendo. ¿Podrías compartir más detalles sobre lo que te preocupa o cómo te sientes en este momento?"
+                )
+            }
 
         # Manejo de interacción 9
         if contador == 9:
-            emociones_1_5 = session.get("emociones_interaccion_1_5", [])
-            emociones_6_8 = session.get("emociones_interaccion_6_8", [])
-            todas_emociones = list(set(emociones_1_5 + emociones_6_8))
-            cuadros_probables = [cuadro for sintoma, cuadro in obtener_sintomas() if sintoma in ' '.join(todas_emociones)]
+            mensajes = session["mensajes"]
+            emociones_negativas = []
+            nuevos_sintomas = []
+
+            # Detectar emociones negativas en los mensajes
+            for mensaje in mensajes:
+                emociones_negativas.extend(detectar_emociones_negativas(mensaje))
+
+            # Registrar emociones en la base de datos
+            for emocion in emociones_negativas:
+                registrar_emocion(emocion, "interacción 9")
+
+            # Obtener cuadros probables en base a emociones detectadas
+            cuadros_probables = [
+                cuadro for emocion, cuadro in obtener_sintomas() if emocion in emociones_negativas
+            ]
             cuadro_probable = cuadros_probables[0] if cuadros_probables else "no identificado"
+
             respuesta = (
-                f"En base a tus descripciones iniciales ({', '.join(set(emociones_1_5))}) y a la profundización que hemos realizado "
-                f"({', '.join(set(emociones_6_8))}), el cuadro probable es: {cuadro_probable}. Te recomiendo "
-                f"consultar al Lic. Daniel O. Bustamante escribiéndole al WhatsApp +54 911 3310-1186 para una evaluación más detallada."
+                f"En base a tus descripciones ({', '.join(emociones_negativas)}), "
+                f"el cuadro probable sería: {cuadro_probable}. "
             )
+            if nuevos_sintomas:
+                respuesta += f"Además, notamos síntomas adicionales: {', '.join(nuevos_sintomas)}. "
+            respuesta += "Te sugiero consultar al Lic. Daniel O. Bustamante, escribiéndole al WhatsApp +54 9 11 3310-1186 para una evaluación más profunda."
+
             session["mensajes"].clear()
             return {"respuesta": respuesta}
 
-            
+
         # Manejo de interacción 10 (última interacción)
         if contador == 10:
-            respuesta = (
-                "Si bien nuestra charla ha sido muy interesante, es momento de concluirla. Te invito a que para una evaluación "
-                "más profunda contactes al Lic. Daniel O. Bustamante al WhatsApp (+54) 9 11 3310-1186, quien podrá brindarte la "
-                "ayuda profesional que necesitas. ¡Gracias por tu tiempo!"
-            )
-            return {"respuesta": respuesta}
-        if contador > 10:
-            return {"respuesta": "Te recomiendo contactar al Lic. Daniel O. Bustamante al WhatsApp (+54) 9 11 3310-1186. ¡Gracias por tu tiempo!"}
+            return {
+                "respuesta": (
+                    "Sugiero solicitar una consulta al Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
+                    "(+54) 9 11 3310-1186. Aguardamos tu mensaje. ¡Un saludo cordial!"
+                )
+            }
 
+        # Responder con la misma respuesta después de la interacción 10
+        if contador > 10:
+            return {
+                "respuesta": (
+                    "Sugiero solicitar una consulta al Lic. Daniel O. Bustamante escribiéndole al WhatsApp "
+                    "(+54) 9 11 3310-1186. Aguardamos tu mensaje. ¡Un saludo cordial!"
+                )
+            }
 
         # Validar si se detectaron emociones o cuadros antes de generar la respuesta final
         if not session.get("emociones_detectadas") and not session.get("mensajes"):
@@ -588,78 +544,6 @@ async def asistente(input_data: UserInput):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
-def manejar_interaccion_usuario(mensaje_usuario, contador):
-    """
-    Mejora la continuidad de la conversación y la detección de contexto en preguntas específicas.
-    """
-    import logging
-    logging.basicConfig(level=logging.DEBUG)
-    logger = logging.getLogger(__name__)
-
-    mensaje_usuario = normalizar_texto(mensaje_usuario.strip())
-    
-    # Detección de emociones con OpenAI
-    emociones_negativas, emociones_neutrales_positivas = detectar_emociones(mensaje_usuario)
-    
-    if emociones_negativas:
-        respuesta = (
-            f"Entiendo que puedas estar sintiendo {', '.join(emociones_negativas)}. "
-            f"¿Te gustaría contarme un poco más sobre lo que estás experimentando?"
-        )
-        return {"respuesta": respuesta}
-    
-    if emociones_neutrales_positivas:
-        return {"respuesta": f"He detectado estas emociones: {', '.join(emociones_neutrales_positivas)}. ¡Estoy aquí para ayudarte en lo que necesites!"}
-    
-    # Interacción 5 y 9: Mencionar emociones y cuadro clínico probable
-    if contador in [5, 9]:
-        cuadro_probable = "no identificado"  # Aquí puedes incluir lógica para detectar cuadros clínicos
-        respuesta = ""
-        if emociones_negativas:
-            respuesta += f"He detectado estas emociones negativas: {', '.join(emociones_negativas)}. "
-        respuesta += f"El cuadro clínico probable es: {cuadro_probable}. "
-        respuesta += "Si necesitas apoyo, no dudes en contactarme directamente para que podamos conversar más a fondo."
-        return {"respuesta": respuesta}
-
-    # Detección de preguntas sobre contacto o WhatsApp
-    mensaje_usuario = normalizar_texto(mensaje_usuario)  # Asegurar que el mensaje esté sin acentos y en minúsculas
-
-    if any(frase in mensaje_usuario for frase in [
-        # Frases para solicitar contacto
-        normalizar_texto("cómo te contacto"), normalizar_texto("cómo puedo contactarte"),
-        normalizar_texto("necesito tu número"), normalizar_texto("cómo hablar contigo"),
-        normalizar_texto("quiero comunicarme contigo"), normalizar_texto("contacto"),
-        normalizar_texto("whatsapp"), normalizar_texto("teléfono"), normalizar_texto("a qué número puedo llamarte"),
-        normalizar_texto("cómo puedo comunicarme contigo"), normalizar_texto("cuál es tu número"),
-        normalizar_texto("cómo pedir una consulta"), normalizar_texto("quiero una sesión"),
-        normalizar_texto("necesito hablar con un psicólogo"), normalizar_texto("dame tu contacto"),
-
-        # Frases para búsqueda de psicólogo o terapia
-        normalizar_texto("busco un psicologo"), normalizar_texto("necesito un psicologo"),
-        normalizar_texto("quiero hacer terapia"), normalizar_texto("necesito hacer terapia"),
-        normalizar_texto("quiero un terapeuta"), normalizar_texto("quiero hablar con un psicologo"),
-        normalizar_texto("me recomiendas un psicologo"), normalizar_texto("dame el contacto de un psicologo"),
-        normalizar_texto("psicologo"), normalizar_texto("terapia"), normalizar_texto("terapeuta")
-    ]):
-        return {"respuesta": "Puedes contactar al Lic. Daniel O. Bustamante -Psicólogo Clínico- enviándole un mensaje al WhatsApp +54 911 3310-1186."}
-
-    # Detectar si buscan específicamente una psicóloga mujer
-    if any(frase in mensaje_usuario for frase in [
-        normalizar_texto("busco una psicologa mujer"), normalizar_texto("quiero una psicologa"),
-        normalizar_texto("necesito una terapeuta mujer"), normalizar_texto("psicologa mujer"),
-        normalizar_texto("psicologa femenina"), normalizar_texto("terapeuta mujer"),
-        normalizar_texto("psicologa especialista mujer")
-    ]):
-        return {"respuesta": "Por el momento, solo puedo proporcionarte el contacto del Lic. Daniel O. Bustamante -Psicólogo Clínico-. ¿Te gustaría que te ayude con algo más?"}
-
-
-    # Cierre profesional después de la décima interacción
-    if contador >= 10:
-        return {"respuesta": "Hemos llegado a un punto donde es recomendable continuar la conversación de manera más personal. Te sugiero contactarme directamente para seguir conversando. ¡Gracias por tu tiempo!"}
-    
-    # Si no hay coincidencia, responder de forma genérica en lugar de devolver None
-    logger.warning(f"No se encontró coincidencia en manejar_interaccion_usuario para el mensaje: '{mensaje_usuario}'")
-    return {"respuesta": "Lo siento, no entendí bien tu consulta. ¿Podrías reformularla?"}
 
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     """
@@ -705,4 +589,22 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     except Exception as e:
         print(f"Error al analizar emociones y patrones: {e}")
         return []
+
+
+# Registrar una emoción detectada
+def registrar_emocion(emocion: str, contexto: str):
+    """
+    Registra una emoción detectada en la base de datos PostgreSQL.
+    """
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO emociones_detectadas (emocion, contexto) 
+                    VALUES (%s, %s);
+                """, (emocion.strip().lower(), contexto.strip()))
+                conn.commit()
+        print(f"Emoción '{emocion}' registrada exitosamente con contexto: {contexto}.")
+    except Exception as e:
+        print(f"Error al registrar emoción '{emocion}': {e}")
 
