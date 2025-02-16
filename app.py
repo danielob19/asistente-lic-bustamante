@@ -37,7 +37,7 @@ def generar_respuesta_con_openai(prompt):
 def detectar_emociones_negativas(mensaje):
     prompt = (
         f"Analiza el siguiente mensaje y detecta exclusivamente emociones humanas negativas. "
-        f"Devuelve una lista separada por comas con las emociones detectadas, sin texto adicional. "
+        f"Devuelve una lista separada por comas con las emociones detectadas. "
         f"Si no hay emociones negativas, responde con 'ninguna'.\n\n"
         f"Mensaje: {mensaje}"
     )
@@ -49,18 +49,14 @@ def detectar_emociones_negativas(mensaje):
             temperature=0.0
         )
         emociones = response.choices[0].message['content'].strip().lower()
-
-        # Limpiar el formato de la respuesta
-        emociones = emociones.replace("emociones negativas detectadas:", "").strip()
-        emociones = [emocion.strip() for emocion in emociones.split(",") if emocion.strip()]
-
-        if "ninguna" in emociones:
+        if emociones == "ninguna":
             return []
-        return emociones
+        return [emocion.strip() for emocion in emociones.split(",")]
 
     except Exception as e:
         print(f"Error al detectar emociones negativas: {e}")
         return []
+
 
 # Inicialización de FastAPI
 app = FastAPI()
@@ -111,6 +107,25 @@ def init_db():
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
+# Registrar un síntoma
+def registrar_sintoma(sintoma: str, cuadro: str):
+    """
+    Inserta un nuevo síntoma en la base de datos PostgreSQL o lo actualiza si ya existe.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO palabras_clave (sintoma, cuadro) 
+            VALUES (%s, %s)
+            ON CONFLICT (sintoma) DO UPDATE SET cuadro = EXCLUDED.cuadro;
+        """, (sintoma, cuadro))
+        conn.commit()
+        conn.close()
+        print(f"Síntoma '{sintoma}' registrado exitosamente con cuadro: {cuadro}.")
+    except Exception as e:
+        print(f"Error al registrar síntoma '{sintoma}': {e}")
+
 # Registrar una emoción detectada
 def registrar_emocion(emocion: str, contexto: str):
     """
@@ -138,6 +153,22 @@ def registrar_emocion(emocion: str, contexto: str):
         print(f"Emoción '{emocion}' registrada o actualizada con contexto: {contexto}.")
     except Exception as e:
         print(f"Error al registrar emoción '{emocion}': {e}")
+
+# Obtener síntomas existentes
+def obtener_sintomas():
+    """
+    Obtiene todos los síntomas almacenados en la base de datos PostgreSQL.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("SELECT sintoma, cuadro FROM palabras_clave")
+        sintomas = cursor.fetchall()
+        conn.close()
+        return sintomas
+    except Exception as e:
+        print(f"Error al obtener síntomas: {e}")
+        return []
 
 # Registrar una interacción
 def registrar_interaccion(user_id: str, consulta: str):
@@ -287,11 +318,9 @@ def evitar_repeticion(respuesta, historial):
     historial.append(respuesta)
     return respuesta
 
-# Obtener coincidencias de síntomas en la base de datos y registrar nuevas emociones
-def obtener_coincidencias_sintomas_y_registrar(emociones):
+def obtener_coincidencias_sintomas(emociones):
     """
     Busca coincidencias de síntomas en la base de datos y devuelve una lista de cuadros clínicos relacionados.
-    Si una emoción no tiene coincidencias exactas ni parciales, la registra en la base de datos para futura clasificación.
     """
     if not emociones:
         return []
@@ -299,47 +328,18 @@ def obtener_coincidencias_sintomas_y_registrar(emociones):
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
+        cursor.execute("""
+            SELECT cuadro FROM palabras_clave 
+            WHERE sintoma = ANY(%s);
+        """, (emociones,))
         
-        cuadros_probables = []
-        sintomas_existentes = set()
-        emociones_nuevas = set()
-
-        print("\n===== DEPURACIÓN SQL =====")
-        print("Emociones detectadas:", emociones)
-
-        # Buscar coincidencias en la base de datos con coincidencias parciales
-        for emocion in emociones:
-            consulta = """
-                SELECT sintoma, cuadro 
-                FROM palabras_clave 
-                WHERE %s ILIKE '%' || sintoma || '%'
-            """
-            cursor.execute(consulta, (emocion,))
-            resultados = cursor.fetchall()
-
-            if resultados:
-                cuadros_probables.extend([resultado[1] for resultado in resultados if resultado[1]])
-                sintomas_existentes.update([resultado[0] for resultado in resultados])
-            else:
-                # Si la emoción no existe en la BD, la agregamos a la lista para registrar
-                emociones_nuevas.add(emocion)
-
-        print("Síntomas encontrados en la BD:", sintomas_existentes)
-        print("Cuadros clínicos encontrados:", cuadros_probables)
-        print("Emociones que se registrarán en la BD:", emociones_nuevas)
-
-        # Insertar nuevas emociones en la base de datos
-        for emocion in emociones_nuevas:
-            cursor.execute("INSERT INTO palabras_clave (sintoma, cuadro) VALUES (%s, NULL)", (emocion,))
-            print(f"Registrando nueva emoción en BD: {emocion}")
-
-        conn.commit()
+        resultados = cursor.fetchall()
         conn.close()
 
-        return cuadros_probables if cuadros_probables else []
+        return [resultado[0] for resultado in resultados] if resultados else []
 
     except Exception as e:
-        print(f"Error al obtener coincidencias de síntomas o registrar nuevos síntomas: {e}")
+        print(f"Error al obtener coincidencias de síntomas: {e}")
         return []
 
 
@@ -355,23 +355,15 @@ async def asistente(input_data: UserInput):
         # Registrar interacción en la base de datos
         registrar_interaccion(user_id, mensaje_usuario)
 
-        # Registrar sesión del usuario si no existe
+        # Inicializa la sesión del usuario si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "mensajes": [],
-                "emociones_detectadas": []
+                "emociones_detectadas": [], # Para almacenar emociones detectadas
+                "ultimas_respuestas": []
             }
-
-        session = user_sessions[user_id]
-        session["ultima_interaccion"] = time.time()
-        session["contador_interacciones"] += 1
-        contador = session["contador_interacciones"]
-        session["mensajes"].append(mensaje_usuario)
-
-        print(f"Interacción {contador}: {mensaje_usuario}")
-        print(f"Emociones acumuladas antes del análisis: {session['emociones_detectadas']}")
 
         # Actualiza la sesión del usuario
         session = user_sessions[user_id]
@@ -455,58 +447,26 @@ async def asistente(input_data: UserInput):
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
         
-        # Evaluación de emociones y cuadro probable en la interacción 5 y 9
+        # 🔹 Evaluación de cuadro probable en la 5ta y 9na interacción
         if contador in [5, 9]:
-            emociones_detectadas = detectar_emociones_negativas(" ".join(session["mensajes"]))
-            
-            # Evitar agregar duplicados en emociones detectadas
-            nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
-            session["emociones_detectadas"].extend(nuevas_emociones)
+            coincidencias_sintomas = obtener_coincidencias_sintomas(session["emociones_detectadas"])
         
-            # Mostrar en consola para depuración
-            print("\n===== DEPURACIÓN - INTERACCIÓN 5 o 9 =====")
-            print(f"Interacción: {contador}")
-            print(f"Mensaje del usuario: {mensaje_usuario}")
-            print(f"Emociones detectadas en esta interacción: {emociones_detectadas}")
-            print(f"Emociones acumuladas hasta ahora: {session['emociones_detectadas']}")
-        
-            # Buscar coincidencias en la base de datos para determinar el cuadro probable
-            coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
-            
-            # Depuración: Verificar qué síntomas devuelve la base de datos
-            print(f"Coincidencias encontradas en la BD: {coincidencias_sintomas}")
-        
-            if len(coincidencias_sintomas) >= 2:
-                cuadro_probable = Counter(coincidencias_sintomas).most_common(1)[0][0]
-            else:
+            if len(coincidencias_sintomas) < 2:
                 cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
+            else:
+                cuadro_probable = obtener_cuadro_probable(session["emociones_detectadas"])
         
-            print(f"Cuadro probable determinado: {cuadro_probable}")
-            print("========================================\n")
-        
-            respuesta = (
-                f"Parece que has mencionado emociones como: {', '.join(set(session['emociones_detectadas']))}. "
-                f"Según esto, el cuadro más probable es: {cuadro_probable}. "
-                f"Si necesitas más orientación, no dudes en contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186. Estoy aquí para ayudarte."
-            )
-        
-            session["mensajes"].clear()
-            return {"respuesta": respuesta}
-        
-            # Construcción de la respuesta con emociones y cuadro probable
-            respuesta = (
-                f"Detecté emociones negativas como: {', '.join(set(session['emociones_detectadas']))}. "
-                f"Basado en esto, el cuadro probable es: {cuadro_probable}. "
-                f"Si deseas más orientación, te recomiendo contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
-            )
-        
-            session["mensajes"].clear()  # Limpiar mensajes después del análisis
-            return {"respuesta": respuesta}
+            return {
+                "respuesta": (
+                    f"Hasta ahora mencionaste emociones como: {', '.join(session['emociones_detectadas'])}. "
+                    f"En base a esto, el cuadro probable es: {cuadro_probable}. "
+                    f"Si necesitas más orientación, te recomiendo contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
+                )
+            }
 
-
-        # Generar una respuesta empática con OpenAI si no se detecta otro tipo de respuesta
-        respuesta_ai = generar_respuesta_con_openai(f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática.")
-        return {"respuesta": respuesta_ai}
+        
+        if not isinstance(emociones_detectadas, list):
+            emociones_detectadas = []
         
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
