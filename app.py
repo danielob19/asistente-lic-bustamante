@@ -291,7 +291,7 @@ def evitar_repeticion(respuesta, historial):
 def obtener_coincidencias_sintomas_y_registrar(emociones):
     """
     Busca coincidencias de síntomas en la base de datos y devuelve una lista de cuadros clínicos relacionados.
-    Si una emoción no tiene coincidencias, la registra en la base de datos para futura clasificación.
+    Si una emoción no tiene coincidencias exactas ni parciales, la registra en la base de datos para futura clasificación.
     """
     if not emociones:
         return []
@@ -300,28 +300,38 @@ def obtener_coincidencias_sintomas_y_registrar(emociones):
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
-        # Construcción de la consulta con ILIKE para permitir coincidencias parciales
-        consulta = "SELECT sintoma, cuadro FROM palabras_clave WHERE " + " OR ".join(["sintoma ILIKE %s" for _ in emociones])
-        valores = [f"%{emocion.lower()}%" for emocion in emociones]
+        cuadros_probables = []
+        sintomas_existentes = set()
+        emociones_nuevas = set()
 
         print("\n===== DEPURACIÓN SQL =====")
-        print("Consulta SQL:", consulta)
-        print("Valores enviados:", valores)
+        print("Emociones detectadas:", emociones)
 
-        cursor.execute(consulta, valores)
-        resultados = cursor.fetchall()
+        # Buscar coincidencias en la base de datos con coincidencias parciales
+        for emocion in emociones:
+            consulta = """
+                SELECT sintoma, cuadro 
+                FROM palabras_clave 
+                WHERE %s ILIKE '%' || sintoma || '%'
+            """
+            cursor.execute(consulta, (emocion,))
+            resultados = cursor.fetchall()
 
-        cuadros_probables = [resultado[1] for resultado in resultados]
-        sintomas_existentes = [resultado[0] for resultado in resultados]
+            if resultados:
+                cuadros_probables.extend([resultado[1] for resultado in resultados if resultado[1]])
+                sintomas_existentes.update([resultado[0] for resultado in resultados])
+            else:
+                # Si la emoción no existe en la BD, la agregamos a la lista para registrar
+                emociones_nuevas.add(emocion)
 
         print("Síntomas encontrados en la BD:", sintomas_existentes)
         print("Cuadros clínicos encontrados:", cuadros_probables)
+        print("Emociones que se registrarán en la BD:", emociones_nuevas)
 
-        # Identificar emociones que no están en la base de datos y registrarlas
-        emociones_nuevas = [emocion for emocion in emociones if emocion not in sintomas_existentes]
+        # Insertar nuevas emociones en la base de datos
         for emocion in emociones_nuevas:
-            print(f"Registrando nueva emoción en BD: {emocion}")
             cursor.execute("INSERT INTO palabras_clave (sintoma, cuadro) VALUES (%s, NULL)", (emocion,))
+            print(f"Registrando nueva emoción en BD: {emocion}")
 
         conn.commit()
         conn.close()
@@ -331,6 +341,7 @@ def obtener_coincidencias_sintomas_y_registrar(emociones):
     except Exception as e:
         print(f"Error al obtener coincidencias de síntomas o registrar nuevos síntomas: {e}")
         return []
+
 
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
