@@ -544,8 +544,14 @@ async def asistente(input_data: UserInput):
                 )
             }
            
-        # Excluir "¿A quién me recomiendas?" del análisis de emociones y darle una respuesta fija
-        if mensaje_usuario in ["¿a quién me recomiendas?", "a quién me recomiendas"]:
+        # Lista de frases que no deben ser analizadas en la detección de emociones
+        frases_excluidas = [
+            "¿a quién me recomiendas?", "a quién me recomiendas", "me recomendarías a alguien?",
+            "qué opinas?", "el atiende estos casos?", "que tipo de casos atienden?"
+        ]
+        
+        # Si el mensaje del usuario está en las frases excluidas, proporcionar respuesta fija
+        if mensaje_usuario in frases_excluidas:
             return {
                 "respuesta": (
                     "Si buscas una recomendación profesional, te sugiero contactar al Lic. Daniel O. Bustamante. "
@@ -554,11 +560,12 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        # Asegurar que la lista de emociones está actualizada solo si no es la pregunta de recomendación
+        # Asegurar que la lista de emociones está actualizada solo si el mensaje no está en la lista de exclusión
         emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
         
         if not isinstance(emociones_detectadas, list):
             emociones_detectadas = []
+
 
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
