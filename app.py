@@ -584,16 +584,23 @@ async def asistente(input_data: UserInput):
             print(f"Cuadro probable determinado: {cuadro_probable}")
             print("========================================\n")
 
-            # Respuesta con formato más natural para el usuario
-            respuesta = (
-                f"He notado que mencionaste emociones como: {', '.join(set(session['emociones_detectadas']))}. "
-                f"Basándome en esto, el cuadro más probable es: {cuadro_probable}. "
-                f"Si necesitas más orientación, puedes contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186. "
-                f"Estoy aquí para ayudarte en lo que necesites."
-            )
-
+            # Verificar si hay emociones detectadas antes de construir la respuesta
+            if session["emociones_detectadas"]:
+                respuesta = (
+                    f"He notado que mencionaste emociones como: {', '.join(set(session['emociones_detectadas']))}. "
+                    f"Basándome en esto, el cuadro más probable es: {cuadro_probable}. "
+                    f"Si necesitas más orientación, puedes contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186. "
+                    f"Estoy aquí para ayudarte en lo que necesites."
+                )
+            else:
+                respuesta = (
+                    "Hasta el momento no he detectado emociones específicas. "
+                    "¿Te gustaría contarme más sobre cómo te sientes?"
+                )
+            
             session["mensajes"].clear()  # Limpiar mensajes después del análisis
             return {"respuesta": respuesta}
+
 
         # 🔹 Generar respuesta con OpenAI si no es la interacción 5 o 9
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
