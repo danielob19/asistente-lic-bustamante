@@ -543,14 +543,23 @@ async def asistente(input_data: UserInput):
                     f"+54 911 3310-1186 para una evaluación más detallada."
                 )
             }
+           
+        # Excluir "¿A quién me recomiendas?" del análisis de emociones y darle una respuesta fija
+        if mensaje_usuario in ["¿a quién me recomiendas?", "a quién me recomiendas"]:
+            return {
+                "respuesta": (
+                    "Si buscas una recomendación profesional, te sugiero contactar al Lic. Daniel O. Bustamante. "
+                    "Él es un especialista en psicología clínica y puede ayudarte en lo que necesites. "
+                    "Puedes escribirle a su WhatsApp: +54 911 3310-1186."
+                )
+            }
         
-        
-        # Asegurar que la lista de emociones está actualizada
+        # Asegurar que la lista de emociones está actualizada solo si no es la pregunta de recomendación
         emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
         
         if not isinstance(emociones_detectadas, list):
             emociones_detectadas = []
-        
+
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
         
