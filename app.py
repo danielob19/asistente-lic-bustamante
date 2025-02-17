@@ -560,12 +560,32 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        # Asegurar que la lista de emociones está actualizada solo si el mensaje no está en la lista de exclusión
+        # Excluir "¿A quién me recomiendas?" del análisis de emociones y darle una respuesta fija
+        if mensaje_usuario in ["¿a quién me recomiendas?", "a quién me recomiendas"]:
+            return {
+                "respuesta": (
+                    "Si buscas una recomendación profesional, te sugiero contactar al Lic. Daniel O. Bustamante. "
+                    "Él es un especialista en psicología clínica y puede ayudarte en lo que necesites. "
+                    "Puedes escribirle a su WhatsApp: +54 911 3310-1186."
+                )
+            }
+        
+        # 🔍 Asegurar que la lista de emociones está actualizada solo si el mensaje no está en la lista de exclusión
         emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
         
         if not isinstance(emociones_detectadas, list):
             emociones_detectadas = []
-
+        
+        # Evitar agregar duplicados en emociones detectadas
+        nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
+        session["emociones_detectadas"].extend(nuevas_emociones)
+        
+        # 🔍 Verificar si la función recibe correctamente las emociones detectadas
+        if session["emociones_detectadas"]:
+            print(f"Registrando emociones en la BD: {session['emociones_detectadas']}")
+        
+            for emocion in session["emociones_detectadas"]:
+                registrar_emocion(emocion, f"interacción {session['contador_interacciones']}")
 
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
@@ -660,10 +680,6 @@ async def asistente(input_data: UserInput):
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
         return {"respuesta": respuesta_ai}
-        
-        # OpenAI siempre detecta emociones negativas antes de decidir si registrarlas
-        emociones_detectadas = detectar_emociones_negativas(mensaje_usuario)
-        session["emociones_detectadas"].extend(emociones_detectadas)
         
         # Listar emociones únicas detectadas
         emociones_unicas = list(set(session["emociones_detectadas"]))
