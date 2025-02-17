@@ -473,6 +473,63 @@ async def asistente(input_data: UserInput):
         if mensaje_usuario == "igual" and session["ultimas_respuestas"] and session["ultimas_respuestas"][-1] in mensajes_cierre:
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
 
+        # 🔹 Manejo de consulta sobre si el Lic. Bustamante atiende estos casos
+        if "atienden estos casos" in mensaje_usuario or "atiende estos temas" in mensaje_usuario:
+            return {
+                "respuesta": "Sí, el Lic. Daniel O. Bustamante es un profesional especializado en psicología clínica y está capacitado para atender estos casos. "
+                             "Si deseas consultarlo, puedes contactarlo a través de WhatsApp: +54 911 3310-1186."
+            }
+        
+        # 🔹 Proporciona el número de contacto si el usuario lo solicita
+        if (
+            "contacto" in mensaje_usuario or
+            "numero" in mensaje_usuario or
+            "número" in mensaje_usuario or
+            "turno" in mensaje_usuario or
+            "whatsapp" in mensaje_usuario or
+            "teléfono" in mensaje_usuario or
+            "psicologo" in mensaje_usuario or
+            "psicólogo" in mensaje_usuario or
+            "terapeuta" in mensaje_usuario or
+            "psicoterapia" in mensaje_usuario or
+            "terapia" in mensaje_usuario or
+            "tratamiento psicológico" in mensaje_usuario or
+            "recomendas" in mensaje_usuario or
+            "telefono" in mensaje_usuario
+        ):
+            return {
+                "respuesta": "Para contactar al Lic. Daniel O. Bustamante, puedes enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
+            }
+        
+        # 🔹 Evitar repetir la misma respuesta si ya se dio antes en la sesión
+        if "bustamante" in mensaje_usuario or "telefono" in mensaje_usuario or "contacto" in mensaje_usuario:
+            if session.get("telefono_mencionado"):
+                return {"respuesta": "Si necesitas más información sobre la terapia, dime en qué puedo ayudarte específicamente."}
+            
+            session["telefono_mencionado"] = True
+            return {
+                "respuesta": "Para contactar al Lic. Daniel O. Bustamante, puedes enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
+            }
+        
+        # 🔹 Proporciona el número de contacto si el usuario pregunta por el "mejor psicólogo" o especialista recomendado
+        if (
+            "especialista" in mensaje_usuario or
+            "mejor psicólogo" in mensaje_usuario or
+            "mejor psicologo" in mensaje_usuario or
+            "mejor terapeuta" in mensaje_usuario or
+            "mejor psicoterapeuta" in mensaje_usuario or
+            "el mejor" in mensaje_usuario or
+            "a quien me recomendas" in mensaje_usuario or
+            "que opinas" in mensaje_usuario or
+            "qué opinas" in mensaje_usuario or
+            "excelente psicólogo" in mensaje_usuario or
+            "buen profesional" in mensaje_usuario or
+            "que me recomendas" in mensaje_usuario
+        ):
+            return {
+                "respuesta": "En mi opinión, el Lic. Daniel O. Bustamante es un excelente especialista en psicología clínica. Seguramente podrá ayudarte. "
+                             "Puedes enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
+            }
 
         # Manejo para "solo un síntoma y no más" (responder como en la 5ª interacción y finalizar)
         if "no quiero dar más síntomas" in mensaje_usuario or "solo este síntoma" in mensaje_usuario:
@@ -544,67 +601,6 @@ async def asistente(input_data: UserInput):
 
         return {"respuesta": respuesta_ai}
         
-        
-        # Respuesta específica para "¿atienden estos casos?"
-        if "atienden estos casos" in mensaje_usuario:
-            return {
-                "respuesta": "Sí, el Lic. Daniel O. Bustamante atiende este tipo de casos. Si necesitas ayuda, no dudes en contactarlo al WhatsApp (+54) 9 11 3310-1186."
-            }
-
-        # Proporciona el número de contacto si el usuario lo solicita
-        if (
-            "contacto" in mensaje_usuario or
-            "numero" in mensaje_usuario or
-            "número" in mensaje_usuario or
-            "turno" in mensaje_usuario or
-            "whatsapp" in mensaje_usuario or
-            "teléfono" in mensaje_usuario or
-            "psicologo" in mensaje_usuario or
-            "psicólogo" in mensaje_usuario or
-            "terapeuta" in mensaje_usuario or
-            "psicoterapia" in mensaje_usuario or
-            "terapia" in mensaje_usuario or
-            "tratamiento psicológico" in mensaje_usuario or
-            "recomendas" in mensaje_usuario or
-            "telefono" in mensaje_usuario
-        ):
-            return {
-                "respuesta": (
-                    "Para contactar al Lic. Daniel O. Bustamante, puedes enviarle un mensaje al WhatsApp "
-                    "+54 911 3310-1186. Él estará encantado de responderte."
-                )
-            }
-
-        # Evitar repetir la misma respuesta si ya se dio antes en la sesión
-        if "bustamante" in mensaje_usuario or "telefono" in mensaje_usuario or "contacto" in mensaje_usuario:
-            if session.get("telefono_mencionado"):
-                return {"respuesta": "Si necesitas más información sobre la terapia, dime en qué puedo ayudarte específicamente."}
-            
-            session["telefono_mencionado"] = True
-            return {"respuesta": "Para contactar al Lic. Daniel O. Bustamante, puedes enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."}
-
-
-         # Proporciona el número de contacto si el usuario lo solicita
-        if (
-            "especialista" in mensaje_usuario or
-            "mejor psicólogo" in mensaje_usuario or
-            "mejor psicologo" in mensaje_usuario or
-            "mejor terapeuta" in mensaje_usuario or
-            "mejor psicoterapeuta" in mensaje_usuario or
-            "el mejor" in mensaje_usuario or
-            "a quien me recomendas" in mensaje_usuario or
-            "que opinas" in mensaje_usuario or
-            "qué opinas" in mensaje_usuario or
-            "excelente psicólogo" in mensaje_usuario or
-            "buen profesional" in mensaje_usuario or
-            "que me recomendas" in mensaje_usuario
-        ):
-            return {
-                "respuesta": (
-                    "En mi opinión el Lic. Daniel O. Bustamante, es un excelente epecialista en psicología clínica, seguramente te ayudará, puedes enviarle un mensaje al WhatsApp "
-                    "+54 911 3310-1186. Él estará encantado de responderte."
-                )
-            }
 
         # Evita repetir "Hasta ahora mencionaste..." en cada respuesta
         if emociones_detectadas:
