@@ -163,18 +163,22 @@ def registrar_emocion(emocion: str, contexto: str):
                 resultado = cursor.fetchone()
 
                 if resultado:
-                    # Si la emoción ya existe, actualizar el contexto
-                    nuevo_contexto = f"{resultado[0]}; {contexto.strip()}"
-                    cursor.execute("UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s;", 
-                                   (nuevo_contexto, emocion.strip().lower()))
-                    print(f"✅ Emoción '{emocion}' ya existe. Contexto actualizado.")
+                    # Evitar agregar el mismo contexto repetido
+                    contexto_existente = resultado[0].split("; ")
+                    if contexto.strip() not in contexto_existente:
+                        nuevo_contexto = f"{resultado[0]}; {contexto.strip()}"
+                        cursor.execute("UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s;", 
+                                       (nuevo_contexto, emocion.strip().lower()))
+                        print(f"🔄 Contexto de '{emocion}' actualizado: {nuevo_contexto}")
+                    else:
+                        print(f"⚠️ El contexto '{contexto}' ya estaba registrado para la emoción '{emocion}'. No se actualizó.")
                 else:
                     # Si la emoción no existe, insertarla
                     cursor.execute("INSERT INTO emociones_detectadas (emocion, contexto) VALUES (%s, %s);", 
                                    (emocion.strip().lower(), contexto.strip()))
-                    print(f"✅ Nueva emoción '{emocion}' registrada en la base de datos.")
+                    print(f"✅ Nueva emoción '{emocion}' registrada con contexto: {contexto}.")
 
-                conn.commit()
+                conn.commit()  # 🔍 Confirmar cambios en la BD
         print("========================================\n")
 
     except Exception as e:
