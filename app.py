@@ -591,8 +591,17 @@ async def asistente(input_data: UserInput):
             for emocion in session["emociones_detectadas"]:
                 registrar_emocion(emocion, f"interacción {session['contador_interacciones']}")
 
-        # Agregar emociones a la sesión sin causar errores
-        session["emociones_detectadas"].extend(emociones_detectadas)
+        # Evitar agregar duplicados en emociones detectadas
+        nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
+        session["emociones_detectadas"].extend(nuevas_emociones)
+        
+        # 🔍 Verificar si la función recibe correctamente las emociones detectadas
+        if session["emociones_detectadas"]:
+            print(f"Registrando emociones en la BD: {session['emociones_detectadas']}")
+        
+            for emocion in session["emociones_detectadas"]:
+                registrar_emocion(emocion, f"interacción {session['contador_interacciones']}")
+
         
         # Evaluación de emociones y cuadro probable en la interacción 5 y 9
         if contador in [5, 9]:
