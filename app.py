@@ -593,75 +593,53 @@ async def asistente(input_data: UserInput):
         print(f"\n===== DEPURACIÓN - DETECCIÓN DE EMOCIONES =====")
         print(f"Mensaje analizado: {mensaje_usuario}")
         
-        emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
+        # Detectar emociones (cualquiera)
+        emociones_detectadas = detectar_emociones(mensaje_usuario) or []
         
-        # 🔍 Verificar emociones detectadas
+        # 🔍 Verificar emociones detectadas antes del filtrado
         print(f"Emociones detectadas por OpenAI (sin filtrar): {emociones_detectadas}")
         
-        # Filtrar solo emociones negativas
-        emociones_negativas = [e for e in emociones_detectadas if es_emocion_negativa(e)]
+        # Filtrar solo emociones negativas que existen en la base de datos
+        emociones_negativas = [e for e in emociones_detectadas if verificar_existencia_sintoma_bd(e)]
         print(f"Emociones negativas filtradas: {emociones_negativas}")
         
-        # 🔍 Registrar emociones negativas en la base de datos
+        # 🔍 Registrar nuevas emociones negativas en la BD si no existen
+        for emocion in emociones_detectadas:
+            if not verificar_existencia_sintoma_bd(emocion):
+                registrar_sintoma(emocion, "pendiente de clasificación")  # Para que luego puedas clasificarla
+        
+        # 🔍 Registrar emociones negativas detectadas en la base de datos
         if emociones_negativas:
             print(f"Registrando emociones en la BD: {emociones_negativas}")
             for emocion in emociones_negativas:
                 registrar_emocion(emocion, f"interacción {session['contador_interacciones']}")
         
-        # 🔍 Determinar cuadro probable basado en la tabla palabras_clave
-        cuadro_probable = determinar_cuadro_probable(session["emociones_detectadas"])
+        # 🔍 Determinar cuadro probable si hay al menos 2 coincidencias en la tabla palabras_clave
+        coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(emociones_negativas)
+        
+        # 🔍 DEPURACIÓN: Mostrar síntomas encontrados en la BD
+        print(f"Coincidencias encontradas en la BD: {coincidencias_sintomas}")
+        
+        if len(coincidencias_sintomas) >= 2:
+            cuadro_probable = Counter(coincidencias_sintomas).most_common(1)[0][0]
+        else:
+            cuadro_probable = "pendiente de clasificación"
+        
+        # 🔍 DEPURACIÓN: Mostrar cuadro probable determinado
         print(f"Cuadro probable determinado: {cuadro_probable}")
+        print("========================================\n")
         
-        # 🔍 Respuesta final del bot al usuario
-        print(f"Respuesta generada para el usuario: {respuesta_bot}")
-
+        # 📌 Construir la respuesta final para el usuario
+        respuesta = f"He notado que mencionaste emociones como: {', '.join(set(emociones_negativas))}. "
+        if cuadro_probable != "pendiente de clasificación":
+            respuesta += f"Basándome en esto, el cuadro más probable es: {cuadro_probable}. "
+        respuesta += "Si necesitas más orientación, puedes contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186. Estoy aquí para ayudarte en lo que necesites."
         
-        # Evaluación de emociones y cuadro probable en la interacción 5 y 9
-        if contador in [5, 9]:
-            emociones_detectadas = detectar_emociones_negativas(" ".join(session["mensajes"]))
-            
-            # Evitar agregar duplicados en emociones detectadas
-            nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
-            session["emociones_detectadas"].extend(nuevas_emociones)
-
-            # 🔍 DEPURACIÓN: Mostrar emociones detectadas
-            print("\n===== DEPURACIÓN - INTERACCIÓN 5 o 9 =====")
-            print(f"Interacción: {contador}")
-            print(f"Mensaje del usuario: {mensaje_usuario}")
-            print(f"Emociones detectadas en esta interacción: {emociones_detectadas}")
-            print(f"Emociones acumuladas hasta ahora: {session['emociones_detectadas']}")
-
-            # Buscar coincidencias en la base de datos para determinar el cuadro probable
-            coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
-
-            # 🔍 DEPURACIÓN: Mostrar síntomas encontrados en la BD
-            print(f"Coincidencias encontradas en la BD: {coincidencias_sintomas}")
-
-            if len(coincidencias_sintomas) >= 2:
-                cuadro_probable = Counter(coincidencias_sintomas).most_common(1)[0][0]
-            else:
-                cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
-
-            # 🔍 DEPURACIÓN: Mostrar cuadro probable determinado
-            print(f"Cuadro probable determinado: {cuadro_probable}")
-            print("========================================\n")
-
-            # Verificar si hay emociones detectadas antes de construir la respuesta
-            if session["emociones_detectadas"]:
-                respuesta = (
-                    f"He notado que mencionaste emociones como: {', '.join(set(session['emociones_detectadas']))}. "
-                    f"Basándome en esto, el cuadro más probable es: {cuadro_probable}. "
-                    f"Si necesitas más orientación, puedes contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186. "
-                    f"Estoy aquí para ayudarte en lo que necesites."
-                )
-            else:
-                respuesta = (
-                    "Hasta el momento no he detectado emociones específicas. "
-                    "¿Te gustaría contarme más sobre cómo te sientes?"
-                )
-            
-            session["mensajes"].clear()  # Limpiar mensajes después del análisis
-            return {"respuesta": respuesta}
+        # 🔍 Limpiar mensajes después del análisis
+        session["mensajes"].clear()
+        
+        # 📌 Devolver respuesta
+        return {"respuesta": respuesta}
 
 
         # 🔹 Generar respuesta con OpenAI si no es la interacción 5 o 9
