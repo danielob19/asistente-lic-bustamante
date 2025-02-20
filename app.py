@@ -183,20 +183,21 @@ def registrar_emocion(emocion: str, contexto: str):
 
 
 # Obtener síntomas existentes
-def obtener_sintomas():
+def obtener_sintomas_existentes():
     """
-    Obtiene todos los síntomas almacenados en la base de datos PostgreSQL.
+    Obtiene todos los síntomas almacenados en la base de datos PostgreSQL y los devuelve como un conjunto en minúsculas.
+    Esto mejora la comparación y evita problemas con mayúsculas/minúsculas.
     """
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
-        cursor.execute("SELECT sintoma, cuadro FROM palabras_clave")
-        sintomas = cursor.fetchall()
+        cursor.execute("SELECT LOWER(sintoma) FROM palabras_clave")  # Convierte a minúsculas desde la BD
+        sintomas = {row[0] for row in cursor.fetchall()}  # Convierte en un conjunto para búsqueda eficiente
         conn.close()
         return sintomas
     except Exception as e:
-        print(f"Error al obtener síntomas: {e}")
-        return []
+        print(f"❌ Error al obtener síntomas existentes: {e}")
+        return set()
 
 # Registrar una interacción
 def registrar_interaccion(user_id: str, consulta: str):
