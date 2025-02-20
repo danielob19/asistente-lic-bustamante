@@ -128,9 +128,9 @@ def init_db():
         print(f"Error al inicializar la base de datos: {e}")
 
 # Registrar un síntoma
-def registrar_sintoma(sintoma: str, cuadro: str):
+def registrar_sintoma(sintoma: str, cuadro: str = "patrón emocional detectado"):
     """
-    Inserta un nuevo síntoma en la base de datos PostgreSQL o lo actualiza si ya existe.
+    Inserta un nuevo síntoma en la base de datos PostgreSQL si no existe.
     """
     try:
         conn = psycopg2.connect(DATABASE_URL)
@@ -138,13 +138,14 @@ def registrar_sintoma(sintoma: str, cuadro: str):
         cursor.execute("""
             INSERT INTO palabras_clave (sintoma, cuadro) 
             VALUES (%s, %s)
-            ON CONFLICT (sintoma) DO UPDATE SET cuadro = EXCLUDED.cuadro;
-        """, (sintoma, cuadro))
+            ON CONFLICT (sintoma) DO NOTHING;
+        """, (sintoma.strip().lower(), cuadro))
         conn.commit()
         conn.close()
-        print(f"Síntoma '{sintoma}' registrado exitosamente con cuadro: {cuadro}.")
+        print(f"✅ Síntoma '{sintoma}' registrado exitosamente en la base de datos.")
     except Exception as e:
-        print(f"Error al registrar síntoma '{sintoma}': {e}")
+        print(f"❌ Error al registrar síntoma '{sintoma}': {e}")
+
 
 # Registrar una emoción detectada en la base de datos
 def registrar_emocion(emocion: str, contexto: str):
