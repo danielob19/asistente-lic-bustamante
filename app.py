@@ -574,33 +574,31 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        # 🔍 Asegurar que la lista de emociones está actualizada solo si el mensaje no está en la lista de exclusión
+        # 🔍 Detectar emociones en el mensaje
+        print(f"\n===== DEPURACIÓN - DETECCIÓN DE EMOCIONES =====")
+        print(f"Mensaje analizado: {mensaje_usuario}")
+        
         emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
         
-        if not isinstance(emociones_detectadas, list):
-            emociones_detectadas = []
+        # 🔍 Verificar emociones detectadas
+        print(f"Emociones detectadas por OpenAI (sin filtrar): {emociones_detectadas}")
         
-        # Evitar agregar duplicados en emociones detectadas
-        nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
-        session["emociones_detectadas"].extend(nuevas_emociones)
+        # Filtrar solo emociones negativas
+        emociones_negativas = [e for e in emociones_detectadas if es_emocion_negativa(e)]
+        print(f"Emociones negativas filtradas: {emociones_negativas}")
         
-        # 🔍 Verificar si la función recibe correctamente las emociones detectadas
-        if session["emociones_detectadas"]:
-            print(f"Registrando emociones en la BD: {session['emociones_detectadas']}")
-        
-            for emocion in session["emociones_detectadas"]:
+        # 🔍 Registrar emociones negativas en la base de datos
+        if emociones_negativas:
+            print(f"Registrando emociones en la BD: {emociones_negativas}")
+            for emocion in emociones_negativas:
                 registrar_emocion(emocion, f"interacción {session['contador_interacciones']}")
-
-        # Evitar agregar duplicados en emociones detectadas
-        nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
-        session["emociones_detectadas"].extend(nuevas_emociones)
         
-        # 🔍 Verificar si la función recibe correctamente las emociones detectadas
-        if session["emociones_detectadas"]:
-            print(f"Registrando emociones en la BD: {session['emociones_detectadas']}")
+        # 🔍 Determinar cuadro probable basado en la tabla palabras_clave
+        cuadro_probable = determinar_cuadro_probable(session["emociones_detectadas"])
+        print(f"Cuadro probable determinado: {cuadro_probable}")
         
-            for emocion in session["emociones_detectadas"]:
-                registrar_emocion(emocion, f"interacción {session['contador_interacciones']}")
+        # 🔍 Respuesta final del bot al usuario
+        print(f"Respuesta generada para el usuario: {respuesta_bot}")
 
         
         # Evaluación de emociones y cuadro probable en la interacción 5 y 9
