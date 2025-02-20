@@ -1,6 +1,3 @@
-CODIGO 17 FEBRERO 2025  (ACTUALMENTE INSTALADO)
-
-
 import os
 import time
 import threading
