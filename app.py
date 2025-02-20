@@ -146,6 +146,21 @@ def registrar_sintoma(sintoma: str, cuadro: str):
     except Exception as e:
         print(f"Error al registrar síntoma '{sintoma}': {e}")
 
+# 🔍 ✅ Agrega esta función ANTES de que se use en el filtrado de emociones
+def es_emocion_negativa(emocion: str) -> bool:
+    """
+    Verifica si la emoción detectada es negativa comparándola con la tabla `palabras_clave`.
+    """
+    try:
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) FROM palabras_clave WHERE LOWER(emocion) = LOWER(%s);", (emocion,))
+                resultado = cursor.fetchone()
+                return resultado[0] > 0  # Retorna True si la emoción está en la base de datos
+    except Exception as e:
+        print(f"❌ Error en `es_emocion_negativa`: {e}")
+        return False  # En caso de error, asumimos que no es negativa
+
 # Registrar una emoción detectada en la base de datos
 def registrar_emocion(emocion: str, contexto: str):
     """
