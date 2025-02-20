@@ -154,9 +154,9 @@ def es_emocion_negativa(emocion: str) -> bool:
     try:
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT COUNT(*) FROM palabras_clave WHERE LOWER(emocion) = LOWER(%s);", (emocion,))
+                cursor.execute("SELECT COUNT(*) FROM palabras_clave WHERE LOWER(sintoma) = LOWER(%s);", (emocion,))
                 resultado = cursor.fetchone()
-                return resultado[0] > 0  # Retorna True si la emoción está en la base de datos
+                return resultado[0] > 0  # Si la emoción existe en palabras_clave, es negativa
     except Exception as e:
         print(f"❌ Error en `es_emocion_negativa`: {e}")
         return False  # En caso de error, asumimos que no es negativa
