@@ -585,7 +585,17 @@ async def asistente(input_data: UserInput):
         sintomas_existentes = obtener_sintomas_existentes()
         
         # Filtrar emociones detectadas para evitar registrar duplicados
-        emociones_nuevas = [emocion for emocion in emociones_detectadas if emocion.lower() not in sintomas_existentes]
+        emociones_nuevas = []
+        
+        for emocion in emociones_detectadas:
+            emocion = emocion.lower().strip()
+            if emocion not in sintomas_existentes:
+                emociones_nuevas.append(emocion)
+                registrar_sintoma(emocion)  # ✅ Registrar inmediatamente en palabras_clave
+        
+        # Depuración para verificar qué emociones se están intentando registrar
+        print(f"🔍 Emociones nuevas registradas en palabras_clave: {emociones_nuevas}")
+
 
         # 🔍 Depuración: Mostrar qué emociones se intentarán registrar
         print(f"🔍 Emociones nuevas que intentarán registrarse en palabras_clave: {emociones_nuevas}")
