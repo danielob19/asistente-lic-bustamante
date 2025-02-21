@@ -593,20 +593,19 @@ async def asistente(input_data: UserInput):
                 emociones_nuevas.append(emocion)
                 registrar_sintoma(emocion)  # ✅ Registrar inmediatamente en palabras_clave
         
-        # Depuración para verificar qué emociones se están intentando registrar
-        print(f"🔍 Emociones nuevas registradas en palabras_clave: {emociones_nuevas}")
-
-
         # 🔍 Depuración: Mostrar qué emociones se intentarán registrar
         print(f"🔍 Emociones nuevas que intentarán registrarse en palabras_clave: {emociones_nuevas}")
-        
+                
         # Registrar solo las emociones nuevas en la base de datos con un cuadro clínico predeterminado
         for emocion in emociones_nuevas:
             cuadro_predeterminado = "patrón emocional detectado"  # ✅ Se asigna un cuadro por defecto
             registrar_sintoma(emocion, cuadro_predeterminado)  # ✅ Se pasa correctamente el argumento "cuadro"
         
-        # Depuración para verificar qué emociones se están intentando registrar
-        print(f"🔍 Emociones nuevas registradas en palabras_clave: {emociones_nuevas}")
+        # 🔍 Confirmación final de emociones registradas
+        if emociones_nuevas:
+            print(f"✅ Se registraron las siguientes emociones nuevas en palabras_clave: {emociones_nuevas}")
+        else:
+            print("✅ No hubo emociones nuevas para registrar en palabras_clave.")
 
 
         # Evitar agregar duplicados en emociones detectadas
