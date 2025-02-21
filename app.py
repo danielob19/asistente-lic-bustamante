@@ -600,12 +600,14 @@ async def asistente(input_data: UserInput):
         # 🔍 Depuración: Mostrar qué emociones se intentarán registrar
         print(f"🔍 Emociones nuevas que intentarán registrarse en palabras_clave: {emociones_nuevas}")
         
-        # Registrar solo las emociones nuevas en la base de datos
+        # Registrar solo las emociones nuevas en la base de datos con un cuadro clínico predeterminado
         for emocion in emociones_nuevas:
-            registrar_sintoma(emocion)
+            cuadro_predeterminado = "patrón emocional detectado"  # ✅ Se asigna un cuadro por defecto
+            registrar_sintoma(emocion, cuadro_predeterminado)  # ✅ Se pasa correctamente el argumento "cuadro"
         
         # Depuración para verificar qué emociones se están intentando registrar
         print(f"🔍 Emociones nuevas registradas en palabras_clave: {emociones_nuevas}")
+
 
         # Evitar agregar duplicados en emociones detectadas
         nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
