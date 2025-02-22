@@ -139,8 +139,11 @@ def init_db():
         print(f"Error al inicializar la base de datos: {e}")
 
 # Registrar un síntoma
-def registrar_sintoma(emocion):
-    # Diccionario con cuadros clínicos más precisos según el síntoma
+def registrar_sintoma(sintoma: str):
+    """
+    Inserta un nuevo síntoma en la base de datos PostgreSQL si no existe.
+    Asigna un cuadro clínico basado en una lista predefinida o usa un valor por defecto.
+    """
     cuadros_clinicos = {
         "ansiedad": "trastorno de ansiedad",
         "pánico": "trastorno de pánico",
@@ -157,36 +160,25 @@ def registrar_sintoma(emocion):
         "vergüenza": "trastorno de autoestima",
         "cansancio": "agotamiento mental",
         "apatía": "síndrome amotivacional",
-        "inseguridad": "trastorno de inseguridad emocional",
-        "soledad": "aislamiento emocional",
-        "desmotivación": "desgaste psicológico",
-        "baja autoestima": "trastorno de autoestima",
-        "indecisión": "dificultad en la toma de decisiones",
-        "agobio": "sobrecarga emocional",
-        "descontrol emocional": "trastorno del estado de ánimo",
-        "irritabilidad": "síndrome de irritabilidad",
-        "culpa": "trastorno de autopercepción",
     }
 
-    # Buscar el cuadro clínico asociado o asignar uno genérico
-    cuadro_asociado = cuadros_clinicos.get(emocion, "patrón emocional detectado")
-
-    # Sentencia SQL para insertar el síntoma con su cuadro clínico
-    sql = """
-        INSERT INTO palabras_clave (sintoma, cuadro)
-        VALUES (%s, %s)
-        ON CONFLICT (sintoma) DO NOTHING;
-    """
+    # Si el síntoma no está en la lista, se asigna el cuadro por defecto
+    cuadro_asociado = cuadros_clinicos.get(sintoma.lower(), "patrón emocional detectado")
 
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
-        cursor.execute(sql, (emocion.strip().lower(), cuadro_asociado))
+        cursor.execute("""
+            INSERT INTO palabras_clave (sintoma, cuadro) 
+            VALUES (%s, %s)
+            ON CONFLICT (sintoma) DO UPDATE SET cuadro = EXCLUDED.cuadro;
+        """, (sintoma.strip().lower(), cuadro_asociado))
         conn.commit()
         conn.close()
-        print(f"✅ Síntoma '{emocion}' registrado con cuadro clínico '{cuadro_asociado}' en la base de datos.")
+        print(f"✅ Síntoma '{sintoma}' registrado con cuadro '{cuadro_asociado}'.")
     except Exception as e:
-        print(f"❌ Error al registrar síntoma '{emocion}': {e}")
+        print(f"❌ Error al registrar síntoma '{sintoma}': {e}")
+
 
 
 # Registrar una emoción detectada en la base de datos
