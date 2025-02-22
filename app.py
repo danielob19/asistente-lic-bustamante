@@ -139,23 +139,54 @@ def init_db():
         print(f"Error al inicializar la base de datos: {e}")
 
 # Registrar un síntoma
-def registrar_sintoma(sintoma: str, cuadro: str = "patrón emocional detectado"):
+def registrar_sintoma(emocion):
+    # Diccionario con cuadros clínicos más precisos según el síntoma
+    cuadros_clinicos = {
+        "ansiedad": "trastorno de ansiedad",
+        "pánico": "trastorno de pánico",
+        "depresión": "trastorno depresivo",
+        "estrés": "estrés crónico",
+        "desesperanza": "estado depresivo",
+        "frustración": "trastorno adaptativo",
+        "desgaste emocional": "agotamiento psicológico",
+        "ira": "dificultad en el manejo de impulsos",
+        "miedo": "fobia o ansiedad anticipatoria",
+        "insomnio": "alteración del sueño",
+        "autoexigencia": "trastorno perfeccionista",
+        "desorientación": "estado confusional",
+        "vergüenza": "trastorno de autoestima",
+        "cansancio": "agotamiento mental",
+        "apatía": "síndrome amotivacional",
+        "inseguridad": "trastorno de inseguridad emocional",
+        "soledad": "aislamiento emocional",
+        "desmotivación": "desgaste psicológico",
+        "baja autoestima": "trastorno de autoestima",
+        "indecisión": "dificultad en la toma de decisiones",
+        "agobio": "sobrecarga emocional",
+        "descontrol emocional": "trastorno del estado de ánimo",
+        "irritabilidad": "síndrome de irritabilidad",
+        "culpa": "trastorno de autopercepción",
+    }
+
+    # Buscar el cuadro clínico asociado o asignar uno genérico
+    cuadro_asociado = cuadros_clinicos.get(emocion, "patrón emocional detectado")
+
+    # Sentencia SQL para insertar el síntoma con su cuadro clínico
+    sql = """
+        INSERT INTO palabras_clave (sintoma, cuadro)
+        VALUES (%s, %s)
+        ON CONFLICT (sintoma) DO NOTHING;
     """
-    Inserta un nuevo síntoma en la base de datos PostgreSQL si no existe.
-    """
+
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO palabras_clave (sintoma, cuadro) 
-            VALUES (%s, %s)
-            ON CONFLICT (sintoma) DO NOTHING;
-        """, (sintoma.strip().lower(), cuadro))
+        cursor.execute(sql, (emocion.strip().lower(), cuadro_asociado))
         conn.commit()
         conn.close()
-        print(f"✅ Síntoma '{sintoma}' registrado exitosamente en la base de datos.")
+        print(f"✅ Síntoma '{emocion}' registrado con cuadro clínico '{cuadro_asociado}' en la base de datos.")
     except Exception as e:
-        print(f"❌ Error al registrar síntoma '{sintoma}': {e}")
+        print(f"❌ Error al registrar síntoma '{emocion}': {e}")
 
 
 # Registrar una emoción detectada en la base de datos
