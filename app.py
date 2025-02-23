@@ -138,15 +138,15 @@ def init_db():
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
-# Registrar un síntoma con cuadro clínico
+# Registrar un síntoma con cuadro clínico asignado por OpenAI si no se proporciona
 def registrar_sintoma(sintoma: str, cuadro_clinico: str = None):
     """
     Inserta un nuevo síntoma en la base de datos PostgreSQL si no existe.
-    Usa OpenAI para asignar un cuadro clínico si no se proporciona uno.
+    Si no se proporciona un cuadro clínico, OpenAI lo asignará automáticamente.
     """
 
-    # Si no se proporcionó un cuadro clínico, pedirle a OpenAI que lo asigne
-    if cuadro_clinico is None:
+    # Si no se proporciona un cuadro clínico, usar OpenAI para asignarlo
+    if cuadro_clinico is None or not cuadro_clinico.strip():
         try:
             prompt_cuadro = (
                 f"Asigna un cuadro clínico adecuado a la siguiente emoción: '{sintoma}'.\n\n"
@@ -180,12 +180,19 @@ def registrar_sintoma(sintoma: str, cuadro_clinico: str = None):
             )
 
             cuadro_clinico = response.choices[0].message['content'].strip()
+
+            # Verificar si OpenAI devolvió un cuadro válido
+            if not cuadro_clinico:
+                print(f"⚠️ OpenAI devolvió un cuadro vacío para '{sintoma}'. Se usará 'Patrón emocional detectado'.")
+                cuadro_clinico = "Patrón emocional detectado"
+
             print(f"🆕 OpenAI asignó el cuadro clínico: {cuadro_clinico} para la emoción '{sintoma}'.")
 
         except Exception as e:
-            print(f"⚠️ Error al obtener cuadro clínico de OpenAI: {e}")
-            cuadro_clinico = "patrón emocional detectado"  # Fallback en caso de error
+            print(f"⚠️ Error al obtener cuadro clínico de OpenAI para '{sintoma}': {e}")
+            cuadro_clinico = "Patrón emocional detectado"  # Fallback en caso de error
 
+    # Insertar el síntoma con el cuadro clínico en la base de datos
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
@@ -198,7 +205,8 @@ def registrar_sintoma(sintoma: str, cuadro_clinico: str = None):
         conn.close()
         print(f"✅ Síntoma '{sintoma}' registrado con cuadro '{cuadro_clinico}'.")
     except Exception as e:
-        print(f"❌ Error al registrar síntoma '{sintoma}': {e}")
+        print(f"❌ Error al registrar síntoma '{sintoma}' en la base de datos: {e}")
+
 
 # Registrar una emoción detectada en la base de datos
 def registrar_emocion(emocion: str, contexto: str):
