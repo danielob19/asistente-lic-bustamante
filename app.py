@@ -142,29 +142,44 @@ def init_db():
 def registrar_sintoma(sintoma: str, cuadro_clinico: str = None):
     """
     Inserta un nuevo síntoma en la base de datos PostgreSQL si no existe.
-    Asigna un cuadro clínico basado en una lista predefinida o usa un valor por defecto.
+    Usa OpenAI para asignar un cuadro clínico si no se proporciona uno.
     """
 
-    cuadros_clinicos = {
-        "ansiedad": "trastorno de ansiedad",
-        "pánico": "trastorno de pánico",
-        "depresión": "trastorno depresivo",
-        "estrés": "estrés crónico",
-        "desesperanza": "estado depresivo",
-        "frustración": "trastorno adaptativo",
-        "desgaste emocional": "agotamiento psicológico",
-        "ira": "dificultad en el manejo de impulsos",
-        "miedo": "fobia o ansiedad anticipatoria",
-        "insomnio": "alteración del sueño",
-        "autoexigencia": "trastorno perfeccionista",
-        "desorientación": "estado confusional",
-        "vergüenza": "trastorno de autoestima",
-        "cansancio": "agotamiento mental",
-        "apatía": "síndrome amotivacional",
-    }
+    # Si no se proporcionó un cuadro clínico, pedirle a OpenAI que lo asigne
+    if cuadro_clinico is None:
+        try:
+            prompt_cuadro = (
+                f"Asigna un cuadro clínico adecuado a la siguiente emoción: '{sintoma}'.\n\n"
+                "Analiza el síntoma y asigna el cuadro clínico más adecuado en función de trastornos, síndromes o patrones emocionales. "
+                "Puedes incluir cualquier cuadro clínico relevante dentro de la psicología, psiquiatría o bienestar emocional, "
+                "sin limitarte a una lista fija. Ejemplos de cuadros posibles incluyen (pero no están limitados a):\n"
+                "- Trastorno de ansiedad\n"
+                "- Depresión mayor\n"
+                "- Estrés postraumático\n"
+                "- Trastorno de pánico\n"
+                "- Baja autoestima\n"
+                "- Estado confusional\n"
+                "- Desgaste emocional\n"
+                "- Trastorno de impulsividad\n"
+                "- Insomnio crónico\n"
+                "- Desorientación emocional\n"
+                "- Sentimientos de aislamiento\n"
+                "Devuelve únicamente el cuadro clínico sin texto adicional."
+            )
 
-    # Si no se proporciona un cuadro clínico, se asigna automáticamente
-    cuadro_asociado = cuadro_clinico if cuadro_clinico else cuadros_clinicos.get(sintoma.lower(), "patrón emocional detectado")
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt_cuadro}],
+                max_tokens=50,
+                temperature=0.0
+            )
+
+            cuadro_clinico = response.choices[0].message['content'].strip()
+            print(f"🆕 OpenAI asignó el cuadro clínico: {cuadro_clinico} para la emoción '{sintoma}'.")
+
+        except Exception as e:
+            print(f"⚠️ Error al obtener cuadro clínico de OpenAI: {e}")
+            cuadro_clinico = "patrón emocional detectado"  # Fallback en caso de error
 
     try:
         conn = psycopg2.connect(DATABASE_URL)
@@ -173,15 +188,12 @@ def registrar_sintoma(sintoma: str, cuadro_clinico: str = None):
             INSERT INTO palabras_clave (sintoma, cuadro) 
             VALUES (%s, %s)
             ON CONFLICT (sintoma) DO UPDATE SET cuadro = EXCLUDED.cuadro;
-        """, (sintoma.strip().lower(), cuadro_asociado))
+        """, (sintoma.strip().lower(), cuadro_clinico))
         conn.commit()
         conn.close()
-        print(f"✅ Síntoma '{sintoma}' registrado con cuadro '{cuadro_asociado}'.")
+        print(f"✅ Síntoma '{sintoma}' registrado con cuadro '{cuadro_clinico}'.")
     except Exception as e:
         print(f"❌ Error al registrar síntoma '{sintoma}': {e}")
-
-
-
 
 # Registrar una emoción detectada en la base de datos
 def registrar_emocion(emocion: str, contexto: str):
