@@ -134,12 +134,13 @@ def init_db():
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
-# Registrar un síntoma
-def registrar_sintoma(sintoma: str):
+# Registrar un síntoma con cuadro clínico
+def registrar_sintoma(sintoma: str, cuadro_clinico: str = None):
     """
     Inserta un nuevo síntoma en la base de datos PostgreSQL si no existe.
     Asigna un cuadro clínico basado en una lista predefinida o usa un valor por defecto.
     """
+
     cuadros_clinicos = {
         "ansiedad": "trastorno de ansiedad",
         "pánico": "trastorno de pánico",
@@ -158,8 +159,8 @@ def registrar_sintoma(sintoma: str):
         "apatía": "síndrome amotivacional",
     }
 
-    # Si el síntoma no está en la lista, se asigna el cuadro por defecto
-    cuadro_asociado = cuadros_clinicos.get(sintoma.lower(), "patrón emocional detectado")
+    # Si no se proporciona un cuadro clínico, se asigna automáticamente
+    cuadro_asociado = cuadro_clinico if cuadro_clinico else cuadros_clinicos.get(sintoma.lower(), "patrón emocional detectado")
 
     try:
         conn = psycopg2.connect(DATABASE_URL)
@@ -174,6 +175,7 @@ def registrar_sintoma(sintoma: str):
         print(f"✅ Síntoma '{sintoma}' registrado con cuadro '{cuadro_asociado}'.")
     except Exception as e:
         print(f"❌ Error al registrar síntoma '{sintoma}': {e}")
+
 
 
 
