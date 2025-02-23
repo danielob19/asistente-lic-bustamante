@@ -150,9 +150,12 @@ def registrar_sintoma(sintoma: str, cuadro_clinico: str = None):
         try:
             prompt_cuadro = (
                 f"Asigna un cuadro clínico adecuado a la siguiente emoción: '{sintoma}'.\n\n"
-                "Analiza el síntoma y asigna el cuadro clínico más adecuado en función de trastornos, síndromes o patrones emocionales. "
-                "Puedes incluir cualquier cuadro clínico relevante dentro de la psicología, psiquiatría o bienestar emocional, "
-                "sin limitarte a una lista fija. Ejemplos de cuadros posibles incluyen (pero no están limitados a):\n"
+                "Debes identificar y asignar el cuadro clínico más preciso en función de trastornos, síndromes o patrones emocionales. "
+                "Si la emoción no corresponde a un cuadro clínico específico, asigna 'Patrón emocional detectado'.\n\n"
+                
+                "No dejes la respuesta vacía ni respondas con 'indeterminado'. Siempre asigna un cuadro clínico.\n\n"
+            
+                "Ejemplos de cuadros clínicos válidos:\n"
                 "- Trastorno de ansiedad\n"
                 "- Depresión mayor\n"
                 "- Estrés postraumático\n"
@@ -164,7 +167,9 @@ def registrar_sintoma(sintoma: str, cuadro_clinico: str = None):
                 "- Insomnio crónico\n"
                 "- Desorientación emocional\n"
                 "- Sentimientos de aislamiento\n"
-                "Devuelve únicamente el cuadro clínico sin texto adicional."
+                "- Patrón emocional detectado (si no encaja en ningún otro cuadro clínico específico)\n\n"
+            
+                "Devuelve únicamente el cuadro clínico, sin texto adicional."
             )
 
             response = openai.ChatCompletion.create(
