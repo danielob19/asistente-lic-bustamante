@@ -43,18 +43,22 @@ def generar_respuesta_con_openai(prompt):
 # Función para detectar emociones negativas usando OpenAI
 def detectar_emociones_negativas(mensaje):
     prompt = (
-    "Analiza el siguiente mensaje y detecta exclusivamente emociones humanas negativas o estados emocionales "
-    "relacionados con malestar psicológico. Devuelve una lista separada por comas con las emociones detectadas, "
-    "sin texto adicional. **No devuelvas 'indeterminado'; si la emoción no es clara, devuelve la emoción más cercana.**\n\n"
+        "Analiza el siguiente mensaje y detecta exclusivamente emociones humanas negativas o estados emocionales "
+        "relacionados con malestar psicológico. Devuelve una lista separada por comas con las emociones detectadas, "
+        "sin texto adicional. **Si el mensaje es ambiguo, devuelve la emoción negativa más cercana en lugar de 'indeterminado'.**\n\n"
+        
+        "Ejemplos de emociones negativas y estados emocionales:\n"
+        "- Tristeza, desesperanza, desolación, impotencia, culpa, vergüenza, frustración, ansiedad, miedo, desamparo, agotamiento.\n"
+        "- Expresiones compuestas: 'sensación de abandono', 'temor al rechazo', 'desgaste emocional', 'apatía profunda'.\n\n"
+        
+        "Reglas de detección:\n"
+        "- **Si la emoción es una frase compuesta,** como 'desgaste emocional' o 'tristeza profunda', devuélvela completa.\n"
+        "- **Si hay múltiples emociones en el mensaje,** devuélvelas separadas por comas.\n"
+        "- **Si no hay emociones negativas claras,** devuelve 'ninguna'.\n\n"
     
-    "Ejemplos de emociones negativas y estados emocionales:\n"
-    "- Tristeza, desesperanza, desolación, impotencia, culpa, vergüenza, frustración, ansiedad, miedo, desamparo, agotamiento.\n"
-    "- Expresiones compuestas: 'sensación de abandono', 'temor al rechazo', 'desgaste emocional', 'apatía profunda'.\n\n"
-    
-    "Si una emoción detectada incluye varias palabras, devuélvela tal cual sin modificarla.\n\n"
-    
-    f"Mensaje: {mensaje}"
+        f"Mensaje: {mensaje}"
     )
+
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
