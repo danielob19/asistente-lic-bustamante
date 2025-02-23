@@ -66,7 +66,7 @@ def detectar_emociones_negativas(mensaje):
             max_tokens=50,
             temperature=0.0
         )
-        emociones = response.choices[0].message['content'].strip().lower()
+        emociones = response.choices[0].message.get("content", "").strip().lower()
 
         # Mostrar resultado de OpenAI para depuración
         print("\n===== DEPURACIÓN - DETECCIÓN DE EMOCIONES =====")
@@ -77,6 +77,7 @@ def detectar_emociones_negativas(mensaje):
         emociones = emociones.replace("emociones negativas detectadas:", "").strip()
         emociones = [emocion.strip() for emocion in emociones.split(",") if emocion.strip()]
 
+        # Si OpenAI devuelve "ninguna", retornamos una lista vacía
         if "ninguna" in emociones:
             print("No se detectaron emociones negativas.\n")
             return []
@@ -85,9 +86,8 @@ def detectar_emociones_negativas(mensaje):
         return emociones
 
     except Exception as e:
-        print(f"Error al detectar emociones negativas: {e}")
+        print(f"❌ Error al detectar emociones negativas: {e}")
         return []
-
 
 # Inicialización de FastAPI
 app = FastAPI()
