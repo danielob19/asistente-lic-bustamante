@@ -412,6 +412,7 @@ def obtener_coincidencias_sintomas_y_registrar(emociones):
     """
     Busca coincidencias de síntomas en la base de datos y devuelve una lista de cuadros clínicos relacionados.
     Si una emoción no tiene coincidencias exactas ni parciales, la registra en la base de datos para futura clasificación.
+    Luego, usa OpenAI para clasificar cualquier síntoma sin cuadro y lo actualiza en la base de datos.
     """
     if not emociones:
         return []
@@ -423,7 +424,7 @@ def obtener_coincidencias_sintomas_y_registrar(emociones):
         print("\n===== DEPURACIÓN SQL =====")
         print("Emociones detectadas:", emociones)
 
-        # Modificar consulta para mejorar coincidencias
+        # Buscar coincidencias exactas en la base de datos
         consulta = "SELECT sintoma, cuadro FROM palabras_clave WHERE sintoma = ANY(%s)"
         cursor.execute(consulta, (emociones,))
         resultados = cursor.fetchall()
@@ -434,20 +435,70 @@ def obtener_coincidencias_sintomas_y_registrar(emociones):
         print("Síntomas encontrados en la BD:", sintomas_existentes)
         print("Cuadros clínicos encontrados:", cuadros_probables)
 
-        # Identificar emociones que no están en la base de datos y registrarlas
+        # Identificar emociones que no están en la base de datos y registrarlas sin cuadro clínico
         emociones_nuevas = [emocion for emocion in emociones if emocion not in sintomas_existentes]
         for emocion in emociones_nuevas:
-            cursor.execute("INSERT INTO palabras_clave (sintoma, cuadro) VALUES (%s, NULL)", (emocion,))
-            print(f"Registrando nueva emoción en BD: {emocion}")
+            registrar_sintoma(emocion, None)  # Se registra sin cuadro clínico
 
         conn.commit()
         conn.close()
 
+        # Ahora clasificamos los síntomas que se registraron sin cuadro clínico
+        clasificar_sintomas_sin_cuadro()
+
         return cuadros_probables if cuadros_probables else []
 
     except Exception as e:
-        print(f"Error al obtener coincidencias de síntomas o registrar nuevos síntomas: {e}")
+        print(f"❌ Error al obtener coincidencias de síntomas o registrar nuevos síntomas: {e}")
         return []
+
+def clasificar_sintomas_sin_cuadro():
+    """
+    Busca síntomas en la base de datos sin un cuadro clínico asignado,
+    los clasifica con OpenAI y los actualiza en la base de datos.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+
+        # Obtener síntomas sin cuadro asignado
+        cursor.execute("SELECT sintoma FROM palabras_clave WHERE cuadro IS NULL;")
+        sintomas_sin_cuadro = [row[0] for row in cursor.fetchall()]
+        conn.close()
+
+        if not sintomas_sin_cuadro:
+            print("✅ No hay síntomas pendientes de clasificación.")
+            return
+
+        print(f"🔍 Clasificando {len(sintomas_sin_cuadro)} síntomas sin cuadro asignado...")
+
+        for sintoma in sintomas_sin_cuadro:
+            # Clasificar síntoma con OpenAI
+            prompt = f"""
+            Dado el síntoma '{sintoma}', clasifícalo dentro de un cuadro psicológico basado en el contexto.
+            Algunas opciones pueden ser: "Ansiedad", "Depresión", "Estrés", "Trastorno Fóbico", "Trastorno del sueño", etc.
+            Responde solo con el nombre del cuadro sin explicaciones adicionales.
+            """
+
+            try:
+                respuesta = openai.ChatCompletion.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=50,
+                    temperature=0.0
+                )
+
+                cuadro_clinico = respuesta["choices"][0]["message"]["content"].strip()
+                print(f"✅ Síntoma '{sintoma}' clasificado como '{cuadro_clinico}'.")
+
+                # Reutilizamos la función existente para registrar el síntoma con su cuadro clínico
+                registrar_sintoma(sintoma, cuadro_clinico)
+
+            except Exception as e:
+                print(f"⚠️ Error al clasificar síntoma '{sintoma}': {e}")
+
+    except Exception as e:
+        print(f"❌ Error al conectar con la base de datos para obtener síntomas sin cuadro: {e}")
 
 
 @app.post("/asistente")
