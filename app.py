@@ -266,6 +266,7 @@ def registrar_interaccion(user_id: str, consulta: str):
     Registra una interacción del usuario en la base de datos PostgreSQL.
     """
     try:
+        print(f"Registrando interacción en la BD: user_id={user_id}, consulta={consulta}")  # Debug
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         cursor.execute("""
@@ -275,7 +276,7 @@ def registrar_interaccion(user_id: str, consulta: str):
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"Error al registrar interacción: {e}")
+        print(f"❌ Error al registrar interacción: {e}")  # Mostrar error en consola
 
 # Lista de palabras irrelevantes
 palabras_irrelevantes = {
