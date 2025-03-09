@@ -262,9 +262,6 @@ def obtener_sintomas_existentes():
 
 # Registrar una interacción
 def registrar_interaccion(user_id: str, consulta: str):
-    """
-    Registra una interacción del usuario en la base de datos PostgreSQL.
-    """
     try:
         print(f"Registrando interacción en la BD: user_id={user_id}, consulta={consulta}")  # Debug
         conn = psycopg2.connect(DATABASE_URL)
@@ -273,10 +270,11 @@ def registrar_interaccion(user_id: str, consulta: str):
             INSERT INTO interacciones (user_id, consulta) 
             VALUES (%s, %s);
         """, (user_id, consulta))
+        print(f"Filas insertadas: {cursor.rowcount}")  # Agregar depuración
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"❌ Error al registrar interacción: {e}")  # Mostrar error en consola
+        print(f"❌ Error al registrar interacción: {e}")
 
 # Lista de palabras irrelevantes
 palabras_irrelevantes = {
