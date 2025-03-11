@@ -850,10 +850,13 @@ async def asistente(input_data: UserInput):
         respuesta_ai = generar_respuesta_con_openai(prompt)
         
         # 🔹 Registrar la respuesta generada por OpenAI en la base de datos
+        interaccion_id = registrar_interaccion(user_id, mensaje_usuario)  # Asegurarse de obtener el ID de la interacción
+        registrar_respuesta_openai(interaccion_id, respuesta_ai)
+        
+        # 🔹 Registrar la respuesta generada por OpenAI en la base de datos
         registrar_respuesta_openai(contador, respuesta_ai)
         
         return {"respuesta": respuesta_ai}
-
 
         # Evita repetir "Hasta ahora mencionaste..." en cada respuesta
         if emociones_detectadas:
@@ -888,7 +891,13 @@ async def asistente(input_data: UserInput):
         # Genera una respuesta normal para otros mensajes
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
+        
+        # 🔹 Registrar la respuesta generada por OpenAI en la base de datos
+        interaccion_id = registrar_interaccion(user_id, mensaje_usuario)  # Asegurarse de obtener el ID de la interacción
+        registrar_respuesta_openai(interaccion_id, respuesta_ai)
+        
         return {"respuesta": respuesta_ai}
+
         
         # Listar emociones únicas detectadas
         emociones_unicas = list(set(session["emociones_detectadas"]))
