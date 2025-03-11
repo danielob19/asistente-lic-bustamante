@@ -849,7 +849,11 @@ async def asistente(input_data: UserInput):
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
         
+        # 🔹 Registrar la respuesta generada por OpenAI en la base de datos
+        registrar_respuesta_openai(contador, respuesta_ai)
+        
         return {"respuesta": respuesta_ai}
+
 
         # Evita repetir "Hasta ahora mencionaste..." en cada respuesta
         if emociones_detectadas:
