@@ -1000,11 +1000,22 @@ async def asistente(input_data: UserInput):
             respuesta_variable = random.choice(respuestas_finales)
             return {"respuesta": respuesta_variable}
         
-        # 🔹 A partir de la interacción 10, solo recomendar la consulta profesional con más naturalidad
+        # Manejo de interacciones posteriores a la 10
         if contador >= 10:
-            if any(frase in mensaje_usuario for frase in ["mañana lo llamaré", "mañana lo haré", "sí, lo contactaré", "voy a llamarlo", "ya lo decidí", "lo haré"]):
-                return {"respuesta": "Me alegra saberlo. Espero que la consulta sea de ayuda para ti. ¡Cuídate!"}
-            
+            # Detectar si el usuario ya confirmó que llamará
+            if any(frase in mensaje_usuario.lower() for frase in [
+                "mañana lo llamaré", "mañana lo haré", "sí, lo contactaré", 
+                "voy a llamarlo", "ya lo decidí", "lo haré", "lo llamaré", "mañana llamo"
+            ]):
+                return {"respuesta": "Me alegra saberlo. Espero que la consulta sea de ayuda para ti. Si en el futuro necesitas algo más, aquí estaré para ayudarte. ¡Cuídate!"}
+        
+            # Si el usuario da las gracias, despedirse sin insistir más
+            if any(agradecimiento in mensaje_usuario.lower() for agradecimiento in [
+                "gracias", "muchas gracias", "ok gracias", "ok ok muchas gracias", 
+                "gracias por tu atención", "te lo agradezco", "agradezco tu ayuda"
+            ]):
+                return {"respuesta": "De nada, me alegra haber podido ayudarte. Te deseo lo mejor. ¡Cuídate!"}
+        
             respuestas_repetitivas = [
                 "Espero que puedas encontrar la ayuda que necesitas. Si lo deseas, puedes contactar al Lic. Bustamante en WhatsApp: +54 911 3310-1186.",
                 "Recuerda que hay profesionales dispuestos a ayudarte. Si en algún momento decides consultar, el Lic. Bustamante está disponible en WhatsApp: +54 911 3310-1186.",
@@ -1012,8 +1023,9 @@ async def asistente(input_data: UserInput):
                 "No dudes en buscar ayuda profesional si lo necesitas. El Lic. Bustamante está disponible en WhatsApp: +54 911 3310-1186.",
                 "Te deseo lo mejor. Si en algún momento necesitas hablar con un profesional, puedes contactar al Lic. Bustamante en WhatsApp: +54 911 3310-1186."
             ]
-            
+        
             return {"respuesta": random.choice(respuestas_repetitivas)}
+
 
         
         # Validar si se detectaron emociones o cuadros antes de generar la respuesta final
