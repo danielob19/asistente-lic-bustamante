@@ -995,8 +995,7 @@ async def asistente(input_data: UserInput):
     except Exception as e:  # ✅ Capturar errores que ocurran dentro del try
         print(f"Error en la función asistente: {e}")
         return {"respuesta": "Lo siento, ocurrió un error al procesar tu solicitud. Intenta de nuevo."}
-
-        
+      
 
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     """
