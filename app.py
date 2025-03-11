@@ -1011,32 +1011,31 @@ async def asistente(input_data: UserInput):
             respuesta_variable = random.choice(respuestas_finales)
             return {"respuesta": respuesta_variable}
         
+        # Frases de cierre que indican que el usuario ya entendió y está finalizando la conversación
+        frases_cierre = [
+            "gracias", "muchas gracias", "ok gracias", "ok", "igualmente", "si si entendí", 
+            "lo haré mañana", "mañana lo llamo", "gracias por tu atención"
+        ]
+        
         # Manejo de interacciones posteriores a la 10
         if contador >= 10:
-            # Detectar si el usuario ya confirmó que llamará
-            if any(frase in mensaje_usuario.lower() for frase in [
-                "mañana lo llamaré", "mañana lo haré", "sí, lo contactaré", 
-                "voy a llamarlo", "ya lo decidí", "lo haré", "lo llamaré", "mañana llamo"
-            ]):
-                return {"respuesta": "Me alegra saberlo. Espero que la consulta sea de ayuda para ti. Si en el futuro necesitas algo más, aquí estaré para ayudarte. ¡Cuídate!"}
+            # Si el usuario menciona una frase de cierre, responder educadamente sin insistir
+            if any(frase in mensaje_usuario.lower() for frase in frases_cierre):
+                respuestas_cierre = [
+                    "Me alegra saberlo. Si necesitas algo más, estaré aquí.",
+                    "Espero que todo vaya bien para ti. Te deseo lo mejor.",
+                    "Si alguna vez necesitas hablar de nuevo, estaré disponible. Cuídate.",
+                    "Estoy aquí si en el futuro necesitas hablar. Cuídate mucho."
+                ]
+                return {"respuesta": random.choice(respuestas_cierre)}
         
-            # Si el usuario da las gracias, despedirse sin insistir más
-            if any(agradecimiento in mensaje_usuario.lower() for agradecimiento in [
-                "gracias", "muchas gracias", "ok gracias", "ok ok muchas gracias", 
-                "gracias por tu atención", "te lo agradezco", "agradezco tu ayuda"
-            ]):
-                return {"respuesta": "De nada, me alegra haber podido ayudarte. Te deseo lo mejor. ¡Cuídate!"}
-        
+            # Respuesta estándar de recomendación, pero sin repetir demasiado
             respuestas_repetitivas = [
-                "Espero que puedas encontrar la ayuda que necesitas. Si lo deseas, puedes contactar al Lic. Bustamante en WhatsApp: +54 911 3310-1186.",
-                "Recuerda que hay profesionales dispuestos a ayudarte. Si en algún momento decides consultar, el Lic. Bustamante está disponible en WhatsApp: +54 911 3310-1186.",
-                "Si necesitas orientación, el Lic. Bustamante puede brindarte apoyo. Puedes escribirle en WhatsApp: +54 911 3310-1186.",
-                "No dudes en buscar ayuda profesional si lo necesitas. El Lic. Bustamante está disponible en WhatsApp: +54 911 3310-1186.",
-                "Te deseo lo mejor. Si en algún momento necesitas hablar con un profesional, puedes contactar al Lic. Bustamante en WhatsApp: +54 911 3310-1186."
+                "Si deseas continuar con una evaluación más detallada, puedes contactar al Lic. Bustamante en WhatsApp: +54 911 3310-1186.",
+                "No dudes en buscar apoyo profesional. Te sugiero comunicarte con el Lic. Bustamante en WhatsApp: +54 911 3310-1186.",
+                "Si crees que necesitas más ayuda, podrías consultar al Lic. Bustamante en WhatsApp: +54 911 3310-1186."
             ]
-        
             return {"respuesta": random.choice(respuestas_repetitivas)}
-
 
         
         # Validar si se detectaron emociones o cuadros antes de generar la respuesta final
