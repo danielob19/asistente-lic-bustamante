@@ -898,22 +898,37 @@ async def asistente(input_data: UserInput):
         
         return {"respuesta": respuesta_ai}
 
-        # Evita repetir "Hasta ahora mencionaste..." en cada respuesta
+        # 🔹 BLOQUE 1: Evita repetir "Hasta ahora mencionaste..." en cada respuesta
         if emociones_detectadas:
-            emociones_unicas = list(set(emociones_detectadas))
-            
-            # Verificar si la emoción es nueva y aún no ha sido mencionada recientemente
-            emociones_nuevas = [e for e in emociones_unicas if e not in session["emociones_detectadas"][-3:]]
+            emociones_unicas = list(set(emociones_detectadas))  # Elimina duplicados en esta detección
         
-            # Si hay emociones nuevas, pero sin repetir la confirmación constante
+            # Verificar si hay emociones nuevas que aún no se han mencionado en las últimas 5 interacciones
+            emociones_nuevas = [e for e in emociones_unicas if e not in session["emociones_detectadas"][-5:]]
+        
+            # Si hay emociones nuevas, agregarlas con control
             if emociones_nuevas:
                 session["emociones_detectadas"].extend(emociones_nuevas)
+                
+                # Limitar almacenamiento a un máximo de 10 emociones recientes
+                session["emociones_detectadas"] = session["emociones_detectadas"][-10:]
+        
                 return {
                     "respuesta": (
                         f"Entiendo que puedes estar sintiéndote {' y '.join(emociones_nuevas)}. "
                         "Si deseas hablar más al respecto, estoy aquí para escucharte."
                     )
                 }
+        
+        # 🔹 BLOQUE 2: Listar emociones sin repeticiones y evitar respuesta robótica
+        emociones_unicas = list(set(session["emociones_detectadas"]))
+        
+        # Construcción de una respuesta más natural dependiendo del contexto
+        if emociones_unicas:
+            respuesta_emocional = f"Hasta ahora has mencionado emociones como {' y '.join(emociones_unicas)}. "
+            respuesta_emocional += "Si necesitas hablar sobre ello, dime en qué puedo ayudarte."
+        
+            return {"respuesta": respuesta_emocional}
+
 
         # Generar una respuesta variada
         respuestas_variadas = [
@@ -937,10 +952,6 @@ async def asistente(input_data: UserInput):
         registrar_respuesta_openai(interaccion_id, respuesta_ai)
         
         return {"respuesta": respuesta_ai}
-
-        
-        # Listar emociones únicas detectadas
-        emociones_unicas = list(set(session["emociones_detectadas"]))
         
         # Obtener cuadro probable si hay al menos 2 coincidencias de síntomas en la base de datos
         coincidencias_sintomas = obtener_coincidencias_sintomas(emociones_unicas)
