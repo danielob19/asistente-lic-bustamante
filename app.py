@@ -285,6 +285,46 @@ def registrar_interaccion(user_id: str, consulta: str):
         print(f"❌ Error al registrar interacción en la base de datos: {e}\n")
         return None
 
+# Registrar una respuesta generada por OpenAI en la base de datos
+def registrar_respuesta_openai(interaccion_id: int, respuesta: str):
+    """
+    Registra la respuesta generada por OpenAI en la base de datos PostgreSQL.
+    """
+    try:
+        print("\n===== DEPURACIÓN - REGISTRO DE RESPUESTA OPENAI =====")
+        print(f"Intentando registrar respuesta para interacción ID={interaccion_id}")
+
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        
+        # Verifica si la columna "respuesta" ya existe en la tabla "interacciones"
+        cursor.execute("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'interacciones' AND column_name = 'respuesta';
+        """)
+        columna_existente = cursor.fetchone()
+
+        if not columna_existente:
+            print("⚠️ La columna 'respuesta' no existe en la tabla 'interacciones'. Creándola...")
+            cursor.execute("ALTER TABLE interacciones ADD COLUMN respuesta TEXT;")
+            conn.commit()
+
+        # Actualiza la interacción con la respuesta generada por OpenAI
+        cursor.execute("""
+            UPDATE interacciones 
+            SET respuesta = %s 
+            WHERE id = %s;
+        """, (respuesta, interaccion_id))
+        
+        conn.commit()
+        conn.close()
+        
+        print(f"✅ Respuesta registrada con éxito para interacción ID={interaccion_id}\n")
+
+    except Exception as e:
+        print(f"❌ Error al registrar respuesta en la base de datos: {e}\n")
+
+
 # Lista de palabras irrelevantes
 palabras_irrelevantes = {
     "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "me siento", "tambien", "tambien tengo", "que", "de", "en", 
