@@ -1000,19 +1000,20 @@ async def asistente(input_data: UserInput):
             respuesta_variable = random.choice(respuestas_finales)
             return {"respuesta": respuesta_variable}
         
-        # Manejo de interacciones posteriores a la 10
-        if contador > 10:
+        # 🔹 A partir de la interacción 10, solo recomendar la consulta profesional con más naturalidad
+        if contador >= 10:
+            if any(frase in mensaje_usuario for frase in ["mañana lo llamaré", "mañana lo haré", "sí, lo contactaré", "voy a llamarlo", "ya lo decidí", "lo haré"]):
+                return {"respuesta": "Me alegra saberlo. Espero que la consulta sea de ayuda para ti. ¡Cuídate!"}
+            
             respuestas_repetitivas = [
-                "Sugiero solicitar una consulta al Lic. Daniel O. Bustamante escribiéndole al WhatsApp (+54) 9 11 3310-1186. Aguardamos tu mensaje. ¡Un saludo cordial!",
-                "Para una consulta más personalizada, te sugiero escribir al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                "Si querés recibir más orientación, podés contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                "Si necesitás más ayuda, te recomiendo comunicarte con el Lic. Daniel O. Bustamante por WhatsApp: +54 911 3310-1186.",
-                "No dudes en hablar con un profesional. Podés escribir al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186.",
-                "Si querés continuar con una evaluación más detallada, podés escribir al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186."
+                "Espero que puedas encontrar la ayuda que necesitas. Si lo deseas, puedes contactar al Lic. Bustamante en WhatsApp: +54 911 3310-1186.",
+                "Recuerda que hay profesionales dispuestos a ayudarte. Si en algún momento decides consultar, el Lic. Bustamante está disponible en WhatsApp: +54 911 3310-1186.",
+                "Si necesitas orientación, el Lic. Bustamante puede brindarte apoyo. Puedes escribirle en WhatsApp: +54 911 3310-1186.",
+                "No dudes en buscar ayuda profesional si lo necesitas. El Lic. Bustamante está disponible en WhatsApp: +54 911 3310-1186.",
+                "Te deseo lo mejor. Si en algún momento necesitas hablar con un profesional, puedes contactar al Lic. Bustamante en WhatsApp: +54 911 3310-1186."
             ]
-        
-            respuesta_variable = random.choice(respuestas_repetitivas)
-            return {"respuesta": respuesta_variable}
+            
+            return {"respuesta": random.choice(respuestas_repetitivas)}
 
         
         # Validar si se detectaron emociones o cuadros antes de generar la respuesta final
