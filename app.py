@@ -975,10 +975,6 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        # Genera una respuesta normal para otros mensajes
-        prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
-        respuesta_ai = generar_respuesta_con_openai(prompt)
-        return {"respuesta": respuesta_ai}
         
         # Definir respuestas_variadas antes de usarla
         respuestas_variadas = [
