@@ -796,53 +796,60 @@ async def asistente(input_data: UserInput):
             # Evitar agregar duplicados en emociones detectadas
             nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
             session["emociones_detectadas"].extend(nuevas_emociones)
-
+        
             # 🔍 DEPURACIÓN: Mostrar emociones detectadas
             print("\n===== DEPURACIÓN - INTERACCIÓN 5 o 9 =====")
             print(f"Interacción: {contador}")
             print(f"Mensaje del usuario: {mensaje_usuario}")
             print(f"Emociones detectadas en esta interacción: {emociones_detectadas}")
             print(f"Emociones acumuladas hasta ahora: {session['emociones_detectadas']}")
-
+        
             # Buscar coincidencias en la base de datos para determinar el cuadro probable
             coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
-
+        
             # 🔍 DEPURACIÓN: Mostrar síntomas encontrados en la BD
             print(f"Coincidencias encontradas en la BD: {coincidencias_sintomas}")
-
+        
             if len(coincidencias_sintomas) >= 2:
                 cuadro_probable = Counter(coincidencias_sintomas).most_common(1)[0][0]
             else:
                 cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
-
+        
             # 🔍 DEPURACIÓN: Mostrar cuadro probable determinado
             print(f"Cuadro probable determinado: {cuadro_probable}")
             print("========================================\n")
-
-            # Verificar si hay emociones detectadas antes de construir la respuesta
-            if session["emociones_detectadas"]:
-                respuesta = (
-                    f"He notado que mencionaste emociones como: {', '.join(set(session['emociones_detectadas']))}. "
-                    f"Basándome en esto, el cuadro más probable es: {cuadro_probable}. "
-                    f"Si necesitas más orientación, puedes contactar al Lic. Daniel O. Bustamante en WhatsApp: +54 911 3310-1186. "
-                    f"Estoy aquí para ayudarte en lo que necesites."
+        
+            respuesta = (
+                f"Con base en los síntomas detectados ({', '.join(set(coincidencias_sintomas))}), "
+                f"el cuadro probable es: {cuadro_probable}. Te sugiero considerar una consulta con el Lic. Daniel O. Bustamante "
+                f"escribiendo al WhatsApp +54 911 3310-1186 para obtener una evaluación más detallada."
+            )
+        
+            if contador == 9:
+                respuesta += (
+                    " Además, he encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
+                    "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
+                    "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
                 )
-            else:
-                respuesta = (
-                    "Hasta el momento no he detectado emociones específicas. "
-                    "¿Te gustaría contarme más sobre cómo te sientes?"
-                )
-            
+        
             session["mensajes"].clear()  # Limpiar mensajes después del análisis
             return {"respuesta": respuesta}
-
-
-        # 🔹 Generar respuesta con OpenAI si no es la interacción 5 o 9
+        
+        # 🔹 A partir de la interacción 10, solo recomendar la consulta profesional
+        if contador >= 10:
+            respuestas_repetitivas = [
+                "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp: +54 911 3310-1186 para recibir ayuda profesional.",
+                "Para obtener una evaluación más detallada, te recomiendo contactar al Lic. Bustamante en WhatsApp: +54 911 3310-1186.",
+                "No puedo continuar con esta conversación, pero el Lic. Bustamante puede ayudarte. Contáctalo en WhatsApp: +54 911 3310-1186.",
+                "Es importante que recibas ayuda profesional. El Lic. Bustamante está disponible en WhatsApp: +54 911 3310-1186."
+            ]
+            return {"respuesta": random.choice(respuestas_repetitivas)}
+        
+        # 🔹 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
-
-        return {"respuesta": respuesta_ai}
         
+        return {"respuesta": respuesta_ai}
 
         # Evita repetir "Hasta ahora mencionaste..." en cada respuesta
         if emociones_detectadas:
@@ -860,7 +867,6 @@ async def asistente(input_data: UserInput):
                         "Si deseas hablar más al respecto, estoy aquí para escucharte."
                     )
                 }
-
 
         # Generar una respuesta variada
         respuestas_variadas = [
