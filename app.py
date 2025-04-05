@@ -922,23 +922,30 @@ async def asistente(input_data: UserInput):
             "Mantené un tono profesional, claro y empático. "
             "Evitá usar términos institucionales como 'nosotros', 'nuestro equipo', 'nuestra institución', etc. "
             "Referite a él como 'el Licenciado', 'el profesional', o 'el Lic. Bustamante', según corresponda. "
+            "Él es psicólogo clínico. No brindes información sobre servicios financieros, legales o técnicos. "
             "Si el usuario desea contactarlo, proporcioná directamente su número de WhatsApp: +54 911 3310-1186."
         )
         
         # Obtener respuesta de OpenAI
         respuesta_ai = generar_respuesta_con_openai(prompt)
         
-        # 🔍 Filtro para eliminar lenguaje institucional si OpenAI lo usa por error
+        # 🔍 Filtro para lenguaje institucional
         palabras_prohibidas = ["nosotros", "nuestro equipo", "nuestra institución", "desde nuestra", "trabajamos en conjunto"]
-        for palabra in palabras_prohibidas:
-            if palabra in respuesta_ai.lower():
-                respuesta_ai = (
-                    "Gracias por tu consulta. El Lic. Daniel O. Bustamante estará encantado de ayudarte. "
-                    "Podés escribirle directamente al WhatsApp +54 911 3310-1186 para obtener más información."
-                )
-                break
+        if any(palabra in respuesta_ai.lower() for palabra in palabras_prohibidas):
+            respuesta_ai = (
+                "Gracias por tu consulta. El Lic. Daniel O. Bustamante estará encantado de ayudarte. "
+                "Podés escribirle directamente al WhatsApp +54 911 3310-1186 para obtener más información."
+            )
         
-        # 🔍 Reemplazar marcador si OpenAI dejó texto incompleto
+        # 🔍 Filtro para desvíos temáticos (por si OpenAI habla de finanzas o cosas raras)
+        temas_prohibidos = ["finanzas", "inversiones", "educación financiera", "consultoría financiera", "legal", "técnico"]
+        if any(tema in respuesta_ai.lower() for tema in temas_prohibidos):
+            respuesta_ai = (
+                "El Lic. Daniel O. Bustamante es psicólogo clínico. Si querés saber más sobre los servicios que ofrece, "
+                "podés escribirle directamente por WhatsApp al +54 911 3310-1186 y te brindará toda la información necesaria."
+            )
+        
+        # 🔍 Reemplazo de marcador si quedó en la respuesta
         respuesta_ai = respuesta_ai.replace("[Incluir número de contacto]", "+54 911 3310-1186")
         
         # Registrar respuesta generada por OpenAI
