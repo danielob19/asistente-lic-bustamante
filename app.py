@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from collections import Counter
 import random
+import re
 
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -884,7 +885,26 @@ async def asistente(input_data: UserInput):
                 "Es importante que recibas ayuda profesional. El Lic. Bustamante está disponible en WhatsApp: +54 911 3310-1186."
             ]
             return {"respuesta": random.choice(respuestas_repetitivas)}
+            
+
+        # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
+        preguntas_cobertura = [
+            r"(atiende[n|s]?|trabaja[n|s]?|acepta[n|s]?|tom[a|ás]|toma[n]?|atiendo)\s+(por|con)?\s*(osde|swiss medical|galeno|prepaga|obra social|cobertura médica|asistencia psicológica)",
+            r"(osde|swiss medical|galeno|prepaga|obra social|cobertura médica|asistencia psicológica)\s+.*(cubren|incluye|incluyen|puedo usar|sirve|vale|acepta|aceptan|trabaja|trabajan|atiende|atienden)",
+            r"(puedo|quiero|necesito).*(usar|utilizar).*(osde|swiss medical|galeno|prepaga|obra social)",
+            r"(cubren|cubre|acepta|aceptás|aceptan|trabaja|trabajás|trabajan|atiende|atendés|atienden).*?(osde|swiss medical|galeno|prepaga|obra social)"
+        ]
         
+        for patron in preguntas_cobertura:
+            if re.search(patron, mensaje_usuario):
+                return {
+                    "respuesta": (
+                        "Actualmente el Lic. Daniel O. Bustamante no trabaja con obras sociales ni prepagas. "
+                        "Las consultas se realizan de forma particular. Si deseas coordinar una, podés escribirle al WhatsApp +54 911 3310-1186."
+                    )
+                }
+        
+                
         # 🔹 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
         prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
         respuesta_ai = generar_respuesta_con_openai(prompt)
