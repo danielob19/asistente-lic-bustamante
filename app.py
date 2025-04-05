@@ -922,7 +922,7 @@ async def asistente(input_data: UserInput):
             "Mantené un tono profesional, claro y empático. "
             "Evitá usar términos institucionales como 'nosotros', 'nuestro equipo', 'nuestra institución', etc. "
             "Referite a él como 'el Licenciado', 'el profesional', o 'el Lic. Bustamante', según corresponda. "
-            "Si se trata de datos de contacto o coordinación, podés invitar al usuario a escribirle directamente por WhatsApp."
+            "Si el usuario desea contactarlo, proporcioná directamente su número de WhatsApp: +54 911 3310-1186."
         )
         
         # Obtener respuesta de OpenAI
@@ -937,6 +937,9 @@ async def asistente(input_data: UserInput):
                     "Podés escribirle directamente al WhatsApp +54 911 3310-1186 para obtener más información."
                 )
                 break
+        
+        # 🔍 Reemplazar marcador si OpenAI dejó texto incompleto
+        respuesta_ai = respuesta_ai.replace("[Incluir número de contacto]", "+54 911 3310-1186")
         
         # Registrar respuesta generada por OpenAI
         interaccion_id = registrar_interaccion(user_id, mensaje_usuario)
