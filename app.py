@@ -899,10 +899,22 @@ async def asistente(input_data: UserInput):
             if re.search(patron, mensaje_usuario):
                 return {
                     "respuesta": (
-                        "Actualmente el Lic. Daniel O. Bustamante no trabaja con obras sociales ni prepagas. "
-                        "Las consultas se realizan de forma particular. Si deseas coordinar una, podés escribirle al WhatsApp +54 911 3310-1186."
+                        "El Lic. Daniel O. Bustamante no trabaja con obras sociales ni prepagas. "
+                        "Atiende únicamente de manera particular. Si querés coordinar una sesión, podés escribirle al WhatsApp +54 911 3310-1186."
                     )
                 }
+        
+        # 🔹 Consultas sobre precios, honorarios o valor de la sesión
+        if any(palabra in mensaje_usuario for palabra in [
+            "precio", "cuánto sale", "cuánto cuesta", "valor", "honorario", "cobra", "cobrás", "tarifa", "cuánto cobra", "cuanto cobra", "cuánto es"
+        ]):
+            return {
+                "respuesta": (
+                    "El valor de la sesión puede depender del tipo de consulta. "
+                    "Para conocer el costo exacto, te recomiendo escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+                )
+            }
+
         
                 
         # 🔹 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
