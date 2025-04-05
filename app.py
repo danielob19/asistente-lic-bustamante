@@ -913,13 +913,37 @@ async def asistente(input_data: UserInput):
                     "El valor de la sesión puede depender del tipo de consulta. "
                     "Para conocer el costo exacto, te recomiendo escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
                 )
-            }
-
-        
+            } 
                 
         # 🔹 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
-        prompt = f"Un usuario dice: '{mensaje_usuario}'. Responde de manera profesional y empática."
+        prompt = (
+            f"Un usuario pregunta: '{mensaje_usuario}'. "
+            "Respondé como si fueras el asistente personal del Lic. Daniel O. Bustamante. "
+            "Mantené un tono profesional, claro y empático. "
+            "Evitá usar términos institucionales como 'nosotros', 'nuestro equipo', 'nuestra institución', etc. "
+            "Referite a él como 'el Licenciado', 'el profesional', o 'el Lic. Bustamante', según corresponda. "
+            "Si se trata de datos de contacto o coordinación, podés invitar al usuario a escribirle directamente por WhatsApp."
+        )
+        
+        # Obtener respuesta de OpenAI
         respuesta_ai = generar_respuesta_con_openai(prompt)
+        
+        # 🔍 Filtro para eliminar lenguaje institucional si OpenAI lo usa por error
+        palabras_prohibidas = ["nosotros", "nuestro equipo", "nuestra institución", "desde nuestra", "trabajamos en conjunto"]
+        for palabra in palabras_prohibidas:
+            if palabra in respuesta_ai.lower():
+                respuesta_ai = (
+                    "Gracias por tu consulta. El Lic. Daniel O. Bustamante estará encantado de ayudarte. "
+                    "Podés escribirle directamente al WhatsApp +54 911 3310-1186 para obtener más información."
+                )
+                break
+        
+        # Registrar respuesta generada por OpenAI
+        interaccion_id = registrar_interaccion(user_id, mensaje_usuario)
+        registrar_respuesta_openai(interaccion_id, respuesta_ai)
+        
+        return {"respuesta": respuesta_ai}
+
         
         # 🔹 Registrar la respuesta generada por OpenAI en la base de datos
         interaccion_id = registrar_interaccion(user_id, mensaje_usuario)  # Asegurarse de obtener el ID de la interacción
