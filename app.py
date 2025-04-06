@@ -914,6 +914,33 @@ async def asistente(input_data: UserInput):
                     "Para conocer el costo exacto, te recomiendo escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
                 )
             } 
+
+        # 🔹 Consultas sobre los servicios psicológicos que ofrece
+        consultas_servicios = [
+            "qué servicios ofrece", "qué servicios brinda", "qué trata", "con qué trabaja", "en qué temas trabaja",
+            "qué tipo de terapias hace", "qué tipo de terapia ofrece", "qué temas aborda", "qué puede tratar",
+            "cuáles son sus especialidades", "qué tipo de atención brinda", "qué problemas trata", "qué áreas trabaja",
+            "temas que trata", "qué trata bustamante", "qué hace el licenciado", "qué atiende", "motivos de consulta",
+            "problemas que atiende", "en qué puede ayudarme"
+        ]
+        
+        if any(frase in mensaje_usuario for frase in consultas_servicios):
+            return {
+                "respuesta": (
+                    "El Lic. Daniel O. Bustamante brinda atención psicológica exclusivamente online, a través de videoconsultas.\n\n"
+                    "Entre los principales motivos de consulta que aborda se encuentran:\n"
+                    "- Psicoterapia individual para adultos (modalidad online)\n"
+                    "- Tratamiento de crisis emocionales\n"
+                    "- Abordaje de ansiedad, estrés y ataques de pánico\n"
+                    "- Procesos de duelo y cambios vitales\n"
+                    "- Estados anímicos depresivos\n"
+                    "- Problemas de autoestima y motivación\n"
+                    "- Dificultades vinculares y emocionales\n"
+                    "- Terapia de pareja online\n\n"
+                    "Si querés coordinar una consulta o tenés dudas, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
+                )
+            }
+
                 
         # 🔹 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
         prompt = (
