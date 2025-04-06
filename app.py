@@ -1069,14 +1069,17 @@ async def asistente(input_data: UserInput):
         
         # 🔹 Consultas sobre precios, honorarios o valor de la sesión
         if any(palabra in mensaje_usuario for palabra in [
-            "precio", "cuánto sale", "cuánto cuesta", "valor", "honorario", "cobra", "cobrás", "tarifa", "cuánto cobra", "cuanto cobra", "cuánto es"
+            "precio", "cuánto sale", "cuánto cuesta", "valor", "honorario", "cobra", "cobrás",
+            "tarifa", "cuánto cobra", "cuanto cobra", "cuánto es", "sale la consulta", "vale la consulta",
+            "cuánto cobran", "cuánto hay que pagar", "cuánto cuesta la consulta", "cuánto tengo que pagar"
         ]):
             return {
                 "respuesta": (
                     "El valor de la sesión puede depender del tipo de consulta. "
                     "Para conocer el costo exacto, te recomiendo escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
                 )
-            } 
+            }
+
 
         # 🔹 Consultas sobre los servicios psicológicos que ofrece
         consultas_servicios = [
