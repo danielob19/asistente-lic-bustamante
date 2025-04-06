@@ -1,7 +1,9 @@
 fastapi
+uvicorn[standard]
 pydantic
 openai==0.28
-uvicorn[standard]
-python-dotenv  # Si utilizas variables de entorno opcionales
-python-multipart
+numpy
 psycopg2-binary
+python-dotenv
+python-multipart
+requests
