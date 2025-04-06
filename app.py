@@ -412,6 +412,26 @@ def registrar_respuesta_openai(interaccion_id: int, respuesta: str):
     except Exception as e:
         print(f"❌ Error al registrar respuesta en la base de datos: {e}\n")
 
+# Registrar una similitud semántica en la base de datos
+def registrar_similitud_semantica(user_id: str, consulta: str, pregunta_faq: str, similitud: float):
+    """
+    Registra la similitud semántica en la tabla faq_similitud_logs.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO faq_similitud_logs (user_id, consulta, pregunta_faq, similitud)
+            VALUES (%s, %s, %s, %s);
+        """, (user_id, consulta, pregunta_faq, similitud))
+
+        conn.commit()
+        conn.close()
+        print(f"🧠 Similitud registrada con éxito (Score: {similitud}) para FAQ: '{pregunta_faq}'\n")
+
+    except Exception as e:
+        print(f"❌ Error al registrar similitud semántica: {e}")
 
 # Lista de palabras irrelevantes
 palabras_irrelevantes = {
