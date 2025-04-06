@@ -692,7 +692,7 @@ def registrar_log_similitud(user_id: str, consulta: str, pregunta_faq: str, simi
         cursor.execute("""
             INSERT INTO faq_similitud_logs (user_id, consulta, pregunta_faq, similitud)
             VALUES (%s, %s, %s, %s);
-        """, (user_id, consulta, pregunta_faq, similitud))
+        """, (user_id, consulta, pregunta_faq, float(similitud)))  # ✅ Conversión segura
         conn.commit()
         conn.close()
         print(f"📌 Registro de similitud guardado: {similitud:.3f} para pregunta '{pregunta_faq}'")
