@@ -636,6 +636,20 @@ def clasificar_sintomas_sin_cuadro():
     except Exception as e:
         print(f"❌ Error al conectar con la base de datos para obtener síntomas sin cuadro: {e}")
 
+# Registrar similitud semántica detectada entre mensaje y pregunta frecuente
+def registrar_log_similitud(user_id: str, consulta: str, pregunta_faq: str, similitud: float):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO faq_similitud_logs (user_id, consulta, pregunta_faq, similitud)
+            VALUES (%s, %s, %s, %s);
+        """, (user_id, consulta, pregunta_faq, similitud))
+        conn.commit()
+        conn.close()
+        print(f"📌 Registro de similitud guardado: {similitud:.3f} para pregunta '{pregunta_faq}'")
+    except Exception as e:
+        print(f"❌ Error al registrar log de similitud: {e}")
 
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
