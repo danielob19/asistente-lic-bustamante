@@ -1171,6 +1171,13 @@ async def asistente(input_data: UserInput):
         
         # 🔍 Reemplazo de marcador si quedó en la respuesta
         respuesta_ai = respuesta_ai.replace("[Incluir número de contacto]", "+54 911 3310-1186")
+
+        # 🛡️ Filtrado de precios por si OpenAI menciona algún valor numérico
+        if any(palabra in respuesta_ai.lower() for palabra in ["$", "usd", "euros", "€", "dólares", "pesos", "cuesta", "sale", "vale", "precio", "tarifa", "honorario", "paga", "cobra", "cobro"]):
+            respuesta_ai = (
+                "Sobre los valores de la consulta, te sugiero contactar directamente al Lic. Daniel O. Bustamante. "
+                "Podés escribirle al WhatsApp +54 911 3310-1186 para obtener esa información de manera personalizada."
+            )
         
         # Registrar respuesta generada por OpenAI
         interaccion_id = registrar_interaccion(user_id, mensaje_usuario)
