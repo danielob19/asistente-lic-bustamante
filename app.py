@@ -941,7 +941,38 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-                
+        # 🔹 Consultas sobre duración o frecuencia de las sesiones
+        consultas_duracion_frecuencia = [
+            "cuánto dura", "cuanto dura", "duración de la sesión", "dura la sesión", "cuánto tiempo", "cuánto tiempo duran", 
+            "cada cuánto", "frecuencia", "con qué frecuencia", "cuántas veces", "cuántas sesiones", "cada cuánto tiempo",
+            "cuánto duran las sesiones", "duración sesión", "sesión dura"
+        ]
+        
+        if any(frase in mensaje_usuario for frase in consultas_duracion_frecuencia):
+            return {
+                "respuesta": (
+                    "Las sesiones con el Lic. Daniel O. Bustamante tienen una duración aproximada de 50 minutos y se realizan por videoconsulta.\n\n"
+                    "La frecuencia puede variar según cada caso, pero generalmente se recomienda un encuentro semanal para favorecer el proceso terapéutico.\n\n"
+                    "Si querés coordinar una sesión o resolver alguna duda, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
+                )
+            }
+            
+        # 🔹 Consultas sobre formas de pago, precios o modalidad de pago
+        consultas_pago = [
+            "cómo se paga", "formas de pago", "medios de pago", "se puede pagar", "puedo pagar", "pago", "se abona", 
+            "cómo abono", "cómo es el pago", "modalidad de pago", "se paga por sesión", "pagar con", "cómo pagar"
+        ]
+        
+        if any(frase in mensaje_usuario for frase in consultas_pago):
+            return {
+                "respuesta": (
+                    "El Lic. Daniel O. Bustamante trabaja con modalidad de pago particular.\n\n"
+                    "Para coordinar una sesión y consultar los medios de pago disponibles, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
+                )
+            }
+
+        
+        
         # 🔹 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
         prompt = (
             f"Un usuario pregunta: '{mensaje_usuario}'. "
