@@ -1178,20 +1178,13 @@ async def asistente(input_data: UserInput):
                 "Sobre los valores de la consulta, te sugiero contactar directamente al Lic. Daniel O. Bustamante. "
                 "Podés escribirle al WhatsApp +54 911 3310-1186 para obtener esa información de manera personalizada."
             )
+            # 🧾 Auditoría: log si OpenAI intentó responder con precios
+            print("⚠️ Se interceptó una respuesta con posible contenido de precios y fue reemplazada para evitar brindar esa información.")
+
         
         # Registrar respuesta generada por OpenAI
         interaccion_id = registrar_interaccion(user_id, mensaje_usuario)
         registrar_respuesta_openai(interaccion_id, respuesta_ai)
-        
-        return {"respuesta": respuesta_ai}
-
-        
-        # 🔹 Registrar la respuesta generada por OpenAI en la base de datos
-        interaccion_id = registrar_interaccion(user_id, mensaje_usuario)  # Asegurarse de obtener el ID de la interacción
-        registrar_respuesta_openai(interaccion_id, respuesta_ai)
-        
-        # 🔹 Registrar la respuesta generada por OpenAI en la base de datos
-        registrar_respuesta_openai(contador, respuesta_ai)
         
         return {"respuesta": respuesta_ai}
 
