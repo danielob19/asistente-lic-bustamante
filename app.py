@@ -210,6 +210,16 @@ def init_db():
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS faq_similitud_logs (
+                id SERIAL PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                consulta TEXT NOT NULL,
+                pregunta_faq TEXT NOT NULL,
+                similitud FLOAT NOT NULL,
+                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
         conn.commit()
         conn.close()
         print("Base de datos inicializada en PostgreSQL.")
