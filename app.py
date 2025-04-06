@@ -83,6 +83,34 @@ def buscar_respuesta_semantica(mensaje: str, umbral=0.88) -> str | None:
         print(f"❌ Error en detección semántica: {e}")
         return None
 
+def buscar_respuesta_semantica_con_score(mensaje: str, umbral=0.88):
+    try:
+        embedding_usuario = openai.Embedding.create(
+            model="text-embedding-ada-002",
+            input=mensaje
+        )["data"][0]["embedding"]
+        embedding_usuario = np.array(embedding_usuario)
+
+        mejor_score = 0
+        mejor_pregunta = None
+        mejor_respuesta = None
+
+        for item in faq_respuestas:
+            emb_faq = item.get("embedding")
+            if emb_faq is not None:
+                similitud = np.dot(embedding_usuario, emb_faq) / (norm(embedding_usuario) * norm(emb_faq))
+                if similitud > mejor_score:
+                    mejor_score = similitud
+                    mejor_pregunta = item["pregunta"]
+                    mejor_respuesta = item["respuesta"]
+
+        if mejor_score >= umbral:
+            return mejor_pregunta, mejor_respuesta, mejor_score
+        return None
+
+    except Exception as e:
+        print(f"❌ Error en buscar_respuesta_semantica_con_score: {e}")
+        return None
 
 from pydantic import BaseModel
 from collections import Counter
