@@ -656,6 +656,14 @@ async def asistente(input_data: UserInput):
         contador = session["contador_interacciones"]
         session["mensajes"].append(mensaje_usuario)
 
+        # 🔍 Buscar coincidencia semántica en preguntas frecuentes
+        respuesta_semantica = buscar_respuesta_semantica(mensaje_usuario)
+        if respuesta_semantica:
+            # Registrar interacción normalmente, aunque no se detecten emociones
+            interaccion_id = registrar_interaccion(user_id, mensaje_usuario)
+            registrar_respuesta_openai(interaccion_id, respuesta_semantica)
+            return {"respuesta": respuesta_semantica}
+
         # 🔍 DEPURACIÓN: Mostrar estado actual de la sesión
         print("\n===== DEPURACIÓN - SESIÓN DEL USUARIO =====")
         print(f"Usuario ID: {user_id}")
