@@ -738,7 +738,7 @@ async def asistente(input_data: UserInput):
             registrar_respuesta_openai(interaccion_id, respuesta_semantica)
         
             # Registrar similitud en la tabla correspondiente
-            registrar_faq_similitud(user_id, mensaje_usuario, pregunta_faq, similitud)
+            registrar_log_similitud(user_id, mensaje_usuario, pregunta_faq, similitud)
         
             return {"respuesta": respuesta_semantica}
 
