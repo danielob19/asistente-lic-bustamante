@@ -1188,6 +1188,10 @@ async def asistente(input_data: UserInput):
         
         return {"respuesta": respuesta_ai}
 
+    except Exception as e:
+        print(f"❌ Error inesperado en el endpoint /asistente: {e}")
+        return {"respuesta": "Lo siento, ocurrió un error al procesar tu solicitud. Podés intentarlo de nuevo más tarde o escribir al WhatsApp +54 911 3310-1186."}
+
 def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
     """
     Detecta emociones y patrones de conducta en los mensajes, buscando coincidencias en la tabla `palabras_clave`.
