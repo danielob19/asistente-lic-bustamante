@@ -557,8 +557,8 @@ SESSION_TIMEOUT = 60  # Tiempo en segundos para limpiar sesiones inactivas
 @app.on_event("startup")
 def startup_event():
     init_db()
-    # Inicia un hilo para limpiar sesiones inactivas
-    start_session_cleaner()
+    generar_embeddings_faq()  # ✅ Genera embeddings de las preguntas frecuentes al iniciar la app
+    start_session_cleaner()   # 🧹 Limpia sesiones inactivas periódicamente
 
 # Función para limpiar sesiones inactivas
 def start_session_cleaner():
