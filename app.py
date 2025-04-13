@@ -533,7 +533,7 @@ def analizar_texto(mensajes_usuario):
         cuadro_probable, _ = category_counts.most_common(1)[0]
         respuesta = (
             f"Con base en los síntomas detectados ({', '.join(set(coincidencias))}), "
-            f"el cuadro probable es: {cuadro_probable}. "
+            f"el malestar emocional predominante es: {cuadro_probable}. "
         )
 
     if emociones_detectadas:
@@ -772,7 +772,7 @@ async def asistente(input_data: UserInput):
                 return {
                     "respuesta": (
                         f"Si bien encuentro muy interesante nuestra conversación, debo concluirla. No obstante, en base a los síntomas "
-                        f"detectados, el cuadro probable es: {cuadro_probable}. Además, notamos emociones como {emociones_todas}. "
+                        f"detectados, el malestar emocional predominante es: {cuadro_probable}. Además, notamos emociones como {emociones_todas}. "
                         f"Te recomiendo contactar al Lic. Daniel O. Bustamante escribiendo al WhatsApp +54 911 3310-1186 para una evaluación "
                         f"más detallada. Un saludo."
                     )
@@ -1025,7 +1025,7 @@ async def asistente(input_data: UserInput):
         
             respuesta = (
                 f"Con base en los síntomas detectados ({', '.join(set(coincidencias_sintomas))}), "
-                f"el cuadro probable es: {cuadro_probable}. Te sugiero considerar una consulta con el Lic. Daniel O. Bustamante "
+                f"el malestar emocional predominante es: {cuadro_probable}. Te sugiero considerar una consulta con el Lic. Daniel O. Bustamante "
                 f"escribiendo al WhatsApp +54 911 3310-1186 para obtener una evaluación más detallada."
             )
         
