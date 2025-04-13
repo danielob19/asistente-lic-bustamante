@@ -728,6 +728,15 @@ async def asistente(input_data: UserInput):
         contador = session["contador_interacciones"]
         session["mensajes"].append(mensaje_usuario)
 
+        # 👉 Nueva respuesta para la PRIMERA INTERACCIÓN
+        if contador == 1:
+            return {
+                "respuesta": (
+                    "¡Hola! Soy el asistente virtual del Lic. Daniel O. Bustamante y me encantaría saber en qué puedo ayudarte. "
+                    "Sentite libre de contarme lo que necesites."
+                )
+            }
+        
         # 🔍 Buscar coincidencia semántica en preguntas frecuentes
         resultado_semantico = buscar_respuesta_semantica_con_score(mensaje_usuario)
         if resultado_semantico:
