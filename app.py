@@ -210,16 +210,17 @@ def generar_disparador_emocional(emocion):
     }
     return disparadores.get(emocion.lower())
 
-# Gestionar combinacion emocional devolviendo una frase o iniciando registro
-def buscar_disparador_emocional_en_bd(emocion1, emocion2):
+# Gestionar combinación emocional devolviendo una frase o registrándola si es nueva
+def gestionar_combinacion_emocional(emocion1, emocion2):
     """
-    Consulta la tabla 'disparadores_emocionales' para una frase combinada.
-    Si no la encuentra, registra la combinación en 'combinaciones_no_registradas'.
+    Consulta la tabla 'disparadores_emocionales' para una frase clínica correspondiente a una combinación de emociones.
+    Si no la encuentra, registra automáticamente la combinación en 'combinaciones_no_registradas'.
     """
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
 
+        # Consulta para buscar el disparador emocional clínico, sin importar el orden
         consulta = """
             SELECT texto_disparador FROM disparadores_emocionales
             WHERE (emocion_1 = %s AND emocion_2 = %s)
@@ -234,7 +235,7 @@ def buscar_disparador_emocional_en_bd(emocion1, emocion2):
             return resultado[0]
 
         # Registrar la combinación no contemplada
-        print(f"🆕 Combinación nueva: {emocion1} + {emocion2}")
+        print(f"🆕 Combinación emocional no registrada: {emocion1} + {emocion2}")
         cursor.execute("""
             INSERT INTO combinaciones_no_registradas (emocion_1, emocion_2)
             VALUES (%s, %s)
@@ -246,9 +247,8 @@ def buscar_disparador_emocional_en_bd(emocion1, emocion2):
         return None
 
     except Exception as e:
-        print(f"❌ Error en búsqueda o registro de combinación emocional: {e}")
+        print(f"❌ Error al gestionar combinación emocional: {e}")
         return None
-
 
 # Inicialización de FastAPI
 app = FastAPI()
