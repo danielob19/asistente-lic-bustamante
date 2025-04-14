@@ -9,6 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 import numpy as np
 import openai
+from pydantic import BaseModel
+from collections import Counter
+import random
+import re
 from datetime import datetime, timedelta
 
 # 🧠 Lista de preguntas frecuentes (FAQ) y sus respuestas fijas
@@ -112,11 +116,6 @@ def buscar_respuesta_semantica_con_score(mensaje: str, umbral=0.88):
     except Exception as e:
         print(f"❌ Error en buscar_respuesta_semantica_con_score: {e}")
         return None
-
-from pydantic import BaseModel
-from collections import Counter
-import random
-import re
 
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
