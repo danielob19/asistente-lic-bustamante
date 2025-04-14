@@ -210,34 +210,44 @@ def generar_disparador_emocional(emocion):
     }
     return disparadores.get(emocion.lower())
 
-# Generar frase disparadora combinada cuando hay dos emociones con resonancia clínica
-def generar_disparador_combinado(emocion1, emocion2):
-    combinaciones = {
-        frozenset(["tristeza", "culpa"]): (
-            "La tristeza acompañada de culpa puede hacer que todo pese más de lo que en verdad debería."
-        ),
-        frozenset(["ansiedad", "miedo"]): (
-            "La ansiedad y el miedo a veces se confunden. Ambas pueden inmovilizar o acelerar, sin darnos tregua."
-        ),
-        frozenset(["agotamiento", "ansiedad"]): (
-            "El agotamiento sumado a la ansiedad puede hacer que incluso lo cotidiano parezca imposible de afrontar."
-        ),
-        frozenset(["soledad", "confusión"]): (
-            "La confusión en soledad puede hacer que las preguntas resuenen más fuerte que las respuestas."
-        ),
-        frozenset(["desgano", "tristeza"]): (
-            "Cuando el desgano se une a la tristeza, puede ser difícil distinguir entre pausa y resignación."
-        ),
-        frozenset(["enojo", "culpa"]): (
-            "El enojo muchas veces tapa la culpa, o viceversa. Ambas emociones pueden estar diciendo algo importante."
-        ),
-        frozenset(["desesperanza", "ansiedad"]): (
-            "Cuando la desesperanza se mezcla con ansiedad, todo futuro imaginable puede sentirse borroso o inalcanzable."
-        )
-    }
+# Gestionar combinacion emocional devolviendo una frase o iniciando registro
+def buscar_disparador_emocional_en_bd(emocion1, emocion2):
+    """
+    Consulta la tabla 'disparadores_emocionales' para una frase combinada.
+    Si no la encuentra, registra la combinación en 'combinaciones_no_registradas'.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
 
-    clave = frozenset([emocion1.lower(), emocion2.lower()])
-    return combinaciones.get(clave)
+        consulta = """
+            SELECT texto_disparador FROM disparadores_emocionales
+            WHERE (emocion_1 = %s AND emocion_2 = %s)
+               OR (emocion_1 = %s AND emocion_2 = %s)
+            LIMIT 1;
+        """
+        cursor.execute(consulta, (emocion1, emocion2, emocion2, emocion1))
+        resultado = cursor.fetchone()
+
+        if resultado:
+            conn.close()
+            return resultado[0]
+
+        # Registrar la combinación no contemplada
+        print(f"🆕 Combinación nueva: {emocion1} + {emocion2}")
+        cursor.execute("""
+            INSERT INTO combinaciones_no_registradas (emocion_1, emocion_2)
+            VALUES (%s, %s)
+            ON CONFLICT DO NOTHING;
+        """, (emocion1.lower(), emocion2.lower()))
+
+        conn.commit()
+        conn.close()
+        return None
+
+    except Exception as e:
+        print(f"❌ Error en búsqueda o registro de combinación emocional: {e}")
+        return None
 
 
 # Inicialización de FastAPI
@@ -1052,10 +1062,23 @@ async def asistente(input_data: UserInput):
 
         # 💬 Disparador emocional si hay una combinación clínica significativa de dos emociones
         if len(emociones_detectadas) == 2:
-            disparador_doble = generar_disparador_combinado(emociones_detectadas[0], emociones_detectadas[1])
+            emocion_1 = emociones_detectadas[0]
+            emocion_2 = emociones_detectadas[1]
+        
+            disparador_doble = buscar_disparador_emocional_en_bd(emocion_1, emocion_2)
+        
             if disparador_doble:
                 return {"respuesta": disparador_doble}
-                        
+            else:
+                # Frase clínica genérica si la combinación no existe aún
+                return {
+                    "respuesta": (
+                        f"A veces, cuando sentimos tanto al mismo tiempo —como {emocion_1} y {emocion_2}—, "
+                        "puede resultar difícil saber por dónde empezar. Lo importante es que lo estás intentando. Podés seguir contándome."
+                    )
+                }
+        
+                                
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
         
