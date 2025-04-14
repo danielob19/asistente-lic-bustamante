@@ -1065,7 +1065,7 @@ async def asistente(input_data: UserInput):
             emocion_1 = emociones_detectadas[0]
             emocion_2 = emociones_detectadas[1]
         
-            disparador_doble = buscar_disparador_emocional_en_bd(emocion_1, emocion_2)
+            disparador_doble = gestionar_combinacion_emocional(emocion_1, emocion_2)
         
             if disparador_doble:
                 return {"respuesta": disparador_doble}
