@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 import numpy as np
 import openai
+from datetime import datetime, timedelta
 
 # 🧠 Lista de preguntas frecuentes (FAQ) y sus respuestas fijas
 faq_respuestas = [
@@ -690,6 +691,39 @@ def obtener_coincidencias_sintomas_y_registrar(emociones):
     except Exception as e:
         print(f"❌ Error al obtener coincidencias de síntomas o registrar nuevos síntomas: {e}")
         return []
+
+def obtener_combinaciones_no_registradas(dias=7):
+    """
+    Devuelve una lista de combinaciones emocionales detectadas por el bot pero que aún no tienen frase registrada.
+    Por defecto, muestra las registradas en los últimos 'dias' (7 por defecto).
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+
+        # Calcular fecha límite
+        fecha_limite = datetime.now() - timedelta(days=dias)
+
+        consulta = """
+            SELECT emocion_1, emocion_2, fecha 
+            FROM combinaciones_no_registradas
+            WHERE fecha >= %s
+            ORDER BY fecha DESC;
+        """
+        cursor.execute(consulta, (fecha_limite,))
+        combinaciones = cursor.fetchall()
+        conn.close()
+
+        print(f"\n📋 Combinaciones emocionales no registradas (últimos {dias} días):")
+        for emocion_1, emocion_2, fecha in combinaciones:
+            print(f" - {emocion_1} + {emocion_2} → {fecha.strftime('%Y-%m-%d %H:%M')}")
+
+        return combinaciones
+
+    except Exception as e:
+        print(f"❌ Error al obtener combinaciones no registradas: {e}")
+        return []
+
 
 def clasificar_sintomas_sin_cuadro():
     """
