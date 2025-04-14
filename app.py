@@ -210,6 +210,36 @@ def generar_disparador_emocional(emocion):
     }
     return disparadores.get(emocion.lower())
 
+# Generar frase disparadora combinada cuando hay dos emociones con resonancia clínica
+def generar_disparador_combinado(emocion1, emocion2):
+    combinaciones = {
+        frozenset(["tristeza", "culpa"]): (
+            "La tristeza acompañada de culpa puede hacer que todo pese más de lo que en verdad debería."
+        ),
+        frozenset(["ansiedad", "miedo"]): (
+            "La ansiedad y el miedo a veces se confunden. Ambas pueden inmovilizar o acelerar, sin darnos tregua."
+        ),
+        frozenset(["agotamiento", "ansiedad"]): (
+            "El agotamiento sumado a la ansiedad puede hacer que incluso lo cotidiano parezca imposible de afrontar."
+        ),
+        frozenset(["soledad", "confusión"]): (
+            "La confusión en soledad puede hacer que las preguntas resuenen más fuerte que las respuestas."
+        ),
+        frozenset(["desgano", "tristeza"]): (
+            "Cuando el desgano se une a la tristeza, puede ser difícil distinguir entre pausa y resignación."
+        ),
+        frozenset(["enojo", "culpa"]): (
+            "El enojo muchas veces tapa la culpa, o viceversa. Ambas emociones pueden estar diciendo algo importante."
+        ),
+        frozenset(["desesperanza", "ansiedad"]): (
+            "Cuando la desesperanza se mezcla con ansiedad, todo futuro imaginable puede sentirse borroso o inalcanzable."
+        )
+    }
+
+    clave = frozenset([emocion1.lower(), emocion2.lower()])
+    return combinaciones.get(clave)
+
+
 # Inicialización de FastAPI
 app = FastAPI()
 
@@ -1019,7 +1049,13 @@ async def asistente(input_data: UserInput):
             disparador = generar_disparador_emocional(emociones_detectadas[0])
             if disparador:
                 return {"respuesta": disparador}
-                
+
+        # 💬 Disparador emocional si hay una combinación clínica significativa de dos emociones
+        if len(emociones_detectadas) == 2:
+            disparador_doble = generar_disparador_combinado(emociones_detectadas[0], emociones_detectadas[1])
+            if disparador_doble:
+                return {"respuesta": disparador_doble}
+                        
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
         
