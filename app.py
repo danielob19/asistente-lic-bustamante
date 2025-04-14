@@ -1,19 +1,24 @@
+# 📦 Módulos estándar de Python
 import os
 import time
 import threading
-import psycopg2
-from psycopg2 import sql
-import openai
-from fastapi import FastAPI, HTTPException, File, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
-import numpy as np
-import openai
-from pydantic import BaseModel
-from collections import Counter
 import random
 import re
 from datetime import datetime, timedelta
+from collections import Counter
+
+# 🧪 Librerías externas
+import psycopg2
+from psycopg2 import sql
+import numpy as np
+import openai
+from pydantic import BaseModel
+
+# 🚀 Framework FastAPI
+from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse
+
 
 # 🧠 Lista de preguntas frecuentes (FAQ) y sus respuestas fijas
 faq_respuestas = [
