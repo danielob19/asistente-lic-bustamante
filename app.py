@@ -883,23 +883,39 @@ async def asistente(input_data: UserInput):
             # Si no hay un análisis previo, responder de manera neutral
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
 
-
-        # Manejo para mensajes de cierre (sin insistir ni contabilizar interacciones)
-        if mensaje_usuario in ["ok", "gracias", "en nada", "en nada mas", "nada mas", "no necesito nada mas", "estoy bien", "igual"]:
-            return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
-
         # Respuesta específica para saludos simples
         if mensaje_usuario in ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]:
             return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
 
-        # 🔹 Manejo de agradecimientos
-        agradecimientos = {"gracias", "muy amable", "te agradezco", "muchas gracias", "ok gracias"}
+        # Frases de agradecimiento y cierre (ajuste de tono profesional y neutral)
+        agradecimientos = {
+            "gracias", "muy amable", "te agradezco", "muchas gracias", "ok gracias", "perfecto, gracias", "mil gracias", "gracias por todo"
+        }
+        
+        respuestas_agradecimiento = [
+            "De nada. Si necesitás algo más, quedo a disposición.",
+            "Con gusto. Podés escribirme si surge otra consulta.",
+            "Cuando quieras. Estoy acá para ayudarte.",
+            "No hay problema. Si te surge otra duda, avisame."
+        ]
+        
+        cierres_usuario = [
+            "ok", "todo bien", "nada más", "me quedó claro", "ya está", "no necesito más", "en nada", "en nada mas", "no necesito nada mas", "estoy bien", "igual"
+        ]
+        
+        respuestas_cierre = [
+            "Entendido. Que tengas un buen día.",
+            "Perfecto. Quedo a disposición si más adelante necesitás algo.",
+            "Gracias por tu mensaje. Si querés retomar más adelante, podés escribirme.",
+            "Está bien. Te deseo lo mejor."
+        ]
+        
         if mensaje_usuario in agradecimientos:
-            return {"respuesta": "De nada, estoy para ayudarte. Que tengas un buen día."}
-
-        # Detectar "igual" solo si la última respuesta fue una despedida o agradecimiento
-        if mensaje_usuario == "igual" and session["ultimas_respuestas"] and session["ultimas_respuestas"][-1] in mensajes_cierre:
-            return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
+            return {"respuesta": random.choice(respuestas_agradecimiento)}
+        
+        if mensaje_usuario in cierres_usuario:
+            return {"respuesta": random.choice(respuestas_cierre)}
+        
 
         # 🔹 Manejo de consulta sobre si el Lic. Bustamante atiende estos casos
         if "atienden estos casos" in mensaje_usuario or "atiende casos" in mensaje_usuario or "trata casos" in mensaje_usuario or "atiende temas" in mensaje_usuario or "trata temas" in mensaje_usuario or "atiende problemas" in mensaje_usuario or "trata problemas" in mensaje_usuario or "atiende estos" in mensaje_usuario or "trata estos" in mensaje_usuario or "atiende estos temas" in mensaje_usuario:
