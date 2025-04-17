@@ -829,6 +829,10 @@ async def asistente(input_data: UserInput):
         user_id = input_data.user_id
         mensaje_usuario = input_data.mensaje.strip().lower()
 
+        # 🧽 Etapa de purificación clínica
+        mensaje_usuario = purificar_input_clinico(mensaje_usuario)
+        print(f"🧼 Input purificado: {mensaje_usuario}")
+
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
