@@ -530,6 +530,37 @@ palabras_irrelevantes = {
     "que", "opinas", "¿","?", "reinicia", "con", "del", "necesito", "me", "das"
 }
 
+def purificar_input_clinico(texto: str) -> str:
+    import re
+
+    try:
+        if not isinstance(texto, str):
+            return ""
+
+        muletillas = [
+            r'\b(este|eh+|mmm+|ajá|tipo|digamos|o sea|viste|nada|bueno|a ver|me explico|ehh+)\b',
+            r'\b(sí sí|no no|claro claro)\b'
+        ]
+
+        for patron in muletillas:
+            texto = re.sub(patron, '', texto, flags=re.IGNORECASE)
+
+        texto = re.sub(r'\b(\w+)( \1\b)+', r'\1', texto, flags=re.IGNORECASE)
+        texto = re.sub(r'\b(\w)( \1\b)+', r'\1', texto, flags=re.IGNORECASE)
+        texto = re.sub(r'\s{2,}', ' ', texto)
+        texto = re.sub(r'([.,!?]){2,}', r'\1', texto)
+        texto = re.sub(r'\s+([.,!?])', r'\1', texto)
+
+        texto = texto.strip()
+        if texto:
+            texto = texto[0].upper() + texto[1:]
+
+        return texto
+
+    except Exception as e:
+        print(f"❌ Error en purificar_input_clinico: {e}")
+        return ""
+
 # Análisis de texto del usuario
 def analizar_texto(mensajes_usuario):
     """
