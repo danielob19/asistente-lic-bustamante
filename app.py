@@ -998,7 +998,7 @@ async def asistente(input_data: UserInput):
             "telefono" in mensaje_usuario
         ):
             return {
-                "respuesta": "Para contactar al Lic. Daniel O. Bustamante, puedes enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
+                "respuesta": "Para contactar al Lic. Daniel O. Bustamante, podés enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
             }
         
         # 🔹 Evitar repetir la misma respuesta si ya se dio antes en la sesión
@@ -1008,7 +1008,7 @@ async def asistente(input_data: UserInput):
             
             session["telefono_mencionado"] = True
             return {
-                "respuesta": "Para contactar al Lic. Daniel O. Bustamante, puedes enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
+                "respuesta": "Para contactar al Lic. Daniel O. Bustamante, podés enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
             }
         
         # 🔹 Proporciona el número de contacto si el usuario pregunta por el "mejor psicólogo" o especialista recomendado
