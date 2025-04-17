@@ -1379,7 +1379,10 @@ async def asistente(input_data: UserInput):
         )
         
         # Obtener respuesta de OpenAI
-        respuesta_ai = generar_respuesta_con_openai(prompt)
+        respuesta_original = generar_respuesta_con_openai(prompt)
+        respuesta_ai = respuesta_original  # Copia editable
+        motivo = None
+
         
         # 🔍 Filtro para lenguaje institucional
         palabras_prohibidas = ["nosotros", "nuestro equipo", "nuestra institución", "desde nuestra", "trabajamos en conjunto"]
