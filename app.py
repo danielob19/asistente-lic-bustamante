@@ -838,6 +838,34 @@ def registrar_log_similitud(user_id: str, consulta: str, pregunta_faq: str, simi
     except Exception as e:
         print(f"❌ Error al registrar log de similitud: {e}")
 
+def registrar_auditoria_respuesta(user_id: str, respuesta_original: str, respuesta_final: str, motivo_modificacion: str = None):
+    """
+    Registra la respuesta original de OpenAI y su versión final (modificada) en una tabla de auditoría.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS auditoria_respuestas (
+                id SERIAL PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                respuesta_original TEXT NOT NULL,
+                respuesta_final TEXT NOT NULL,
+                motivo_modificacion TEXT,
+                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)  # Seguridad: autocrea la tabla si no existe
+
+        cursor.execute("""
+            INSERT INTO auditoria_respuestas (user_id, respuesta_original, respuesta_final, motivo_modificacion)
+            VALUES (%s, %s, %s, %s);
+        """, (user_id, respuesta_original.strip(), respuesta_final.strip(), motivo_modificacion))
+        conn.commit()
+        conn.close()
+        print("📑 Auditoría registrada en auditoria_respuestas.")
+    except Exception as e:
+        print(f"❌ Error al registrar auditoría de respuesta: {e}")
+
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
