@@ -877,16 +877,13 @@ async def asistente(input_data: UserInput):
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
         print(f"🧼 Input purificado: {mensaje_usuario}")
         print(f"📝 Input original: {mensaje_original}")
-
-        # 🧽 Etapa de purificación clínica
-        mensaje_usuario = purificar_input_clinico(mensaje_usuario)
-        print(f"🧼 Input purificado: {mensaje_usuario}")
-
+        
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+        
+        # Registrar interacción con mensaje original incluido
+        interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
 
-        # Registrar interacción en la base de datos
-        registrar_interaccion(user_id, mensaje_usuario)
 
         # Inicializa la sesión del usuario si no existe
         if user_id not in user_sessions:
