@@ -436,26 +436,41 @@ def obtener_sintomas_existentes():
         print(f"❌ Error al obtener síntomas existentes: {e}")
         return set()
 
-# Registrar una interacción
-def registrar_interaccion(user_id: str, consulta: str):
+# Registrar una interacción (versión extendida)
+def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = None):
     try:
         print("\n===== DEPURACIÓN - REGISTRO DE INTERACCIÓN =====")
-        print(f"Intentando registrar interacción: user_id={user_id}, consulta={consulta}")
+        print(f"Intentando registrar interacción: user_id={user_id}")
+        print(f"Consulta purificada: {consulta}")
+        print(f"Mensaje original: {mensaje_original}")
 
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
-        
+
+        # Verifica si la columna "mensaje_original" existe; si no, la crea automáticamente
         cursor.execute("""
-            INSERT INTO interacciones (user_id, consulta) 
-            VALUES (%s, %s) RETURNING id;
-        """, (user_id, consulta))
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'interacciones' AND column_name = 'mensaje_original';
+        """)
+        columna_existente = cursor.fetchone()
+
+        if not columna_existente:
+            print("⚠️ La columna 'mensaje_original' no existe. Creándola...")
+            cursor.execute("ALTER TABLE interacciones ADD COLUMN mensaje_original TEXT;")
+            conn.commit()
+
+        # Inserta la interacción con el mensaje original
+        cursor.execute("""
+            INSERT INTO interacciones (user_id, consulta, mensaje_original) 
+            VALUES (%s, %s, %s) RETURNING id;
+        """, (user_id, consulta, mensaje_original))
         
-        interaccion_id = cursor.fetchone()[0]  # Obtener el ID insertado
+        interaccion_id = cursor.fetchone()[0]
         conn.commit()
         conn.close()
-        
+
         print(f"✅ Interacción registrada con éxito. ID asignado: {interaccion_id}\n")
-        return interaccion_id  # Devolver el ID de la interacción
+        return interaccion_id
 
     except Exception as e:
         print(f"❌ Error al registrar interacción en la base de datos: {e}\n")
