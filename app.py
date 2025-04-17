@@ -916,8 +916,7 @@ async def asistente(input_data: UserInput):
         if resultado_semantico:
             pregunta_faq, respuesta_semantica, similitud = resultado_semantico
         
-            # Registrar interacción y respuesta
-            interaccion_id = registrar_interaccion(user_id, mensaje_usuario)
+            # Registrar respuesta en la interacción ya creada
             registrar_respuesta_openai(interaccion_id, respuesta_semantica)
         
             # Registrar similitud en la tabla correspondiente
