@@ -827,7 +827,13 @@ def registrar_log_similitud(user_id: str, consulta: str, pregunta_faq: str, simi
 async def asistente(input_data: UserInput):
     try:
         user_id = input_data.user_id
-        mensaje_usuario = input_data.mensaje.strip().lower()
+        mensaje_original = input_data.mensaje.strip()
+        mensaje_usuario = mensaje_original.lower()
+        
+        # 🧽 Etapa de purificación clínica
+        mensaje_usuario = purificar_input_clinico(mensaje_usuario)
+        print(f"🧼 Input purificado: {mensaje_usuario}")
+        print(f"📝 Input original: {mensaje_original}")
 
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
