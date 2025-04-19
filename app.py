@@ -913,6 +913,9 @@ async def asistente(input_data: UserInput):
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
         print(f"🧼 Input purificado: {mensaje_usuario}")
         print(f"📝 Input original: {mensaje_original}")
+
+        # 📋 Registro de auditoría del mensaje original y purificado
+        registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario)
         
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
