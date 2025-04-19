@@ -515,6 +515,42 @@ def registrar_respuesta_openai(interaccion_id: int, respuesta: str):
     except Exception as e:
         print(f"❌ Error al registrar respuesta en la base de datos: {e}\n")
 
+def registrar_auditoria_input_original(user_id: str, mensaje_original: str, mensaje_purificado: str):
+    """
+    Registra el input original y su versión purificada en una tabla de auditoría.
+    Permite trazabilidad entre lo que dijo el usuario y cómo fue interpretado.
+    """
+    try:
+        print("\n📋 Registrando input original y purificado en auditoría")
+        print(f"👤 user_id: {user_id}")
+        print(f"📝 Original: {mensaje_original}")
+        print(f"🧼 Purificado: {mensaje_purificado}")
+
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS auditoria_input_original (
+                id SERIAL PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                mensaje_original TEXT NOT NULL,
+                mensaje_purificado TEXT NOT NULL,
+                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
+        cursor.execute("""
+            INSERT INTO auditoria_input_original (user_id, mensaje_original, mensaje_purificado)
+            VALUES (%s, %s, %s);
+        """, (user_id, mensaje_original.strip(), mensaje_purificado.strip()))
+
+        conn.commit()
+        conn.close()
+        print("✅ Auditoría registrada exitosamente.\n")
+
+    except Exception as e:
+        print(f"❌ Error al registrar auditoría del input original: {e}")
+
 # Registrar una similitud semántica en la base de datos
 def registrar_similitud_semantica(user_id: str, consulta: str, pregunta_faq: str, similitud: float):
     """
