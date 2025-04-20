@@ -311,6 +311,8 @@ def init_db():
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
+# ===================== OPERACIONES CLÍNICAS SOBRE 'palabras_clave' =====================
+
 # Registrar un síntoma con cuadro clínico asignado por OpenAI si no se proporciona
 def registrar_sintoma(sintoma: str, estado_emocional: str = None):
     """
