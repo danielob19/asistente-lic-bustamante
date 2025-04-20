@@ -481,6 +481,9 @@ def registrar_emocion(emocion: str, contexto: str):
     except Exception as e:
         print(f"❌ Error al registrar emoción '{emocion}': {e}")
 
+
+# ===================== REGISTRO DE INTERACCIONES Y RESPUESTAS =====================
+
 # Registrar una interacción (versión extendida)
 def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = None):
     try:
