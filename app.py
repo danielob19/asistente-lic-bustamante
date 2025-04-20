@@ -898,6 +898,45 @@ def registrar_auditoria_respuesta(user_id: str, respuesta_original: str, respues
     except Exception as e:
         print(f"❌ Error al registrar auditoría de respuesta: {e}")
 
+def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
+    """
+    Genera una respuesta clínica con base en emociones detectadas y síntomas coincidentes.
+    Se aplica en la interacción 5 y 9, devolviendo síntomas literales y estado emocional predominante.
+    """
+    mensajes = session.get("mensajes", [])
+    emociones_acumuladas = session.get("emociones_detectadas", [])
+
+    # Reanaliza todas las emociones en los mensajes para detectar nuevas
+    emociones_detectadas = detectar_emociones_negativas(" ".join(mensajes)) or []
+    nuevas_emociones = [e for e in emociones_detectadas if e not in emociones_acumuladas]
+    session["emociones_detectadas"].extend(nuevas_emociones)
+
+    if not session["emociones_detectadas"]:
+        print(f"⚠️ No se detectaron emociones al llegar a la interacción {contador}")
+        return (
+            "No se identificaron emociones predominantes en este momento. "
+            "Te sugiero contactar al Lic. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más precisa."
+        )
+
+    coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
+    cuadro_predominante = (
+        Counter(coincidencias_sintomas).most_common(1)[0][0]
+        if len(coincidencias_sintomas) >= 2 else
+        "No se pudo establecer con certeza un estado emocional predominante."
+    )
+
+    emociones_literal = ", ".join(set(session["emociones_detectadas"][:3]))
+
+    respuesta = (
+        f"Con base a lo que has descripto —{emociones_literal}—, "
+        f"pareciera ser que el malestar emocional predominante es: {cuadro_predominante}. "
+        f"Te sugiero considerar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp +54 911 3310-1186 para una evaluación más detallada."
+    )
+
+    print(f"🧾 Resumen clínico generado correctamente en interacción {contador}")
+    session["mensajes"].clear()
+    return respuesta
+
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
