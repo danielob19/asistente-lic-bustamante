@@ -427,7 +427,24 @@ def actualizar_sintomas_sin_estado_emocional():
 
     except Exception as e:
         print(f"❌ Error al conectar con la base de datos para actualizar estado_emocional: {e}")
-        
+
+# Obtener síntomas existentes
+def obtener_sintomas_existentes():
+    """
+    Obtiene todos los síntomas almacenados en la base de datos PostgreSQL y los devuelve como un conjunto en minúsculas.
+    Esto mejora la comparación y evita problemas con mayúsculas/minúsculas.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("SELECT LOWER(sintoma) FROM palabras_clave")  # Convierte a minúsculas desde la BD
+        sintomas = {row[0] for row in cursor.fetchall()}  # Convierte en un conjunto para búsqueda eficiente
+        conn.close()
+        return sintomas
+    except Exception as e:
+        print(f"❌ Error al obtener síntomas existentes: {e}")
+        return set()
+
 # Registrar una emoción detectada en la base de datos
 def registrar_emocion(emocion: str, contexto: str):
     """
@@ -461,24 +478,6 @@ def registrar_emocion(emocion: str, contexto: str):
 
     except Exception as e:
         print(f"❌ Error al registrar emoción '{emocion}': {e}")
-
-
-# Obtener síntomas existentes
-def obtener_sintomas_existentes():
-    """
-    Obtiene todos los síntomas almacenados en la base de datos PostgreSQL y los devuelve como un conjunto en minúsculas.
-    Esto mejora la comparación y evita problemas con mayúsculas/minúsculas.
-    """
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute("SELECT LOWER(sintoma) FROM palabras_clave")  # Convierte a minúsculas desde la BD
-        sintomas = {row[0] for row in cursor.fetchall()}  # Convierte en un conjunto para búsqueda eficiente
-        conn.close()
-        return sintomas
-    except Exception as e:
-        print(f"❌ Error al obtener síntomas existentes: {e}")
-        return set()
 
 # Registrar una interacción (versión extendida)
 def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = None):
