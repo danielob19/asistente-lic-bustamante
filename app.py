@@ -831,11 +831,13 @@ def clasificar_sintomas_sin_cuadro():
 
         for sintoma in sintomas_sin_cuadro:
             # Clasificar síntoma con OpenAI
-            prompt = f"""
-            Dado el síntoma '{sintoma}', clasifícalo dentro de un cuadro psicológico basado en el contexto.
-            Algunas opciones pueden ser: "Ansiedad", "Depresión", "Estrés", "Trastorno Fóbico", "Trastorno del sueño", etc.
-            Responde solo con el nombre del cuadro sin explicaciones adicionales.
-            """
+            prompt = (
+                f"Asigná un cuadro clínico apropiado al siguiente síntoma: '{sintoma}'.\n\n"
+                "Seleccioná un cuadro psicológico reconocido, como por ejemplo: Trastorno de ansiedad, Depresión mayor, Estrés postraumático, "
+                "Trastorno de pánico, Anhedonia, Baja autoestima, etc.\n\n"
+                "Si no corresponde a ninguno de estos, clasificá el síntoma como 'Patrón emocional detectado'.\n"
+                "No incluyas explicaciones ni texto adicional. Respondé exclusivamente con el nombre del cuadro clínico."
+            )
 
             try:
                 respuesta = openai.ChatCompletion.create(
