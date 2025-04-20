@@ -154,10 +154,11 @@ def generar_respuesta_con_openai(prompt):
 # Función para detectar emociones negativas usando OpenAI
 def detectar_emociones_negativas(mensaje):
     prompt = (
-        "Analiza el siguiente mensaje y detecta exclusivamente emociones humanas negativas o estados emocionales "
-        "relacionados con malestar psicológico. Devuelve una lista separada por comas con las emociones detectadas, "
-        "sin texto adicional. **Si el mensaje es ambiguo, devuelve la emoción negativa más cercana en lugar de 'indeterminado'.**\n\n"
+        "Detectá exclusivamente manifestaciones emocionales de malestar clínico o estados afectivos negativos implícitos en el siguiente mensaje. "
+        "Devolvé una lista separada por comas con los términos detectados, sin explicaciones ni texto adicional. "
+        "Si el mensaje resulta ambiguo, asigná la emoción negativa más próxima desde una perspectiva clínica, en lugar de devolver 'indeterminado'."
         
+                
         "Ejemplos de emociones negativas y estados emocionales:\n"
         "- Tristeza, desesperanza, desolación, impotencia, culpa, vergüenza, frustración, ansiedad, miedo, desamparo, agotamiento.\n"
         "- Expresiones compuestas: 'sensación de abandono', 'temor al rechazo', 'desgaste emocional', 'apatía profunda'.\n\n"
