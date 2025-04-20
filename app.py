@@ -1255,11 +1255,11 @@ async def asistente(input_data: UserInput):
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
         
-        # Evaluación de emociones y cuadro probable en la interacción 5 y 9
+        # Evaluación de emociones y descripción del malestar emocional predominante en la interacción 5 y 9
         if contador in [5, 9]:
             emociones_detectadas = detectar_emociones_negativas(" ".join(session["mensajes"]))
-            
-            # Evitar agregar duplicados en emociones detectadas
+        
+            # Evitar duplicados
             nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
             session["emociones_detectadas"].extend(nuevas_emociones)
         
@@ -1270,25 +1270,26 @@ async def asistente(input_data: UserInput):
             print(f"Emociones detectadas en esta interacción: {emociones_detectadas}")
             print(f"Emociones acumuladas hasta ahora: {session['emociones_detectadas']}")
         
-            # Buscar coincidencias en la base de datos para determinar el cuadro probable
+            # Buscar coincidencias en base de datos
             coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
         
-            # 🔍 DEPURACIÓN: Mostrar síntomas encontrados en la BD
             print(f"Coincidencias encontradas en la BD: {coincidencias_sintomas}")
         
             if len(coincidencias_sintomas) >= 2:
-                cuadro_probable = Counter(coincidencias_sintomas).most_common(1)[0][0]
+                cuadro_predominante = Counter(coincidencias_sintomas).most_common(1)[0][0]
             else:
-                cuadro_probable = "No se pudo determinar un cuadro probable con suficiente precisión."
+                cuadro_predominante = "No se pudo establecer con certeza un estado emocional predominante."
         
-            # 🔍 DEPURACIÓN: Mostrar cuadro probable determinado
-            print(f"Cuadro probable determinado: {cuadro_probable}")
+            print(f"Malestar emocional predominante: {cuadro_predominante}")
             print("========================================\n")
         
+            # Preparar respuesta con las palabras exactas del usuario
+            emociones_literal = ", ".join(set(session["emociones_detectadas"][:3]))  # limitar a 3 si hay muchas
+        
             respuesta = (
-                f"Con base en los síntomas detectados ({', '.join(set(coincidencias_sintomas))}), "
-                f"el malestar emocional predominante es: {cuadro_probable}. Te sugiero considerar una consulta con el Lic. Daniel O. Bustamante "
-                f"escribiendo al WhatsApp +54 911 3310-1186 para obtener una evaluación más detallada."
+                f"Con base a lo que has descripto —{emociones_literal}—, "
+                f"pareciera ser que el malestar emocional predominante es: {cuadro_predominante}. "
+                f"Te sugiero considerar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp +54 911 3310-1186 para una evaluación más detallada."
             )
         
             if contador == 9:
@@ -1298,7 +1299,7 @@ async def asistente(input_data: UserInput):
                     "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
                 )
         
-            session["mensajes"].clear()  # Limpiar mensajes después del análisis
+            session["mensajes"].clear()
             return {"respuesta": respuesta}
         
         # 🔹 A partir de la interacción 10, solo recomendar la consulta profesional
