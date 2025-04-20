@@ -1409,12 +1409,6 @@ async def asistente(input_data: UserInput):
             "Referite al profesional como 'el Lic. Bustamante'. Solo proporcioná su número de contacto si el usuario lo solicita explícitamente o si ya transcurrieron al menos 5 interacciones."
         )
         
-        # Obtener respuesta de OpenAI
-        respuesta_original = generar_respuesta_con_openai(prompt)
-        respuesta_ai = respuesta_original  # Copia editable
-        motivo = None
-
-        
         # 🔍 Filtro para lenguaje institucional
         palabras_prohibidas = ["nosotros", "nuestro equipo", "nuestra institución", "desde nuestra", "trabajamos en conjunto"]
         if any(palabra in respuesta_ai.lower() for palabra in palabras_prohibidas):
@@ -1443,7 +1437,13 @@ async def asistente(input_data: UserInput):
             # 🧾 Auditoría: log si OpenAI intentó responder con precios
             print("⚠️ Se interceptó una respuesta con posible contenido de precios y fue reemplazada para evitar brindar esa información.")
 
-        
+        # Detectar modificaciones y registrar auditoría
+        if respuesta_original != respuesta_ai:
+            motivo = "Respuesta modificada por contener lenguaje institucional, temáticas no permitidas o precios"
+            registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, motivo)
+        else:
+            registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai)
+
         # Registrar respuesta generada por OpenAI
         interaccion_id = registrar_interaccion(user_id, mensaje_usuario)
         registrar_respuesta_openai(interaccion_id, respuesta_ai)
