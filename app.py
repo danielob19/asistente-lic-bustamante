@@ -801,6 +801,61 @@ def obtener_combinaciones_no_registradas(dias=7):
         print(f"❌ Error al obtener combinaciones no registradas: {e}")
         return []
 
+def actualizar_sintomas_sin_estado_emocional():
+    """
+    Busca síntomas en la base de datos que no tienen estado_emocional asignado,
+    les solicita una clasificación clínica a OpenAI y actualiza la tabla.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+
+        # Obtener síntomas sin estado emocional asignado
+        cursor.execute("SELECT sintoma FROM palabras_clave WHERE estado_emocional IS NULL;")
+        sintomas_pendientes = [row[0] for row in cursor.fetchall()]
+        conn.close()
+
+        if not sintomas_pendientes:
+            print("✅ No hay síntomas pendientes de clasificación en estado_emocional.")
+            return
+
+        print(f"🔍 Clasificando {len(sintomas_pendientes)} síntomas sin estado_emocional...")
+
+        for sintoma in sintomas_pendientes:
+            prompt = (
+                f"Asigná un estado emocional clínico adecuado al siguiente síntoma: '{sintoma}'.\n\n"
+                "Seleccioná un estado emocional clínico compatible con clasificaciones como: Trastorno de ansiedad, Depresión mayor, Estrés postraumático, "
+                "Trastorno de pánico, Baja autoestima, Desgaste emocional, Sentimientos de aislamiento, Insomnio crónico, etc.\n\n"
+                "Si el síntoma no se vincula a un estado clínico específico, respondé con: 'Patrón emocional detectado'.\n\n"
+                "Devolvé exclusivamente el nombre del estado emocional sin texto adicional ni explicaciones."
+            )
+
+            try:
+                respuesta = openai.ChatCompletion.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=50,
+                    temperature=0.0
+                )
+
+                estado_emocional = respuesta["choices"][0]["message"]["content"].strip()
+                print(f"📌 Estado emocional para '{sintoma}': {estado_emocional}")
+
+                # Actualizar en la base de datos
+                conn = psycopg2.connect(DATABASE_URL)
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE palabras_clave SET estado_emocional = %s WHERE sintoma = %s;",
+                    (estado_emocional, sintoma)
+                )
+                conn.commit()
+                conn.close()
+
+            except Exception as e:
+                print(f"⚠️ Error al clasificar o actualizar '{sintoma}': {e}")
+
+    except Exception as e:
+        print(f"❌ Error al conectar con la base de datos para actualizar estado_emocional: {e}")
 
 def clasificar_sintomas_sin_cuadro():
     """
