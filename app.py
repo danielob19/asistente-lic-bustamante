@@ -154,20 +154,19 @@ def generar_respuesta_con_openai(prompt):
 # Función para detectar emociones negativas usando OpenAI
 def detectar_emociones_negativas(mensaje):
     prompt = (
-        "Detectá exclusivamente manifestaciones emocionales de malestar clínico o estados afectivos negativos implícitos en el siguiente mensaje. "
-        "Devolvé una lista separada por comas con los términos detectados, sin explicaciones ni texto adicional. "
-        "Si el mensaje resulta ambiguo, asigná la emoción negativa más próxima desde una perspectiva clínica, en lugar de devolver 'indeterminado'."
-        
-                
-        "Ejemplos de emociones negativas y estados emocionales:\n"
-        "- Tristeza, desesperanza, desolación, impotencia, culpa, vergüenza, frustración, ansiedad, miedo, desamparo, agotamiento.\n"
-        "- Expresiones compuestas: 'sensación de abandono', 'temor al rechazo', 'desgaste emocional', 'apatía profunda'.\n\n"
-        
-        "Reglas de detección:\n"
-        "- **Si la emoción es una frase compuesta,** como 'desgaste emocional' o 'tristeza profunda', devuélvela completa.\n"
-        "- **Si hay múltiples emociones en el mensaje,** devuélvelas separadas por comas.\n"
-        "- **Si no hay emociones negativas claras,** devuelve 'ninguna'.\n\n"
-    
+        "Analizá el siguiente mensaje desde una perspectiva clínica y detectá exclusivamente emociones negativas o estados afectivos vinculados a malestar psicológico. "
+        "Tu tarea es identificar manifestaciones emocionales que indiquen sufrimiento, alteración afectiva o malestar clínico.\n\n"
+
+        "Indicaciones:\n"
+        "- Devolvé una lista separada por comas, sin explicaciones ni texto adicional.\n"
+        "- Si hay ambigüedad, asigná la emoción negativa más cercana desde el punto de vista clínico.\n"
+        "- Si hay múltiples emociones, incluilas todas separadas por comas.\n"
+        "- Si no se detectan emociones negativas, devolvé únicamente: ninguna.\n\n"
+
+        "Ejemplos clínicamente válidos:\n"
+        "- Emociones simples: tristeza, ansiedad, culpa, vergüenza, impotencia, miedo, irritabilidad, angustia.\n"
+        "- Estados complejos: vacío emocional, desgaste emocional, desesperanza, sensación de abandono, temor al rechazo, apatía profunda.\n\n"
+
         f"Mensaje: {mensaje}"
     )
 
@@ -180,16 +179,13 @@ def detectar_emociones_negativas(mensaje):
         )
         emociones = response.choices[0].message.get("content", "").strip().lower()
 
-        # Mostrar resultado de OpenAI para depuración
         print("\n===== DEPURACIÓN - DETECCIÓN DE EMOCIONES =====")
         print(f"Mensaje analizado: {mensaje}")
         print(f"Respuesta de OpenAI: {emociones}")
 
-        # Limpiar el formato de la respuesta
         emociones = emociones.replace("emociones negativas detectadas:", "").strip()
         emociones = [emocion.strip() for emocion in emociones.split(",") if emocion.strip()]
 
-        # Si OpenAI devuelve "ninguna", retornamos una lista vacía
         if "ninguna" in emociones:
             print("No se detectaron emociones negativas.\n")
             return []
