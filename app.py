@@ -1408,7 +1408,21 @@ async def asistente(input_data: UserInput):
             "No brindes enlaces ni respondas sobre temas financieros, legales ni técnicos. "
             "Referite al profesional como 'el Lic. Bustamante'. Solo proporcioná su número de contacto si el usuario lo solicita explícitamente o si ya transcurrieron al menos 5 interacciones."
         )
+
+        # Obtener respuesta de OpenAI
+        respuesta_original = generar_respuesta_con_openai(prompt)
         
+        # Validación previa
+        if not respuesta_original:
+            respuesta_ai = (
+                "Lo siento, hubo un inconveniente al generar una respuesta automática. Podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+            )
+            registrar_auditoria_respuesta(user_id, "Error al generar respuesta", respuesta_ai, "Error: OpenAI devolvió respuesta vacía")
+            return {"respuesta": respuesta_ai}
+        
+        respuesta_ai = respuesta_original  # Copia editable
+        motivo = None
+
         # 🔍 Filtro para lenguaje institucional
         palabras_prohibidas = ["nosotros", "nuestro equipo", "nuestra institución", "desde nuestra", "trabajamos en conjunto"]
         if any(palabra in respuesta_ai.lower() for palabra in palabras_prohibidas):
