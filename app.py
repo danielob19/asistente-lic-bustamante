@@ -1290,63 +1290,34 @@ async def asistente(input_data: UserInput):
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
         
-        # Evaluación de emociones y descripción del malestar emocional predominante en la interacción 5 y 9
+        # Evaluación clínica en la interacción 5 y 9
         if contador in [5, 9]:
-            emociones_detectadas = detectar_emociones_negativas(" ".join(session["mensajes"]))
+            respuesta = generar_resumen_clinico_y_estado(session, contador)
+            return {"respuesta": respuesta}
         
-            # Evitar duplicados
-            nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
-            session["emociones_detectadas"].extend(nuevas_emociones)
-        
-            # 🔍 DEPURACIÓN: Mostrar emociones detectadas
-            print("\n===== DEPURACIÓN - INTERACCIÓN 5 o 9 =====")
-            print(f"Interacción: {contador}")
-            print(f"Mensaje del usuario: {mensaje_usuario}")
-            print(f"Emociones detectadas en esta interacción: {emociones_detectadas}")
-            print(f"Emociones acumuladas hasta ahora: {session['emociones_detectadas']}")
-        
-            # Buscar coincidencias en base de datos
-            coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
-        
-            print(f"Coincidencias encontradas en la BD: {coincidencias_sintomas}")
-        
-            if len(coincidencias_sintomas) >= 2:
-                cuadro_predominante = Counter(coincidencias_sintomas).most_common(1)[0][0]
-            else:
-                cuadro_predominante = "No se pudo establecer con certeza un estado emocional predominante."
-        
-            print(f"Malestar emocional predominante: {cuadro_predominante}")
-            print("========================================\n")
-        
-            # Preparar respuesta con las palabras exactas del usuario
-            emociones_literal = ", ".join(set(session["emociones_detectadas"][:3]))  # limitar a 3 si hay muchas
-        
-            respuesta = (
-                f"Con base a lo que has descripto —{emociones_literal}—, "
-                f"pareciera ser que el malestar emocional predominante es: {cuadro_predominante}. "
-                f"Te sugiero considerar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp +54 911 3310-1186 para una evaluación más detallada."
-            )
-        
-            if contador == 9:
-                respuesta += (
-                    " Además, he encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
+        # Interacción 10: cierre profesional definitivo
+        if contador == 10:
+            return {
+                "respuesta": (
+                    "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
                     "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
                     "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
                 )
-        
-            session["mensajes"].clear()
-            return {"respuesta": respuesta}
-        
-        # 🔹 A partir de la interacción 10, solo recomendar la consulta profesional
-        if contador >= 10:
-            respuestas_repetitivas = [
-                "Te sugiero contactar al Lic. Daniel O. Bustamante al WhatsApp: +54 911 3310-1186 para recibir ayuda profesional.",
-                "Para obtener una evaluación más detallada, te recomiendo contactar al Lic. Bustamante en WhatsApp: +54 911 3310-1186.",
-                "No puedo continuar con esta conversación, pero el Lic. Bustamante puede ayudarte. Contáctalo en WhatsApp: +54 911 3310-1186.",
-                "Es importante que recibas ayuda profesional. El Lic. Bustamante está disponible en WhatsApp: +54 911 3310-1186."
-            ]
-            return {"respuesta": random.choice(respuestas_repetitivas)}
+            }
+
+        # Interacción 11 en adelante: cierre reiterado profesional
+        if contador >= 11:
+            print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
             
+            respuestas_cierre_definitivo = [
+                "Como mencioné anteriormente, no puedo continuar con esta conversación. Te sugiero que consultes con el Lic. Bustamante escribiéndole al WhatsApp +54 911 3310-1186.",
+                "Ya he concluido el análisis posible en este espacio. Para una evaluación más profunda, contactá al Lic. Bustamante al WhatsApp +54 911 3310-1186.",
+                "Lamentablemente, no puedo brindarte más información por este medio. Para avanzar, te recomiendo comunicarte con el Lic. Bustamante vía WhatsApp al +54 911 3310-1186.",
+                "Recordá que para profundizar en tu situación, lo ideal es que consultes directamente con un profesional. El Lic. Bustamante puede ayudarte: WhatsApp +54 911 3310-1186.",
+                "Este canal ya ha alcanzado su límite de análisis. Si necesitás continuar, podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+            ]
+            return {"respuesta": random.choice(respuestas_cierre_definitivo)}
+        
 
         # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
         preguntas_cobertura = [
