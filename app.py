@@ -761,7 +761,7 @@ def obtener_coincidencias_sintomas_y_registrar(emociones):
         conn.close()
 
         # Ahora clasificamos los síntomas que se registraron sin estado emocional
-        clasificar_sintomas_sin_cuadro()
+        actualizar_sintomas_sin_estado_emocional()
 
         return estados_emocionales if estados_emocionales else []
 
