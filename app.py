@@ -643,10 +643,12 @@ def analizar_texto(mensajes_usuario):
     if len(coincidencias) < 2:
         texto_usuario = " ".join(mensajes_usuario)
         prompt = (
-            f"Analiza el siguiente mensaje y detecta emociones o patrones de conducta humanos implícitos:\n\n"
+            f"Detectá emociones negativas o patrones emocionales con implicancia clínica en el siguiente texto del usuario:\n\n"
             f"{texto_usuario}\n\n"
-            "Responde con una lista de emociones o patrones de conducta separados por comas."
+            "Identificá únicamente términos emocionalmente relevantes (individuales o compuestos), separados por comas, sin explicaciones adicionales.\n\n"
+            "Si el contenido no incluye ningún elemento clínico relevante, respondé únicamente con 'ninguna'."
         )
+
         try:
             emociones_detectadas = generar_respuesta_con_openai(prompt).split(",")
             emociones_detectadas = [
