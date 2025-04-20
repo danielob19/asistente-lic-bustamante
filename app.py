@@ -312,68 +312,65 @@ def init_db():
         print(f"Error al inicializar la base de datos: {e}")
 
 # Registrar un síntoma con cuadro clínico asignado por OpenAI si no se proporciona
-def registrar_sintoma(sintoma: str, cuadro_clinico: str = None):
+def registrar_sintoma(sintoma: str, estado_emocional: str = None):
     """
-    Inserta un nuevo síntoma en la base de datos PostgreSQL si no existe.
-    Si no se proporciona un cuadro clínico, OpenAI lo asignará automáticamente.
+    Registra un síntoma en la base de datos con su estado emocional.
+    Si no se proporciona un estado, lo clasifica automáticamente con OpenAI.
     """
 
-    # Si no se proporciona un cuadro clínico, usar OpenAI para asignarlo
-    if cuadro_clinico is None or not cuadro_clinico.strip():
+    # Si no se proporciona un estado emocional, usar OpenAI para asignarlo
+    if not estado_emocional or not estado_emocional.strip():
         try:
-            prompt_cuadro = (
-                f"Asigna un cuadro clínico adecuado a la siguiente emoción o síntoma: '{sintoma}'.\n\n"
-                "Seleccioná un cuadro clínico con base en categorías psicológicas reconocidas, como trastornos, síndromes o patrones emocionales clínicamente relevantes.\n\n"
-                "Si la emoción no se corresponde con ningún cuadro clínico específico, asigná 'Patrón emocional detectado'.\n\n"
-                "No respondas con frases explicativas ni texto adicional. Devuelve exclusivamente el nombre del cuadro clínico.\n\n"
+            prompt = (
+                f"Asigna un estado emocional clínicamente relevante a la siguiente emoción o síntoma: '{sintoma}'.\n\n"
+                "Seleccioná un estado con base en categorías clínicas como trastornos, síndromes o patrones emocionales reconocidos.\n\n"
+                "Si no corresponde a ninguno en particular, clasificá como 'Patrón emocional detectado'.\n\n"
+                "Respondé exclusivamente con el nombre del estado, sin explicaciones.\n\n"
                 "Ejemplos válidos:\n"
                 "- Trastorno de ansiedad\n"
-                "- Depresión mayor\n"
+                "- Cuadro de depresión\n"
                 "- Estrés postraumático\n"
-                "- Trastorno de pánico\n"
                 "- Baja autoestima\n"
                 "- Desgaste emocional\n"
+                "- Sentimientos de inutilidad\n"
                 "- Trastorno de impulsividad\n"
                 "- Insomnio crónico\n"
-                "- Sentimientos de aislamiento\n"
                 "- Patrón emocional detectado"
             )
-            
 
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt_cuadro}],
+                model="gpt-4",
+                messages=[{"role": "user", "content": prompt}],
                 max_tokens=50,
-                temperature=0.0
+                temperature=0
             )
 
-            cuadro_clinico = response.choices[0].message['content'].strip()
+            estado_emocional = response.choices[0].message["content"].strip()
 
-            # Verificar si OpenAI devolvió un cuadro válido
-            if not cuadro_clinico:
-                print(f"⚠️ OpenAI devolvió un cuadro vacío para '{sintoma}'. Se usará 'Patrón emocional detectado'.")
-                cuadro_clinico = "Patrón emocional detectado"
+            if not estado_emocional:
+                print(f"⚠️ OpenAI devolvió vacío. Se asignará 'Patrón emocional detectado' para '{sintoma}'.")
+                estado_emocional = "Patrón emocional detectado"
 
-            print(f"🆕 OpenAI asignó el cuadro clínico: {cuadro_clinico} para la emoción '{sintoma}'.")
+            print(f"🧠 OpenAI asignó el estado emocional: {estado_emocional} para '{sintoma}'.")
 
         except Exception as e:
-            print(f"⚠️ Error al obtener cuadro clínico de OpenAI para '{sintoma}': {e}")
-            cuadro_clinico = "Patrón emocional detectado"  # Fallback en caso de error
+            print(f"❌ Error al clasificar '{sintoma}' con OpenAI: {e}")
+            estado_emocional = "Patrón emocional detectado"
 
-    # Insertar el síntoma con el cuadro clínico en la base de datos
+    # Insertar o actualizar en la base de datos
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO palabras_clave (sintoma, cuadro) 
+            INSERT INTO palabras_clave (sintoma, estado_emocional)
             VALUES (%s, %s)
-            ON CONFLICT (sintoma) DO UPDATE SET cuadro = EXCLUDED.cuadro;
-        """, (sintoma.strip().lower(), cuadro_clinico))
+            ON CONFLICT (sintoma) DO UPDATE SET estado_emocional = EXCLUDED.estado_emocional;
+        """, (sintoma.strip().lower(), estado_emocional))
         conn.commit()
         conn.close()
-        print(f"✅ Síntoma '{sintoma}' registrado con cuadro '{cuadro_clinico}'.")
+        print(f"✅ Síntoma '{sintoma}' registrado con estado emocional '{estado_emocional}'.")
     except Exception as e:
-        print(f"❌ Error al registrar síntoma '{sintoma}' en la base de datos: {e}")
+        print(f"❌ Error al registrar síntoma '{sintoma}' en la base: {e}")
 
 
 # Registrar una emoción detectada en la base de datos
@@ -807,34 +804,29 @@ def obtener_combinaciones_no_registradas(dias=7):
 
 def clasificar_sintomas_sin_cuadro():
     """
-    Busca síntomas en la base de datos sin un cuadro clínico asignado,
+    Busca síntomas en la base de datos sin un estado emocional asignado,
     los clasifica con OpenAI y los actualiza en la base de datos.
     """
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
 
-        # Obtener síntomas sin cuadro asignado
-        cursor.execute("SELECT sintoma FROM palabras_clave WHERE cuadro IS NULL;")
-        sintomas_sin_cuadro = [row[0] for row in cursor.fetchall()]
+        cursor.execute("SELECT sintoma FROM palabras_clave WHERE estado_emocional IS NULL;")
+        sintomas_sin_estado = [row[0] for row in cursor.fetchall()]
         conn.close()
 
-        if not sintomas_sin_cuadro:
+        if not sintomas_sin_estado:
             print("✅ No hay síntomas pendientes de clasificación.")
             return
 
-        print(f"🔍 Clasificando {len(sintomas_sin_cuadro)} síntomas sin cuadro asignado...")
-
-        for sintoma in sintomas_sin_cuadro:
-            # Clasificar síntoma con OpenAI
+        for sintoma in sintomas_sin_estado:
             prompt = (
-                f"Asigná un cuadro clínico apropiado al siguiente síntoma: '{sintoma}'.\n\n"
-                "Seleccioná un cuadro psicológico reconocido, como por ejemplo: Trastorno de ansiedad, Depresión mayor, Estrés postraumático, "
+                f"Asigná un estado emocional clínico apropiado al siguiente síntoma: '{sintoma}'.\n\n"
+                "Seleccioná un estado emocional reconocido, como por ejemplo: Trastorno de ansiedad, Depresión mayor, Estrés postraumático, "
                 "Trastorno de pánico, Anhedonia, Baja autoestima, etc.\n\n"
                 "Si no corresponde a ninguno de estos, clasificá el síntoma como 'Patrón emocional detectado'.\n"
-                "No incluyas explicaciones ni texto adicional. Respondé exclusivamente con el nombre del cuadro clínico."
+                "No incluyas explicaciones ni texto adicional. Respondé exclusivamente con el nombre del estado emocional."
             )
-
             try:
                 respuesta = openai.ChatCompletion.create(
                     model="gpt-4",
@@ -842,18 +834,13 @@ def clasificar_sintomas_sin_cuadro():
                     max_tokens=50,
                     temperature=0.0
                 )
-
-                cuadro_clinico = respuesta["choices"][0]["message"]["content"].strip()
-                print(f"✅ Síntoma '{sintoma}' clasificado como '{cuadro_clinico}'.")
-
-                # Reutilizamos la función existente para registrar el síntoma con su cuadro clínico
-                registrar_sintoma(sintoma, cuadro_clinico)
-
+                estado_emocional = respuesta["choices"][0]["message"]["content"].strip()
+                registrar_sintoma(sintoma, estado_emocional)
             except Exception as e:
                 print(f"⚠️ Error al clasificar síntoma '{sintoma}': {e}")
-
     except Exception as e:
-        print(f"❌ Error al conectar con la base de datos para obtener síntomas sin cuadro: {e}")
+        print(f"❌ Error al conectar con la base de datos para obtener síntomas sin estado emocional: {e}")
+
 
 # Registrar similitud semántica detectada entre mensaje y pregunta frecuente
 def registrar_log_similitud(user_id: str, consulta: str, pregunta_faq: str, similitud: float):
