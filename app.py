@@ -856,46 +856,7 @@ def actualizar_sintomas_sin_estado_emocional():
 
     except Exception as e:
         print(f"❌ Error al conectar con la base de datos para actualizar estado_emocional: {e}")
-
-def clasificar_sintomas_sin_cuadro():
-    """
-    Busca síntomas en la base de datos sin un estado emocional asignado,
-    los clasifica con OpenAI y los actualiza en la base de datos.
-    """
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-
-        cursor.execute("SELECT sintoma FROM palabras_clave WHERE estado_emocional IS NULL;")
-        sintomas_sin_estado = [row[0] for row in cursor.fetchall()]
-        conn.close()
-
-        if not sintomas_sin_estado:
-            print("✅ No hay síntomas pendientes de clasificación.")
-            return
-
-        for sintoma in sintomas_sin_estado:
-            prompt = (
-                f"Asigná un estado emocional clínico apropiado al siguiente síntoma: '{sintoma}'.\n\n"
-                "Seleccioná un estado emocional reconocido, como por ejemplo: Trastorno de ansiedad, Depresión mayor, Estrés postraumático, "
-                "Trastorno de pánico, Anhedonia, Baja autoestima, etc.\n\n"
-                "Si no corresponde a ninguno de estos, clasificá el síntoma como 'Patrón emocional detectado'.\n"
-                "No incluyas explicaciones ni texto adicional. Respondé exclusivamente con el nombre del estado emocional."
-            )
-            try:
-                respuesta = openai.ChatCompletion.create(
-                    model="gpt-4",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=50,
-                    temperature=0.0
-                )
-                estado_emocional = respuesta["choices"][0]["message"]["content"].strip()
-                registrar_sintoma(sintoma, estado_emocional)
-            except Exception as e:
-                print(f"⚠️ Error al clasificar síntoma '{sintoma}': {e}")
-    except Exception as e:
-        print(f"❌ Error al conectar con la base de datos para obtener síntomas sin estado emocional: {e}")
-
+        
 
 # Registrar similitud semántica detectada entre mensaje y pregunta frecuente
 def registrar_log_similitud(user_id: str, consulta: str, pregunta_faq: str, similitud: float):
