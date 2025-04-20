@@ -730,9 +730,9 @@ def evitar_repeticion(respuesta, historial):
 
 def obtener_coincidencias_sintomas_y_registrar(emociones):
     """
-    Busca coincidencias de síntomas en la base de datos y devuelve una lista de cuadros clínicos relacionados.
+    Busca coincidencias de síntomas en la base de datos y devuelve una lista de estados emocionales relacionados.
     Si una emoción no tiene coincidencias exactas ni parciales, la registra en la base de datos para futura clasificación.
-    Luego, usa OpenAI para clasificar cualquier síntoma sin cuadro y lo actualiza en la base de datos.
+    Luego, usa OpenAI para clasificar cualquier síntoma sin estado emocional asignado y lo actualiza en la base de datos.
     """
     if not emociones:
         return []
@@ -745,28 +745,28 @@ def obtener_coincidencias_sintomas_y_registrar(emociones):
         print("Emociones detectadas:", emociones)
 
         # Buscar coincidencias exactas en la base de datos
-        consulta = "SELECT sintoma, cuadro FROM palabras_clave WHERE sintoma = ANY(%s)"
+        consulta = "SELECT sintoma, estado_emocional FROM palabras_clave WHERE sintoma = ANY(%s)"
         cursor.execute(consulta, (emociones,))
         resultados = cursor.fetchall()
 
-        cuadros_probables = [resultado[1] for resultado in resultados]
+        estados_emocionales = [resultado[1] for resultado in resultados]
         sintomas_existentes = [resultado[0] for resultado in resultados]
 
         print("Síntomas encontrados en la BD:", sintomas_existentes)
-        print("Cuadros clínicos encontrados:", cuadros_probables)
+        print("Estados emocionales encontrados:", estados_emocionales)
 
-        # Identificar emociones que no están en la base de datos y registrarlas sin cuadro clínico
+        # Identificar emociones que no están en la base de datos y registrarlas sin estado emocional
         emociones_nuevas = [emocion for emocion in emociones if emocion not in sintomas_existentes]
         for emocion in emociones_nuevas:
-            registrar_sintoma(emocion, None)  # Se registra sin cuadro clínico
+            registrar_sintoma(emocion, None)  # Se registra sin estado emocional
 
         conn.commit()
         conn.close()
 
-        # Ahora clasificamos los síntomas que se registraron sin cuadro clínico
+        # Ahora clasificamos los síntomas que se registraron sin estado emocional
         clasificar_sintomas_sin_cuadro()
 
-        return cuadros_probables if cuadros_probables else []
+        return estados_emocionales if estados_emocionales else []
 
     except Exception as e:
         print(f"❌ Error al obtener coincidencias de síntomas o registrar nuevos síntomas: {e}")
