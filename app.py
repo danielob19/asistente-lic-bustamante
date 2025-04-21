@@ -1038,30 +1038,15 @@ async def asistente(input_data: UserInput):
 
         # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
         if mensaje_usuario in ["no sé", "ninguna", "ni la menor idea"]:
-            # Verificar si ya se alcanzaron suficientes interacciones para un análisis
             if session["contador_interacciones"] >= 9 or session["mensajes"]:
-                cuadro_probable = obtener_cuadro_probable(session.get("emociones_detectadas", []))
-                emociones_todas = ", ".join(set(session.get("emociones_detectadas", [])[:3]))  # Limitar a 3 emociones
-
-                if not cuadro_probable or cuadro_probable == "no identificado":
-                    return {
-                        "respuesta": (
-                            "Entiendo que no tengas una respuesta clara en este momento. Si sientes que necesitas más ayuda, "
-                            "puedes comunicarte con el Lic. Daniel O. Bustamante al WhatsApp +54 911 3310-1186. Estoy aquí si quieres seguir conversando."
-                        )
-                    }
+                respuesta_clinica = generar_resumen_clinico_y_estado(session, contador)
                 return {
                     "respuesta": (
-                        f"Si bien encuentro muy interesante nuestra conversación, debo concluirla. No obstante, en base a los síntomas "
-                        f"detectados, el malestar emocional predominante es: {cuadro_probable}. Además, notamos emociones como {emociones_todas}. "
-                        f"Te recomiendo contactar al Lic. Daniel O. Bustamante escribiendo al WhatsApp +54 911 3310-1186 para una evaluación "
-                        f"más detallada. Un saludo."
+                        f"{respuesta_clinica} En caso de que lo desees, podés contactar al Lic. Daniel O. Bustamante escribiéndole al WhatsApp +54 911 3310-1186."
                     )
                 }
-
-            # Si no hay un análisis previo, responder de manera neutral
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
-
+        
         # Respuesta específica para saludos simples
         if mensaje_usuario in ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]:
             return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
