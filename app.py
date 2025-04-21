@@ -835,6 +835,23 @@ def obtener_coincidencias_sintomas_y_registrar(emociones):
         print(f"❌ Error al obtener coincidencias de síntomas o registrar nuevos síntomas: {e}")
         return []
 
+def obtener_emociones_ya_registradas(user_id, interaccion_id):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT emocion FROM emociones_detectadas
+            WHERE user_id = %s AND interaccion = %s
+        """, (user_id, f"interacción {interaccion_id}"))
+        resultados = cur.fetchall()
+        emociones = [r[0].lower().strip() for r in resultados]
+        cur.close()
+        conn.close()
+        return emociones
+    except Exception as e:
+        print(f"❌ Error al obtener emociones ya registradas en la BD: {e}")
+        return []
+
 def obtener_combinaciones_no_registradas(dias=7):
     """
     Devuelve una lista de combinaciones emocionales detectadas por el bot pero que aún no tienen frase registrada.
