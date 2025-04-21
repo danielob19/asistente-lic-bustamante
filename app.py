@@ -867,18 +867,32 @@ def obtener_combinaciones_no_registradas(dias=7):
         print(f"❌ Error al obtener combinaciones no registradas: {e}")
         return []
 
-# Registrar similitud semántica detectada entre mensaje y pregunta frecuente
+# ===================== REGISTRO DE SIMILITUD SEMÁNTICA =====================
+
 def registrar_log_similitud(user_id: str, consulta: str, pregunta_faq: str, similitud: float):
+    """
+    Registra en la base de datos la similitud semántica detectada entre una consulta del usuario
+    y una de las preguntas frecuentes, junto con su score.
+    """
     try:
+        print("\n======= 📌 REGISTRO DE SIMILITUD SEMÁNTICA =======")
+        print(f"👤 user_id: {user_id}")
+        print(f"🗨️ Consulta: {consulta}")
+        print(f"❓ Pregunta FAQ: {pregunta_faq}")
+        print(f"📏 Score de similitud: {similitud:.4f}")
+
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
+
         cursor.execute("""
             INSERT INTO faq_similitud_logs (user_id, consulta, pregunta_faq, similitud)
             VALUES (%s, %s, %s, %s);
-        """, (user_id, consulta, pregunta_faq, float(similitud)))  # ✅ Conversión segura
+        """, (user_id, consulta, pregunta_faq, float(similitud)))
+
         conn.commit()
         conn.close()
-        print(f"📌 Registro de similitud guardado: {similitud:.3f} para pregunta '{pregunta_faq}'")
+        print("✅ Similitud registrada correctamente.\n")
+
     except Exception as e:
         print(f"❌ Error al registrar log de similitud: {e}")
 
