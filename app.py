@@ -1317,6 +1317,13 @@ async def asistente(input_data: UserInput):
 
         # Evaluación clínica en la interacción 5 y 9
         if contador in [5, 9]:
+            # Verificar si ya se registraron estas emociones en la base para esta interacción
+            emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
+        
+            for emocion in session["emociones_detectadas"]:
+                if emocion not in emociones_registradas_bd:
+                    registrar_emocion(emocion, f"interacción {contador}")
+        
             respuesta = generar_resumen_clinico_y_estado(session, contador)
             return {"respuesta": respuesta}
         
