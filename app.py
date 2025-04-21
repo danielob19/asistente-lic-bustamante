@@ -1199,7 +1199,8 @@ async def asistente(input_data: UserInput):
         frases_omitir_emociones = [
             "solo quería saber eso", "solo eso", "nada más", "ok", "está bien", "me quedó claro", "ya entendí",
             "era solo una duda", "era curiosidad", "gracias", "me lo guardo", "te consultaba por otra persona",
-            "me interesaba saber", "después veo", "lo consulto luego", "más adelante veo"
+            "me interesaba saber", "después veo", "lo consulto luego", "más adelante veo", "ah ok", "claro", "entiendo",
+            "sí, claro", "sí gracias", "ya está", "de acuerdo", "lo veo después", "nada en particular", "todo bien", "sí"
         ]
         
         if any(frase in mensaje_usuario for frase in frases_omitir_emociones):
