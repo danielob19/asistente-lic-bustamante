@@ -1292,22 +1292,15 @@ async def asistente(input_data: UserInput):
         nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
         session["emociones_detectadas"].extend(nuevas_emociones)
         
-        # ✅ Registrar en la base de datos solo si no se registraron aún en la interacción actual
+        # ✅ Registrar emociones en la base solo si aún no están registradas en esta interacción
         emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
         
         for emocion in session["emociones_detectadas"]:
             if emocion not in emociones_registradas_bd:
                 registrar_emocion(emocion, f"interacción {contador}")
         
-        # Evaluación clínica en la interacción 5 y 9
+        # ✅ En la interacción 5 y 9, generar resumen clínico y estado emocional predominante
         if contador in [5, 9]:
-            # Verificar si ya se registraron estas emociones en la base para esta interacción
-            emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
-        
-            for emocion in session["emociones_detectadas"]:
-                if emocion not in emociones_registradas_bd:
-                    registrar_emocion(emocion, f"interacción {contador}")
-        
             respuesta = generar_resumen_clinico_y_estado(session, contador)
             return {"respuesta": respuesta}
         
