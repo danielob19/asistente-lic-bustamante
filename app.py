@@ -1292,11 +1292,6 @@ async def asistente(input_data: UserInput):
         nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
         session["emociones_detectadas"].extend(nuevas_emociones)
         
-        # ✅ Agregar solo emociones nuevas a la sesión (si aún no están)
-        for emocion in emociones_detectadas:
-            if emocion not in session["emociones_detectadas"]:
-                session["emociones_detectadas"].append(emocion)
-        
         # ✅ Registrar en la base de datos solo si no se registraron aún en la interacción actual
         emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
         
