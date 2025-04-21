@@ -1291,30 +1291,18 @@ async def asistente(input_data: UserInput):
         nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
         session["emociones_detectadas"].extend(nuevas_emociones)
         
-        # 💬 Disparador emocional si hay una sola emoción clara
-        if len(emociones_detectadas) == 1:
-            disparador = generar_disparador_emocional(emociones_detectadas[0])
-            if disparador:
-                return {"respuesta": disparador}
-
-        # 💬 Disparador emocional si hay una combinación clínica significativa de dos emociones
-        if len(emociones_detectadas) == 2:
-            emocion_1 = emociones_detectadas[0]
-            emocion_2 = emociones_detectadas[1]
+        # ✅ Agregar solo emociones nuevas a la sesión (si aún no están)
+        for emocion in emociones_detectadas:
+            if emocion not in session["emociones_detectadas"]:
+                session["emociones_detectadas"].append(emocion)
         
-            disparador_doble = gestionar_combinacion_emocional(emocion_1, emocion_2)
+        # ✅ Registrar en la base de datos solo si no se registraron aún en la interacción actual
+        emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
         
-            if disparador_doble:
-                return {"respuesta": disparador_doble}
-            else:
-                # Frase clínica genérica si la combinación no existe aún
-                return {
-                    "respuesta": (
-                        f"A veces, cuando sentimos tanto al mismo tiempo —como {emocion_1} y {emocion_2}—, "
-                        "puede resultar difícil saber por dónde empezar. Lo importante es que lo estás intentando. Podés seguir contándome."
-                    )
-                }
-
+        for emocion in session["emociones_detectadas"]:
+            if emocion not in emociones_registradas_bd:
+                registrar_emocion(emocion, f"interacción {contador}")
+        
         # Evaluación clínica en la interacción 5 y 9
         if contador in [5, 9]:
             # Verificar si ya se registraron estas emociones en la base para esta interacción
