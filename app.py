@@ -1178,8 +1178,17 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        # 🔍 Asegurar que la lista de emociones está actualizada solo si el mensaje no está en la lista de exclusión
-        emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
+        # ❌ Evitar análisis emocional si el mensaje es irrelevante
+        frases_omitir_emociones = [
+            "solo quería saber eso", "solo eso", "nada más", "ok", "está bien", "me quedó claro", "ya entendí",
+            "era solo una duda", "era curiosidad", "gracias", "me lo guardo", "te consultaba por otra persona",
+            "me interesaba saber", "después veo", "lo consulto luego", "más adelante veo"
+        ]
+        
+        if any(frase in mensaje_usuario for frase in frases_omitir_emociones):
+            emociones_detectadas = []
+        else:
+            emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
         
         if not isinstance(emociones_detectadas, list):
             emociones_detectadas = []
