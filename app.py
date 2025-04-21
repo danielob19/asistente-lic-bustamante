@@ -447,36 +447,43 @@ def obtener_sintomas_existentes():
         print(f"❌ Error al obtener síntomas existentes: {e}")
         return set()
 
-# Registrar una emoción detectada en la base de datos
+# ===================== REGISTRO DE EMOCIONES DETECTADAS =====================
+
 def registrar_emocion(emocion: str, contexto: str):
     """
     Registra una emoción detectada en la base de datos PostgreSQL.
     Evita insertar duplicados y actualiza el contexto si ya existe.
     """
     try:
-        print("\n===== DEPURACIÓN - REGISTRO DE EMOCIÓN =====")
-        print(f"Intentando registrar emoción: {emocion} | Contexto: {contexto}")
+        print("\n======= 📌 REGISTRO DE EMOCIÓN DETECTADA =======")
+        print(f"🧠 Emoción detectada: {emocion}")
+        print(f"🧾 Contexto asociado: {contexto}")
 
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                # Verificar si la emoción ya existe en la base de datos
-                cursor.execute("SELECT contexto FROM emociones_detectadas WHERE emocion = %s;", (emocion.strip().lower(),))
+                cursor.execute(
+                    "SELECT contexto FROM emociones_detectadas WHERE emocion = %s;",
+                    (emocion.strip().lower(),)
+                )
                 resultado = cursor.fetchone()
 
                 if resultado:
-                    # Si la emoción ya existe, actualizar el contexto
                     nuevo_contexto = f"{resultado[0]}; {contexto.strip()}"
-                    cursor.execute("UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s;", 
-                                   (nuevo_contexto, emocion.strip().lower()))
-                    print(f"✅ Emoción '{emocion}' ya existe. Contexto actualizado.")
+                    cursor.execute(
+                        "UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s;",
+                        (nuevo_contexto, emocion.strip().lower())
+                    )
+                    print("🔄 Emoción existente. Contexto actualizado.")
                 else:
-                    # Si la emoción no existe, insertarla
-                    cursor.execute("INSERT INTO emociones_detectadas (emocion, contexto) VALUES (%s, %s);", 
-                                   (emocion.strip().lower(), contexto.strip()))
-                    print(f"✅ Nueva emoción '{emocion}' registrada en la base de datos.")
+                    cursor.execute(
+                        "INSERT INTO emociones_detectadas (emocion, contexto) VALUES (%s, %s);",
+                        (emocion.strip().lower(), contexto.strip())
+                    )
+                    print("🆕 Nueva emoción registrada exitosamente.")
 
                 conn.commit()
-        print("========================================\n")
+
+        print("===============================================\n")
 
     except Exception as e:
         print(f"❌ Error al registrar emoción '{emocion}': {e}")
