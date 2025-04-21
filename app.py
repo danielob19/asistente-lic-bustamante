@@ -1497,7 +1497,7 @@ async def asistente(input_data: UserInput):
         else:
             registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai)
 
-        # Registrar respuesta generada por OpenAI
+        # Usar el ID de interacción previamente registrado para guardar la respuesta
         registrar_respuesta_openai(interaccion_id, respuesta_ai)
         
         return {"respuesta": respuesta_ai}
