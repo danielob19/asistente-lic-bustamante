@@ -1297,12 +1297,6 @@ async def asistente(input_data: UserInput):
                         "puede resultar difícil saber por dónde empezar. Lo importante es que lo estás intentando. Podés seguir contándome."
                     )
                 }
-                                    
-        # Ya fueron registradas en la base de datos solo las emociones nuevas
-        # Solo las agregamos a la sesión (evitando duplicados)
-        for emocion in emociones_detectadas:
-            if emocion not in session["emociones_detectadas"]:
-                session["emociones_detectadas"].append(emocion)
 
         # Evaluación clínica en la interacción 5 y 9
         if contador in [5, 9]:
