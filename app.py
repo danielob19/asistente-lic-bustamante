@@ -1311,8 +1311,9 @@ async def asistente(input_data: UserInput):
                     )
                 }
                                     
-        # Agregar emociones a la sesión sin causar errores
-        session["emociones_detectadas"].extend(emociones_detectadas)
+        # ✅ Evita duplicaciones al agregar nuevas emociones a la sesión
+        nuevas_emociones_finales = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
+        session["emociones_detectadas"].extend(nuevas_emociones_finales)
 
         # Asegurar que todas las emociones actuales de la sesión queden registradas en la tabla emociones_detectadas
         for emocion in session["emociones_detectadas"]:
