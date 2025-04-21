@@ -984,7 +984,6 @@ async def asistente(input_data: UserInput):
         # Registrar interacción con mensaje original incluido
         interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
 
-
         # Inicializa la sesión del usuario si no existe
         if user_id not in user_sessions:
             user_sessions[user_id] = {
@@ -1495,7 +1494,6 @@ async def asistente(input_data: UserInput):
             registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai)
 
         # Registrar respuesta generada por OpenAI
-        interaccion_id = registrar_interaccion(user_id, mensaje_usuario)
         registrar_respuesta_openai(interaccion_id, respuesta_ai)
         
         return {"respuesta": respuesta_ai}
