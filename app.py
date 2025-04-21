@@ -1310,11 +1310,14 @@ async def asistente(input_data: UserInput):
                         "puede resultar difícil saber por dónde empezar. Lo importante es que lo estás intentando. Podés seguir contándome."
                     )
                 }
-        
-                                
+                                    
         # Agregar emociones a la sesión sin causar errores
         session["emociones_detectadas"].extend(emociones_detectadas)
-        
+
+        # Asegurar que todas las emociones actuales de la sesión queden registradas en la tabla emociones_detectadas
+        for emocion in session["emociones_detectadas"]:
+            registrar_emocion(emocion, f"interacción {contador}")
+
         # Evaluación clínica en la interacción 5 y 9
         if contador in [5, 9]:
             respuesta = generar_resumen_clinico_y_estado(session, contador)
