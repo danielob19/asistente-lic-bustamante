@@ -1265,13 +1265,6 @@ async def asistente(input_data: UserInput):
         nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
         session["emociones_detectadas"].extend(nuevas_emociones)
         
-        # 🔍 Verificar si la función recibe correctamente las emociones detectadas
-        if session["emociones_detectadas"]:
-            print(f"Registrando emociones en la BD: {session['emociones_detectadas']}")
-        
-            for emocion in session["emociones_detectadas"]:
-                registrar_emocion(emocion, f"interacción {session['contador_interacciones']}")
-
         # 💬 Disparador emocional si hay una sola emoción clara
         if len(emociones_detectadas) == 1:
             disparador = generar_disparador_emocional(emociones_detectadas[0])
