@@ -1094,6 +1094,15 @@ async def asistente(input_data: UserInput):
         contador = session["contador_interacciones"]
         session["mensajes"].append(mensaje_usuario)
 
+        # ⛔ Interrupción anticipada si ya se detectó input sospechoso
+        if session.get("input_sospechoso"):
+            return {
+                "respuesta": (
+                    "Recordá que este espacio está destinado a consultas clínicas. "
+                    "Si necesitás ayuda emocional, contámelo con claridad."
+                )
+            }
+
         # 👉 Nueva respuesta para la PRIMERA INTERACCIÓN
         if contador == 1:
             return {
