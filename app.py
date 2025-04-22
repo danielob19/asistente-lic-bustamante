@@ -1383,12 +1383,12 @@ async def asistente(input_data: UserInput):
             if emocion not in emociones_registradas_bd:
                 registrar_emocion(emocion, f"interacción {contador}")
         
-        # ✅ En la interacción 5 y 9, generar resumen clínico y estado emocional predominante
+        # ✅ Interacciones clave (5 y 9): resumen clínico con síntomas literales y estado emocional predominante
         if contador in [5, 9]:
             respuesta = generar_resumen_clinico_y_estado(session, contador)
             return {"respuesta": respuesta}
         
-        # Interacción 10: cierre profesional definitivo
+        # 🛑 Interacción 10: cierre profesional definitivo, sin posibilidad de continuar
         if contador == 10:
             return {
                 "respuesta": (
@@ -1397,20 +1397,15 @@ async def asistente(input_data: UserInput):
                     "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
                 )
             }
-
-        # Interacción 11 en adelante: cierre reiterado profesional
-        if contador >= 11:
-            print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
-            
-            respuestas_cierre_definitivo = [
-                "Como mencioné anteriormente, no puedo continuar con esta conversación. Te sugiero que consultes con el Lic. Bustamante escribiéndole al WhatsApp +54 911 3310-1186.",
-                "Ya he concluido el análisis posible en este espacio. Para una evaluación más profunda, contactá al Lic. Bustamante al WhatsApp +54 911 3310-1186.",
-                "Lamentablemente, no puedo brindarte más información por este medio. Para avanzar, te recomiendo comunicarte con el Lic. Bustamante vía WhatsApp al +54 911 3310-1186.",
-                "Recordá que para profundizar en tu situación, lo ideal es que consultes directamente con un profesional. El Lic. Bustamante puede ayudarte: WhatsApp +54 911 3310-1186.",
-                "Este canal ya ha alcanzado su límite de análisis. Si necesitás continuar, podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
-            ]
-            return {"respuesta": random.choice(respuestas_cierre_definitivo)}
         
+        # 🚫 Interacciones 11 en adelante: reiteración del cierre, por límites clínicos del canal
+        if contador >= 11:
+            return {
+                "respuesta": (
+                    "Este canal ha llegado al límite de interacción posible. Si necesitás continuar, podés escribirle al Lic. Bustamante "
+                    "al WhatsApp +54 9 11 3310-1186, que responderá a tus inquietudes por mensaje. No puede recibir llamadas."
+                )
+            }
 
         # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
         preguntas_cobertura = [
