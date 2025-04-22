@@ -1063,7 +1063,10 @@ async def asistente(input_data: UserInput):
                 }
         
         except Exception as e:
-            print(f"❌ Error en el análisis contextual con OpenAI: {e}")
+            print("🧠❌ OpenAI falló al clasificar input contextual.")
+            print(f"   🔹 Usuario ID: {user_id}")
+            print(f"   🔹 Input: {mensaje_usuario}")
+            print(f"   🔹 Error: {e}")
 
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
