@@ -1023,6 +1023,48 @@ async def asistente(input_data: UserInput):
         # 📋 Registro de auditoría del mensaje original y purificado
         registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario)
         
+        # 🧠 Detección contextual con OpenAI (segunda capa de blindaje)
+        try:
+            prompt_contextual = (
+                f"Analizá el siguiente mensaje y clasificalo según su intencionalidad:\n"
+                f"'{mensaje_usuario}'\n\n"
+                "Opciones posibles:\n"
+                "- CLÍNICO: si el mensaje describe emociones, estados anímicos, inquietudes personales o pedidos de orientación psicológica.\n"
+                "- TESTEO: si parece un intento de probar el sistema con frases sin valor clínico.\n"
+                "- MALICIOSO: si contiene lenguaje de programación, código, SQL, shell, o expresiones técnicas.\n"
+                "- IRRELEVANTE: si no tiene ningún contenido relacionado con una consulta emocional o psicológica.\n\n"
+                "Devolvé únicamente una de las cuatro etiquetas: CLÍNICO, TESTEO, MALICIOSO o IRRELEVANTE."
+            )
+        
+            response_contextual = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt_contextual}],
+                max_tokens=20,
+                temperature=0.0
+            )
+        
+            clasificacion = response_contextual.choices[0].message['content'].strip().upper()
+        
+            if clasificacion in ["TESTEO", "MALICIOSO", "IRRELEVANTE"]:
+                print("⚠️🧠 Input sospechoso detectado por OpenAI (contextual):")
+                print(f"   🔹 Usuario ID: {user_id}")
+                print(f"   🔹 Clasificación: {clasificacion}")
+                print(f"   🔹 Input: {mensaje_usuario}")
+                registrar_auditoria_input_original(
+                    user_id,
+                    mensaje_original,
+                    f"{mensaje_usuario} [⚠️ DETECTADO COMO INPUT {clasificacion} POR CONTEXTO]"
+                )
+                return {
+                    "respuesta": (
+                        "El sistema ha detectado que tu mensaje no parece formar parte de una consulta clínica. "
+                        "Si necesitás orientación emocional o psicológica, contámelo con tus propias palabras."
+                    )
+                }
+        
+        except Exception as e:
+            print(f"❌ Error en el análisis contextual con OpenAI: {e}")
+
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
         
