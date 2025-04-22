@@ -1080,8 +1080,9 @@ async def asistente(input_data: UserInput):
                 "contador_interacciones": 0,
                 "ultima_interaccion": time.time(),
                 "mensajes": [],
-                "emociones_detectadas": [], # Para almacenar emociones detectadas
-                "ultimas_respuestas": []
+                "emociones_detectadas": [],
+                "ultimas_respuestas": [],
+                "input_sospechoso": False  # 🆕 Bandera de intento no clínico o manipulación
             }
 
         # Actualiza la sesión del usuario
