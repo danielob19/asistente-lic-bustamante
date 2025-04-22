@@ -943,13 +943,13 @@ def registrar_auditoria_respuesta(user_id: str, respuesta_original: str, respues
 
 def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     """
-    Genera una respuesta clínica con base en emociones detectadas y síntomas coincidentes.
-    Se aplica en la interacción 5 y 9, devolviendo síntomas literales y estado emocional predominante.
+    Genera una respuesta clínica desinteresada con base en síntomas y estado emocional predominante.
+    Se aplica en las interacciones 5 y 9.
     """
     mensajes = session.get("mensajes", [])
     emociones_acumuladas = session.get("emociones_detectadas", [])
 
-    # Reanaliza todas las emociones en los mensajes para detectar nuevas
+    # Reanaliza los mensajes completos por nuevas emociones
     emociones_detectadas = detectar_emociones_negativas(" ".join(mensajes)) or []
     nuevas_emociones = [e for e in emociones_detectadas if e not in emociones_acumuladas]
     session["emociones_detectadas"].extend(nuevas_emociones)
@@ -957,23 +957,22 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     if not session["emociones_detectadas"]:
         print(f"⚠️ No se detectaron emociones al llegar a la interacción {contador}")
         return (
-            "No se identificaron emociones predominantes en este momento. "
-            "Te sugiero contactar al Lic. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más precisa."
+            "No se han identificado síntomas suficientes como para estimar un estado emocional predominante."
         )
 
-    coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
-    cuadro_predominante = (
-        Counter(coincidencias_sintomas).most_common(1)[0][0]
-        if len(coincidencias_sintomas) >= 2 else
-        "No se pudo establecer con certeza un estado emocional predominante."
-    )
+    sintomas_detectados = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
+    if len(sintomas_detectados) < 2:
+        return (
+            "No se han identificado síntomas suficientes como para estimar un estado emocional predominante."
+        )
 
-    emociones_literal = ", ".join(set(session["emociones_detectadas"][:3]))
+    estado_predominante = Counter(sintomas_detectados).most_common(1)[0][0]
+    resumen_sintomas = ", ".join(sintomas_detectados)
 
     respuesta = (
-        f"Con base a lo que has descripto —{emociones_literal}—, "
-        f"pareciera ser que el malestar emocional predominante es: {cuadro_predominante}. "
-        f"Te sugiero considerar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp +54 911 3310-1186 para una evaluación más detallada."
+        f"En base a lo que me comentás —{resumen_sintomas}—, "
+        f"pareciera tratarse de un estado anímico predominante: {estado_predominante}. "
+        f"¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
     )
 
     print(f"🧾 Resumen clínico generado correctamente en interacción {contador}")
