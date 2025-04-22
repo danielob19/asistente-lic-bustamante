@@ -989,6 +989,34 @@ async def asistente(input_data: UserInput):
         
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
+
+        # 🛡️ Etapa de blindaje contra inputs maliciosos
+        def es_input_malicioso(texto: str) -> bool:
+            patrones_maliciosos = [
+                r"(\bimport\b|\bos\b|\bsystem\b|\beval\b|\bexec\b|\bopenai\.api_key\b)",  # Código Python
+                r"(\bdrop\b|\bdelete\b|\binsert\b|\bupdate\b).*?\b(table|database)\b",     # SQL Injection
+                r"(--|#|;|//).*?(drop|delete|system|rm\s+-rf)",                             # Comentarios maliciosos
+                r"<script.*?>|</script>",                                                  # HTML/JS malicioso
+                r"\b(shutdown|reboot|rm\s+-rf|mkfs|chmod|chown)\b"                          # Shell commands peligrosos
+            ]
+            for patron in patrones_maliciosos:
+                if re.search(patron, texto, re.IGNORECASE):
+                    return True
+            return False
+        
+        if es_input_malicioso(mensaje_usuario):
+            print("⚠️🔒 Input malicioso detectado y bloqueado:")
+            print(f"   🔹 Usuario ID: {user_id}")
+            print(f"   🔹 Mensaje purificado: {mensaje_usuario}")
+            print(f"   🔹 Mensaje original: {mensaje_original}")
+            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario + " [⚠️ DETECTADO COMO INPUT MALICIOSO]")
+            return {
+                "respuesta": (
+                    "El sistema ha detectado que tu mensaje contiene elementos técnicos no compatibles con una consulta clínica. "
+                    "Si tenés una duda o problema de salud emocional, podés contarme con confianza."
+                )
+            }
+        
         print(f"🧼 Input purificado: {mensaje_usuario}")
         print(f"📝 Input original: {mensaje_original}")
 
