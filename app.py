@@ -1046,6 +1046,8 @@ async def asistente(input_data: UserInput):
             clasificacion = response_contextual.choices[0].message['content'].strip().upper()
         
             if clasificacion in ["TESTEO", "MALICIOSO", "IRRELEVANTE"]:
+                session = user_sessions[user_id]
+                session["input_sospechoso"] = True  # 🆕 Marcamos la sesión como sospechosa
                 print("⚠️🧠 Input sospechoso detectado por OpenAI (contextual):")
                 print(f"   🔹 Usuario ID: {user_id}")
                 print(f"   🔹 Clasificación: {clasificacion}")
