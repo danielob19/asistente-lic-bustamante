@@ -1176,16 +1176,7 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
         
-        # 🚨 Detectar si el mensaje contiene un síntoma clínicamente crítico
-        sintomas_criticos = {
-            "me quiero morir", "quiero morirme", "me quiero matar", 
-            "tengo pensamientos suicidas", "no quiero vivir más", 
-            "nada tiene sentido", "me siento vacío", "no duermo hace días",
-            "insomnio crónico", "me desmayo sin razón", "me tiembla el cuerpo", 
-            "lloro sin motivo", "no tengo razones para vivir"
-        }
-        
-        peligro_detectado = any(sc in mensaje_usuario for sc in sintomas_criticos)
+        peligro_detectado = evaluar_frases_de_peligro(mensaje_usuario)
         
         # 📋 Registrar la interacción con el flag atencion_peligro si corresponde
         interaccion_id = registrar_interaccion(
