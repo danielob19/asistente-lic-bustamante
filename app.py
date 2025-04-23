@@ -1506,19 +1506,9 @@ async def asistente(input_data: UserInput):
                     "Para coordinar una sesión y consultar los medios de pago disponibles, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
                 )
             }
-
-        
-        
+     
         # 🔹 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
-        prompt = (
-            f"El siguiente mensaje fue recibido: '{mensaje_usuario}'. "
-            "Redactá una respuesta breve y profesional como si fueras un asistente clínico del Lic. Daniel O. Bustamante, psicólogo. "
-            "El estilo debe ser clínico, objetivo y respetuoso. Evitá cualquier frase emocional, coloquial o empática simulada como 'te entiendo', 'es normal', 'tranquilo/a', 'lamentablemente', etc. "
-            "No generes contenido motivacional ni promesas de bienestar. No uses expresiones institucionales como 'nuestro equipo'. "
-            "Usá en cambio formulaciones profesionales como: 'Pareciera tratarse de...', 'Comprendo que refiere a...', 'Podría vincularse a...'. "
-            "No brindes enlaces ni respondas sobre temas financieros, legales ni técnicos. "
-            "Referite al profesional como 'el Lic. Bustamante'. Solo proporcioná su número de contacto si el usuario lo solicita explícitamente o si ya transcurrieron al menos 5 interacciones."
-        )
+        prompt = construir_prompt_intermedio(mensaje_usuario)
 
         # Obtener respuesta de OpenAI
         respuesta_original = generar_respuesta_con_openai(prompt)
