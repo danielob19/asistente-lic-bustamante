@@ -1090,7 +1090,7 @@ async def asistente(input_data: UserInput):
         mensaje_original = input_data.mensaje.strip()
         mensaje_usuario = mensaje_original.lower()
 
-        # 🤝 Adaptación humana contextual (responde si saludan, agradecen o se despiden)
+        # 🤝 Adaptación humana contextual con prioridad clínica
         mensaje_normalizado = mensaje_original.lower().strip()
         mensaje_sin_puntuacion = re.sub(r"[^\w\s]", "", mensaje_normalizado)
         
@@ -1101,18 +1101,23 @@ async def asistente(input_data: UserInput):
             "chau", "hasta luego", "nos vemos", "me voy", "adiós", "bye"
         }
         
-        # Saludos formales e informales que pueden estar al inicio
-        saludos_regex = r"^(hola|holi|holaaa|buenas|buen día|buenos días|buenas tardes|buenas noches|hello|ey|epa|qué onda|buenas buenas)\b"
+        # Síntomas o emociones potenciales comunes (puede expandirse)
+        indicadores_malestar = [
+            "vacío", "ansiedad", "miedo", "triste", "lloro", "no duermo", "no quiero vivir", "me cuesta respirar", "no valgo", "angustia", "culpa", "pánico", "no puedo más", "me quiero morir"
+        ]
         
-        if re.match(saludos_regex, mensaje_sin_puntuacion):
+        # Si el mensaje contiene malestar, se omite el saludo automático
+        if any(indicador in mensaje_sin_puntuacion for indicador in indicadores_malestar):
+            pass  # deja continuar hacia la purificación clínica y análisis emocional
+        
+        elif re.match(r"^(hola|holi|holaaa|buenas|buen día|buenos días|buenas tardes|buenas noches|hello|ey|epa|qué onda|buenas buenas)\b", mensaje_sin_puntuacion):
             return {"respuesta": "Hola. ¿En qué puedo ayudarte?"}
         
-        if mensaje_sin_puntuacion in agradecimientos_exacto:
+        elif mensaje_sin_puntuacion in agradecimientos_exacto:
             return {"respuesta": "De nada. Si necesitás algo más, acá estoy."}
         
-        if mensaje_sin_puntuacion in despedidas_exacto:
-            return {"respuesta": "Hasta luego. Que estés bien."}
-        
+        elif mensaje_sin_puntuacion in despedidas_exacto:
+            return {"respuesta": "Hasta luego. Que estés bien."}               
                 
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
