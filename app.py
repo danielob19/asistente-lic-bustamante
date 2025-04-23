@@ -210,6 +210,41 @@ def detectar_emociones_negativas(mensaje):
         print(f"❌ Error al detectar emociones negativas: {e}")
         return []
 
+def analizar_primer_input(mensaje_usuario: str) -> str:
+    """
+    Evalúa el primer mensaje del usuario y genera una presentación clínica adaptativa.
+    Si es saludo, responde cordial. Si es emocional, responde con foco clínico.
+    Si es ambiguo, pide aclaración con precisión.
+    """
+    saludos_temporales = {
+        "hola": "Hola",
+        "buen día": "Buen día",
+        "buenos días": "Buenos días",
+        "buenas tardes": "Buenas tardes",
+        "buenas noches": "Buenas noches"
+    }
+
+    saludo_detectado = next((resp for saludo, resp in saludos_temporales.items() if saludo in mensaje_usuario), None)
+
+    if saludo_detectado:
+        return f"{saludo_detectado}, soy el asistente virtual del Lic. Daniel O. Bustamante. ¿En qué le puedo ayudar?"
+
+    emociones = detectar_emociones_negativas(mensaje_usuario)
+
+    if emociones:
+        emociones_listadas = ", ".join(emociones[:3])
+        return (
+            f"Soy el asistente virtual del Lic. Daniel O. Bustamante. "
+            f"Por lo que decís, pareciera haber presencia de {emociones_listadas}. "
+            f"¿Querés contararme un poco más al respecto?"
+        )
+
+    segmento_confuso = mensaje_usuario[:80].strip(".!?").strip()
+    return (
+        f"Soy el asistente virtual del Lic. Daniel O. Bustamante. No te comprendo, ¿qué querés decirme con \"{segmento_confuso}\"? "
+        f"¿A qué te referís?"
+    )
+
 # Generar frase disparadora según emoción detectada
 def generar_disparador_emocional(emocion):
     disparadores = {
