@@ -956,7 +956,7 @@ def registrar_auditoria_respuesta(user_id: str, respuesta_original: str, respues
 
 def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     """
-    Genera una respuesta clínica desinteresada con base en síntomas y estado emocional predominante.
+    Genera una respuesta clínica desinteresada con base en síntomas literales y estado emocional predominante.
     Se aplica en las interacciones 5 y 9.
     """
     mensajes = session.get("mensajes", [])
@@ -973,14 +973,17 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
             "No se han identificado síntomas suficientes como para estimar un estado emocional predominante."
         )
 
-    sintomas_detectados = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
-    if len(sintomas_detectados) < 2:
+    # 1. Obtener el estado emocional predominante (cuadro clínico)
+    estados_emocionales = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
+    if len(estados_emocionales) < 2:
         return (
             "No se han identificado síntomas suficientes como para estimar un estado emocional predominante."
         )
+    estado_predominante = Counter(estados_emocionales).most_common(1)[0][0]
 
-    estado_predominante = Counter(sintomas_detectados).most_common(1)[0][0]
-    resumen_sintomas = ", ".join(sintomas_detectados)
+    # 2. Los síntomas literales son las emociones detectadas
+    sintomas_literales = session["emociones_detectadas"]
+    resumen_sintomas = ", ".join(sintomas_literales)
 
     respuesta = (
         f"En base a lo que me comentás —{resumen_sintomas}—, "
