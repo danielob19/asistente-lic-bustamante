@@ -1156,15 +1156,11 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        # 👉 Nueva respuesta para la PRIMERA INTERACCIÓN
+        # 👉 Primera interacción: presentación adaptativa profesional
         if contador == 1:
-            return {
-                "respuesta": (
-                    "¡Hola! Soy el asistente virtual del Lic. Daniel O. Bustamante y me encantaría saber en qué puedo ayudarte. "
-                    "Sentite libre de contarme lo que necesites."
-                )
-            }
-        
+            resultado = analizar_primer_input(mensaje_usuario)
+            return {"respuesta": resultado["respuesta"]}
+      
         # 🔍 Buscar coincidencia semántica en preguntas frecuentes
         resultado_semantico = buscar_respuesta_semantica_con_score(mensaje_usuario)
         if resultado_semantico:
