@@ -151,6 +151,19 @@ def generar_respuesta_con_openai(prompt):
         print(f"Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
+def construir_prompt_intermedio(mensaje_usuario: str) -> str:
+    return (
+        "Actuás como un asistente clínico con un estilo profesional, objetivo y sobrio. "
+        "Tu tarea es analizar el mensaje del usuario e identificar las emociones o síntomas expresados, "
+        "pero sin ofrecer diagnósticos ni recomendaciones. "
+        "Respondé de forma breve, clara, evitando cualquier tono institucional o condescendiente. "
+        "No uses fórmulas como 'estimado/a', ni sugieras contactar al profesional salvo que estés en la interacción 5 o 9. "
+        "Respondé con expresiones neutrales como 'Entiendo lo que mencionás', 'Tomé nota', '¿Querés contarme más?'. "
+        "Mantené un estilo clínico, directo y sin adornos.\n\n"
+        f"Usuario: {mensaje_usuario}\n"
+        "Asistente:"
+    )
+
 # Función para detectar emociones negativas usando OpenAI
 def detectar_emociones_negativas(mensaje):
     prompt = (
