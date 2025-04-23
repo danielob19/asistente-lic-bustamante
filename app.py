@@ -210,11 +210,11 @@ def detectar_emociones_negativas(mensaje):
         print(f"❌ Error al detectar emociones negativas: {e}")
         return []
 
-def analizar_primer_input(mensaje_usuario: str) -> str:
+def analizar_primer_input(mensaje_usuario: str) -> dict:
     """
-    Evalúa el primer mensaje del usuario y genera una presentación clínica adaptativa.
-    Si es saludo, responde cordial y profesional. Si es emocional, devuelve observación clínica inicial.
-    Si es ambiguo, solicita precisión.
+    Evalúa el primer mensaje del usuario y devuelve:
+    - una respuesta profesional adaptativa
+    - una clasificación clínica del tipo de inicio ('saludo', 'emocional', 'confuso')
     """
     saludos_temporales = {
         "hola": "Hola",
@@ -227,23 +227,26 @@ def analizar_primer_input(mensaje_usuario: str) -> str:
     saludo_detectado = next((resp for saludo, resp in saludos_temporales.items() if saludo in mensaje_usuario), None)
 
     if saludo_detectado:
-        return f"{saludo_detectado}, soy el asistente virtual del Lic. Daniel O. Bustamante. ¿En qué le puedo ayudar?"
+        respuesta = f"{saludo_detectado}, soy el asistente virtual del Lic. Daniel O. Bustamante. ¿En qué le puedo ayudar?"
+        return {"respuesta": respuesta, "tipo_de_input": "saludo"}
 
     emociones = detectar_emociones_negativas(mensaje_usuario)
 
     if emociones:
         emociones_listadas = ", ".join(emociones[:3])
-        return (
+        respuesta = (
             f"Soy el asistente virtual del Lic. Daniel O. Bustamante. "
             f"Por lo que describís, se identifican indicios de {emociones_listadas}. "
             f"¿Podés precisarme un poco más lo que estás atravesando?"
         )
+        return {"respuesta": respuesta, "tipo_de_input": "emocional"}
 
     segmento_confuso = mensaje_usuario[:80].strip(".!?").strip()
-    return (
+    respuesta = (
         f"Soy el asistente virtual del Lic. Daniel O. Bustamante. No te comprendo, ¿qué querés decirme con \"{segmento_confuso}\"? "
         f"¿A qué te referís?"
     )
+    return {"respuesta": respuesta, "tipo_de_input": "confuso"}
 
 # Generar frase disparadora según emoción detectada
 def generar_disparador_emocional(emocion):
