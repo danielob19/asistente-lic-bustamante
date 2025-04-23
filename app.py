@@ -210,6 +210,26 @@ def detectar_emociones_negativas(mensaje):
         print(f"❌ Error al detectar emociones negativas: {e}")
         return []
 
+def evaluar_frases_de_peligro(mensaje: str) -> bool:
+    """
+    Detecta expresiones textuales críticas que implican riesgo de vida o ideación suicida.
+    Retorna True si se detecta al menos una.
+    """
+    expresiones_peligrosas = [
+        "me quiero matar",
+        "me quiero morir",
+        "no quiero vivir",
+        "no quiero seguir viviendo",
+        "no le encuentro sentido a vivir",
+        "no sé cómo pedir ayuda",
+        "me quiero quitar la vida",
+        "ya no quiero estar acá",
+        "quisiera desaparecer",
+        "no puedo más con esta vida"
+    ]
+    mensaje_lower = mensaje.lower()
+    return any(expresion in mensaje_lower for expresion in expresiones_peligrosas)
+
 def analizar_primer_input(mensaje_usuario: str) -> dict:
     """
     Evalúa el primer mensaje del usuario y devuelve:
