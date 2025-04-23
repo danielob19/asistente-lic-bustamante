@@ -1101,8 +1101,8 @@ async def asistente(input_data: UserInput):
             "chau", "hasta luego", "nos vemos", "me voy", "adiós", "bye"
         }
         
-        # Saludos que pueden estar al inicio seguidos por cualquier cosa
-        saludos_regex = r"^(hola|buenas|buen día|buenos días|buenas tardes|buenas noches)\b"
+        # Saludos formales e informales que pueden estar al inicio
+        saludos_regex = r"^(hola|holi|holaaa|buenas|buen día|buenos días|buenas tardes|buenas noches|hello|ey|epa|qué onda|buenas buenas)\b"
         
         if re.match(saludos_regex, mensaje_sin_puntuacion):
             return {"respuesta": "Hola. ¿En qué puedo ayudarte?"}
@@ -1113,6 +1113,7 @@ async def asistente(input_data: UserInput):
         if mensaje_sin_puntuacion in despedidas_exacto:
             return {"respuesta": "Hasta luego. Que estés bien."}
         
+                
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
 
