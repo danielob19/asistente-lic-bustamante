@@ -213,12 +213,12 @@ def detectar_emociones_negativas(mensaje):
 def analizar_primer_input(mensaje_usuario: str) -> str:
     """
     Evalúa el primer mensaje del usuario y genera una presentación clínica adaptativa.
-    Si es saludo, responde cordial. Si es emocional, responde con foco clínico.
-    Si es ambiguo, pide aclaración con precisión.
+    Si es saludo, responde cordial y profesional. Si es emocional, devuelve observación clínica inicial.
+    Si es ambiguo, solicita precisión.
     """
     saludos_temporales = {
         "hola": "Hola",
-        "buen día": "Buen día",
+        "buen día": "Buen Día",
         "buenos días": "Buenos días",
         "buenas tardes": "Buenas tardes",
         "buenas noches": "Buenas noches"
@@ -235,8 +235,8 @@ def analizar_primer_input(mensaje_usuario: str) -> str:
         emociones_listadas = ", ".join(emociones[:3])
         return (
             f"Soy el asistente virtual del Lic. Daniel O. Bustamante. "
-            f"Por lo que decís, pareciera haber presencia de {emociones_listadas}. "
-            f"¿Querés contararme un poco más al respecto?"
+            f"Por lo que describís, se identifican indicios de {emociones_listadas}. "
+            f"¿Podés precisarme un poco más lo que estás atravesando?"
         )
 
     segmento_confuso = mensaje_usuario[:80].strip(".!?").strip()
