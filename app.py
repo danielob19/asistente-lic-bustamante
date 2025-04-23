@@ -559,12 +559,13 @@ def registrar_emocion(emocion: str, contexto: str):
 # ===================== REGISTRO DE INTERACCIONES Y RESPUESTAS =====================
 
 # Registrar una interacción (versión extendida)
-def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = None):
+def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = None, atencion_peligro: bool = False):
     try:
         print("\n===== DEPURACIÓN - REGISTRO DE INTERACCIÓN =====")
         print(f"Intentando registrar interacción: user_id={user_id}")
         print(f"Consulta purificada: {consulta}")
         print(f"Mensaje original: {mensaje_original}")
+        print(f"⚠️ Atención/Peligro: {atencion_peligro}")
 
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
@@ -574,18 +575,30 @@ def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = N
             SELECT column_name FROM information_schema.columns 
             WHERE table_name = 'interacciones' AND column_name = 'mensaje_original';
         """)
-        columna_existente = cursor.fetchone()
+        columna_mensaje = cursor.fetchone()
 
-        if not columna_existente:
+        if not columna_mensaje:
             print("⚠️ La columna 'mensaje_original' no existe. Creándola...")
             cursor.execute("ALTER TABLE interacciones ADD COLUMN mensaje_original TEXT;")
             conn.commit()
 
-        # Inserta la interacción con el mensaje original
+        # Verifica si la columna "atencion_peligro" existe; si no, la crea automáticamente
         cursor.execute("""
-            INSERT INTO interacciones (user_id, consulta, mensaje_original) 
-            VALUES (%s, %s, %s) RETURNING id;
-        """, (user_id, consulta, mensaje_original))
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'interacciones' AND column_name = 'atencion_peligro';
+        """)
+        columna_alerta = cursor.fetchone()
+
+        if not columna_alerta:
+            print("⚠️ La columna 'atencion_peligro' no existe. Creándola...")
+            cursor.execute("ALTER TABLE interacciones ADD COLUMN atencion_peligro BOOLEAN DEFAULT FALSE;")
+            conn.commit()
+
+        # Inserta la interacción con el mensaje original y señal de peligro
+        cursor.execute("""
+            INSERT INTO interacciones (user_id, consulta, mensaje_original, atencion_peligro) 
+            VALUES (%s, %s, %s, %s) RETURNING id;
+        """, (user_id, consulta, mensaje_original, atencion_peligro))
         
         interaccion_id = cursor.fetchone()[0]
         conn.commit()
@@ -597,6 +610,7 @@ def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = N
     except Exception as e:
         print(f"❌ Error al registrar interacción en la base de datos: {e}\n")
         return None
+
 
 # Registrar una respuesta generada por OpenAI en la base de datos
 def registrar_respuesta_openai(interaccion_id: int, respuesta: str):
