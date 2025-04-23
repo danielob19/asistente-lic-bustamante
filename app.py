@@ -1089,6 +1089,28 @@ async def asistente(input_data: UserInput):
         user_id = input_data.user_id
         mensaje_original = input_data.mensaje.strip()
         mensaje_usuario = mensaje_original.lower()
+
+        # 🤝 Adaptación humana contextual (responde si saludan, agradecen o se despiden)
+        mensaje_normalizado = mensaje_usuario.strip().lower()
+        
+        saludos_comunes = {
+            "hola", "hola que tal", "buenas", "qué tal", "buen día", "buenos días", "buenas tardes", "buenas noches"
+        }
+        agradecimientos = {
+            "gracias", "ok gracias", "muy amable", "te agradezco", "gracias por tu ayuda", "mil gracias"
+        }
+        despedidas = {
+            "chau", "hasta luego", "nos vemos", "me voy", "adiós", "bye"
+        }
+        
+        if mensaje_normalizado in saludos_comunes:
+            return {"respuesta": "Hola. ¿En qué puedo ayudarte?"}
+        
+        if mensaje_normalizado in agradecimientos:
+            return {"respuesta": "De nada. Si necesitás algo más, acá estoy."}
+        
+        if mensaje_normalizado in despedidas:
+            return {"respuesta": "Hasta luego. Que estés bien."}
         
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
