@@ -323,6 +323,7 @@ def init_db():
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS palabras_clave (
                 id SERIAL PRIMARY KEY,
@@ -330,6 +331,7 @@ def init_db():
                 cuadro TEXT NOT NULL
             );
         """)
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS interacciones (
                 id SERIAL PRIMARY KEY,
@@ -338,6 +340,7 @@ def init_db():
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS emociones_detectadas (
                 id SERIAL PRIMARY KEY,
@@ -346,6 +349,7 @@ def init_db():
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS faq_similitud_logs (
                 id SERIAL PRIMARY KEY,
@@ -356,6 +360,18 @@ def init_db():
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+
+        # 🆕 Nueva tabla para auditar la primera interacción del usuario
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS primer_input_log (
+                id SERIAL PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                mensaje_original TEXT NOT NULL,
+                tipo_de_input TEXT NOT NULL,
+                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
         conn.commit()
         conn.close()
         print("Base de datos inicializada en PostgreSQL.")
