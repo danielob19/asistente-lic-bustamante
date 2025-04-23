@@ -1360,6 +1360,20 @@ async def asistente(input_data: UserInput):
         
         if not isinstance(emociones_detectadas, list):
             emociones_detectadas = []
+        
+        # 🚨 Excepción clínica: detección temprana por síntomas de alto riesgo aunque sea solo uno
+        sintomas_criticos = {
+            "me quiero morir", "quiero morirme", "tengo pensamientos suicidas", "no quiero vivir más",
+            "nada tiene sentido", "me siento vacío", "insomnio crónico", "no duermo hace días",
+            "me quiero matar", "me desmayo sin razón", "me tiembla el cuerpo", "lloro sin motivo"
+        }
+        
+        for sintoma in sintomas_criticos:
+            if sintoma in mensaje_usuario:
+                if sintoma not in session["emociones_detectadas"]:
+                    session["emociones_detectadas"].append(sintoma)
+                respuesta = generar_resumen_clinico_y_estado(session, contador)
+                return {"respuesta": respuesta}
 
         # Obtener la lista de síntomas ya registrados en la BD
         sintomas_existentes = obtener_sintomas_existentes()
