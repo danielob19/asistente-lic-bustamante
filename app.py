@@ -1091,11 +1091,9 @@ async def asistente(input_data: UserInput):
         mensaje_usuario = mensaje_original.lower()
 
         # 🤝 Adaptación humana contextual (responde si saludan, agradecen o se despiden)
-        mensaje_normalizado = mensaje_usuario.strip().lower()
+        mensaje_normalizado = mensaje_original.lower().strip()
+        mensaje_sin_puntuacion = re.sub(r"[^\w\s]", "", mensaje_normalizado)
         
-        saludos_iniciales = [
-            "hola", "hola que tal", "buenas", "qué tal", "buen día", "buenos días", "buenas tardes", "buenas noches"
-        ]
         agradecimientos_exacto = {
             "gracias", "ok gracias", "muy amable", "te agradezco", "gracias por tu ayuda", "mil gracias"
         }
@@ -1103,14 +1101,16 @@ async def asistente(input_data: UserInput):
             "chau", "hasta luego", "nos vemos", "me voy", "adiós", "bye"
         }
         
-        # Detectar saludo al inicio del mensaje
-        if any(mensaje_normalizado.startswith(saludo) for saludo in saludos_iniciales):
+        # Saludos que pueden estar al inicio seguidos por cualquier cosa
+        saludos_regex = r"^(hola|buenas|buen día|buenos días|buenas tardes|buenas noches)\b"
+        
+        if re.match(saludos_regex, mensaje_sin_puntuacion):
             return {"respuesta": "Hola. ¿En qué puedo ayudarte?"}
         
-        if mensaje_normalizado in agradecimientos_exacto:
+        if mensaje_sin_puntuacion in agradecimientos_exacto:
             return {"respuesta": "De nada. Si necesitás algo más, acá estoy."}
         
-        if mensaje_normalizado in despedidas_exacto:
+        if mensaje_sin_puntuacion in despedidas_exacto:
             return {"respuesta": "Hasta luego. Que estés bien."}
         
         # 🧽 Etapa de purificación clínica
