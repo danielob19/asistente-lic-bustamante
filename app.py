@@ -449,36 +449,65 @@ def obtener_sintomas_existentes():
 
 # ===================== REGISTRO DE EMOCIONES DETECTADAS =====================
 
-def registrar_emocion(emocion: str, contexto: str):
+def registrar_emocion(emocion: str, contexto: str, user_id: str = None):
     """
     Registra una emoción detectada en la base de datos PostgreSQL.
-    Evita insertar duplicados y actualiza el contexto si ya existe.
+    Si ya existe, actualiza el contexto concatenando. Si no existe, la inserta.
+    Si la tabla tiene una columna 'user_id', se registra también.
     """
     try:
         print("\n======= 📌 REGISTRO DE EMOCIÓN DETECTADA =======")
         print(f"🧠 Emoción detectada: {emocion}")
         print(f"🧾 Contexto asociado: {contexto}")
+        print(f"👤 Usuario: {user_id if user_id else 'No especificado'}")
 
         with psycopg2.connect(DATABASE_URL) as conn:
             with conn.cursor() as cursor:
-                cursor.execute(
-                    "SELECT contexto FROM emociones_detectadas WHERE emocion = %s;",
-                    (emocion.strip().lower(),)
-                )
+                # Verifica si la columna user_id existe
+                cursor.execute("""
+                    SELECT column_name FROM information_schema.columns 
+                    WHERE table_name = 'emociones_detectadas' AND column_name = 'user_id';
+                """)
+                tiene_user_id = bool(cursor.fetchone())
+
+                # Verifica si ya existe una emoción con o sin user_id
+                if tiene_user_id and user_id:
+                    cursor.execute(
+                        "SELECT contexto FROM emociones_detectadas WHERE emocion = %s AND user_id = %s;",
+                        (emocion.strip().lower(), user_id)
+                    )
+                else:
+                    cursor.execute(
+                        "SELECT contexto FROM emociones_detectadas WHERE emocion = %s;",
+                        (emocion.strip().lower(),)
+                    )
+
                 resultado = cursor.fetchone()
 
                 if resultado:
                     nuevo_contexto = f"{resultado[0]}; {contexto.strip()}"
-                    cursor.execute(
-                        "UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s;",
-                        (nuevo_contexto, emocion.strip().lower())
-                    )
+                    if tiene_user_id and user_id:
+                        cursor.execute(
+                            "UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s AND user_id = %s;",
+                            (nuevo_contexto, emocion.strip().lower(), user_id)
+                        )
+                    else:
+                        cursor.execute(
+                            "UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s;",
+                            (nuevo_contexto, emocion.strip().lower())
+                        )
                     print("🔄 Emoción existente. Contexto actualizado.")
                 else:
-                    cursor.execute(
-                        "INSERT INTO emociones_detectadas (emocion, contexto) VALUES (%s, %s);",
-                        (emocion.strip().lower(), contexto.strip())
-                    )
+                    if tiene_user_id and user_id:
+                        cursor.execute(
+                            "INSERT INTO emociones_detectadas (emocion, contexto, user_id) VALUES (%s, %s, %s);",
+                            (emocion.strip().lower(), contexto.strip(), user_id)
+                        )
+                    else:
+                        cursor.execute(
+                            "INSERT INTO emociones_detectadas (emocion, contexto) VALUES (%s, %s);",
+                            (emocion.strip().lower(), contexto.strip())
+                        )
                     print("🆕 Nueva emoción registrada exitosamente.")
 
                 conn.commit()
@@ -487,6 +516,7 @@ def registrar_emocion(emocion: str, contexto: str):
 
     except Exception as e:
         print(f"❌ Error al registrar emoción '{emocion}': {e}")
+
 
 
 # ===================== REGISTRO DE INTERACCIONES Y RESPUESTAS =====================
