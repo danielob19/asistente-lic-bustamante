@@ -151,30 +151,23 @@ def generar_respuesta_con_openai(prompt):
         print(f"Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
-def construir_prompt_intermedio(mensaje_usuario: str) -> str:
-    return (
-        "Actuás como un asistente clínico con un estilo profesional, objetivo y sobrio. "
-        "Tu tarea es analizar el mensaje del usuario e identificar las emociones o síntomas expresados, "
-        "pero sin ofrecer diagnósticos ni recomendaciones. "
-        "Respondé de forma breve, clara, evitando cualquier tono institucional o condescendiente. "
-        "No uses fórmulas como 'estimado/a', ni sugieras contactar al profesional salvo que estés en la interacción 5 o 9. "
-        "Respondé con expresiones neutrales como 'Entiendo lo que mencionás', 'Tomé nota', '¿Querés contarme más?'. "
-        "Mantené un estilo clínico, directo y sin adornos.\n\n"
-        f"Usuario: {mensaje_usuario}\n"
-        "Asistente:"
-    )
-
 # Función para detectar emociones negativas usando OpenAI
 def detectar_emociones_negativas(mensaje):
     prompt = (
-        "Sos un analista clínico de lenguaje emocional. Detectá emociones negativas o patrones de malestar en el siguiente texto, "
-        "incluso si están expresados mediante metáforas, ironías, frases evasivas o dobles sentidos.\n\n"
+        "Analizá el siguiente mensaje desde una perspectiva clínica y detectá exclusivamente emociones negativas o estados afectivos vinculados a malestar psicológico. "
+        "Tu tarea es identificar manifestaciones emocionales que indiquen sufrimiento, alteración afectiva o malestar clínico.\n\n"
+
         "Indicaciones:\n"
-        "- Analizá aunque el usuario diga que 'todo está bien', 'no pasa nada', etc.\n"
-        "- No des explicaciones ni texto adicional.\n"
-        "- Devolvé una lista separada por comas.\n"
-        "- Si no hay emociones negativas, respondé únicamente: ninguna.\n\n"
-        f"Texto del usuario:\n{mensaje}"
+        "- Devolvé una lista separada por comas, sin explicaciones ni texto adicional.\n"
+        "- Si hay ambigüedad, asigná la emoción negativa más cercana desde el punto de vista clínico.\n"
+        "- Si hay múltiples emociones, incluilas todas separadas por comas.\n"
+        "- Si no se detectan emociones negativas, devolvé únicamente: ninguna.\n\n"
+
+        "Ejemplos clínicamente válidos:\n"
+        "- Emociones simples: tristeza, ansiedad, culpa, vergüenza, impotencia, miedo, irritabilidad, angustia.\n"
+        "- Estados complejos: vacío emocional, desgaste emocional, desesperanza, sensación de abandono, temor al rechazo, apatía profunda.\n\n"
+
+        f"Mensaje: {mensaje}"
     )
 
     try:
@@ -186,117 +179,23 @@ def detectar_emociones_negativas(mensaje):
         )
         emociones = response.choices[0].message.get("content", "").strip().lower()
 
-        print("\n===== DEPURACIÓN - DETECCIÓN DE EMOCIONES (AVANZADA) =====")
+        print("\n===== DEPURACIÓN - DETECCIÓN DE EMOCIONES =====")
         print(f"Mensaje analizado: {mensaje}")
         print(f"Respuesta de OpenAI: {emociones}")
 
+        emociones = emociones.replace("emociones negativas detectadas:", "").strip()
+        emociones = [emocion.strip() for emocion in emociones.split(",") if emocion.strip()]
+
         if "ninguna" in emociones:
+            print("No se detectaron emociones negativas.\n")
             return []
 
-        emociones = [e.strip() for e in emociones.split(",") if e.strip()]
+        print(f"Emociones detectadas: {emociones}\n")
         return emociones
 
     except Exception as e:
-        print(f"❌ Error en detección avanzada de emociones: {e}")
+        print(f"❌ Error al detectar emociones negativas: {e}")
         return []
-
-def evaluar_frases_de_peligro(mensaje: str) -> bool:
-    """
-    Detecta expresiones textuales críticas que implican riesgo de vida o ideación suicida.
-    Retorna True si se detecta al menos una.
-    """
-    expresiones_peligrosas = [
-        "me quiero matar",
-        "me quiero morir",
-        "no quiero vivir",
-        "no quiero seguir viviendo",
-        "no le encuentro sentido a vivir",
-        "no sé cómo pedir ayuda",
-        "me quiero quitar la vida",
-        "ya no quiero estar acá",
-        "quisiera desaparecer",
-        "no puedo más con esta vida"
-    ]
-    mensaje_lower = mensaje.lower()
-    return any(expresion in mensaje_lower for expresion in expresiones_peligrosas)
-
-def interpretar_malestar_oculto(texto: str) -> list:
-    """
-    Usa OpenAI para detectar emociones negativas implícitas en el texto.
-    Devuelve una lista de emociones detectadas.
-    """
-    prompt = (
-        f"Detectá posibles emociones negativas o malestar psicológico en el siguiente texto. "
-        f"Respondé únicamente con una lista separada por comas de emociones detectadas.\n\n"
-        f"Texto:\n{texto}"
-    )
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=50,
-            temperature=0.0
-        )
-        emociones = response.choices[0].message['content'].strip().lower().split(",")
-        return [e.strip() for e in emociones if e.strip()]
-    except Exception as e:
-        print(f"❌ Error en interpretar_malestar_oculto: {e}")
-        return []
-
-def analizar_primer_input(mensaje_usuario: str) -> dict:
-    """
-    Evalúa el primer mensaje del usuario utilizando la interpretación crítica de OpenAI.
-    Detecta saludos disfrazados de malestar, ambigüedad emocional y señales confusas.
-    """
-    prompt = (
-        "Sos un asistente clínico con capacidad de detectar indicadores de malestar emocional incluso cuando están disfrazados, negados, o formulados como saludos, frases irónicas o ambivalentes.\n\n"
-        f"Mensaje del usuario:\n{mensaje_usuario}\n\n"
-        "Clasificá este mensaje según el tipo de inicio. Opciones posibles:\n"
-        "- saludo: si es un saludo sin contenido emocional\n"
-        "- emocional: si detectás alguna emoción negativa o malestar\n"
-        "- confuso: si el mensaje es ambiguo, vago, contradictorio o inusual\n\n"
-        "Devolvé únicamente una de las tres palabras clave: saludo, emocional o confuso."
-    )
-
-    try:
-        tipo = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=10,
-            temperature=0
-        ).choices[0].message["content"].strip().lower()
-
-        if tipo == "saludo":
-            return {
-                "respuesta": "Hola, soy el asistente virtual del Lic. Daniel O. Bustamante. ¿En qué puedo ayudarte?",
-                "tipo_de_input": "saludo"
-            }
-
-        if tipo == "emocional":
-            emociones = interpretar_malestar_oculto(mensaje_usuario)
-            listado = ", ".join(emociones[:3]) if emociones else "malestar emocional"
-            return {
-                "respuesta": (
-                    f"Soy el asistente virtual del Lic. Daniel O. Bustamante. "
-                    f"Por lo que describís, se identifican indicios de {listado}. "
-                    f"¿Podés precisarme un poco más lo que estás atravesando?"
-                ),
-                "tipo_de_input": "emocional"
-            }
-
-        # Confuso por defecto
-        fragmento = mensaje_usuario.strip(".!?")[:80]
-        return {
-            "respuesta": f"Soy el asistente virtual del Lic. Daniel O. Bustamante. ¿Podrías aclararme qué quisiste decir con: \"{fragmento}\"?",
-            "tipo_de_input": "confuso"
-        }
-
-    except Exception as e:
-        print(f"❌ Error en analizar_primer_input: {e}")
-        return {
-            "respuesta": "Hola, soy el asistente virtual del Lic. Daniel O. Bustamante. ¿En qué puedo ayudarte?",
-            "tipo_de_input": "saludo"
-        }
 
 # Generar frase disparadora según emoción detectada
 def generar_disparador_emocional(emocion):
@@ -373,7 +272,6 @@ def init_db():
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
-
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS palabras_clave (
                 id SERIAL PRIMARY KEY,
@@ -381,7 +279,6 @@ def init_db():
                 cuadro TEXT NOT NULL
             );
         """)
-
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS interacciones (
                 id SERIAL PRIMARY KEY,
@@ -390,7 +287,6 @@ def init_db():
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS emociones_detectadas (
                 id SERIAL PRIMARY KEY,
@@ -399,7 +295,6 @@ def init_db():
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS faq_similitud_logs (
                 id SERIAL PRIMARY KEY,
@@ -410,18 +305,6 @@ def init_db():
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-
-        # 🆕 Nueva tabla para auditar la primera interacción del usuario
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS primer_input_log (
-                id SERIAL PRIMARY KEY,
-                user_id TEXT NOT NULL,
-                mensaje_original TEXT NOT NULL,
-                tipo_de_input TEXT NOT NULL,
-                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-
         conn.commit()
         conn.close()
         print("Base de datos inicializada en PostgreSQL.")
@@ -609,13 +492,12 @@ def registrar_emocion(emocion: str, contexto: str):
 # ===================== REGISTRO DE INTERACCIONES Y RESPUESTAS =====================
 
 # Registrar una interacción (versión extendida)
-def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = None, atencion_peligro: bool = False):
+def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = None):
     try:
         print("\n===== DEPURACIÓN - REGISTRO DE INTERACCIÓN =====")
         print(f"Intentando registrar interacción: user_id={user_id}")
         print(f"Consulta purificada: {consulta}")
         print(f"Mensaje original: {mensaje_original}")
-        print(f"⚠️ Atención/Peligro: {atencion_peligro}")
 
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
@@ -625,30 +507,18 @@ def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = N
             SELECT column_name FROM information_schema.columns 
             WHERE table_name = 'interacciones' AND column_name = 'mensaje_original';
         """)
-        columna_mensaje = cursor.fetchone()
+        columna_existente = cursor.fetchone()
 
-        if not columna_mensaje:
+        if not columna_existente:
             print("⚠️ La columna 'mensaje_original' no existe. Creándola...")
             cursor.execute("ALTER TABLE interacciones ADD COLUMN mensaje_original TEXT;")
             conn.commit()
 
-        # Verifica si la columna "atencion_peligro" existe; si no, la crea automáticamente
+        # Inserta la interacción con el mensaje original
         cursor.execute("""
-            SELECT column_name FROM information_schema.columns 
-            WHERE table_name = 'interacciones' AND column_name = 'atencion_peligro';
-        """)
-        columna_alerta = cursor.fetchone()
-
-        if not columna_alerta:
-            print("⚠️ La columna 'atencion_peligro' no existe. Creándola...")
-            cursor.execute("ALTER TABLE interacciones ADD COLUMN atencion_peligro BOOLEAN DEFAULT FALSE;")
-            conn.commit()
-
-        # Inserta la interacción con el mensaje original y señal de peligro
-        cursor.execute("""
-            INSERT INTO interacciones (user_id, consulta, mensaje_original, atencion_peligro) 
-            VALUES (%s, %s, %s, %s) RETURNING id;
-        """, (user_id, consulta, mensaje_original, atencion_peligro))
+            INSERT INTO interacciones (user_id, consulta, mensaje_original) 
+            VALUES (%s, %s, %s) RETURNING id;
+        """, (user_id, consulta, mensaje_original))
         
         interaccion_id = cursor.fetchone()[0]
         conn.commit()
@@ -660,7 +530,6 @@ def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = N
     except Exception as e:
         print(f"❌ Error al registrar interacción en la base de datos: {e}\n")
         return None
-
 
 # Registrar una respuesta generada por OpenAI en la base de datos
 def registrar_respuesta_openai(interaccion_id: int, respuesta: str):
@@ -1074,39 +943,37 @@ def registrar_auditoria_respuesta(user_id: str, respuesta_original: str, respues
 
 def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     """
-    Genera una respuesta clínica desinteresada con base en síntomas literales y estado emocional predominante.
-    Se aplica en las interacciones 5 y 9.
+    Genera una respuesta clínica con base en emociones detectadas y síntomas coincidentes.
+    Se aplica en la interacción 5 y 9, devolviendo síntomas literales y estado emocional predominante.
     """
     mensajes = session.get("mensajes", [])
     emociones_acumuladas = session.get("emociones_detectadas", [])
 
-    # Reanaliza los mensajes completos por nuevas emociones
-    emociones_detectadas = interpretar_malestar_oculto(" ".join(mensajes))
+    # Reanaliza todas las emociones en los mensajes para detectar nuevas
+    emociones_detectadas = detectar_emociones_negativas(" ".join(mensajes)) or []
     nuevas_emociones = [e for e in emociones_detectadas if e not in emociones_acumuladas]
     session["emociones_detectadas"].extend(nuevas_emociones)
 
     if not session["emociones_detectadas"]:
         print(f"⚠️ No se detectaron emociones al llegar a la interacción {contador}")
         return (
-            "No se han identificado síntomas suficientes como para estimar un estado emocional predominante."
+            "No se identificaron emociones predominantes en este momento. "
+            "Te sugiero contactar al Lic. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más precisa."
         )
 
-    # 1. Obtener el estado emocional predominante (cuadro clínico)
-    estados_emocionales = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
-    if len(estados_emocionales) < 2:
-        return (
-            "No se han identificado síntomas suficientes como para estimar un estado emocional predominante."
-        )
-    estado_predominante = Counter(estados_emocionales).most_common(1)[0][0]
+    coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(session["emociones_detectadas"])
+    cuadro_predominante = (
+        Counter(coincidencias_sintomas).most_common(1)[0][0]
+        if len(coincidencias_sintomas) >= 2 else
+        "No se pudo establecer con certeza un estado emocional predominante."
+    )
 
-    # 2. Los síntomas literales son las emociones detectadas
-    sintomas_literales = session["emociones_detectadas"]
-    resumen_sintomas = ", ".join(sintomas_literales)
+    emociones_literal = ", ".join(set(session["emociones_detectadas"][:3]))
 
     respuesta = (
-        f"En base a lo que me comentás —{resumen_sintomas}—, "
-        f"pareciera tratarse de un estado anímico predominante: {estado_predominante}. "
-        f"¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+        f"Con base a lo que has descripto —{emociones_literal}—, "
+        f"pareciera ser que el malestar emocional predominante es: {cuadro_predominante}. "
+        f"Te sugiero considerar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp +54 911 3310-1186 para una evaluación más detallada."
     )
 
     print(f"🧾 Resumen clínico generado correctamente en interacción {contador}")
@@ -1119,83 +986,9 @@ async def asistente(input_data: UserInput):
         user_id = input_data.user_id
         mensaje_original = input_data.mensaje.strip()
         mensaje_usuario = mensaje_original.lower()
-
-        # 🤝 Adaptación humana contextual con prioridad clínica
-        mensaje_normalizado = mensaje_original.lower().strip()
-        mensaje_sin_puntuacion = re.sub(r"[^\w\s]", "", mensaje_normalizado)
         
-        agradecimientos_exacto = {
-            "gracias", "ok gracias", "muy amable", "te agradezco", "gracias por tu ayuda", "mil gracias"
-        }
-        despedidas_exacto = {
-            "chau", "hasta luego", "nos vemos", "me voy", "adiós", "bye"
-        }
-        
-        # Síntomas o emociones potenciales comunes (puede expandirse)
-        indicadores_malestar = [
-            "vacío", "ansiedad", "miedo", "triste", "lloro", "no duermo", "no quiero vivir", "me cuesta respirar", "no valgo", "angustia", "culpa", "pánico", "no puedo más", "me quiero morir"
-        ]
-        
-        # 🧠 Evaluación clínica inicial adaptativa y contextual
-        resultado = analizar_primer_input(mensaje_original)
-        tipo_de_input = resultado["tipo_de_input"]
-        respuesta_inicial = resultado["respuesta"]
-        
-        # Inicializa la sesión si no existe aún
-        if user_id not in user_sessions:
-            user_sessions[user_id] = {
-                "contador_interacciones": 0,
-                "ultima_interaccion": time.time(),
-                "mensajes": [],
-                "emociones_detectadas": [],
-                "ultimas_respuestas": [],
-                "input_sospechoso": False
-            }
-        
-        session = user_sessions[user_id]
-        
-        # Registrar el input inicial en tabla de auditoría (si es la primera interacción)
-        if session["contador_interacciones"] == 0:
-            try:
-                conn = psycopg2.connect(DATABASE_URL)
-                cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO primer_input_log (user_id, mensaje_original, tipo_de_input)
-                    VALUES (%s, %s, %s);
-                """, (user_id, mensaje_original.strip(), tipo_de_input))
-                conn.commit()
-                conn.close()
-                print("📝 Primer input registrado en primer_input_log.")
-            except Exception as e:
-                print(f"❌ Error al registrar primer input: {e}")
-        
-        # Si el mensaje es un saludo, devolver saludo
-        if tipo_de_input == "saludo":
-            return {"respuesta": respuesta_inicial}
-        
-        # Si el mensaje es emocional, registrar emociones detectadas desde el inicio
-        if tipo_de_input == "emocional":
-            emociones_detectadas = interpretar_malestar_oculto(mensaje_usuario)
-            session["emociones_detectadas"].extend(
-                [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
-            )
-        
-        # Agregar el mensaje a la sesión y continuar
-        session["mensajes"].append(mensaje_usuario)
-                                 
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
-
-        # Inicializa la sesión del usuario si no existe
-        if user_id not in user_sessions:
-            user_sessions[user_id] = {
-                "contador_interacciones": 0,
-                "ultima_interaccion": time.time(),
-                "mensajes": [],
-                "emociones_detectadas": [],
-                "ultimas_respuestas": [],
-                "input_sospechoso": False  # 🆕 Bandera de intento no clínico o manipulación
-            }
 
         # 🛡️ Etapa de blindaje contra inputs maliciosos
         def es_input_malicioso(texto: str) -> bool:
@@ -1280,15 +1073,19 @@ async def asistente(input_data: UserInput):
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
         
-        peligro_detectado = evaluar_frases_de_peligro(mensaje_usuario)
-        
-        # 📋 Registrar la interacción con el flag atencion_peligro si corresponde
-        interaccion_id = registrar_interaccion(
-            user_id=user_id,
-            consulta=mensaje_usuario,
-            mensaje_original=mensaje_original,
-            atencion_peligro=peligro_detectado
-        )
+        # Registrar interacción con mensaje original incluido
+        interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
+
+        # Inicializa la sesión del usuario si no existe
+        if user_id not in user_sessions:
+            user_sessions[user_id] = {
+                "contador_interacciones": 0,
+                "ultima_interaccion": time.time(),
+                "mensajes": [],
+                "emociones_detectadas": [],
+                "ultimas_respuestas": [],
+                "input_sospechoso": False  # 🆕 Bandera de intento no clínico o manipulación
+            }
 
         # Actualiza la sesión del usuario
         session = user_sessions[user_id]
@@ -1305,7 +1102,16 @@ async def asistente(input_data: UserInput):
                     "Si necesitás ayuda emocional, contámelo con claridad."
                 )
             }
-      
+
+        # 👉 Nueva respuesta para la PRIMERA INTERACCIÓN
+        if contador == 1:
+            return {
+                "respuesta": (
+                    "¡Hola! Soy el asistente virtual del Lic. Daniel O. Bustamante y me encantaría saber en qué puedo ayudarte. "
+                    "Sentite libre de contarme lo que necesites."
+                )
+            }
+        
         # 🔍 Buscar coincidencia semántica en preguntas frecuentes
         resultado_semantico = buscar_respuesta_semantica_con_score(mensaje_usuario)
         if resultado_semantico:
@@ -1482,22 +1288,13 @@ async def asistente(input_data: UserInput):
             "sí, claro", "sí gracias", "ya está", "de acuerdo", "lo veo después", "nada en particular", "todo bien", "sí"
         ]
         
-        # Interpretación emocional incluso si el mensaje parece irrelevante o evasivo
-        emociones_detectadas = interpretar_malestar_oculto(mensaje_usuario)
+        if any(frase in mensaje_usuario for frase in frases_omitir_emociones):
+            emociones_detectadas = []
+        else:
+            emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
         
-        # 🚨 Excepción clínica: detección temprana por síntomas de alto riesgo aunque sea solo uno
-        sintomas_criticos = {
-            "me quiero morir", "quiero morirme", "tengo pensamientos suicidas", "no quiero vivir más",
-            "nada tiene sentido", "me siento vacío", "insomnio crónico", "no duermo hace días",
-            "me quiero matar", "me desmayo sin razón", "me tiembla el cuerpo", "lloro sin motivo"
-        }
-        
-        for sintoma in sintomas_criticos:
-            if sintoma in mensaje_usuario:
-                if sintoma not in session["emociones_detectadas"]:
-                    session["emociones_detectadas"].append(sintoma)
-                respuesta = generar_resumen_clinico_y_estado(session, contador)
-                return {"respuesta": respuesta}
+        if not isinstance(emociones_detectadas, list):
+            emociones_detectadas = []
 
         # Obtener la lista de síntomas ya registrados en la BD
         sintomas_existentes = obtener_sintomas_existentes()
@@ -1587,21 +1384,12 @@ async def asistente(input_data: UserInput):
             if emocion not in emociones_registradas_bd:
                 registrar_emocion(emocion, f"interacción {contador}")
         
-        # ✅ Interacciones clave (5 y 9): resumen clínico con síntomas literales e interpretados
+        # ✅ En la interacción 5 y 9, generar resumen clínico y estado emocional predominante
         if contador in [5, 9]:
-            # 🔁 Reinterpretar todo lo dicho (literal o implícito)
-            mensajes_usuario = session.get("mensajes", [])
-            emociones_ocultas = interpretar_malestar_oculto(" ".join(mensajes_usuario)) or []
-        
-            # ⬆️ Aseguramos que las emociones implícitas se acumulen en sesión
-            nuevas_emociones = [e for e in emociones_ocultas if e not in session["emociones_detectadas"]]
-            session["emociones_detectadas"].extend(nuevas_emociones)
-        
-            # 🧾 Generar resumen clínico con toda la información integrada
             respuesta = generar_resumen_clinico_y_estado(session, contador)
             return {"respuesta": respuesta}
         
-        # 🛑 Interacción 10: cierre profesional definitivo, sin posibilidad de continuar
+        # Interacción 10: cierre profesional definitivo
         if contador == 10:
             return {
                 "respuesta": (
@@ -1610,15 +1398,20 @@ async def asistente(input_data: UserInput):
                     "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
                 )
             }
-        
-        # 🚫 Interacciones 11 en adelante: reiteración del cierre, por límites clínicos del canal
+
+        # Interacción 11 en adelante: cierre reiterado profesional
         if contador >= 11:
-            return {
-                "respuesta": (
-                    "Este canal ha llegado al límite de interacción posible. Si necesitás continuar, podés escribirle al Lic. Bustamante "
-                    "al WhatsApp +54 9 11 3310-1186, que responderá a tus inquietudes por mensaje. No puede recibir llamadas."
-                )
-            }
+            print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
+            
+            respuestas_cierre_definitivo = [
+                "Como mencioné anteriormente, no puedo continuar con esta conversación. Te sugiero que consultes con el Lic. Bustamante escribiéndole al WhatsApp +54 911 3310-1186.",
+                "Ya he concluido el análisis posible en este espacio. Para una evaluación más profunda, contactá al Lic. Bustamante al WhatsApp +54 911 3310-1186.",
+                "Lamentablemente, no puedo brindarte más información por este medio. Para avanzar, te recomiendo comunicarte con el Lic. Bustamante vía WhatsApp al +54 911 3310-1186.",
+                "Recordá que para profundizar en tu situación, lo ideal es que consultes directamente con un profesional. El Lic. Bustamante puede ayudarte: WhatsApp +54 911 3310-1186.",
+                "Este canal ya ha alcanzado su límite de análisis. Si necesitás continuar, podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+            ]
+            return {"respuesta": random.choice(respuestas_cierre_definitivo)}
+        
 
         # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
         preguntas_cobertura = [
@@ -1706,9 +1499,19 @@ async def asistente(input_data: UserInput):
                     "Para coordinar una sesión y consultar los medios de pago disponibles, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
                 )
             }
-     
+
+        
+        
         # 🔹 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
-        prompt = construir_prompt_intermedio(mensaje_usuario)
+        prompt = (
+            f"El siguiente mensaje fue recibido: '{mensaje_usuario}'. "
+            "Redactá una respuesta breve y profesional como si fueras un asistente clínico del Lic. Daniel O. Bustamante, psicólogo. "
+            "El estilo debe ser clínico, objetivo y respetuoso. Evitá cualquier frase emocional, coloquial o empática simulada como 'te entiendo', 'es normal', 'tranquilo/a', 'lamentablemente', etc. "
+            "No generes contenido motivacional ni promesas de bienestar. No uses expresiones institucionales como 'nuestro equipo'. "
+            "Usá en cambio formulaciones profesionales como: 'Pareciera tratarse de...', 'Comprendo que refiere a...', 'Podría vincularse a...'. "
+            "No brindes enlaces ni respondas sobre temas financieros, legales ni técnicos. "
+            "Referite al profesional como 'el Lic. Bustamante'. Solo proporcioná su número de contacto si el usuario lo solicita explícitamente o si ya transcurrieron al menos 5 interacciones."
+        )
 
         # Obtener respuesta de OpenAI
         respuesta_original = generar_respuesta_con_openai(prompt)
@@ -1811,5 +1614,4 @@ def analizar_emociones_y_patrones(mensajes, emociones_acumuladas):
 
     except Exception as e:
         print(f"Error al analizar emociones y patrones: {e}")
-        return []
-
+        return [] 
