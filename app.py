@@ -1464,7 +1464,8 @@ async def asistente(input_data: UserInput):
             return {"respuesta": respuesta}
         
         if contador == 9:
-            mensajes_previos = session["mensajes"][-3:]  # Mensajes 6, 7 y 8
+            # Reanalizar síntomas de las interacciones 6, 7 y 8 (últimos 3 mensajes antes del 9)
+            mensajes_previos = session["mensajes"][-3:]
             emociones_nuevas = []
         
             for mensaje in mensajes_previos:
@@ -1475,10 +1476,15 @@ async def asistente(input_data: UserInput):
                         emociones_nuevas.append(emocion)
                         session["emociones_detectadas"].append(emocion)
         
-            # Ahora sí, generar el resumen actualizado con todas las emociones acumuladas
-            respuesta = generar_resumen_clinico_y_estado(session, contador)
-            return {"respuesta": respuesta + " ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"}
+            # Registrar en la BD solo las emociones nuevas no registradas aún para esta interacción
+            emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
+            for emocion in session["emociones_detectadas"]:
+                if emocion not in emociones_registradas_bd:
+                    registrar_emocion(emocion, f"interacción {contador}", user_id)
         
+            # Generar resumen clínico actualizado con todos los síntomas acumulados
+            respuesta = generar_resumen_clinico_y_estado(session, contador)
+            return {"respuesta": respuesta + " ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"}      
                         
         # Interacción 10: cierre profesional definitivo
         if contador == 10:
