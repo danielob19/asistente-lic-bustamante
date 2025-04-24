@@ -250,7 +250,7 @@ def analizar_primer_input(mensaje_usuario: str) -> dict:
             }
 
         if tipo == "emocional":
-            emociones = detectar_emociones_negativas(mensaje_usuario)
+            emociones = interpretar_malestar_oculto(mensaje_usuario)
             listado = ", ".join(emociones[:3]) if emociones else "malestar emocional"
             return {
                 "respuesta": (
@@ -1058,7 +1058,7 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     emociones_acumuladas = session.get("emociones_detectadas", [])
 
     # Reanaliza los mensajes completos por nuevas emociones
-    emociones_detectadas = detectar_emociones_negativas(" ".join(mensajes)) or []
+    emociones_detectadas = interpretar_malestar_oculto(" ".join(mensajes))
     nuevas_emociones = [e for e in emociones_detectadas if e not in emociones_acumuladas]
     session["emociones_detectadas"].extend(nuevas_emociones)
 
