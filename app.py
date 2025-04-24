@@ -1464,11 +1464,22 @@ async def asistente(input_data: UserInput):
             return {"respuesta": respuesta}
         
         if contador == 9:
-            resumen = generar_resumen_clinico_y_estado(session, contador)
-            respuesta = f"{resumen} ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
-            registrar_respuesta_openai(interaccion_id, respuesta)
-            return {"respuesta": respuesta}        
-                
+            mensajes_previos = session["mensajes"][-3:]  # Mensajes 6, 7 y 8
+            emociones_nuevas = []
+        
+            for mensaje in mensajes_previos:
+                nuevas = detectar_emociones_negativas(mensaje) or []
+                for emocion in nuevas:
+                    emocion = emocion.lower().strip()
+                    if emocion not in session["emociones_detectadas"]:
+                        emociones_nuevas.append(emocion)
+                        session["emociones_detectadas"].append(emocion)
+        
+            # Ahora sí, generar el resumen actualizado con todas las emociones acumuladas
+            respuesta = generar_resumen_clinico_y_estado(session, contador)
+            return {"respuesta": respuesta + " ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"}
+        
+                        
         # Interacción 10: cierre profesional definitivo
         if contador == 10:
             respuesta = (
