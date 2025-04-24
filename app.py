@@ -1457,9 +1457,13 @@ async def asistente(input_data: UserInput):
                 registrar_emocion(emocion, f"interacción {contador}", user_id)
         
         # ✅ En la interacción 5 y 9, generar resumen clínico y estado emocional predominante
-        if contador in [5, 9]:
+        if contador == 5:
             respuesta = generar_resumen_clinico_y_estado(session, contador)
-            return {"respuesta": respuesta}
+            return {"respuesta": respuesta + " ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"}
+        
+        if contador == 9:
+            respuesta = generar_resumen_clinico_y_estado(session, contador)
+            return {"respuesta": respuesta + " ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"}
         
         # Interacción 10: cierre profesional definitivo
         if contador == 10:
