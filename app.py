@@ -1175,22 +1175,6 @@ async def asistente(input_data: UserInput):
                 "input_sospechoso": False  # 🆕 Bandera de intento no clínico o manipulación
             }
 
-        # 🧠 Detección temprana de malestar (antes de evaluar saludo)
-        emociones_previas = detectar_emociones_negativas(mensaje_usuario)
-
-        if emociones_previas:
-            print(f"✅ Emociones detectadas antes del saludo: {emociones_previas}")
-            session = user_sessions.get(user_id, {
-                "contador_interacciones": 1,
-                "mensajes": [],
-                "emociones_detectadas": [],
-                "ultimas_respuestas": []
-            })
-            session["mensajes"].append(mensaje_usuario)
-            session["emociones_detectadas"].extend([e for e in emociones_previas if e not in session["emociones_detectadas"]])
-            user_sessions[user_id] = session
-            return {"respuesta": "Entiendo lo que mencionás. ¿Querés contarme más sobre cómo te sentís?"}
-
         # 🛡️ Etapa de blindaje contra inputs maliciosos
         def es_input_malicioso(texto: str) -> bool:
             patrones_maliciosos = [
