@@ -1159,7 +1159,6 @@ async def asistente(input_data: UserInput):
         
         # Agregar el mensaje a la sesión y continuar
         session["mensajes"].append(mensaje_usuario)
-        return {"respuesta": respuesta_inicial}
                                  
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
