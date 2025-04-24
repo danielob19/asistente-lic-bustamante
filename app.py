@@ -220,6 +220,29 @@ def evaluar_frases_de_peligro(mensaje: str) -> bool:
     mensaje_lower = mensaje.lower()
     return any(expresion in mensaje_lower for expresion in expresiones_peligrosas)
 
+def interpretar_malestar_oculto(texto: str) -> list:
+    """
+    Usa OpenAI para detectar emociones negativas implícitas en el texto.
+    Devuelve una lista de emociones detectadas.
+    """
+    prompt = (
+        f"Detectá posibles emociones negativas o malestar psicológico en el siguiente texto. "
+        f"Respondé únicamente con una lista separada por comas de emociones detectadas.\n\n"
+        f"Texto:\n{texto}"
+    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=50,
+            temperature=0.0
+        )
+        emociones = response.choices[0].message['content'].strip().lower().split(",")
+        return [e.strip() for e in emociones if e.strip()]
+    except Exception as e:
+        print(f"❌ Error en interpretar_malestar_oculto: {e}")
+        return []
+
 def analizar_primer_input(mensaje_usuario: str) -> dict:
     """
     Evalúa el primer mensaje del usuario utilizando la interpretación crítica de OpenAI.
