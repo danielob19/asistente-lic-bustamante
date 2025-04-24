@@ -697,6 +697,26 @@ def purificar_input_clinico(texto: str) -> str:
         print(f"❌ Error en purificar_input_clinico: {e}")
         return ""
 
+def clasificar_input_inicial(mensaje: str) -> str:
+    saludo_simple = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]
+    preguntas_administrativas = [
+        "contacto", "número", "numero", "whatsapp", "teléfono", "psicólogo", "psicologo", "terapia", "turno",
+        "atención", "consulta", "sesión", "precio", "valor", "cobertura", "obras sociales"
+    ]
+    indicadores_malestar = [
+        "me siento", "estoy", "siento", "no puedo", "me cuesta", "me duele", "tengo miedo", "ansiedad", "triste", "deprimido"
+    ]
+
+    mensaje_limpio = mensaje.lower()
+
+    if any(p in mensaje_limpio for p in indicadores_malestar):
+        return "CLINICO"
+    elif any(p in mensaje_limpio for p in preguntas_administrativas):
+        return "ADMINISTRATIVO"
+    elif mensaje_limpio in saludo_simple:
+        return "SALUDO"
+    return "OTRO"
+
 # Análisis de texto del usuario
 def analizar_texto(mensajes_usuario):
     """
