@@ -1467,13 +1467,13 @@ async def asistente(input_data: UserInput):
         
         # Interacción 10: cierre profesional definitivo
         if contador == 10:
-            return {
-                "respuesta": (
-                    "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
-                    "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
-                    "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
-                )
-            }
+            respuesta = (
+                "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
+                "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
+                "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
+            )
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
 
         # Interacción 11 en adelante: cierre reiterado profesional
         if contador >= 11:
