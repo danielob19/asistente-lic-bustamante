@@ -1155,10 +1155,32 @@ async def asistente(input_data: UserInput):
 
         # 👉 Nueva respuesta para la PRIMERA INTERACCIÓN
         if contador == 1:
+            tipo_input = clasificar_input_inicial(mensaje_usuario)
+        
+            if tipo_input == "CLINICO":
+                return {
+                    "respuesta": (
+                        "¡Hola! Bienvenido. Por lo que mencionás, parece que estás atravesando un malestar emocional. "
+                        "¿Querés contarme un poco más para poder comprender mejor lo que estás sintiendo?"
+                    )
+                }
+            
+            elif tipo_input == "ADMINISTRATIVO":
+                return {
+                    "respuesta": (
+                        "¡Hola! Soy el asistente del Lic. Daniel O. Bustamante. Si querés contactarlo, podés escribirle por WhatsApp al +54 911 3310-1186. "
+                        "¿Hay algo más que te gustaría saber?"
+                    )
+                }
+            
+            elif tipo_input == "SALUDO":
+                return {
+                    "respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"
+                }
+        
             return {
                 "respuesta": (
-                    "¡Hola! Soy el asistente virtual del Lic. Daniel O. Bustamante y me encantaría saber en qué puedo ayudarte. "
-                    "Sentite libre de contarme lo que necesites."
+                    "¡Hola! Bienvenido. Contame cómo puedo ayudarte: si estás buscando orientación emocional, información sobre consultas o simplemente querés hacer una pregunta, estoy para asistirte."
                 )
             }
         
