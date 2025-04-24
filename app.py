@@ -1484,15 +1484,14 @@ async def asistente(input_data: UserInput):
             print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
             
             respuestas_cierre_definitivo = [
-                "Como mencioné anteriormente, no puedo continuar con esta conversación. Te sugiero que consultes con el Lic. Bustamante escribiéndole al WhatsApp +54 911 3310-1186.",
-                "Ya he concluido el análisis posible en este espacio. Para una evaluación más profunda, contactá al Lic. Bustamante al WhatsApp +54 911 3310-1186.",
-                "Lamentablemente, no puedo brindarte más información por este medio. Para avanzar, te recomiendo comunicarte con el Lic. Bustamante vía WhatsApp al +54 911 3310-1186.",
-                "Recordá que para profundizar en tu situación, lo ideal es que consultes directamente con un profesional. El Lic. Bustamante puede ayudarte: WhatsApp +54 911 3310-1186.",
-                "Este canal ya ha alcanzado su límite de análisis. Si necesitás continuar, podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+                "Como ya lo mencioné, no puedo continuar con esta conversación. Si querés avanzar, escribile al Lic. Bustamante por WhatsApp al +54 911 3310-1186.",
+                "Ya se ha completado el análisis disponible en este espacio. Para continuar, podés contactar al Lic. Bustamante al WhatsApp +54 911 3310-1186.",
+                "No tengo permitido seguir más allá de este punto. Te recomiendo comunicarte con el Lic. Bustamante vía WhatsApp: +54 911 3310-1186.",
+                "Este espacio ha alcanzado su límite. Para una consulta más profunda, podés escribirle al Lic. Bustamante al +54 911 3310-1186.",
+                "Recordá que si deseás un abordaje profesional completo, el Lic. Bustamante está disponible en WhatsApp: +54 911 3310-1186."
             ]
             return {"respuesta": random.choice(respuestas_cierre_definitivo)}
         
-
         # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
         preguntas_cobertura = [
             r"(atiende[n|s]?|trabaja[n|s]?|acepta[n|s]?|tom[a|ás]|toma[n]?|atiendo)\s+(por|con)?\s*(osde|swiss medical|galeno|prepaga|obra social|cobertura médica|asistencia psicológica)",
