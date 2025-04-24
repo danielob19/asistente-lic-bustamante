@@ -1567,8 +1567,17 @@ async def asistente(input_data: UserInput):
             if emocion not in emociones_registradas_bd:
                 registrar_emocion(emocion, f"interacción {contador}")
         
-        # ✅ Interacciones clave (5 y 9): resumen clínico con síntomas literales y estado emocional predominante
+        # ✅ Interacciones clave (5 y 9): resumen clínico con síntomas literales e interpretados
         if contador in [5, 9]:
+            # 🔁 Reinterpretar todo lo dicho (literal o implícito)
+            mensajes_usuario = session.get("mensajes", [])
+            emociones_ocultas = interpretar_malestar_oculto(" ".join(mensajes_usuario)) or []
+        
+            # ⬆️ Aseguramos que las emociones implícitas se acumulen en sesión
+            nuevas_emociones = [e for e in emociones_ocultas if e not in session["emociones_detectadas"]]
+            session["emociones_detectadas"].extend(nuevas_emociones)
+        
+            # 🧾 Generar resumen clínico con toda la información integrada
             respuesta = generar_resumen_clinico_y_estado(session, contador)
             return {"respuesta": respuesta}
         
