@@ -1113,35 +1113,54 @@ async def asistente(input_data: UserInput):
             "vacío", "ansiedad", "miedo", "triste", "lloro", "no duermo", "no quiero vivir", "me cuesta respirar", "no valgo", "angustia", "culpa", "pánico", "no puedo más", "me quiero morir"
         ]
         
-        # 🧠 Evaluación clínica inicial con OpenAI antes de permitir saludo
-        try:
-            prompt_inicio = (
-                "Sos un evaluador clínico. Analizá este mensaje y determiná si expresa de manera directa o indirecta un malestar emocional.\n\n"
-                "Mensaje:\n"
-                f"{mensaje_original}\n\n"
-                "Opciones de respuesta:\n"
-                "- MAL_Clínico: si detectás un malestar, incluso si está camuflado en frases como 'todo bien' o 'no pasa nada'.\n"
-                "- NEUTRO: si es un saludo, agradecimiento, o comentario sin valor clínico.\n\n"
-                "Respondé únicamente con MAL_Clínico o NEUTRO."
+        # 🧠 Evaluación clínica inicial adaptativa y contextual
+        resultado = analizar_primer_input(mensaje_original)
+        tipo_de_input = resultado["tipo_de_input"]
+        respuesta_inicial = resultado["respuesta"]
+        
+        # Inicializa la sesión si no existe aún
+        if user_id not in user_sessions:
+            user_sessions[user_id] = {
+                "contador_interacciones": 0,
+                "ultima_interaccion": time.time(),
+                "mensajes": [],
+                "emociones_detectadas": [],
+                "ultimas_respuestas": [],
+                "input_sospechoso": False
+            }
+        
+        session = user_sessions[user_id]
+        
+        # Registrar el input inicial en tabla de auditoría (si es la primera interacción)
+        if session["contador_interacciones"] == 0:
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO primer_input_log (user_id, mensaje_original, tipo_de_input)
+                    VALUES (%s, %s, %s);
+                """, (user_id, mensaje_original.strip(), tipo_de_input))
+                conn.commit()
+                conn.close()
+                print("📝 Primer input registrado en primer_input_log.")
+            except Exception as e:
+                print(f"❌ Error al registrar primer input: {e}")
+        
+        # Si el mensaje es un saludo, devolver saludo
+        if tipo_de_input == "saludo":
+            return {"respuesta": respuesta_inicial}
+        
+        # Si el mensaje es emocional, registrar emociones detectadas desde el inicio
+        if tipo_de_input == "emocional":
+            emociones_detectadas = interpretar_malestar_oculto(mensaje_usuario)
+            session["emociones_detectadas"].extend(
+                [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
             )
-            evaluacion_inicial = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt_inicio}],
-                max_tokens=10,
-                temperature=0.0
-            ).choices[0].message["content"].strip()
         
-            if evaluacion_inicial == "NEUTRO":
-                if mensaje_sin_puntuacion in agradecimientos_exacto:
-                    return {"respuesta": "De nada. Si necesitás algo más, acá estoy."}
-                if mensaje_sin_puntuacion in despedidas_exacto:
-                    return {"respuesta": "Hasta luego. Que estés bien."}
-                if re.match(r"^(hola|holi|holaaa|buenas|buen día|buenos días|buenas tardes|buenas noches|hello|ey|epa|qué onda|buenas buenas)\b", mensaje_sin_puntuacion):
-                    return {"respuesta": "Hola. ¿En qué puedo ayudarte?"}
-        
-        except Exception as e:
-            print(f"⚠️ Error en evaluación clínica inicial: {e}")                     
-                
+        # Agregar el mensaje a la sesión y continuar
+        session["mensajes"].append(mensaje_usuario)
+        return {"respuesta": respuesta_inicial}
+                                 
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
 
