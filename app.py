@@ -222,41 +222,58 @@ def evaluar_frases_de_peligro(mensaje: str) -> bool:
 
 def analizar_primer_input(mensaje_usuario: str) -> dict:
     """
-    Evalúa el primer mensaje del usuario y devuelve:
-    - una respuesta profesional adaptativa
-    - una clasificación clínica del tipo de inicio ('saludo', 'emocional', 'confuso')
+    Evalúa el primer mensaje del usuario utilizando la interpretación crítica de OpenAI.
+    Detecta saludos disfrazados de malestar, ambigüedad emocional y señales confusas.
     """
-    saludos_temporales = {
-        "hola": "Hola",
-        "buen día": "Buen Día",
-        "buenos días": "Buenos días",
-        "buenas tardes": "Buenas tardes",
-        "buenas noches": "Buenas noches"
-    }
-
-    saludo_detectado = next((resp for saludo, resp in saludos_temporales.items() if saludo in mensaje_usuario), None)
-
-    if saludo_detectado:
-        respuesta = f"{saludo_detectado}, soy el asistente virtual del Lic. Daniel O. Bustamante. ¿En qué le puedo ayudar?"
-        return {"respuesta": respuesta, "tipo_de_input": "saludo"}
-
-    emociones = detectar_emociones_negativas(mensaje_usuario)
-
-    if emociones:
-        emociones_listadas = ", ".join(emociones[:3])
-        respuesta = (
-            f"Soy el asistente virtual del Lic. Daniel O. Bustamante. "
-            f"Por lo que describís, se identifican indicios de {emociones_listadas}. "
-            f"¿Podés precisarme un poco más lo que estás atravesando?"
-        )
-        return {"respuesta": respuesta, "tipo_de_input": "emocional"}
-
-    segmento_confuso = mensaje_usuario[:80].strip(".!?").strip()
-    respuesta = (
-        f"Soy el asistente virtual del Lic. Daniel O. Bustamante. No te comprendo, ¿qué querés decirme con \"{segmento_confuso}\"? "
-        f"¿A qué te referís?"
+    prompt = (
+        "Sos un asistente clínico con capacidad de detectar indicadores de malestar emocional incluso cuando están disfrazados, negados, o formulados como saludos, frases irónicas o ambivalentes.\n\n"
+        f"Mensaje del usuario:\n{mensaje_usuario}\n\n"
+        "Clasificá este mensaje según el tipo de inicio. Opciones posibles:\n"
+        "- saludo: si es un saludo sin contenido emocional\n"
+        "- emocional: si detectás alguna emoción negativa o malestar\n"
+        "- confuso: si el mensaje es ambiguo, vago, contradictorio o inusual\n\n"
+        "Devolvé únicamente una de las tres palabras clave: saludo, emocional o confuso."
     )
-    return {"respuesta": respuesta, "tipo_de_input": "confuso"}
+
+    try:
+        tipo = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=10,
+            temperature=0
+        ).choices[0].message["content"].strip().lower()
+
+        if tipo == "saludo":
+            return {
+                "respuesta": "Hola, soy el asistente virtual del Lic. Daniel O. Bustamante. ¿En qué puedo ayudarte?",
+                "tipo_de_input": "saludo"
+            }
+
+        if tipo == "emocional":
+            emociones = detectar_emociones_negativas(mensaje_usuario)
+            listado = ", ".join(emociones[:3]) if emociones else "malestar emocional"
+            return {
+                "respuesta": (
+                    f"Soy el asistente virtual del Lic. Daniel O. Bustamante. "
+                    f"Por lo que describís, se identifican indicios de {listado}. "
+                    f"¿Podés precisarme un poco más lo que estás atravesando?"
+                ),
+                "tipo_de_input": "emocional"
+            }
+
+        # Confuso por defecto
+        fragmento = mensaje_usuario.strip(".!?")[:80]
+        return {
+            "respuesta": f"Soy el asistente virtual del Lic. Daniel O. Bustamante. ¿Podrías aclararme qué quisiste decir con: \"{fragmento}\"?",
+            "tipo_de_input": "confuso"
+        }
+
+    except Exception as e:
+        print(f"❌ Error en analizar_primer_input: {e}")
+        return {
+            "respuesta": "Hola, soy el asistente virtual del Lic. Daniel O. Bustamante. ¿En qué puedo ayudarte?",
+            "tipo_de_input": "saludo"
+        }
 
 # Generar frase disparadora según emoción detectada
 def generar_disparador_emocional(emocion):
