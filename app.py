@@ -167,20 +167,14 @@ def construir_prompt_intermedio(mensaje_usuario: str) -> str:
 # Función para detectar emociones negativas usando OpenAI
 def detectar_emociones_negativas(mensaje):
     prompt = (
-        "Analizá el siguiente mensaje desde una perspectiva clínica y detectá exclusivamente emociones negativas o estados afectivos vinculados a malestar psicológico. "
-        "Tu tarea es identificar manifestaciones emocionales que indiquen sufrimiento, alteración afectiva o malestar clínico.\n\n"
-
+        "Sos un analista clínico de lenguaje emocional. Detectá emociones negativas o patrones de malestar en el siguiente texto, "
+        "incluso si están expresados mediante metáforas, ironías, frases evasivas o dobles sentidos.\n\n"
         "Indicaciones:\n"
-        "- Devolvé una lista separada por comas, sin explicaciones ni texto adicional.\n"
-        "- Si hay ambigüedad, asigná la emoción negativa más cercana desde el punto de vista clínico.\n"
-        "- Si hay múltiples emociones, incluilas todas separadas por comas.\n"
-        "- Si no se detectan emociones negativas, devolvé únicamente: ninguna.\n\n"
-
-        "Ejemplos clínicamente válidos:\n"
-        "- Emociones simples: tristeza, ansiedad, culpa, vergüenza, impotencia, miedo, irritabilidad, angustia.\n"
-        "- Estados complejos: vacío emocional, desgaste emocional, desesperanza, sensación de abandono, temor al rechazo, apatía profunda.\n\n"
-
-        f"Mensaje: {mensaje}"
+        "- Analizá aunque el usuario diga que 'todo está bien', 'no pasa nada', etc.\n"
+        "- No des explicaciones ni texto adicional.\n"
+        "- Devolvé una lista separada por comas.\n"
+        "- Si no hay emociones negativas, respondé únicamente: ninguna.\n\n"
+        f"Texto del usuario:\n{mensaje}"
     )
 
     try:
@@ -192,22 +186,18 @@ def detectar_emociones_negativas(mensaje):
         )
         emociones = response.choices[0].message.get("content", "").strip().lower()
 
-        print("\n===== DEPURACIÓN - DETECCIÓN DE EMOCIONES =====")
+        print("\n===== DEPURACIÓN - DETECCIÓN DE EMOCIONES (AVANZADA) =====")
         print(f"Mensaje analizado: {mensaje}")
         print(f"Respuesta de OpenAI: {emociones}")
 
-        emociones = emociones.replace("emociones negativas detectadas:", "").strip()
-        emociones = [emocion.strip() for emocion in emociones.split(",") if emocion.strip()]
-
         if "ninguna" in emociones:
-            print("No se detectaron emociones negativas.\n")
             return []
 
-        print(f"Emociones detectadas: {emociones}\n")
+        emociones = [e.strip() for e in emociones.split(",") if e.strip()]
         return emociones
 
     except Exception as e:
-        print(f"❌ Error al detectar emociones negativas: {e}")
+        print(f"❌ Error en detección avanzada de emociones: {e}")
         return []
 
 def evaluar_frases_de_peligro(mensaje: str) -> bool:
