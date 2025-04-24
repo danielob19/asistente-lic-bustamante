@@ -1412,7 +1412,7 @@ async def asistente(input_data: UserInput):
         
         for emocion in session["emociones_detectadas"]:
             if emocion not in emociones_registradas_bd:
-                registrar_emocion(emocion, f"interacción {contador}")
+                registrar_emocion(emocion, f"interacción {contador}", user_id)
         
         # ✅ En la interacción 5 y 9, generar resumen clínico y estado emocional predominante
         if contador in [5, 9]:
