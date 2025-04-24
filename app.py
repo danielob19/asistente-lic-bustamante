@@ -1462,13 +1462,8 @@ async def asistente(input_data: UserInput):
             "sí, claro", "sí gracias", "ya está", "de acuerdo", "lo veo después", "nada en particular", "todo bien", "sí"
         ]
         
-        if any(frase in mensaje_usuario for frase in frases_omitir_emociones):
-            emociones_detectadas = []
-        else:
-            emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
-        
-        if not isinstance(emociones_detectadas, list):
-            emociones_detectadas = []
+        # Interpretación emocional incluso si el mensaje parece irrelevante o evasivo
+        emociones_detectadas = interpretar_malestar_oculto(mensaje_usuario)
         
         # 🚨 Excepción clínica: detección temprana por síntomas de alto riesgo aunque sea solo uno
         sintomas_criticos = {
