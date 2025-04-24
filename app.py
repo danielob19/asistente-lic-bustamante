@@ -1096,18 +1096,34 @@ async def asistente(input_data: UserInput):
             "vacío", "ansiedad", "miedo", "triste", "lloro", "no duermo", "no quiero vivir", "me cuesta respirar", "no valgo", "angustia", "culpa", "pánico", "no puedo más", "me quiero morir"
         ]
         
-        # Si el mensaje contiene malestar, se omite el saludo automático
-        if any(indicador in mensaje_sin_puntuacion for indicador in indicadores_malestar):
-            pass  # deja continuar hacia la purificación clínica y análisis emocional
+        # 🧠 Evaluación clínica inicial con OpenAI antes de permitir saludo
+        try:
+            prompt_inicio = (
+                "Sos un evaluador clínico. Analizá este mensaje y determiná si expresa de manera directa o indirecta un malestar emocional.\n\n"
+                "Mensaje:\n"
+                f"{mensaje_original}\n\n"
+                "Opciones de respuesta:\n"
+                "- MAL_Clínico: si detectás un malestar, incluso si está camuflado en frases como 'todo bien' o 'no pasa nada'.\n"
+                "- NEUTRO: si es un saludo, agradecimiento, o comentario sin valor clínico.\n\n"
+                "Respondé únicamente con MAL_Clínico o NEUTRO."
+            )
+            evaluacion_inicial = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt_inicio}],
+                max_tokens=10,
+                temperature=0.0
+            ).choices[0].message["content"].strip()
         
-        elif re.match(r"^(hola|holi|holaaa|buenas|buen día|buenos días|buenas tardes|buenas noches|hello|ey|epa|qué onda|buenas buenas)\b", mensaje_sin_puntuacion):
-            return {"respuesta": "Hola. ¿En qué puedo ayudarte?"}
+            if evaluacion_inicial == "NEUTRO":
+                if mensaje_sin_puntuacion in agradecimientos_exacto:
+                    return {"respuesta": "De nada. Si necesitás algo más, acá estoy."}
+                if mensaje_sin_puntuacion in despedidas_exacto:
+                    return {"respuesta": "Hasta luego. Que estés bien."}
+                if re.match(r"^(hola|holi|holaaa|buenas|buen día|buenos días|buenas tardes|buenas noches|hello|ey|epa|qué onda|buenas buenas)\b", mensaje_sin_puntuacion):
+                    return {"respuesta": "Hola. ¿En qué puedo ayudarte?"}
         
-        elif mensaje_sin_puntuacion in agradecimientos_exacto:
-            return {"respuesta": "De nada. Si necesitás algo más, acá estoy."}
-        
-        elif mensaje_sin_puntuacion in despedidas_exacto:
-            return {"respuesta": "Hasta luego. Que estés bien."}               
+        except Exception as e:
+            print(f"⚠️ Error en evaluación clínica inicial: {e}")                     
                 
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
