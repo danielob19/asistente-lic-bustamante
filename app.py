@@ -1112,6 +1112,17 @@ async def asistente(input_data: UserInput):
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
 
+        # Inicializa la sesión del usuario si no existe
+        if user_id not in user_sessions:
+            user_sessions[user_id] = {
+                "contador_interacciones": 0,
+                "ultima_interaccion": time.time(),
+                "mensajes": [],
+                "emociones_detectadas": [],
+                "ultimas_respuestas": [],
+                "input_sospechoso": False  # 🆕 Bandera de intento no clínico o manipulación
+            }
+
         # 🧠 Detección temprana de malestar (antes de evaluar saludo)
         emociones_previas = detectar_emociones_negativas(mensaje_usuario)
 
@@ -1220,17 +1231,6 @@ async def asistente(input_data: UserInput):
             mensaje_original=mensaje_original,
             atencion_peligro=peligro_detectado
         )
-
-        # Inicializa la sesión del usuario si no existe
-        if user_id not in user_sessions:
-            user_sessions[user_id] = {
-                "contador_interacciones": 0,
-                "ultima_interaccion": time.time(),
-                "mensajes": [],
-                "emociones_detectadas": [],
-                "ultimas_respuestas": [],
-                "input_sospechoso": False  # 🆕 Bandera de intento no clínico o manipulación
-            }
 
         # Actualiza la sesión del usuario
         session = user_sessions[user_id]
