@@ -1458,13 +1458,17 @@ async def asistente(input_data: UserInput):
         
         # ✅ En la interacción 5 y 9, generar resumen clínico y estado emocional predominante
         if contador == 5:
-            respuesta = generar_resumen_clinico_y_estado(session, contador)
-            return {"respuesta": respuesta + " ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"}
+            resumen = generar_resumen_clinico_y_estado(session, contador)
+            respuesta = f"{resumen} ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
         
         if contador == 9:
-            respuesta = generar_resumen_clinico_y_estado(session, contador)
-            return {"respuesta": respuesta + " ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"}
-        
+            resumen = generar_resumen_clinico_y_estado(session, contador)
+            respuesta = f"{resumen} ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}        
+                
         # Interacción 10: cierre profesional definitivo
         if contador == 10:
             respuesta = (
