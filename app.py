@@ -1474,18 +1474,23 @@ async def asistente(input_data: UserInput):
                     emocion = emocion.lower().strip()
                     if emocion not in session["emociones_detectadas"]:
                         emociones_nuevas.append(emocion)
-                        session["emociones_detectadas"].append(emocion)
+        
+            # Unificar y eliminar duplicados antes del resumen clínico
+            session["emociones_detectadas"] = list(set(session["emociones_detectadas"] + emociones_nuevas))
         
             # Registrar en la BD solo las emociones nuevas no registradas aún para esta interacción
             emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
-            for emocion in session["emociones_detectadas"]:
+            for emocion in emociones_nuevas:
                 if emocion not in emociones_registradas_bd:
                     registrar_emocion(emocion, f"interacción {contador}", user_id)
         
-            # Generar resumen clínico actualizado con todos los síntomas acumulados
+            # Generar resumen clínico con todas las emociones acumuladas
             respuesta = generar_resumen_clinico_y_estado(session, contador)
-            return {"respuesta": respuesta + " ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"}      
-                        
+        
+            return {
+                "respuesta": respuesta + " ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+            }
+                      
         # Interacción 10: cierre profesional definitivo
         if contador == 10:
             respuesta = (
