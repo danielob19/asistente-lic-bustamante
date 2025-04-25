@@ -1101,7 +1101,7 @@ async def asistente(input_data: UserInput):
                 "- TESTEO: si parece un intento de probar el sistema con frases sin valor clínico.\n"
                 "- MALICIOSO: si contiene lenguaje de programación, código, SQL, shell, o expresiones técnicas.\n"
                 "- IRRELEVANTE: si no tiene ningún contenido relacionado con una consulta emocional o psicológica.\n\n"
-                "Devolvé únicamente una de las cuatro etiquetas: CLÍNICO, TESTEO, MALICIOSO o IRRELEVANTE."
+                "Devolvé únicamente una de las cuatro etiquetas: CLÍNICO, CORTESIA, TESTEO, MALICIOSO o IRRELEVANTE."
             )
         
             response_contextual = openai.ChatCompletion.create(
