@@ -19,6 +19,14 @@ from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 
+# ✅ Insertá aquí la función de seguridad textual
+def contiene_elementos_peligrosos(texto: str) -> bool:
+    patrones_riesgosos = [
+        r"openai\.api_key", r"import\s", r"os\.system", r"eval\(", r"exec\(",
+        r"<script", r"</script>", r"\bdrop\b.*\btable\b", r"\bdelete\b.*\bfrom\b",
+        r"\brm\s+-rf\b", r"\bchmod\b", r"\bmkfs\b", r"\bshutdown\b", r"\breboot\b"
+    ]
+    return any(re.search(patron, texto, re.IGNORECASE) for patron in patrones_riesgosos)
 
 # 🧠 Lista de preguntas frecuentes (FAQ) y sus respuestas fijas
 faq_respuestas = [
