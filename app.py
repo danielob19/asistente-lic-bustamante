@@ -1112,7 +1112,17 @@ async def asistente(input_data: UserInput):
             )
         
             clasificacion = response_contextual.choices[0].message['content'].strip().upper()
-        
+
+            if clasificacion == "CORTESIA":
+                return {
+                    "respuesta": random.choice([
+                        "Con gusto. Si necesitás algo más, estoy disponible para ayudarte.",
+                        "De nada. Podés escribirme cuando lo necesites.",
+                        "Un placer. Cualquier otra duda, avisame.",
+                        "Cuando quieras. Estoy para ayudarte si surge algo más."
+                    ])
+                }
+
             if clasificacion in ["TESTEO", "MALICIOSO", "IRRELEVANTE"]:
                 session = user_sessions[user_id]
                 session["input_sospechoso"] = True  # 🆕 Marcamos la sesión como sospechosa
