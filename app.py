@@ -1631,6 +1631,16 @@ async def asistente(input_data: UserInput):
         # Obtener respuesta de OpenAI
         respuesta_original = generar_respuesta_con_openai(prompt)
         
+        # 🔐 Seguridad textual: verificar si la respuesta de OpenAI contiene elementos peligrosos
+        if contiene_elementos_peligrosos(respuesta_original):
+            respuesta_ai = (
+                "Por razones de seguridad, la respuesta generada fue descartada por contener elementos técnicos no permitidos. "
+                "Podés intentar formular tu consulta de otra manera o escribir directamente al WhatsApp del Lic. Bustamante: +54 911 3310-1186."
+            )
+            registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, "Respuesta descartada por contener elementos peligrosos")
+            return {"respuesta": respuesta_ai}
+
+        
         # Validación previa
         if not respuesta_original:
             respuesta_ai = (
