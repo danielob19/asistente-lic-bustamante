@@ -1610,8 +1610,9 @@ async def asistente(input_data: UserInput):
             "El estilo debe ser clínico, objetivo y respetuoso. Evitá cualquier frase emocional, coloquial o empática simulada como 'te entiendo', 'es normal', 'tranquilo/a', 'lamentablemente', etc. "
             "No generes contenido motivacional ni promesas de bienestar. No uses expresiones institucionales como 'nuestro equipo'. "
             "Usá en cambio formulaciones profesionales como: 'Pareciera tratarse de...', 'Comprendo que refiere a...', 'Podría vincularse a...'. "
-            "No brindes enlaces ni respondas sobre temas financieros, legales ni técnicos. "
-            "Referite al profesional como 'el Lic. Bustamante'. Solo proporcioná su número de contacto si el usuario lo solicita explícitamente o si ya transcurrieron al menos 5 interacciones."
+            "No brindes enlaces ni respondas sobre temas financieros, legales ni técnicos. Referite al profesional siempre como 'el Lic. Bustamante'. "
+            "IMPORTANTE: No recomiendes agendar consultas ni menciones su número de contacto antes de la interacción número 5, excepto si el usuario lo solicita de forma directa y explícita. "
+            "Solo en las interacciones 5, 9 o eventualmente a partir de la 10, podrás sugerir contacto de forma neutral, sin insistencia ni persuasión emocional."
         )
 
         # Obtener respuesta de OpenAI
