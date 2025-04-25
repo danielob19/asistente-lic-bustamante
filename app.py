@@ -719,8 +719,11 @@ def clasificar_input_inicial(mensaje: str) -> str:
     indicadores_malestar = [
         "me siento", "estoy", "siento", "no puedo", "me cuesta", "me duele", "tengo miedo", "ansiedad", "triste", "deprimido"
     ]
+    expresiones_cortesia = [
+        "gracias", "muchas gracias", "ok gracias", "te agradezco", "mil gracias", "gracias por tu ayuda", "gracias por todo"
+    ]
 
-    mensaje_limpio = mensaje.lower()
+    mensaje_limpio = mensaje.lower().strip()
 
     if any(p in mensaje_limpio for p in indicadores_malestar):
         return "CLINICO"
@@ -728,6 +731,8 @@ def clasificar_input_inicial(mensaje: str) -> str:
         return "ADMINISTRATIVO"
     elif mensaje_limpio in saludo_simple:
         return "SALUDO"
+    elif any(p in mensaje_limpio for p in expresiones_cortesia):
+        return "CORTESIA"
     return "OTRO"
 
 # Análisis de texto del usuario
