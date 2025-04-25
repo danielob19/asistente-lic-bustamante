@@ -1182,7 +1182,7 @@ async def asistente(input_data: UserInput):
                         "¿Querés contarme un poco más para poder comprender mejor lo que estás sintiendo?"
                     )
                 }
-            
+        
             elif tipo_input == "ADMINISTRATIVO":
                 return {
                     "respuesta": (
@@ -1190,10 +1190,15 @@ async def asistente(input_data: UserInput):
                         "¿Hay algo más que te gustaría saber?"
                     )
                 }
-            
+        
             elif tipo_input == "SALUDO":
                 return {
                     "respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"
+                }
+            
+            elif tipo_input == "CORTESIA":
+                return {
+                    "respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."
                 }
         
             return {
