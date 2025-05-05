@@ -851,7 +851,7 @@ class UserInput(BaseModel):
 
 # Gestión de sesiones (en memoria)
 user_sessions = {}
-SESSION_TIMEOUT = 600  # Tiempo en segundos para limpiar sesiones inactivas
+SESSION_TIMEOUT = 60  # Tiempo en segundos para limpiar sesiones inactivas
 
 @app.on_event("startup")
 def startup_event():
