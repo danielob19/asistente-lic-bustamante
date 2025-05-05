@@ -164,6 +164,31 @@ def generar_respuesta_con_openai(prompt):
         print(f"Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
+# 🧠 Evaluación temática: ¿el mensaje refiere a un contenido clínico o emocional?
+def es_tema_clinico_o_emocional(texto: str) -> bool:
+    """
+    Evalúa si el mensaje contiene contenido clínico, emocional o psicológico.
+    Devuelve True si detecta un tema relevante, False si parece estar fuera de contexto.
+    """
+    temas_relevantes = [
+        "ansiedad", "tristeza", "angustia", "duelo", "depresión", "pareja", "autoestima",
+        "psicólogo", "terapia", "psicoterapia", "malestar", "emociones", "me siento",
+        "no tengo ganas", "no puedo más", "estoy mal", "necesito ayuda", "consultar", "psicológico"
+    ]
+
+    texto = texto.lower()
+    return any(tema in texto for tema in temas_relevantes)
+
+
+# 📎 Respuesta profesional para mensajes fuera de contexto clínico o emocional
+def respuesta_default_fuera_de_contexto():
+    return (
+        "Este espacio está destinado exclusivamente a consultas vinculadas al bienestar emocional y psicológico. "
+        "Si lo que querés compartir tiene relación con alguna inquietud personal, emocional o clínica, "
+        "estoy disponible para acompañarte desde ese lugar."
+    )
+
+
 # Función para detectar emociones negativas usando OpenAI
 def detectar_emociones_negativas(mensaje):
     prompt = (
