@@ -638,10 +638,11 @@ def registrar_respuesta_openai(interaccion_id: int, respuesta: str):
     except Exception as e:
         print(f"❌ Error al registrar respuesta en la base de datos: {e}\n")
 
+
 def registrar_auditoria_input_original(user_id: str, mensaje_original: str, mensaje_purificado: str, clasificacion: str = None):
     """
-    Registra el input original, su versión purificada y su clasificación en una tabla de auditoría.
-    Permite trazabilidad entre lo que dijo el usuario, cómo fue interpretado y cómo se clasificó.
+    Registra el input original, su versión purificada y la clasificación contextual (opcional) en una tabla de auditoría.
+    Permite trazabilidad entre lo que dijo el usuario y cómo fue interpretado.
     """
     try:
         print("\n📋 Registrando input original y purificado en auditoría")
@@ -653,7 +654,7 @@ def registrar_auditoria_input_original(user_id: str, mensaje_original: str, mens
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
 
-        # Crear la tabla si no existe, con la nueva columna 'clasificacion'
+        # Crear tabla si no existe, con columna de clasificación incluida
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS auditoria_input_original (
                 id SERIAL PRIMARY KEY,
@@ -665,11 +666,12 @@ def registrar_auditoria_input_original(user_id: str, mensaje_original: str, mens
             );
         """)
 
-        # Insertar el registro
+        # Insertar datos con clasificación
         cursor.execute("""
-            INSERT INTO auditoria_input_original (user_id, mensaje_original, mensaje_purificado, clasificacion)
-            VALUES (%s, %s, %s, %s);
-        """, (user_id.strip(), mensaje_original.strip(), mensaje_purificado.strip(), clasificacion))
+            INSERT INTO auditoria_input_original (
+                user_id, mensaje_original, mensaje_purificado, clasificacion
+            ) VALUES (%s, %s, %s, %s);
+        """, (user_id, mensaje_original.strip(), mensaje_purificado.strip(), clasificacion))
 
         conn.commit()
         conn.close()
@@ -677,6 +679,7 @@ def registrar_auditoria_input_original(user_id: str, mensaje_original: str, mens
 
     except Exception as e:
         print(f"❌ Error al registrar auditoría del input original: {e}")
+
 
 # Registrar una similitud semántica en la base de datos
 def registrar_similitud_semantica(user_id: str, consulta: str, pregunta_faq: str, similitud: float):
