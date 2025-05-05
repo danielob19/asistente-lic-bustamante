@@ -1058,6 +1058,24 @@ async def asistente(input_data: UserInput):
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
 
+        # ✅ Filtro contextual previo: ¿Es un mensaje clínico o emocional?
+        if not es_tema_clinico_o_emocional(mensaje_usuario):
+            print("⚠️🔎 Mensaje fuera de contexto clínico/emocional detectado.")
+            print(f"   🔹 Usuario ID: {user_id}")
+            print(f"   🔹 Mensaje: {mensaje_usuario}")
+            registrar_auditoria_input_original(
+                user_id,
+                mensaje_original,
+                mensaje_usuario + " [⚠️ DETECTADO COMO FUERA DE CONTEXTO]"
+            )
+            return {
+                "respuesta": (
+                    "Este espacio está destinado exclusivamente a consultas vinculadas al bienestar emocional y psicológico. "
+                    "Si lo que querés compartir tiene relación con alguna inquietud personal, emocional o clínica, "
+                    "estoy disponible para acompañarte desde ese lugar."
+                )
+            }
+        
         # 🛡️ Etapa de blindaje contra inputs maliciosos
         def es_input_malicioso(texto: str) -> bool:
             patrones_maliciosos = [
