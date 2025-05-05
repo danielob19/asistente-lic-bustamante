@@ -1096,9 +1096,9 @@ async def asistente(input_data: UserInput):
             print(f"👤 Usuario ID: {user_id}")
             print(f"📝 Mensaje: {mensaje_usuario}")
             registrar_auditoria_input_original(
-                user_id=user_id,
-                mensaje_original=mensaje_original,
-                mensaje_purificado=mensaje_usuario,
+                user_id,
+                mensaje_original,
+                mensaje_usuario,
                 clasificacion="FUERA_DE_CONTEXTO"
             )
             return {
@@ -1108,6 +1108,7 @@ async def asistente(input_data: UserInput):
                     "estoy disponible para acompañarte desde ese lugar."
                 )
             }
+
         
         # 🛡️ Etapa de blindaje contra inputs maliciosos
         def es_input_malicioso(texto: str) -> bool:
