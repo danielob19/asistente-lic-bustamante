@@ -638,34 +638,38 @@ def registrar_respuesta_openai(interaccion_id: int, respuesta: str):
     except Exception as e:
         print(f"❌ Error al registrar respuesta en la base de datos: {e}\n")
 
-def registrar_auditoria_input_original(user_id: str, mensaje_original: str, mensaje_purificado: str):
+def registrar_auditoria_input_original(user_id: str, mensaje_original: str, mensaje_purificado: str, clasificacion: str = None):
     """
-    Registra el input original y su versión purificada en una tabla de auditoría.
-    Permite trazabilidad entre lo que dijo el usuario y cómo fue interpretado.
+    Registra el input original, su versión purificada y su clasificación en una tabla de auditoría.
+    Permite trazabilidad entre lo que dijo el usuario, cómo fue interpretado y cómo se clasificó.
     """
     try:
         print("\n📋 Registrando input original y purificado en auditoría")
         print(f"👤 user_id: {user_id}")
         print(f"📝 Original: {mensaje_original}")
         print(f"🧼 Purificado: {mensaje_purificado}")
+        print(f"🏷️ Clasificación: {clasificacion}")
 
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
 
+        # Crear la tabla si no existe, con la nueva columna 'clasificacion'
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS auditoria_input_original (
                 id SERIAL PRIMARY KEY,
                 user_id TEXT NOT NULL,
                 mensaje_original TEXT NOT NULL,
                 mensaje_purificado TEXT NOT NULL,
+                clasificacion TEXT,
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
 
+        # Insertar el registro
         cursor.execute("""
-            INSERT INTO auditoria_input_original (user_id, mensaje_original, mensaje_purificado)
-            VALUES (%s, %s, %s);
-        """, (user_id, mensaje_original.strip(), mensaje_purificado.strip()))
+            INSERT INTO auditoria_input_original (user_id, mensaje_original, mensaje_purificado, clasificacion)
+            VALUES (%s, %s, %s, %s);
+        """, (user_id.strip(), mensaje_original.strip(), mensaje_purificado.strip(), clasificacion))
 
         conn.commit()
         conn.close()
