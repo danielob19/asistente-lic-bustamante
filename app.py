@@ -1155,10 +1155,11 @@ async def asistente(input_data: UserInput):
                 f"'{mensaje_usuario}'\n\n"
                 "Opciones posibles:\n"
                 "- CLÍNICO: si el mensaje describe emociones, estados anímicos, inquietudes personales o pedidos de orientación psicológica.\n"
+                "- CORTESIA: si es una expresión de agradecimiento, saludo o cierre amable.\n"
                 "- TESTEO: si parece un intento de probar el sistema con frases sin valor clínico.\n"
                 "- MALICIOSO: si contiene lenguaje de programación, código, SQL, shell, o expresiones técnicas.\n"
                 "- IRRELEVANTE: si no tiene ningún contenido relacionado con una consulta emocional o psicológica.\n\n"
-                "Devolvé únicamente una de las cuatro etiquetas: CLÍNICO, CORTESIA, TESTEO, MALICIOSO o IRRELEVANTE."
+                "Devolvé únicamente una de las cinco etiquetas: CLÍNICO, CORTESIA, TESTEO, MALICIOSO o IRRELEVANTE."
             )
         
             response_contextual = openai.ChatCompletion.create(
@@ -1169,8 +1170,14 @@ async def asistente(input_data: UserInput):
             )
         
             clasificacion = response_contextual.choices[0].message['content'].strip().upper()
-
+        
             if clasificacion == "CORTESIA":
+                registrar_auditoria_input_original(
+                    user_id,
+                    mensaje_original,
+                    mensaje_usuario,
+                    "CORTESIA"
+                )
                 return {
                     "respuesta": random.choice([
                         "Con gusto. Si necesitás algo más, estoy disponible para ayudarte.",
@@ -1179,19 +1186,22 @@ async def asistente(input_data: UserInput):
                         "Cuando quieras. Estoy para ayudarte si surge algo más."
                     ])
                 }
-
+        
             if clasificacion in ["TESTEO", "MALICIOSO", "IRRELEVANTE"]:
                 session = user_sessions[user_id]
-                session["input_sospechoso"] = True  # 🆕 Marcamos la sesión como sospechosa
+                session["input_sospechoso"] = True
                 print("⚠️🧠 Input sospechoso detectado por OpenAI (contextual):")
                 print(f"   🔹 Usuario ID: {user_id}")
                 print(f"   🔹 Clasificación: {clasificacion}")
                 print(f"   🔹 Input: {mensaje_usuario}")
+                
                 registrar_auditoria_input_original(
                     user_id,
                     mensaje_original,
-                    f"{mensaje_usuario} [⚠️ DETECTADO COMO INPUT {clasificacion} POR CONTEXTO]"
+                    mensaje_usuario,
+                    clasificacion
                 )
+        
                 return {
                     "respuesta": (
                         "El sistema ha detectado que tu mensaje no parece formar parte de una consulta clínica. "
