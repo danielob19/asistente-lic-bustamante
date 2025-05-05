@@ -1151,15 +1151,17 @@ async def asistente(input_data: UserInput):
         # 🧠 Detección contextual con OpenAI (segunda capa de blindaje)
         try:
             prompt_contextual = (
-                f"Analizá el siguiente mensaje y clasificalo según su intencionalidad:\n"
+                f"Clasificá el siguiente mensaje según su intención principal:\n"
                 f"'{mensaje_usuario}'\n\n"
                 "Opciones posibles:\n"
-                "- CLÍNICO: si el mensaje describe emociones, estados anímicos, inquietudes personales o pedidos de orientación psicológica.\n"
-                "- CORTESIA: si es una expresión de agradecimiento, saludo o cierre amable.\n"
-                "- TESTEO: si parece un intento de probar el sistema con frases sin valor clínico.\n"
-                "- MALICIOSO: si contiene lenguaje de programación, código, SQL, shell, o expresiones técnicas.\n"
-                "- IRRELEVANTE: si no tiene ningún contenido relacionado con una consulta emocional o psicológica.\n\n"
-                "Devolvé únicamente una de las cinco etiquetas: CLÍNICO, CORTESIA, TESTEO, MALICIOSO o IRRELEVANTE."
+                "- CLÍNICO: si describe malestar emocional, síntomas o búsqueda de orientación psicológica.\n"
+                "- CORTESIA: si expresa agradecimiento, saludo o cierre amable.\n"
+                "- CONSULTA_AGENDAR: si consulta sobre turnos, horarios, formas de pago, costo o desea agendar sesión.\n"
+                "- CONSULTA_MODALIDAD: si pregunta por ubicación, modalidad online, o dirección del consultorio.\n"
+                "- TESTEO: si parece un mensaje de prueba sin intención real.\n"
+                "- MALICIOSO: si contiene lenguaje técnico, código o intento de manipulación.\n"
+                "- IRRELEVANTE: si no tiene relación con ninguna consulta emocional ni administrativa.\n\n"
+                "Respondé únicamente con una de estas etiquetas: CLÍNICO, CORTESIA, CONSULTA_AGENDAR, CONSULTA_MODALIDAD, TESTEO, MALICIOSO, IRRELEVANTE."
             )
         
             response_contextual = openai.ChatCompletion.create(
@@ -1172,12 +1174,7 @@ async def asistente(input_data: UserInput):
             clasificacion = response_contextual.choices[0].message['content'].strip().upper()
         
             if clasificacion == "CORTESIA":
-                registrar_auditoria_input_original(
-                    user_id,
-                    mensaje_original,
-                    mensaje_usuario,
-                    "CORTESIA"
-                )
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CORTESIA")
                 return {
                     "respuesta": random.choice([
                         "Con gusto. Si necesitás algo más, estoy disponible para ayudarte.",
@@ -1185,6 +1182,23 @@ async def asistente(input_data: UserInput):
                         "Un placer. Cualquier otra duda, avisame.",
                         "Cuando quieras. Estoy para ayudarte si surge algo más."
                     ])
+                }
+        
+            if clasificacion == "CONSULTA_AGENDAR":
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CONSULTA_AGENDAR")
+                return {
+                    "respuesta": (
+                        "Para agendar una sesión o conocer disponibilidad, podés escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+                    )
+                }
+        
+            if clasificacion == "CONSULTA_MODALIDAD":
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CONSULTA_MODALIDAD")
+                return {
+                    "respuesta": (
+                        "El Lic. Bustamante atiende exclusivamente en modalidad Online, a través de videollamadas. "
+                        "Podés consultarle directamente al WhatsApp +54 911 3310-1186 si querés coordinar una sesión."
+                    )
                 }
         
             if clasificacion in ["TESTEO", "MALICIOSO", "IRRELEVANTE"]:
@@ -1195,13 +1209,7 @@ async def asistente(input_data: UserInput):
                 print(f"   🔹 Clasificación: {clasificacion}")
                 print(f"   🔹 Input: {mensaje_usuario}")
                 
-                registrar_auditoria_input_original(
-                    user_id,
-                    mensaje_original,
-                    mensaje_usuario,
-                    clasificacion
-                )
-        
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, clasificacion)
                 return {
                     "respuesta": (
                         "El sistema ha detectado que tu mensaje no parece formar parte de una consulta clínica. "
