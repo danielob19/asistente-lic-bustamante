@@ -1089,13 +1089,14 @@ async def asistente(input_data: UserInput):
 
         # ✅ Filtro contextual previo: ¿Es un mensaje clínico o emocional?
         if not es_tema_clinico_o_emocional(mensaje_usuario):
-            print("⚠️🔎 Mensaje fuera de contexto clínico/emocional detectado.")
-            print(f"   🔹 Usuario ID: {user_id}")
-            print(f"   🔹 Mensaje: {mensaje_usuario}")
+            print("⚠️🔍 Mensaje fuera de contexto clínico/emocional detectado.")
+            print(f"👤 Usuario ID: {user_id}")
+            print(f"📝 Mensaje: {mensaje_usuario}")
             registrar_auditoria_input_original(
-                user_id,
-                mensaje_original,
-                mensaje_usuario + " [⚠️ DETECTADO COMO FUERA DE CONTEXTO]"
+                user_id=user_id,
+                mensaje_original=mensaje_original,
+                mensaje_purificado=mensaje_usuario,
+                clasificacion="FUERA_DE_CONTEXTO"
             )
             return {
                 "respuesta": (
