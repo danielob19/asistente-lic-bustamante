@@ -1129,16 +1129,21 @@ async def asistente(input_data: UserInput):
             print(f"   🔹 Usuario ID: {user_id}")
             print(f"   🔹 Mensaje purificado: {mensaje_usuario}")
             print(f"   🔹 Mensaje original: {mensaje_original}")
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario + " [⚠️ DETECTADO COMO INPUT MALICIOSO]")
+            
+            registrar_auditoria_input_original(
+                user_id,
+                mensaje_original,
+                mensaje_usuario + " [⚠️ DETECTADO COMO INPUT MALICIOSO]",
+                "MALICIOSO"
+            )
+            
             return {
                 "respuesta": (
                     "El sistema ha detectado que tu mensaje contiene elementos técnicos no compatibles con una consulta clínica. "
                     "Si tenés una duda o problema de salud emocional, podés contarme con confianza."
                 )
             }
-        
-        print(f"🧼 Input purificado: {mensaje_usuario}")
-        print(f"📝 Input original: {mensaje_original}")
+
 
         # 📋 Registro de auditoría del mensaje original y purificado
         registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario)
