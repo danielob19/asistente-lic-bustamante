@@ -171,14 +171,15 @@ def es_tema_clinico_o_emocional(texto: str) -> bool:
     Devuelve True si detecta un tema relevante, False si parece estar fuera de contexto.
     """
     temas_relevantes = [
-        "ansiedad", "tristeza", "angustia", "duelo", "depresión", "pareja", "autoestima",
-        "psicólogo", "terapia", "psicoterapia", "malestar", "emociones", "me siento",
-        "no tengo ganas", "no puedo más", "estoy mal", "necesito ayuda", "consultar", "psicológico"
+        "me cuesta todo", "no quiero hablar con nadie", "nada tiene sentido", "sin rumbo", 
+        "vacío emocional", "no tengo energía", "me cuesta dormir", "me siento solo",
+        "me siento", "estoy", "siento", "no puedo", "me duele", "tengo miedo", 
+        "ansiedad", "triste", "deprimido", "insomnio", "sin ganas", "no tengo ganas",
+        "autoestima", "angustia", "duelo", "crisis", "bloqueado", "psicológico", "emociones"
     ]
 
     texto = texto.lower()
     return any(tema in texto for tema in temas_relevantes)
-
 
 # 📎 Respuesta profesional para mensajes fuera de contexto clínico o emocional
 def respuesta_default_fuera_de_contexto():
@@ -958,7 +959,7 @@ def obtener_emociones_ya_registradas(user_id, interaccion_id):
         cur = conn.cursor()
         cur.execute("""
             SELECT emocion FROM emociones_detectadas
-            WHERE user_id = %s AND interaccion = %s
+            WHERE user_id = %s AND contexto = %s
         """, (user_id, f"interacción {interaccion_id}"))
         resultados = cur.fetchall()
         emociones = [r[0].lower().strip() for r in resultados]
