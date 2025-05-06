@@ -773,7 +773,7 @@ def analizar_texto(mensajes_usuario):
     Analiza los mensajes del usuario para detectar coincidencias con los síntomas almacenados
     y muestra un cuadro probable y emociones o patrones de conducta adicionales detectados.
     """
-    sintomas_existentes = obtener_sintomas()
+    sintomas_existentes = obtener_sintomas_existentes()
     if not sintomas_existentes:
         return "No se encontraron síntomas en la base de datos para analizar."
 
