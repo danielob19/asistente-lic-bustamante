@@ -767,25 +767,40 @@ def clasificar_input_inicial(mensaje: str) -> str:
         return "CORTESIA"
     return "OTRO"
 
+def obtener_sintomas_con_estado_emocional():
+    """
+    Devuelve una lista de tuplas (sintoma, estado_emocional) desde la base de datos.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("SELECT LOWER(sintoma), estado_emocional FROM palabras_clave")
+        resultados = cursor.fetchall()
+        conn.close()
+        return resultados
+    except Exception as e:
+        print(f"❌ Error al obtener síntomas con estado emocional: {e}")
+        return []
+
 # Análisis de texto del usuario
 def analizar_texto(mensajes_usuario):
     """
     Analiza los mensajes del usuario para detectar coincidencias con los síntomas almacenados
     y muestra un cuadro probable y emociones o patrones de conducta adicionales detectados.
     """
-    sintomas_existentes = obtener_sintomas_existentes()
+    sintomas_existentes = obtener_sintomas_con_estado_emocional()
     if not sintomas_existentes:
         return "No se encontraron síntomas en la base de datos para analizar."
 
     keyword_to_cuadro = {sintoma.lower(): cuadro for sintoma, cuadro in sintomas_existentes}
+    sintomas_registrados = {sintoma.lower() for sintoma, _ in sintomas_existentes}
+
     coincidencias = []
     emociones_detectadas = []
-    sintomas_sin_coincidencia = []
+    nuevos_sintomas = []
 
-    # Procesar mensajes del usuario para detectar síntomas
-    for mensaje in mensajes:
+    for mensaje in mensajes_usuario:
         user_words = mensaje.lower().split()
-        # Filtrar palabras irrelevantes y descartar palabras cortas (como "se", "las")
         user_words = [
             palabra for palabra in user_words
             if palabra not in palabras_irrelevantes and len(palabra) > 2 and palabra.isalpha()
@@ -797,8 +812,12 @@ def analizar_texto(mensajes_usuario):
             elif palabra not in nuevos_sintomas:
                 nuevos_sintomas.append(palabra)
 
+    # Registrar síntomas nuevos sin cuadro clínico
+    for sintoma in nuevos_sintomas:
+        if sintoma not in sintomas_registrados:
+            registrar_sintoma(sintoma, None)
 
-    # Generar emociones detectadas a partir de mensajes sin coincidencia
+    # Generar emociones detectadas si hay pocas coincidencias
     if len(coincidencias) < 2:
         texto_usuario = " ".join(mensajes_usuario)
         prompt = (
@@ -815,13 +834,11 @@ def analizar_texto(mensajes_usuario):
                 if emocion.strip().lower() not in palabras_irrelevantes
             ]
 
-            # Registrar cada emoción detectada como síntoma en la base de datos
             for emocion in emociones_detectadas:
                 registrar_sintoma(emocion, "patrón emocional detectado")
 
         except Exception as e:
             print(f"Error al usar OpenAI para detectar emociones: {e}")
-
 
     if not coincidencias and not emociones_detectadas:
         return "No se encontraron suficientes coincidencias para determinar un cuadro probable."
