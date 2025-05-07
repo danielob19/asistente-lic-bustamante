@@ -727,32 +727,6 @@ def purificar_input_clinico(texto: str) -> str:
         negadores_criticos = ["nada", "nadie", "ninguno", "ninguna", "no"]
         contiene_negador = any(re.search(rf'\b{n}\b', texto_original) for n in negadores_criticos)
 
-        # Reemplazos clínicos unificados
-        reemplazos = {
-            "no tengo ganas de nada": "apatía profunda",
-            "nada me entusiasma": "anhedonia",
-            "nada me interesa": "desinterés",
-            "nada me importa": "apatía profunda",
-            "no quiero ver a nadie": "aislamiento",
-            "me cuesta dormir": "insomnio",
-            "no puedo dormir": "insomnio",
-            "lloro sin motivo": "llanto sin motivo",
-            "no me animo a salir": "fobia social",
-            "me da miedo salir": "fobia social",
-            "me pongo furioso": "desesperanza",
-            "me quiero morir": "ideación suicida",
-            "no quiero vivir": "ideación suicida",
-            "pienso en morirme": "ideación suicida",
-            "me siento ansioso": "ansiedad",
-            "todo me molesta": "irritabilidad",
-            "todo me enoja": "irritabilidad",
-            "no me reconozco": "despersonalización"
-        }
-
-        for clave, reemplazo in reemplazos.items():
-            if clave in texto_original:
-                texto_original = texto_original.replace(clave, reemplazo)
-
         texto = texto_original
 
         # 🗑️ Muletillas a eliminar
@@ -774,6 +748,31 @@ def purificar_input_clinico(texto: str) -> str:
         # ✅ Reinsertar negador si fue quitado del inicio
         if contiene_negador and not re.match(r'^\s*(nada|nadie|ninguno|ninguna|no)\b', texto, re.IGNORECASE):
             texto = "No " + texto
+
+        # 🧩 Reemplazos clínicos para estandarización semántica (después del negador)
+        reemplazos = {
+            "no tengo ganas de nada": "apatía profunda",
+            "nada me entusiasma": "anhedonia",
+            "nada me interesa": "desinterés",
+            "nada me importa": "apatía profunda",
+            "no quiero ver a nadie": "aislamiento",
+            "me cuesta dormir": "insomnio",
+            "no puedo dormir": "insomnio",
+            "lloro sin motivo": "llanto sin motivo",
+            "no me animo a salir": "fobia social",
+            "me da miedo salir": "fobia social",
+            "me pongo furioso": "desesperanza",
+            "me quiero morir": "ideación suicida",
+            "no quiero vivir": "ideación suicida",
+            "pienso en morirme": "ideación suicida",
+            "me siento ansioso": "ansiedad",
+            "todo me molesta": "irritabilidad",
+            "todo me enoja": "irritabilidad",
+            "no me reconozco": "despersonalización"
+        }
+        for clave, valor in reemplazos.items():
+            if clave in texto:
+                texto = texto.replace(clave, valor)
 
         # 🧠 Capitalizar primera letra
         if texto:
