@@ -719,40 +719,63 @@ def purificar_input_clinico(texto: str) -> str:
         if not isinstance(texto, str):
             return ""
 
-        # 🛡️ Protección: evitar eliminar "no", "nada", "nadie" si son parte del sentido clínico
+        # 🔍 Protección: conservar negaciones clínicas relevantes
         negadores_criticos = ["nada", "nadie", "ninguno", "ninguna", "no"]
-        preservado = any(re.search(rf'\b{n}\b', texto.lower()) for n in negadores_cricos)
+        preservado = any(re.search(rf'\b{n}\b', texto.lower()) for n in negadores_criticos)
 
-        # 🗑️ Muletillas a eliminar (menos los negadores críticos)
+        # 🧹 Muletillas comunes y palabras vacías a eliminar
         muletillas = [
             r'\b(este|eh+|mmm+|ajá|tipo|digamos|lo|sea|viste|bueno|a ver|me explico|ehh*)\b',
-            r'\b(sí|si|no|claro|claro)\b'
+            r'\b(sí|si|claro)\b'
         ]
-
         for patron in muletillas:
             texto = re.sub(patron, '', texto, flags=re.IGNORECASE)
 
-        # ✂️ Eliminación de residuos gramaticales redundantes
-        texto = re.sub(r'\b(\w{1}) (\w+)', r'\1 \2', texto, flags=re.IGNORECASE)
+        # 🧠 Reemplazos clínicos unificadores (para enriquecer coincidencias semánticas)
+        reemplazos = {
+            "no tengo ganas de nada": "apatía profunda",
+            "nada me entusiasma": "anhedonia",
+            "nada me interesa": "desinterés",
+            "nada me importa": "apatía profunda",
+            "no quiero ver a nadie": "aislamiento",
+            "me cuesta dormir": "insomnio",
+            "no puedo dormir": "insomnio",
+            "lloro sin motivo": "llanto sin motivo",
+            "me da miedo la gente": "fobia social",
+            "me da miedo salir": "fobia social",
+            "no tengo futuro": "desesperanza",
+            "me quiero morir": "ideación suicida",
+            "no quiero vivir": "ideación suicida",
+            "pienso en morirme": "ideación suicida",
+            "me agarra ansiedad": "ansiedad",
+            "todo me molesta": "irritabilidad",
+            "todo me enoja": "irritabilidad",
+            "no me reconozco": "despersonalización"
+        }
+        texto_original = texto.lower()
+        for clave, reemplazo in reemplazos.items():
+            texto_original = texto_original.replace(clave, reemplazo)
+
+        # ✂️ Limpieza final de residuos gramaticales redundantes
+        texto = re.sub(r'\b(\w{1}) (\w+)', r'\1 \2', texto_original)
         texto = re.sub(r'\s{2,}', ' ', texto)
         texto = re.sub(r'(\.{2,})', '.', texto)
         texto = re.sub(r'(,{2,})', ',', texto)
         texto = re.sub(r'[\s\.,!?]+$', '', texto)
-
         texto = texto.strip()
 
-        # ✅ Reintegrar "no" si fue eliminado por error y era inicial
+        # 🔄 Restaurar "no" si fue parte del inicio y se perdió
         if preservado and not re.match(r'^\s*(nada|nadie|ninguno|ninguna|no)\b', texto, re.IGNORECASE):
             texto = "No " + texto
 
-        # 🧠 Capitalizar primera letra si es necesario
+        # 🧠 Capitalizar la primera letra para mantener estilo
         if texto:
             texto = texto[0].upper() + texto[1:]
 
         return texto
 
     except Exception as e:
-        print(f❌ Error en purificar_input_clinico: {e}")
+        print(f"[ERROR] purificar_input_clinico: {e}")
         return ""
 
 def clasificar_input_inicial(mensaje: str) -> str:
