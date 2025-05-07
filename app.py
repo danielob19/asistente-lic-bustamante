@@ -718,34 +718,30 @@ def purificar_input_clinico(texto: str) -> str:
         if not isinstance(texto, str):
             return ""
 
-        # Preservar estructuras clínicas con negadores al inicio (nada, nadie, ninguno)
-        if re.match(r'^\s*(nada|nadie|ninguno|ninguna|no)\b', texto, re.IGNORECASE):
-            negador_preservado = True
-        else:
-            negador_preservado = False
+        # 🔒 Preservar frases con negación inicial: "nada", "nadie", "ninguno"
+        negador_preservado = bool(re.match(r"^\s*(nada|nadie|ninguno|ninguna|no)\b", texto, re.IGNORECASE))
 
-        # Muletillas eliminables
+        # 🧹 Muletillas a eliminar
         muletillas = [
-            r'\b(este|eh+|mmm+|ajá|tipo|digamos|lo|sea|viste|nada|bueno|a ver|me explico|ehh+)\b',
-            r'\b(sí|sí|no|claro|claro)\b'
+            r"\b(este|eh+|mmm+|ajá|tipo|digamos|lo|sea|viste|nada|bueno|a ver|me explico|ehh+)\b",
+            r"\b(sí|sí|no|claro|claro)\b"
         ]
         for patron in muletillas:
             texto = re.sub(patron, "", texto, flags=re.IGNORECASE)
 
-        # Eliminación de residuos gramaticales redundantes
-        texto = re.sub(r'\b(\w{1}) (\1\w+)', r'\1\2', texto, flags=re.IGNORECASE)
-        texto = re.sub(r'(\s+)+', " ", texto)
-        texto = re.sub(r'(,){2,}', ',', texto)
-        texto = re.sub(r'(\.{2,})', '.', texto)
-        texto = re.sub(r'[\s*(\.\,\!?)]+$', '', texto)
-
+        # 🧽 Limpieza de residuos y repeticiones gramaticales
+        texto = re.sub(r"\b(\w+)( \1\b)+", r"\1", texto, flags=re.IGNORECASE)  # me me → me
+        texto = re.sub(r"\s+", " ", texto)
+        texto = re.sub(r"\.{2,}", ".", texto)
+        texto = re.sub(r",[,\s]*", ", ", texto)
+        texto = re.sub(r"[^\w\sáéíóúüñ]", "", texto)  # quitar signos innecesarios
         texto = texto.strip()
 
-        # Reintegrar el negador original si se había preservado
-        if negador_preservado and not re.match(r'^\s*(nada|nadie|ninguno|ninguna|no)\b', texto, re.IGNORECASE):
+        # 🔁 Reintegrar negador si había sido detectado
+        if negador_preservado and not re.match(r"^\s*(nada|nadie|ninguno|ninguna|no)\b", texto, re.IGNORECASE):
             texto = "No " + texto
 
-        # Capitalizar inicial si corresponde
+        # 🧠 Capitalizar primera letra si corresponde
         if texto:
             texto = texto[0].upper() + texto[1:]
 
