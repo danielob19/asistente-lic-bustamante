@@ -777,30 +777,36 @@ def purificar_input_clinico(texto: str) -> str:
         print(f"[Error] purificar_input_clinico: {e}")
         return ""
 
-def clasificar_input_inicial(mensaje: str) -> str:
-    saludo_simple = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]
-    preguntas_administrativas = [
-        "contacto", "número", "numero", "whatsapp", "teléfono", "psicólogo", "psicologo", "terapia", "turno",
-        "atención", "consulta", "sesión", "precio", "valor", "cobertura", "obras sociales"
-    ]
-    indicadores_malestar = [
-        "me siento", "estoy", "siento", "no puedo", "me cuesta", "me duele", "tengo miedo", "ansiedad", "triste", "deprimido"
-    ]
-    frases_cortesia = [
-        "gracias", "muchas gracias", "muy amable", "te agradezco", "mil gracias", "ok gracias", "gracias por todo"
-    ]
+def clasificar_input_inicial(texto: str) -> str:
+    texto = texto.lower().strip()
 
-    mensaje_limpio = mensaje.lower().strip()
-
-    if any(p in mensaje_limpio for p in indicadores_malestar):
-        return "CLINICO"
-    elif any(p in mensaje_limpio for p in preguntas_administrativas):
-        return "ADMINISTRATIVO"
-    elif mensaje_limpio in saludo_simple:
+    # Expresiones típicas de saludo
+    saludos = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches", "qué tal", "como estás", "como esta"]
+    if any(frase in texto for frase in saludos):
         return "SALUDO"
-    elif mensaje_limpio in frases_cortesia:
+
+    # Frases de agradecimiento o cierre amable
+    cortesias = ["gracias", "muy amable", "te agradezco", "muchas gracias", "ok gracias", "perfecto, gracias", "mil gracias", "gracias por todo"]
+    if any(frase in texto for frase in cortesias):
         return "CORTESIA"
+
+    # Consultas administrativas
+    consultas_admin = ["contacto", "número", "numero", "whatsapp", "teléfono", "telefono", "turno", "agenda", "valor", "precio", "costo"]
+    if any(palabra in texto for palabra in consultas_admin):
+        return "ADMINISTRATIVO"
+
+    # Indicadores clínicos ampliados (incluso con negaciones o abstracciones emocionales)
+    clinicos_ampliados = [
+        "nada me entusiasma", "nada me importa", "nada tiene sentido", "no tengo ganas", "no me interesa nada",
+        "no me dan ganas", "no siento nada", "me quiero morir", "pienso en morirme", "me siento vacío", "no le encuentro sentido",
+        "todo me supera", "ya no disfruto", "siento un peso", "me cuesta levantarme", "lloro sin razón", "me duele el alma",
+        "estoy muy triste", "me siento solo", "no puedo más", "no puedo dormir", "siento ansiedad", "me siento mal conmigo"
+    ]
+    if any(frase in texto for frase in clinicos_ampliados):
+        return "CLINICO"
+
     return "OTRO"
+
 
 def obtener_sintomas_con_estado_emocional():
     """
