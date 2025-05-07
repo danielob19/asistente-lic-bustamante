@@ -714,41 +714,45 @@ palabras_irrelevantes = {
 
 def purificar_input_clinico(texto: str) -> str:
     import re
+
     try:
         if not isinstance(texto, str):
             return ""
 
-        # 🔒 Preservar frases con negación inicial: "nada", "nadie", "ninguno"
-        negador_preservado = bool(re.match(r"^\s*(nada|nadie|ninguno|ninguna|no)\b", texto, re.IGNORECASE))
+        # 🛡️ Protección: evitar eliminar "no", "nada", "nadie" si son parte del sentido clínico
+        negadores_criticos = ["nada", "nadie", "ninguno", "ninguna", "no"]
+        preservado = any(re.search(rf'\b{n}\b', texto.lower()) for n in negadores_cricos)
 
-        # 🧹 Muletillas a eliminar
+        # 🗑️ Muletillas a eliminar (menos los negadores críticos)
         muletillas = [
-            r"\b(este|eh+|mmm+|ajá|tipo|digamos|lo|sea|viste|nada|bueno|a ver|me explico|ehh+)\b",
-            r"\b(sí|sí|no|claro|claro)\b"
+            r'\b(este|eh+|mmm+|ajá|tipo|digamos|lo|sea|viste|bueno|a ver|me explico|ehh*)\b',
+            r'\b(sí|si|no|claro|claro)\b'
         ]
-        for patron in muletillas:
-            texto = re.sub(patron, "", texto, flags=re.IGNORECASE)
 
-        # 🧽 Limpieza de residuos y repeticiones gramaticales
-        texto = re.sub(r"\b(\w+)( \1\b)+", r"\1", texto, flags=re.IGNORECASE)  # me me → me
-        texto = re.sub(r"\s+", " ", texto)
-        texto = re.sub(r"\.{2,}", ".", texto)
-        texto = re.sub(r",[,\s]*", ", ", texto)
-        texto = re.sub(r"[^\w\sáéíóúüñ]", "", texto)  # quitar signos innecesarios
+        for patron in muletillas:
+            texto = re.sub(patron, '', texto, flags=re.IGNORECASE)
+
+        # ✂️ Eliminación de residuos gramaticales redundantes
+        texto = re.sub(r'\b(\w{1}) (\w+)', r'\1 \2', texto, flags=re.IGNORECASE)
+        texto = re.sub(r'\s{2,}', ' ', texto)
+        texto = re.sub(r'(\.{2,})', '.', texto)
+        texto = re.sub(r'(,{2,})', ',', texto)
+        texto = re.sub(r'[\s\.,!?]+$', '', texto)
+
         texto = texto.strip()
 
-        # 🔁 Reintegrar negador si había sido detectado
-        if negador_preservado and not re.match(r"^\s*(nada|nadie|ninguno|ninguna|no)\b", texto, re.IGNORECASE):
+        # ✅ Reintegrar "no" si fue eliminado por error y era inicial
+        if preservado and not re.match(r'^\s*(nada|nadie|ninguno|ninguna|no)\b', texto, re.IGNORECASE):
             texto = "No " + texto
 
-        # 🧠 Capitalizar primera letra si corresponde
+        # 🧠 Capitalizar primera letra si es necesario
         if texto:
             texto = texto[0].upper() + texto[1:]
 
         return texto
 
     except Exception as e:
-        print(f"❌ Error en purificar_input_clinico: {e}")
+        print(f❌ Error en purificar_input_clinico: {e}")
         return ""
 
 def clasificar_input_inicial(mensaje: str) -> str:
