@@ -812,6 +812,24 @@ def clasificar_input_inicial(texto: str) -> str:
     if any(frase in texto for frase in clinicos_ampliados):
         return "CLINICO"
 
+        # Verbos comunes que indican consulta sobre si se atienden determinados temas clínicos
+    verbos_tratamiento = [
+        "tratan", "atienden", "hacen", "realizan", "abordan", "se ocupan", 
+        "manejan", "intervienen en", "trabajan con", "ayudan con", "dan tratamiento a"
+    ]
+
+    # Cargar dinámicamente los síntomas registrados en la base
+    try:
+        sintomas_existentes = obtener_sintomas_existentes()
+    except Exception as e:
+        print(f"⚠️ Error al obtener síntomas desde la base en clasificar_input_inicial: {e}")
+        sintomas_existentes = []
+
+    # Si se menciona un verbo de tratamiento + un síntoma registrado
+    if any(verbo in texto for verbo in verbos_tratamiento):
+        if any(sintoma in texto for sintoma in sintomas_existentes):
+            return "ADMINISTRATIVO"
+
     return "OTRO"
 
 
