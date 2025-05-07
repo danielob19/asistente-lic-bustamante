@@ -165,23 +165,31 @@ def generar_respuesta_con_openai(prompt):
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
 # 🧠 Evaluación temática: ¿el mensaje refiere a un contenido clínico o emocional?
-def es_tema_clínico_o_emocional(texto: str) -> bool:
-    """
-    Evalúa si el mensaje contiene contenido clínico, emocional o psicológico.
-    Devuelve True si detecta un tema relevante, False si parece estar fuera de contexto.
-    """
-    temas_relevantes = [
-        "me cuesta todo", "no quiero hablar con nadie", "nada tiene sentido", "sin rumbo",
-        "vacío emocional", "no tengo energía", "me cuesta dormir", "me siento solo",
-        "me siento", "estoy", "no puedo", "me duele", "tengo miedo",
-        "ansiedad", "triste", "deprimido", "insomnio", "sin ganas", "no tengo ganas",
-        "autoestima", "angustia", "duele", "crisis", "bloqueado", "psicológico", "emociones",
-        "anhedonia", "apatía profunda", "desbordamiento", "ideación suicida",
-        "fobia social", "despersonalización", "negatividad", "irritabilidad"
+def es_tema_clinico_o_emocional(mensaje: str) -> bool:
+    import re
+
+    if not mensaje or not isinstance(mensaje, str):
+        return False
+
+    mensaje = mensaje.lower()
+
+    # Palabras clave clínicas y emocionales (incluye purificadas)
+    palabras_clave = [
+        "triste", "ansioso", "angustia", "ansiedad", "vacío", "dolor", "sufrimiento",
+        "miedo", "enojo", "culpa", "vergüenza", "desesperanza", "soledad", "estrés",
+        "anhedonia", "apatía", "apatía profunda", "insomnio", "despersonalización",
+        "fobia", "fobia social", "ataques de pánico", "ideación suicida",
+        "desborde", "desbordamiento", "nervioso", "desesperado", "indiferente",
+        "ya no siento", "nada me entusiasma", "nada me importa", "me quiero morir",
+        "pienso en morirme", "no me reconozco", "todo me supera", "no puedo dormir"
     ]
 
-    texto = texto.lower()
-    return any(tema in texto for tema in temas_relevantes)
+    for palabra in palabras_clave:
+        if re.search(rf'\b{re.escape(palabra)}\b', mensaje):
+            return True
+
+    return False
+
 
 # 📎 Respuesta profesional para mensajes fuera de contexto clínico o emocional
 def respuesta_default_fuera_de_contexto():
