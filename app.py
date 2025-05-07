@@ -936,6 +936,9 @@ class UserInput(BaseModel):
 user_sessions = {}
 SESSION_TIMEOUT = 60  # Tiempo en segundos para limpiar sesiones inactivas
 
+# 🧠 Cache de síntomas registrados en la base
+sintomas_cacheados = set()
+
 @app.on_event("startup")
 def startup_event():
     init_db()
