@@ -792,15 +792,12 @@ def clasificar_input_inicial(texto: str) -> str:
     if any(palabra in texto for palabra in consultas_admin):
         return "ADMINISTRATIVO"
 
-    # Consultas sobre tipos de tratamiento o si se atienden ciertos temas
-    tratamientos = [
-        "hacen tratamiento de pareja", "tratan parejas", "atienden parejas", "hacen terapia de pareja", 
-        "tratan ansiedad", "atienden depresión", "hacen psicoterapia", "hacen tratamiento psicológico", 
-        "tratan estos casos", "tratan estos temas", "atienden estos casos", "atienden estos temas",
-        "hacen tratamiento", "hacen terapia", "realizan terapia", "realizan tratamiento"
-    ]
-    if any(frase in texto for frase in tratamientos):
-        return "ADMINISTRATIVO"
+    # ✅ Consultas sobre si se tratan ciertos cuadros emocionales usando síntomas cacheados
+    verbos_consulta = ["tratan", "atienden", "abordan", "se ocupan de", "realizan tratamiento de", "hacen", "trabajan con", "dan tratamiento a"]
+    for verbo in verbos_consulta:
+        for sintoma in sintomas_cacheados:
+            if f"{verbo} {sintoma}" in texto:
+                return "ADMINISTRATIVO"
     
     # Indicadores clínicos ampliados (incluso con negaciones o abstracciones emocionales)
     clinicos_ampliados = [
