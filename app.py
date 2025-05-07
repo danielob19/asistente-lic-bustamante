@@ -165,23 +165,22 @@ def generar_respuesta_con_openai(prompt):
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
 # 🧠 Evaluación temática: ¿el mensaje refiere a un contenido clínico o emocional?
-def es_tema_clinico_o_emocional(texto: str) -> bool:
+def es_tema_clínico_o_emocional(texto: str) -> bool:
     """
     Evalúa si el mensaje contiene contenido clínico, emocional o psicológico.
     Devuelve True si detecta un tema relevante, False si parece estar fuera de contexto.
     """
-    texto = texto.lower()
-
     temas_relevantes = [
         "me cuesta todo", "no quiero hablar con nadie", "nada tiene sentido", "sin rumbo",
         "vacío emocional", "no tengo energía", "me cuesta dormir", "me siento solo",
         "me siento", "estoy", "no puedo", "me duele", "tengo miedo",
         "ansiedad", "triste", "deprimido", "insomnio", "sin ganas", "no tengo ganas",
         "autoestima", "angustia", "duele", "crisis", "bloqueado", "psicológico", "emociones",
-        "nada me entusiasma", "no disfruto", "no me dan ganas", "no tengo motivación",
-        "no siento placer", "todo me aburre", "me siento vacío", "ni siquiera lo que me gustaba"
+        "anhedonia", "apatía profunda", "desbordamiento", "ideación suicida",
+        "fobia social", "despersonalización", "negatividad", "irritabilidad"
     ]
 
+    texto = texto.lower()
     return any(tema in texto for tema in temas_relevantes)
 
 # 📎 Respuesta profesional para mensajes fuera de contexto clínico o emocional
