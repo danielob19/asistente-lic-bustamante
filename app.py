@@ -714,33 +714,38 @@ palabras_irrelevantes = {
 
 def purificar_input_clinico(texto: str) -> str:
     import re
-
     try:
         if not isinstance(texto, str):
             return ""
 
-        # Eliminamos muletillas comunes y ruidos de oralidad
+        # Preservar estructuras clínicas con negadores al inicio (nada, nadie, ninguno)
+        if re.match(r'^\s*(nada|nadie|ninguno|ninguna|no)\b', texto, re.IGNORECASE):
+            negador_preservado = True
+        else:
+            negador_preservado = False
+
+        # Muletillas eliminables
         muletillas = [
-            r'\b(este|eh+|mmm+|ajá|tipo|digamos|o sea|viste|nada|bueno|a ver|me explico|ehh+)\b',
-            r'\b(sí sí|no no|claro claro)\b',
-            r'\b(digo|o sea que|digamos que|entiendo que|me refiero a)\b',
+            r'\b(este|eh+|mmm+|ajá|tipo|digamos|lo|sea|viste|nada|bueno|a ver|me explico|ehh+)\b',
+            r'\b(sí|sí|no|claro|claro)\b'
         ]
-
         for patron in muletillas:
-            texto = re.sub(patron, '', texto, flags=re.IGNORECASE)
+            texto = re.sub(patron, "", texto, flags=re.IGNORECASE)
 
-        # Limpiezas adicionales
-        texto = re.sub(r'\b(\w)(\W+)(\1)\b', r'\1', texto)  # reduce repeticiones con signos
-        texto = re.sub(r'\s+', ' ', texto)                  # múltiples espacios
-        texto = re.sub(r'[^\w\sáéíóúñ.,!?-]', '', texto)     # caracteres no deseados
-        texto = re.sub(r'\.{2,}', '.', texto)               # puntos múltiples
-        texto = re.sub(r'(,){2,}', ',', texto)              # comas múltiples
-        texto = re.sub(r'[\s]+([.,!?])', r'\1', texto)       # espacio antes de signo
-        texto = re.sub(r'([.,!?])([^\s])', r'\1 \2', texto)  # falta de espacio tras signo
+        # Eliminación de residuos gramaticales redundantes
+        texto = re.sub(r'\b(\w{1}) (\1\w+)', r'\1\2', texto, flags=re.IGNORECASE)
+        texto = re.sub(r'(\s+)+', " ", texto)
+        texto = re.sub(r'(,){2,}', ',', texto)
+        texto = re.sub(r'(\.{2,})', '.', texto)
+        texto = re.sub(r'[\s*(\.\,\!?)]+$', '', texto)
 
         texto = texto.strip()
 
-        # Mayúscula inicial si corresponde
+        # Reintegrar el negador original si se había preservado
+        if negador_preservado and not re.match(r'^\s*(nada|nadie|ninguno|ninguna|no)\b', texto, re.IGNORECASE):
+            texto = "No " + texto
+
+        # Capitalizar inicial si corresponde
         if texto:
             texto = texto[0].upper() + texto[1:]
 
