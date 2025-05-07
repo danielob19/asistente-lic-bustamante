@@ -724,6 +724,24 @@ def purificar_input_clinico(texto: str) -> str:
 
         texto_original = texto.strip().lower()
 
+        # 🧩 Reemplazos clínicos para estandarización semántica
+        reemplazos = {
+            "nada me entusiasma": "anhedonia",
+            "nada me importa": "apatía profunda",
+            "me da miedo salir": "fobia social",
+            "me quiero morir": "ideación suicida",
+            "ya no siento placer": "anhedonia",
+            "pienso en morirme": "ideación suicida",
+            "no me reconozco": "despersonalización",
+            "todo me supera": "desbordamiento",
+            "no puedo dormir": "insomnio"
+        }
+        for clave, valor in reemplazos.items():
+            if clave in texto_original:
+                texto_original = texto_original.replace(clave, valor)
+
+        texto = texto_original
+
         # 🛡️ Preservar negaciones si están al comienzo o son esenciales
         negadores_criticos = ["nada", "nadie", "ninguno", "ninguna", "no"]
         contiene_negador = any(re.search(rf'\b{n}\b', texto_original) for n in negadores_criticos)
@@ -757,6 +775,7 @@ def purificar_input_clinico(texto: str) -> str:
     except Exception as e:
         print(f"[Error] purificar_input_clinico: {e}")
         return ""
+
 
 def clasificar_input_inicial(mensaje: str) -> str:
     saludo_simple = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]
