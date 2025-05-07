@@ -723,13 +723,13 @@ def purificar_input_clinico(texto: str) -> str:
 
         texto_original = texto.strip().lower()
 
-        # 🛡️ Preservar negaciones si están al comienzo o son esenciales
+        texto = texto_original
+
+        # 🛡️ Detectar negación para no perder sentido clínico
         negadores_criticos = ["nada", "nadie", "ninguno", "ninguna", "no"]
         contiene_negador = any(re.search(rf'\b{n}\b', texto_original) for n in negadores_criticos)
 
-        texto = texto_original
-
-        # 🗑️ Muletillas a eliminar
+        # 🗑️ Limpieza de muletillas
         muletillas = [
             r'\b(este|eh+|mmm+|ajá|tipo|digamos|sea|viste|bueno|a ver|me explico|ehh*)\b',
             r'\b(sí|si|claro)\b'
@@ -737,44 +737,29 @@ def purificar_input_clinico(texto: str) -> str:
         for patron in muletillas:
             texto = re.sub(patron, '', texto, flags=re.IGNORECASE)
 
-        # ✂️ Limpieza gramatical y de puntuación
+        texto = re.sub(r'\s{2,}', ' ', texto).strip()
+
+        # ✅ Coincidencias clínicas completas
+        coincidencias_exactas = {
+            "nada me entusiasma, ni siquiera lo que solía gustarme": "anhedonia",
+            "nada me importa, ni lo que antes me importaba": "apatía profunda",
+            "no quiero ver a nadie ni salir de casa": "aislamiento",
+            "pienso en morirme todo el tiempo": "ideación suicida",
+            "lloro sin razón y no sé por qué": "llanto sin motivo"
+        }
+        for frase, valor in coincidencias_exactas.items():
+            if frase in texto:
+                texto = valor
+                break
+
+        # ✂️ Limpieza final y estandarización gramatical
         texto = re.sub(r'\b(\w{1}) (\w+)', r'\1 \2', texto)
-        texto = re.sub(r'\s{2,}', ' ', texto)
         texto = re.sub(r'(\.{2,})', '.', texto)
         texto = re.sub(r'(,{2,})', ',', texto)
         texto = re.sub(r'[\s\.,!?]+$', '', texto)
         texto = texto.strip()
 
-        # ✅ Reinsertar negador si fue quitado del inicio
-        if contiene_negador and not re.match(r'^\s*(nada|nadie|ninguno|ninguna|no)\b', texto, re.IGNORECASE):
-            texto = "No " + texto
-
-        # 🧩 Reemplazos clínicos para estandarización semántica (después del negador)
-        reemplazos = {
-            "no tengo ganas de nada": "apatía profunda",
-            "nada me entusiasma": "anhedonia",
-            "nada me interesa": "desinterés",
-            "nada me importa": "apatía profunda",
-            "no quiero ver a nadie": "aislamiento",
-            "me cuesta dormir": "insomnio",
-            "no puedo dormir": "insomnio",
-            "lloro sin motivo": "llanto sin motivo",
-            "no me animo a salir": "fobia social",
-            "me da miedo salir": "fobia social",
-            "me pongo furioso": "desesperanza",
-            "me quiero morir": "ideación suicida",
-            "no quiero vivir": "ideación suicida",
-            "pienso en morirme": "ideación suicida",
-            "me siento ansioso": "ansiedad",
-            "todo me molesta": "irritabilidad",
-            "todo me enoja": "irritabilidad",
-            "no me reconozco": "despersonalización"
-        }
-        for clave, valor in reemplazos.items():
-            if clave in texto:
-                texto = texto.replace(clave, valor)
-
-        # 🧠 Capitalizar primera letra
+        # Capitalización
         if texto:
             texto = texto[0].upper() + texto[1:]
 
