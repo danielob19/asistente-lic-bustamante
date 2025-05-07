@@ -1108,25 +1108,37 @@ async def asistente(input_data: UserInput):
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
 
-        # ✅ Filtro contextual previo: ¿Es un mensaje clínico o emocional?
-        if not es_tema_clinico_o_emocional(mensaje_usuario):
-            print("⚠️🔍 Mensaje fuera de contexto clínico/emocional detectado.")
-            print(f"👤 Usuario ID: {user_id}")
-            print(f"📝 Mensaje: {mensaje_usuario}")
-            registrar_auditoria_input_original(
-                user_id,
-                mensaje_original,
-                mensaje_usuario,
-                clasificacion="FUERA_DE_CONTEXTO"
-            )
-            return {
-                "respuesta": (
-                    "Este espacio está destinado exclusivamente a consultas vinculadas al bienestar emocional y psicológico. "
-                    "Si lo que querés compartir tiene relación con alguna inquietud personal, emocional o clínica, "
-                    "estoy disponible para acompañarte desde ese lugar."
-                )
-            }
-
+        # 👋 Clasificación directa si es la primera interacción y es saludo, cortesía o administrativo
+        if user_id not in user_sessions:
+            tipo_input = clasificar_input_inicial(mensaje_usuario)
+        
+            if tipo_input == "SALUDO":
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "SALUDO")
+                return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
+        
+            elif tipo_input == "CORTESIA":
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CORTESIA")
+                return {"respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."}
+        
+            elif tipo_input == "ADMINISTRATIVO":
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "ADMINISTRATIVO")
+                return {
+                    "respuesta": (
+                        "¡Hola! Soy el asistente del Lic. Daniel O. Bustamante. Si querés contactarlo, podés escribirle por WhatsApp al +54 911 3310-1186. "
+                        "¿Hay algo más que te gustaría saber?"
+                    )
+                }
+        
+            elif tipo_input == "OTRO":
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "FUERA_DE_CONTEXTO")
+                return {
+                    "respuesta": (
+                        "Este espacio está destinado exclusivamente a consultas vinculadas al bienestar emocional y psicológico. "
+                        "Si lo que querés compartir tiene relación con alguna inquietud personal, emocional o clínica, "
+                        "estoy disponible para acompañarte desde ese lugar."
+                    )
+                }
+        
         
         # 🛡️ Etapa de blindaje contra inputs maliciosos
         def es_input_malicioso(texto: str) -> bool:
