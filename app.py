@@ -767,10 +767,15 @@ def purificar_input_clinico(texto: str) -> str:
         texto = re.sub(r'[\s\.,!?]+$', '', texto)
         texto = texto.strip()
 
-        # 🔄 Restaurar "no" si fue parte del inicio y se perdió
-        if preservado and not re.search(r'\b(no|nada|nadie|ninguno|ninguna)\b', texto):
-            texto = "No " + texto
-
+        # Restaurar "no" si fue parte del inicio y se perdió, pero solo si no contiene ya un síntoma clínico claro
+        sintomas_clinicos_reconocibles = ["anhedonia", "apatía profunda", "apatía", "aislamiento", "insomnio", "llanto", "fobia social", "desesperanza", "ideación suicida", "irritabilidad", "despersonalización"]
+        
+        if preservado:
+            if not re.match(r'^\s*(nada|nadie|ninguno|ninguna|no)\b', texto, re.IGNORECASE):
+                contiene_sintoma = any(s in texto.lower() for s in sintomas_clinicos_reconocibles)
+                if not contiene_sintoma:
+                    texto = "No " + texto
+        
         # 🧠 Capitalizar la primera letra
         if texto:
             texto = texto[0].upper() + texto[1:]
