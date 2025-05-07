@@ -166,14 +166,11 @@ def generar_respuesta_con_openai(prompt):
 
 # 🧠 Evaluación temática: ¿el mensaje refiere a un contenido clínico o emocional?
 def es_tema_clinico_o_emocional(mensaje: str) -> bool:
-    import re
-
     if not mensaje or not isinstance(mensaje, str):
         return False
 
     mensaje = mensaje.lower()
 
-    # Palabras clave clínicas y emocionales (incluye purificadas)
     palabras_clave = [
         "triste", "ansioso", "angustia", "ansiedad", "vacío", "dolor", "sufrimiento",
         "miedo", "enojo", "culpa", "vergüenza", "desesperanza", "soledad", "estrés",
@@ -185,7 +182,7 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
     ]
 
     for palabra in palabras_clave:
-        if re.search(rf'\b{re.escape(palabra)}\b', mensaje):
+        if palabra in mensaje:
             return True
 
     return False
