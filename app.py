@@ -941,9 +941,23 @@ sintomas_cacheados = set()
 
 @app.on_event("startup")
 def startup_event():
-    init_db()
-    generar_embeddings_faq()  # ✅ Genera embeddings de las preguntas frecuentes al iniciar la app
-    start_session_cleaner()   # 🧹 Limpia sesiones inactivas periódicamente
+    init_db()                          # 🧱 Inicializa la base de datos
+    generar_embeddings_faq()          # 🧠 Genera embeddings de FAQ al iniciar
+    start_session_cleaner()           # 🧹 Limpia sesiones inactivas
+
+    # 🚀 Inicializar cache de síntomas registrados
+    global sintomas_cacheados
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("SELECT LOWER(sintoma) FROM palabras_clave")
+        sintomas = cursor.fetchall()
+        sintomas_cacheados = {s[0].strip() for s in sintomas if s[0]}
+        conn.close()
+        print(f"✅ Cache inicial de síntomas cargado: {len(sintomas_cacheados)} ítems.")
+    except Exception as e:
+        print(f"❌ Error al inicializar cache de síntomas: {e}")
+
 
 # Función para limpiar sesiones inactivas
 def start_session_cleaner():
