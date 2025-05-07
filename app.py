@@ -1145,6 +1145,27 @@ async def asistente(input_data: UserInput):
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
 
+        # 🚑 Validación explícita del contenido clínico tras purificación
+        if es_tema_clinico_o_emocional(mensaje_usuario):
+            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CLINICO")
+            # Inicializar sesión si no existe aún
+            if user_id not in user_sessions:
+                user_sessions[user_id] = {
+                    "contador_interacciones": 1,
+                    "ultima_interaccion": time.time(),
+                    "mensajes": [mensaje_usuario],
+                    "emociones_detectadas": [],
+                    "ultimas_respuestas": [],
+                    "input_sospechoso": False
+                }
+            return {
+                "respuesta": (
+                    "Por lo que describís, se identifican indicios de malestar emocional. "
+                    "¿Querés contarme un poco más para poder comprender mejor lo que estás atravesando?"
+                )
+            }
+        
+
         # 👋 Clasificación directa si es la primera interacción y es saludo, cortesía o administrativo
         if user_id not in user_sessions:
             tipo_input = clasificar_input_inicial(mensaje_usuario)
