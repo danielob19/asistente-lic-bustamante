@@ -1284,42 +1284,6 @@ async def asistente(input_data: UserInput):
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
 
-        # 🔍 Detección de combinaciones verbo + síntoma o verbo + estado_emocional
-        try:
-            conn = psycopg2.connect(DATABASE_URL)
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT LOWER(verbo), LOWER(sintoma), LOWER(estado_emocional)
-                FROM palabras_clave
-                WHERE verbo IS NOT NULL AND activo IS TRUE;
-            """)
-            combinaciones = cursor.fetchall()
-            conn.close()
-
-            for verbo, sintoma, estado in combinaciones:
-                if not verbo:
-                    continue
-                for termino in [sintoma, estado]:
-                    if not termino:
-                        continue
-                    patron = rf"{verbo}\s*(del|de la|de los|de las|el|la|los|las)?\s*{re.escape(termino)}"
-                    if re.search(patron, mensaje_usuario, re.IGNORECASE):
-                        registrar_auditoria_input_original(
-                            user_id="sistema",
-                            mensaje_original=mensaje_original,
-                            mensaje_purificado=mensaje_usuario,
-                            clasificacion="ADMINISTRATIVO (verbo + sintoma/estado)"
-                        )
-                        return {
-                            "respuesta": (
-                                "Sí, el Lic. Daniel O. Bustamante trabaja con ese tipo de situaciones. "
-                                "Si te interesa coordinar una consulta o querés más información, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
-                            )
-                        }
-                        
-        except Exception as e:
-            print(f"❌ Error al buscar combinaciones verbo + sintoma/estado: {e}")
-
 
         # 🚑 Validación explícita del contenido clínico tras purificación
         if es_tema_clinico_o_emocional(mensaje_usuario):
