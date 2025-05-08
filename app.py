@@ -1702,8 +1702,12 @@ async def asistente(input_data: UserInput):
         
                 # Registrar la emoción con el cuadro clínico asignado
                 registrar_sintoma(emocion, cuadro_asignado)
-                print(f"🆕 OpenAI asignó el cuadro clínico: {cuadro_asignado} para la emoción '{emocion}'.")
-        
+                print(f"🧠 OpenAI asignó el cuadro clínico: {cuadro_asignado} para la emoción '{emocion}'.")
+                
+                # 🔄 Agregar el nuevo síntoma al set cacheado en memoria
+                sintomas_cacheados.add(emocion.lower().strip())
+                
+                        
             except Exception as e:
                 print(f"❌ Error al obtener el cuadro clínico de OpenAI para '{emocion}': {e}")
 
