@@ -1306,7 +1306,7 @@ async def asistente(input_data: UserInput):
             }
         
 
-        # 🧩 Clasificación de mensaje según intención principal
+        # 🧩 Clasificación de mensaje según intención principal (aplicable siempre)
         tipo_input = clasificar_input_inicial(mensaje_usuario)
         
         if tipo_input == "SALUDO":
@@ -1329,7 +1329,6 @@ async def asistente(input_data: UserInput):
         
         elif es_tema_clinico_o_emocional(mensaje_usuario):
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CLINICO")
-            # Inicializar sesión si no existe aún
             if user_id not in user_sessions:
                 user_sessions[user_id] = {
                     "contador_interacciones": 1,
@@ -1346,9 +1345,10 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        else:
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "FUERA_DE_CONTEXTO")
-            return {"respuesta": respuesta_default_fuera_de_contexto()}
+        # 🛑 Si no entra en ninguna categoría anterior, clasifica como FUERA_DE_CONTEXTO
+        registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "FUERA_DE_CONTEXTO")
+        return {"respuesta": respuesta_default_fuera_de_contexto()}
+
         
         
         # 🛡️ Etapa de blindaje contra inputs maliciosos
