@@ -802,6 +802,20 @@ def clasificar_input_inicial(texto: str) -> str:
 
     if any(palabra in texto for palabra in consultas_admin):
         return "ADMINISTRATIVO"
+
+    # Consultas sobre modalidad de atención (online/presencial) o ubicación
+    consultas_modalidad = [
+        "es presencial", "es online", "son online", "es virtual", "atiende por videollamada", "por zoom",
+        "se hace por videollamada", "atención virtual", "por llamada", "me tengo que presentar",
+        "se hace presencial", "ubicación", "dónde atiende", "donde atiende", "donde queda",
+        "dónde está", "ciudad", "zona", "provincia", "en qué parte estás", "dónde es la consulta",
+        "dirección", "en qué lugar se atiende", "dónde se realiza", "debo ir al consultorio",
+        "se hace a distancia", "atención remota", "consultorio", "atención online"
+    ]
+    
+    if any(frase in texto for frase in consultas_modalidad):
+        return "CONSULTA_MODALIDAD"
+
     
     # 🧠 Consultas indirectas sobre si se tratan ciertos cuadros emocionales usando síntomas cacheados
     verbos_consulta = [
