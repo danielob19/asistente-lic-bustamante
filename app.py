@@ -777,6 +777,15 @@ def purificar_input_clinico(texto: str) -> str:
 def clasificar_input_inicial(texto: str) -> str:
     texto = texto.lower().strip()
 
+    # 🔁 Cargar síntomas desde la BD si el set global está vacío (solo la primera vez)
+    global sintomas_cacheados
+    if not sintomas_cacheados:
+        try:
+            sintomas_existentes = obtener_sintomas_existentes()
+            sintomas_cacheados.update(sintomas_existentes)
+        except Exception as e:
+            print(f"❌ Error al cargar síntomas cacheados en clasificar_input_inicial: {e}")
+
     # Expresiones típicas de saludo
     saludos = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches", "qué tal", "como estás", "como esta"]
     if any(frase in texto for frase in saludos):
