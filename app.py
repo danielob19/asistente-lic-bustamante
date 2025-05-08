@@ -786,6 +786,28 @@ def clasificar_input_inicial(texto: str) -> str:
         except Exception as e:
             print(f"❌ Error al cargar síntomas cacheados en clasificar_input_inicial: {e}")
 
+        # 🩺 Tópicos clínicos comunes no registrados como síntomas (válidos como consulta)
+        temas_clinicos_comunes = [
+            "terapia de pareja", "psicoterapia", "tratamiento psicológico", "consultas psicológicas",
+            "abordaje emocional", "tratamiento emocional", "atención psicológica"
+        ]
+        
+        for verbo in [
+            "hace", "hacen", "dan", "da", "atiende", "atienden", "realiza", "realizan", "ofrece", "ofrecen",
+            "trabaja con", "trabajan con", "brinda", "brindan"
+        ]:
+            for tema in temas_clinicos_comunes:
+                patron = rf"{verbo}\s+(el|la|los|las)?\s*{re.escape(tema)}"
+                if re.search(patron, texto, re.IGNORECASE):
+                    registrar_auditoria_input_original(
+                        user_id="sistema",
+                        mensaje_original=texto,
+                        mensaje_purificado=texto,
+                        clasificacion="ADMINISTRATIVO (verbo + tema clínico común)"
+                    )
+                    return "ADMINISTRATIVO"
+
+
     # Expresiones típicas de saludo
     saludos = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches", "qué tal", "como estás", "como esta"]
     if any(frase in texto for frase in saludos):
