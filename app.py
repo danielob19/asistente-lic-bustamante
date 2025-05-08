@@ -929,7 +929,7 @@ def clasificar_input_inicial(texto: str) -> str:
 
         for verbo, tratamiento in combinaciones:
             if verbo and tratamiento:
-                patron = rf"{verbo}\s+(el|la|los|las)?\s*{re.escape(tratamiento)}"
+                patron = rf"{verbo}\s+(del|de la|de los|de las|el|la|los|las)?\s*{re.escape(tratamiento)}"
                 if re.search(patron, texto, re.IGNORECASE):
                     registrar_auditoria_input_original(
                         user_id="sistema",
@@ -942,6 +942,35 @@ def clasificar_input_inicial(texto: str) -> str:
     except Exception as e:
         print(f"❌ Error al buscar combinaciones verbo + tratamiento: {e}")
 
+    # 🔍 Verificación dinámica: verbo + síntoma o estado_emocional
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT LOWER(verbo), LOWER(sintoma), LOWER(estado_emocional)
+            FROM palabras_clave
+            WHERE verbo IS NOT NULL AND activo IS TRUE;
+        """)
+        combinaciones = cursor.fetchall()
+        conn.close()
+
+        for verbo, sintoma, estado in combinaciones:
+            if not verbo:
+                continue
+            for termino in [sintoma, estado]:
+                if not termino:
+                    continue
+                patron = rf"{verbo}\s+(del|de la|de los|de las|el|la|los|las)?\s*{re.escape(termino)}"
+                if re.search(patron, texto, re.IGNORECASE):
+                    registrar_auditoria_input_original(
+                        user_id="sistema",
+                        mensaje_original=texto,
+                        mensaje_purificado=texto,
+                        clasificacion="ADMINISTRATIVO (verbo + sintoma/estado)"
+                    )
+                    return "ADMINISTRATIVO"
+    except Exception as e:
+        print(f"❌ Error al buscar combinaciones verbo + síntoma/estado: {e}")
 
     return "OTRO"
 
