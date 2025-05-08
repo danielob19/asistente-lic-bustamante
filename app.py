@@ -775,9 +775,12 @@ def purificar_input_clinico(texto: str) -> str:
         return ""
 
 def clasificar_input_inicial(texto: str) -> str:
+    if not texto or not isinstance(texto, str):
+        return "OTRO"
+
     texto = texto.lower().strip()
 
-    # 🔁 Cargar síntomas desde la BD si el set global está vacío (solo la primera vez)
+    # 🧠 Cargar síntomas desde la BD si el set global está vacío (solo la primera vez)
     global sintomas_cacheados
     if not sintomas_cacheados:
         try:
@@ -786,27 +789,51 @@ def clasificar_input_inicial(texto: str) -> str:
         except Exception as e:
             print(f"❌ Error al cargar síntomas cacheados en clasificar_input_inicial: {e}")
 
-        # 🩺 Tópicos clínicos comunes no registrados como síntomas (válidos como consulta)
-        temas_clinicos_comunes = [
-            "terapia de pareja", "psicoterapia", "tratamiento psicológico", "consultas psicológicas",
-            "abordaje emocional", "tratamiento emocional", "atención psicológica"
-        ]
-        
-        for verbo in [
-            "hace", "hacen", "dan", "da", "atiende", "atienden", "realiza", "realizan", "ofrece", "ofrecen",
-            "trabaja con", "trabajan con", "brinda", "brindan"
-        ]:
-            for tema in temas_clinicos_comunes:
-                patron = rf"{verbo}\s+(el|la|los|las)?\s*{re.escape(tema)}"
-                if re.search(patron, texto, re.IGNORECASE):
-                    registrar_auditoria_input_original(
-                        user_id="sistema",
-                        mensaje_original=texto,
-                        mensaje_purificado=texto,
-                        clasificacion="ADMINISTRATIVO (verbo + tema clínico común)"
-                    )
-                    return "ADMINISTRATIVO"
+    # 🧩 Tópicos clínicos comunes no registrados como síntomas (válidos como consulta)
+    temas_clinicos_comunes = [
+        "terapia de pareja", "psicoterapia", "tratamiento psicológico", "consultas psicológicas",
+        "abordaje emocional", "tratamiento emocional", "atención psicológica"
+    ]
 
+    for verbo in [
+        "hace", "hacen", "dan", "atiende", "atienden", "realiza", "realizan", "ofrece", "ofrecen",
+        "trabaja con", "trabajan con", "brinda", "brindan"
+    ]:
+        for tema in temas_clinicos_comunes:
+            patron = rf"{verbo}\s*(el|la|los|las)?\s*{re.escape(tema)}"
+            if re.search(patron, texto, re.IGNORECASE):
+                registrar_auditoria_input_original(
+                    user_id="sistema",
+                    mensaje_original=texto,
+                    mensaje_purificado=texto,
+                    clasificacion="ADMINISTRATIVO (verbo + tema clínico común)"
+                )
+                return "ADMINISTRATIVO"
+
+    # 🤝 Expresiones típicas de saludo
+    saludos = ["hola", "buenos días", "buenas tardes", "buenas noches", "qué tal", "como estás", "como esta"]
+    if texto in saludos:
+        return "SALUDO"
+
+    # 🙏 Frases de agradecimiento o cortesía
+    expresiones_cortesia = [
+        "gracias", "muchas gracias", "muy amable", "ok gracias", "perfecto, gracias", "mil gracias",
+        "te agradezco", "todo bien", "no necesito más", "me quedó claro", "nada más"
+    ]
+    if texto in expresiones_cortesia:
+        return "CORTESIA"
+
+    # 🧠 Indicadores clínicos ampliados
+    clinicos_ampliados = [
+        "nada me entusiasma", "nada me importa", "nada tiene sentido", "no tengo ganas", "no me interesa nada",
+        "no me dan ganas", "no siento nada", "me quiero morir", "pienso en morirme", "me siento vacío", "no le encuentro sentido",
+        "todo me supera", "ya no disfruto", "siento un peso", "me cuesta levantarme", "lloro sin razón", "me duele el alma",
+        "estoy muy triste", "me siento solo", "no puedo más", "no puedo dormir", "siento ansiedad", "me siento mal conmigo"
+    ]
+    if any(frase in texto for frase in clinicos_ampliados):
+        return "CLINICO"
+
+    return "OTRO"
 
     # Expresiones típicas de saludo
     saludos = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches", "qué tal", "como estás", "como esta"]
