@@ -2046,7 +2046,7 @@ async def asistente(input_data: UserInput):
             # 🧾 Auditoría: log si OpenAI intentó responder con precios
             print("⚠️ Se interceptó una respuesta con posible contenido de precios y fue reemplazada para evitar brindar esa información.")
 
-        # Detectar modificaciones y registrar auditoría
+                # Detectar modificaciones y registrar auditoría
         if respuesta_original != respuesta_ai:
             motivo = "Respuesta modificada por contener lenguaje institucional, temáticas no permitidas o precios"
             registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, motivo)
@@ -2054,14 +2054,15 @@ async def asistente(input_data: UserInput):
             registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai)
 
         # Usar el ID de interacción previamente registrado para guardar la respuesta
-            registrar_respuesta_openai(interaccion_id, respuesta_ai)
+        registrar_respuesta_openai(interaccion_id, respuesta_ai)
 
-        # 🛑 Última clasificación si no se respondió antes
-        registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "FUERA_DE_CONTEXTO")
-        return {"respuesta": respuesta_default_fuera_de_contexto()}
-    
-    
+        return {"respuesta": respuesta_ai}
+
     except Exception as e:
         print(f"❌ Error inesperado en el endpoint /asistente: {e}")
-        return {"respuesta": "Lo siento, ocurrió un error al procesar tu solicitud. Podés intentarlo de nuevo más tarde o escribir al WhatsApp +54 911 3310-1186."}
-
+        return {
+            "respuesta": (
+                "Ocurrió un error al procesar tu solicitud. Podés intentarlo nuevamente más tarde "
+                "o escribirle al Lic. Bustamante por WhatsApp: +54 911 3310-1186."
+            )
+        }
