@@ -787,16 +787,22 @@ def clasificar_input_inicial(texto: str) -> str:
     if any(frase in texto for frase in cortesias):
         return "CORTESIA"
 
-    # Consultas administrativas
+    # 🧾 Consultas administrativas directas
     consultas_admin = ["contacto", "número", "numero", "whatsapp", "teléfono", "telefono", "turno", "agenda", "valor", "precio", "costo"]
     if any(palabra in texto for palabra in consultas_admin):
         return "ADMINISTRATIVO"
-
+    
     # ✅ Consultas sobre si se tratan ciertos cuadros emocionales usando síntomas cacheados
     verbos_consulta = ["tratan", "atienden", "abordan", "se ocupan de", "realizan tratamiento de", "hacen", "trabajan con", "dan tratamiento a"]
     for verbo in verbos_consulta:
         for sintoma in sintomas_cacheados:
             if f"{verbo} {sintoma}" in texto:
+                registrar_auditoria_input_original(
+                    user_id="sistema",
+                    mensaje_original=texto,
+                    mensaje_purificado=texto,
+                    clasificacion="ADMINISTRATIVO (verbo + síntoma)"
+                )
                 return "ADMINISTRATIVO"
     
     # Indicadores clínicos ampliados (incluso con negaciones o abstracciones emocionales)
