@@ -787,30 +787,50 @@ def clasificar_input_inicial(texto: str) -> str:
     if any(frase in texto for frase in cortesias):
         return "CORTESIA"
 
-    # 🧾 Consultas administrativas directas
+    # 📨 Consultas administrativas directas
     consultas_admin = ["contacto", "número", "numero", "whatsapp", "teléfono", "telefono", "turno", "agenda", "valor", "precio", "costo"]
     if any(palabra in texto for palabra in consultas_admin):
         return "ADMINISTRATIVO"
-
-    # ✅ Consultas sobre si se tratan ciertos cuadros emocionales usando síntomas cacheados
-    verbos_consulta = ["trata", "tratan", "atiende", "atienden", "aborda", "abordan", "se ocupa de", "se ocupan de",
-                       "realiza tratamiento de", "realizan tratamiento de", "hace", "hacen", "trabaja con", "trabajan con",
-                       "da tratamiento a", "dan tratamiento a", "interviene en", "intervienen en"]
     
+    # 🧠 Consultas indirectas sobre si se tratan ciertos cuadros emocionales usando síntomas cacheados
+    verbos_consulta = [
+        "trata", "tratan", "atiende", "atienden", "aborda", "abordan",
+        "se ocupa de", "se ocupan de", "interviene en", "intervienen en",
+        "trabaja con", "trabajan con", "hace tratamiento de", "hacen tratamiento de",
+        "realiza tratamiento de", "realizan tratamiento de",
+        "da tratamiento a", "dan tratamiento a", "maneja", "manejan",
+        "ayuda con", "ayudan con", "acompaña en", "acompañan en",
+        "resuelve", "resuelven", "puede tratar", "pueden tratar",
+        "puede ayudar con", "pueden ayudar con", "atiende el tema de", "trata el tema de",
+        "puede atender", "pueden atender", "está capacitado para tratar", "están capacitados para tratar"
+    ]
+    
+    # Frases interrogativas comunes que implican consulta clínica
+    frases_consulta_directa = [
+        "¿atienden estos casos?", "¿atiende estos casos?", "¿atienden el caso?", "¿atiende el caso?",
+        "¿tratan este tipo de temas?", "¿trata este tipo de temas?",
+        "¿manejan este tipo de situaciones?", "¿manejan estos casos?",
+        "¿hacen tratamiento de esto?", "¿hace tratamiento de esto?",
+        "¿el licenciado puede atender esto?", "¿pueden ayudar con esto?",
+        "¿esto lo trata el profesional?", "¿esto lo trabajan en terapia?",
+        "¿esto se trabaja en terapia?", "¿este tema lo abordan?"
+    ]
+    if any(frase in texto.lower() for frase in frases_consulta_directa):
+        return "ADMINISTRATIVO"
+    
+    # Combinación dinámica: verbo + síntoma cacheado
     for verbo in verbos_consulta:
         for sintoma in sintomas_cacheados:
-            # Usamos regex para permitir artículos y signos entre verbo y síntoma
             patron = rf"{verbo}\s+(el|la|los|las)?\s*{re.escape(sintoma)}"
             if re.search(patron, texto, re.IGNORECASE):
                 registrar_auditoria_input_original(
                     user_id="sistema",
                     mensaje_original=texto,
                     mensaje_purificado=texto,
-                    clasificacion="ADMINISTRATIVO (verbo + síntoma)"
+                    clasificacion=f"ADMINISTRATIVO (verbo + síntoma)"
                 )
                 return "ADMINISTRATIVO"
 
-    
     # Indicadores clínicos ampliados (incluso con negaciones o abstracciones emocionales)
     clinicos_ampliados = [
         "nada me entusiasma", "nada me importa", "nada tiene sentido", "no tengo ganas", "no me interesa nada",
