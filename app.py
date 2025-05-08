@@ -788,7 +788,18 @@ def clasificar_input_inicial(texto: str) -> str:
         return "CORTESIA"
 
     # 📨 Consultas administrativas directas
-    consultas_admin = ["contacto", "número", "numero", "whatsapp", "teléfono", "telefono", "turno", "agenda", "valor", "precio", "costo"]
+    consultas_admin = [
+        "contacto", "número", "numero", "whatsapp", "teléfono", "telefono",
+        "turno", "agenda", "valor", "precio", "costo", "honorario", "cómo me atiendo",
+        "cómo pedir cita", "cómo se agenda", "cómo sacar turno", "cómo pedir turno",
+        "cómo me contacto", "cómo empezar", "quiero reservar", "quiero una consulta",
+        "quiero atenderme", "necesito hablar con alguien", "quiero consultar",
+        "cómo pedir sesión", "cómo puedo atenderme", "quiero atención", "puedo pedir sesión",
+        "formas de pago", "cómo se paga", "cuánto se paga", "qué valor tiene",
+        "cuánto cuesta", "quiero coordinar", "cómo funciona", "cómo es el tratamiento",
+        "cómo son las sesiones", "cómo se hace", "cómo empezar terapia"
+    ]
+
     if any(palabra in texto for palabra in consultas_admin):
         return "ADMINISTRATIVO"
     
