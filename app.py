@@ -791,12 +791,17 @@ def clasificar_input_inicial(texto: str) -> str:
     consultas_admin = ["contacto", "número", "numero", "whatsapp", "teléfono", "telefono", "turno", "agenda", "valor", "precio", "costo"]
     if any(palabra in texto for palabra in consultas_admin):
         return "ADMINISTRATIVO"
-    
+
     # ✅ Consultas sobre si se tratan ciertos cuadros emocionales usando síntomas cacheados
-    verbos_consulta = ["tratan", "atienden", "abordan", "se ocupan de", "realizan tratamiento de", "hacen", "trabajan con", "dan tratamiento a"]
+    verbos_consulta = ["trata", "tratan", "atiende", "atienden", "aborda", "abordan", "se ocupa de", "se ocupan de",
+                       "realiza tratamiento de", "realizan tratamiento de", "hace", "hacen", "trabaja con", "trabajan con",
+                       "da tratamiento a", "dan tratamiento a", "interviene en", "intervienen en"]
+    
     for verbo in verbos_consulta:
         for sintoma in sintomas_cacheados:
-            if f"{verbo} {sintoma}" in texto:
+            # Usamos regex para permitir artículos y signos entre verbo y síntoma
+            patron = rf"{verbo}\s+(el|la|los|las)?\s*{re.escape(sintoma)}"
+            if re.search(patron, texto, re.IGNORECASE):
                 registrar_auditoria_input_original(
                     user_id="sistema",
                     mensaje_original=texto,
@@ -804,6 +809,7 @@ def clasificar_input_inicial(texto: str) -> str:
                     clasificacion="ADMINISTRATIVO (verbo + síntoma)"
                 )
                 return "ADMINISTRATIVO"
+
     
     # Indicadores clínicos ampliados (incluso con negaciones o abstracciones emocionales)
     clinicos_ampliados = [
