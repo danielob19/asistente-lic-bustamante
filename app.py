@@ -1375,10 +1375,6 @@ async def asistente(input_data: UserInput):
 
         except Exception as e:
             print(f"🧠❌ Error en clasificación contextual: {e}")
-
-        # 🛑 Último recurso: clasificar como FUERA_DE_CONTEXTO
-        registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "FUERA_DE_CONTEXTO")
-        return {"respuesta": respuesta_default_fuera_de_contexto()}
  
         
         # 🛡️ Etapa de blindaje contra inputs maliciosos
@@ -2058,9 +2054,14 @@ async def asistente(input_data: UserInput):
             registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai)
 
         # Usar el ID de interacción previamente registrado para guardar la respuesta
-        registrar_respuesta_openai(interaccion_id, respuesta_ai)
-        
+            registrar_respuesta_openai(interaccion_id, respuesta_ai)
+
+        # 🛑 Última clasificación si no se respondió antes
+        registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "FUERA_DE_CONTEXTO")
+        return {"respuesta": respuesta_default_fuera_de_contexto()}
+    
         return {"respuesta": respuesta_ai}
+    
 
     except Exception as e:
         print(f"❌ Error inesperado en el endpoint /asistente: {e}")
