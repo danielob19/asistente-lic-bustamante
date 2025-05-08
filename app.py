@@ -2060,9 +2060,7 @@ async def asistente(input_data: UserInput):
         registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "FUERA_DE_CONTEXTO")
         return {"respuesta": respuesta_default_fuera_de_contexto()}
     
-        return {"respuesta": respuesta_ai}
     
-
     except Exception as e:
         print(f"❌ Error inesperado en el endpoint /asistente: {e}")
         return {"respuesta": "Lo siento, ocurrió un error al procesar tu solicitud. Podés intentarlo de nuevo más tarde o escribir al WhatsApp +54 911 3310-1186."}
