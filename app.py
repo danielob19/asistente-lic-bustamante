@@ -1280,43 +1280,21 @@ async def asistente(input_data: UserInput):
         user_id = input_data.user_id
         mensaje_original = input_data.mensaje.strip()
         mensaje_usuario = mensaje_original.lower()
-        
+
         # 🧽 Etapa de purificación clínica
         mensaje_usuario = purificar_input_clinico(mensaje_usuario)
 
-
-        # 🚑 Validación explícita del contenido clínico tras purificación
-        if es_tema_clinico_o_emocional(mensaje_usuario):
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CLINICO")
-            # Inicializar sesión si no existe aún
-            if user_id not in user_sessions:
-                user_sessions[user_id] = {
-                    "contador_interacciones": 1,
-                    "ultima_interaccion": time.time(),
-                    "mensajes": [mensaje_usuario],
-                    "emociones_detectadas": [],
-                    "ultimas_respuestas": [],
-                    "input_sospechoso": False
-                }
-            return {
-                "respuesta": (
-                    "Por lo que describís, se identifican indicios de malestar emocional. "
-                    "¿Querés contarme un poco más para poder comprender mejor lo que estás atravesando?"
-                )
-            }
-        
-
-        # 🧩 Clasificación de mensaje según intención principal (aplicable siempre)
+        # 🧩 Clasificación local por intención general
         tipo_input = clasificar_input_inicial(mensaje_usuario)
-        
+
         if tipo_input == "SALUDO":
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "SALUDO")
             return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
-        
+
         elif tipo_input == "CORTESIA":
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CORTESIA")
             return {"respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."}
-        
+
         elif tipo_input == "ADMINISTRATIVO":
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "ADMINISTRATIVO")
             return {
@@ -1326,8 +1304,8 @@ async def asistente(input_data: UserInput):
                     "¿Hay algo más que te gustaría saber?"
                 )
             }
-        
-        elif es_tema_clinico_o_emocional(mensaje_usuario):
+
+        elif tipo_input == "CLINICO" or es_tema_clinico_o_emocional(mensaje_usuario):
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CLINICO")
             if user_id not in user_sessions:
                 user_sessions[user_id] = {
@@ -1344,12 +1322,64 @@ async def asistente(input_data: UserInput):
                     "¿Querés contarme un poco más para poder comprender mejor lo que estás atravesando?"
                 )
             }
-        
-        # 🛑 Si no entra en ninguna categoría anterior, clasifica como FUERA_DE_CONTEXTO
+
+        # 🧠 Clasificación contextual con OpenAI (si no fue clasificado antes)
+        try:
+            prompt_contextual = (
+                f"Clasificá el siguiente mensaje según su intención principal:\n"
+                f"'{mensaje_usuario}'\n\n"
+                "Opciones posibles:\n"
+                "- CLÍNICO: si describe malestar emocional, síntomas o búsqueda de orientación psicológica.\n"
+                "- CORTESIA: si expresa agradecimiento, saludo o cierre amable.\n"
+                "- CONSULTA_AGENDAR: si consulta sobre turnos, horarios, formas de pago, costo o desea agendar sesión.\n"
+                "- CONSULTA_MODALIDAD: si pregunta por ubicación, modalidad online, o dirección del consultorio.\n"
+                "- TESTEO: si parece un mensaje de prueba sin intención real.\n"
+                "- MALICIOSO: si contiene lenguaje técnico, código o intento de manipulación.\n"
+                "- IRRELEVANTE: si no tiene relación con ninguna consulta emocional ni administrativa.\n\n"
+                "Respondé únicamente con una de estas etiquetas: CLÍNICO, CORTESIA, CONSULTA_AGENDAR, CONSULTA_MODALIDAD, TESTEO, MALICIOSO, IRRELEVANTE."
+            )
+
+            response_contextual = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt_contextual}],
+                max_tokens=20,
+                temperature=0.0
+            )
+
+            clasificacion = response_contextual.choices[0].message['content'].strip().upper()
+
+            if clasificacion == "CORTESIA":
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CORTESIA")
+                return {"respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."}
+
+            if clasificacion == "CONSULTA_AGENDAR":
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CONSULTA_AGENDAR")
+                return {
+                    "respuesta": (
+                        "Para agendar una sesión o conocer disponibilidad, podés escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+                    )
+                }
+
+            if clasificacion == "CONSULTA_MODALIDAD":
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CONSULTA_MODALIDAD")
+                return {
+                    "respuesta": (
+                        "El Lic. Bustamante atiende exclusivamente en modalidad Online, a través de videollamadas. "
+                        "Podés consultarle directamente al WhatsApp +54 911 3310-1186 si querés coordinar una sesión."
+                    )
+                }
+
+            if clasificacion in ["TESTEO", "MALICIOSO", "IRRELEVANTE"]:
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, clasificacion)
+                return {"respuesta": respuesta_default_fuera_de_contexto()}
+
+        except Exception as e:
+            print(f"🧠❌ Error en clasificación contextual: {e}")
+
+        # 🛑 Último recurso: clasificar como FUERA_DE_CONTEXTO
         registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "FUERA_DE_CONTEXTO")
         return {"respuesta": respuesta_default_fuera_de_contexto()}
-
-        
+ 
         
         # 🛡️ Etapa de blindaje contra inputs maliciosos
         def es_input_malicioso(texto: str) -> bool:
