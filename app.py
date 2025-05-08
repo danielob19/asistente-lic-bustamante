@@ -873,19 +873,6 @@ def clasificar_input_inicial(texto: str) -> str:
     ]
     if any(frase in texto.lower() for frase in frases_consulta_directa):
         return "ADMINISTRATIVO"
-    
-    # Combinación dinámica: verbo + síntoma cacheado
-    for verbo in verbos_consulta:
-        for sintoma in sintomas_cacheados:
-            patron = rf"{verbo}\s+(el|la|los|las)?\s*{re.escape(sintoma)}"
-            if re.search(patron, texto, re.IGNORECASE):
-                registrar_auditoria_input_original(
-                    user_id="sistema",
-                    mensaje_original=texto,
-                    mensaje_purificado=texto,
-                    clasificacion=f"ADMINISTRATIVO (verbo + síntoma)"
-                )
-                return "ADMINISTRATIVO"
 
     # Indicadores clínicos ampliados (incluso con negaciones o abstracciones emocionales)
     clinicos_ampliados = [
