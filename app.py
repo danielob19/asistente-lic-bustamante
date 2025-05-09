@@ -1297,8 +1297,19 @@ async def asistente(input_data: UserInput):
                 tipo_input = "CLINICO_CONTINUACION"
         
         # 🧠 Registrar todas las etiquetas anteriores en la sesión
+        session = user_sessions.get(user_id, {
+            "contador_interacciones": 0,
+            "ultima_interaccion": time.time(),
+            "mensajes": [],
+            "emociones_detectadas": [],
+            "ultimas_respuestas": [],
+            "input_sospechoso": False,
+            "interacciones_previas": []
+        })
         session.setdefault("interacciones_previas", []).append(tipo_input)
+        user_sessions[user_id] = session
         
+                
         if tipo_input == "SALUDO":
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "SALUDO")
             return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
