@@ -1468,7 +1468,6 @@ async def asistente(input_data: UserInput):
         interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
 
         # Actualiza la sesión del usuario
-        session = user_sessions[user_id]
         session["ultima_interaccion"] = time.time()
         session["contador_interacciones"] += 1  # ✅ Incrementar contador aquí
         contador = session["contador_interacciones"]
