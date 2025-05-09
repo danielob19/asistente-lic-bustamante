@@ -1286,15 +1286,23 @@ async def asistente(input_data: UserInput):
 
         # 🧩 Clasificación local por intención general
         tipo_input = clasificar_input_inicial(mensaje_usuario)
-
+        
+        # ✅ Forzar continuidad clínica si el input es ambiguo pero hubo malestar antes
+        if tipo_input in ["INDEFINIDO", "FUERA_DE_CONTEXTO", "CONFUSO", "CORTESIA"]:
+            if hay_contexto_clinico_anterior():
+                tipo_input = "CLINICO_CONTINUACION"
+        
+        # 🧠 Registrar todas las etiquetas anteriores en la sesión
+        session.setdefault("interacciones_previas", []).append(tipo_input)
+        
         if tipo_input == "SALUDO":
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "SALUDO")
             return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
-
+        
         elif tipo_input == "CORTESIA":
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CORTESIA")
             return {"respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."}
-
+        
         elif tipo_input == "ADMINISTRATIVO":
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "ADMINISTRATIVO")
             return {
@@ -1304,7 +1312,16 @@ async def asistente(input_data: UserInput):
                     "¿Hay algo más que te gustaría saber?"
                 )
             }
-
+        
+        elif tipo_input == "CLINICO_CONTINUACION":
+            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CLINICO_CONTINUACION")
+            return {
+                "respuesta": (
+                    "Entiendo. Lo que mencionaste antes podría estar indicando un malestar emocional. "
+                    "¿Querés que exploremos un poco más lo que estás sintiendo últimamente?"
+                )
+            }
+        
         elif tipo_input == "CLINICO" or es_tema_clinico_o_emocional(mensaje_usuario):
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CLINICO")
             if user_id not in user_sessions:
