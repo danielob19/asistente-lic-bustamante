@@ -22,6 +22,14 @@ from fastapi.responses import FileResponse, HTMLResponse
 # 🧠 Diccionario de sesiones por usuario (en memoria)
 user_sessions = {}
 
+# ========================== CONSTANTES DE CLASIFICACIÓN ==========================
+
+CLINICO_CONTINUACION = "CLINICO_CONTINUACION"
+SALUDO = "SALUDO"
+CORTESIA = "CORTESIA"
+ADMINISTRATIVO = "ADMINISTRATIVO"
+CLINICO = "CLINICO"
+
 
 # ✅ Función reutilizable de seguridad textual
 def contiene_elementos_peligrosos(texto: str) -> bool:
