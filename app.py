@@ -1310,9 +1310,9 @@ async def asistente(input_data: UserInput):
         tipo_input = clasificar_input_inicial(mensaje_usuario)
         
         # ✅ Forzar continuidad clínica si el input es ambiguo pero hubo malestar antes
-        if tipo_input in ["INDEFINIDO", "FUERA_DE_CONTEXTO", "CONFUSO", "CORTESIA"]:
+        if tipo_input in ["INDEFINIDO", "FUERA_DE_CONTEXTO", "CONFUSO", CORTESIA]:
             if hay_contexto_clinico_anterior(user_id):
-                tipo_input = "CLINICO_CONTINUACION"
+                tipo_input = CLINICO_CONTINUACION
         
         # 🧠 Registrar todas las etiquetas anteriores en la sesión
         session = user_sessions.get(user_id, {
@@ -1328,16 +1328,16 @@ async def asistente(input_data: UserInput):
         user_sessions[user_id] = session
         
                 
-        if tipo_input == "SALUDO":
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "SALUDO")
+        if tipo_input == SALUDO:
+            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, SALUDO)
             return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
         
-        elif tipo_input == "CORTESIA":
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CORTESIA")
+        elif tipo_input == CORTESIA:
+            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
             return {"respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."}
         
-        elif tipo_input == "ADMINISTRATIVO":
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "ADMINISTRATIVO")
+        elif tipo_input == ADMINISTRATIVO:
+            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, ADMINISTRATIVO)
             return {
                 "respuesta": (
                     "¡Hola! Soy el asistente del Lic. Daniel O. Bustamante. "
@@ -1346,8 +1346,8 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        elif tipo_input == "CLINICO_CONTINUACION":
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CLINICO_CONTINUACION")
+        elif tipo_input == CLINICO_CONTINUACION:
+            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CLINICO_CONTINUACION)
             return {
                 "respuesta": (
                     "Entiendo. Lo que mencionaste antes podría estar indicando un malestar emocional. "
@@ -1355,8 +1355,8 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        elif tipo_input == "CLINICO" or es_tema_clinico_o_emocional(mensaje_usuario):
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CLINICO")
+        elif tipo_input == CLINICO or es_tema_clinico_o_emocional(mensaje_usuario):
+            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CLINICO)
             if user_id not in user_sessions:
                 user_sessions[user_id] = {
                     "contador_interacciones": 1,
