@@ -29,6 +29,9 @@ SALUDO = "SALUDO"
 CORTESIA = "CORTESIA"
 ADMINISTRATIVO = "ADMINISTRATIVO"
 CLINICO = "CLINICO"
+CONSULTA_AGENDAR = "CONSULTA_AGENDAR"
+CONSULTA_MODALIDAD = "CONSULTA_MODALIDAD"
+
 
 
 # ✅ Función reutilizable de seguridad textual
@@ -1399,11 +1402,11 @@ async def asistente(input_data: UserInput):
             clasificacion = response_contextual.choices[0].message['content'].strip().upper()
 
             if clasificacion == "CORTESIA":
-                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CORTESIA")
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
                 return {"respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."}
 
             if clasificacion == "CONSULTA_AGENDAR":
-                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CONSULTA_AGENDAR")
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CONSULTA_AGENDAR)
                 return {
                     "respuesta": (
                         "Para agendar una sesión o conocer disponibilidad, podés escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
@@ -1411,7 +1414,7 @@ async def asistente(input_data: UserInput):
                 }
 
             if clasificacion == "CONSULTA_MODALIDAD":
-                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "CONSULTA_MODALIDAD")
+                registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CONSULTA_MODALIDAD)
                 return {
                     "respuesta": (
                         "El Lic. Bustamante atiende exclusivamente en modalidad Online, a través de videollamadas. "
