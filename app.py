@@ -1650,10 +1650,6 @@ async def asistente(input_data: UserInput):
                 }
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
         
-        # Respuesta específica para saludos simples
-        if mensaje_usuario in ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches"]:
-            return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
-
         # Frases de agradecimiento y cierre (ajuste de tono profesional y neutral)
         agradecimientos = {
             "gracias", "muy amable", "te agradezco", "muchas gracias", "ok gracias", "perfecto, gracias", "mil gracias", "gracias por todo"
