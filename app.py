@@ -1464,10 +1464,6 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-
-        # 📋 Registro de auditoría del mensaje original y purificado
-        registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario)
-        
         # Registrar interacción con mensaje original incluido
         interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
 
