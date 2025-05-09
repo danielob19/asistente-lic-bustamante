@@ -1308,9 +1308,6 @@ async def asistente(input_data: UserInput):
 
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
-        
-        # 📋 Registro de auditoría del mensaje original y purificado
-        registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario)
 
         # 🧩 Clasificación local por intención general
         tipo_input = clasificar_input_inicial(mensaje_usuario)
