@@ -1277,6 +1277,16 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     print(f"🧾 Resumen clínico generado correctamente en interacción {contador}")
     session["mensajes"].clear()
     return respuesta
+    
+def hay_contexto_clinico_anterior(user_id: str) -> bool:
+    """
+    Evalúa si ya hay emociones detectadas en la sesión del usuario.
+    Se considera que hay contexto clínico previo si hay al menos una emoción registrada.
+    """
+    session = user_sessions.get(user_id)
+    if session and session.get("emociones_detectadas"):
+        return len(session["emociones_detectadas"]) >= 1
+    return False
 
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
@@ -1293,7 +1303,7 @@ async def asistente(input_data: UserInput):
         
         # ✅ Forzar continuidad clínica si el input es ambiguo pero hubo malestar antes
         if tipo_input in ["INDEFINIDO", "FUERA_DE_CONTEXTO", "CONFUSO", "CORTESIA"]:
-            if hay_contexto_clinico_anterior():
+            if hay_contexto_clinico_anterior(user_id):
                 tipo_input = "CLINICO_CONTINUACION"
         
         # 🧠 Registrar todas las etiquetas anteriores en la sesión
