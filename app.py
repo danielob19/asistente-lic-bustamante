@@ -1467,17 +1467,6 @@ async def asistente(input_data: UserInput):
         # Registrar interacción con mensaje original incluido
         interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
 
-        # Inicializa la sesión del usuario si no existe
-        if user_id not in user_sessions:
-            user_sessions[user_id] = {
-                "contador_interacciones": 0,
-                "ultima_interaccion": time.time(),
-                "mensajes": [],
-                "emociones_detectadas": [],
-                "ultimas_respuestas": [],
-                "input_sospechoso": False  # 🆕 Bandera de intento no clínico o manipulación
-            }
-
         # Actualiza la sesión del usuario
         session = user_sessions[user_id]
         session["ultima_interaccion"] = time.time()
