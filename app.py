@@ -19,6 +19,10 @@ from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 
+# 🧠 Diccionario de sesiones por usuario (en memoria)
+user_sessions = {}
+
+
 # ✅ Función reutilizable de seguridad textual
 def contiene_elementos_peligrosos(texto: str) -> bool:
     """
