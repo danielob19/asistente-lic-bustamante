@@ -1579,6 +1579,7 @@ async def asistente(input_data: UserInput):
         # 👉 Nueva respuesta para la PRIMERA INTERACCIÓN
         if contador == 1:
             tipo_input = clasificar_input_inicial(mensaje_usuario)
+            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, tipo_input)
         
             if tipo_input == CLINICO:
                 return {
@@ -1600,7 +1601,7 @@ async def asistente(input_data: UserInput):
                 return {
                     "respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"
                 }
-            
+        
             elif tipo_input == CORTESIA:
                 return {
                     "respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."
@@ -1611,7 +1612,7 @@ async def asistente(input_data: UserInput):
                     "¡Hola! Bienvenido. Contame cómo puedo ayudarte: si estás buscando orientación emocional, información sobre consultas o simplemente querés hacer una pregunta, estoy para asistirte."
                 )
             }
-        
+                        
         # 🔍 Buscar coincidencia semántica en preguntas frecuentes
         resultado_semantico = buscar_respuesta_semantica_con_score(mensaje_usuario)
         if resultado_semantico:
