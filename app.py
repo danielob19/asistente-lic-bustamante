@@ -1306,8 +1306,11 @@ async def asistente(input_data: UserInput):
         mensaje_original = input_data.mensaje.strip()
         mensaje_usuario = mensaje_original.lower()
 
-        # 🧽 Etapa de purificación clínica
-        mensaje_usuario = purificar_input_clinico(mensaje_usuario)
+        if not mensaje_usuario:
+            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+        
+        # 📋 Registro de auditoría del mensaje original y purificado
+        registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario)
 
         # 🧩 Clasificación local por intención general
         tipo_input = clasificar_input_inicial(mensaje_usuario)
@@ -1467,10 +1470,6 @@ async def asistente(input_data: UserInput):
 
         # 📋 Registro de auditoría del mensaje original y purificado
         registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario)
-
-
-        if not mensaje_usuario:
-            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
         
         # Registrar interacción con mensaje original incluido
         interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
