@@ -1376,7 +1376,7 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        # 🧠 Clasificación contextual con OpenAI (si no fue clasificado antes)
+        # 🧠 Clasificación contextual con OpenAI
         try:
             prompt_contextual = (
                 f"Clasificá el siguiente mensaje según su intención principal:\n"
@@ -1391,20 +1391,20 @@ async def asistente(input_data: UserInput):
                 "- IRRELEVANTE: si no tiene relación con ninguna consulta emocional ni administrativa.\n\n"
                 "Respondé únicamente con una de estas etiquetas: CLÍNICO, CORTESIA, CONSULTA_AGENDAR, CONSULTA_MODALIDAD, TESTEO, MALICIOSO, IRRELEVANTE."
             )
-
+        
             response_contextual = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": prompt_contextual}],
                 max_tokens=20,
                 temperature=0.0
             )
-
+        
             clasificacion = response_contextual.choices[0].message['content'].strip().upper()
-
+        
             if clasificacion == "CORTESIA":
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
                 return {"respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."}
-
+        
             if clasificacion == "CONSULTA_AGENDAR":
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CONSULTA_AGENDAR)
                 return {
@@ -1412,7 +1412,7 @@ async def asistente(input_data: UserInput):
                         "Para agendar una sesión o conocer disponibilidad, podés escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
                     )
                 }
-
+        
             if clasificacion == "CONSULTA_MODALIDAD":
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CONSULTA_MODALIDAD)
                 return {
@@ -1421,14 +1421,14 @@ async def asistente(input_data: UserInput):
                         "Podés consultarle directamente al WhatsApp +54 911 3310-1186 si querés coordinar una sesión."
                     )
                 }
-
+        
             if clasificacion in ["TESTEO", "MALICIOSO", "IRRELEVANTE"]:
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, clasificacion)
+                session["input_sospechoso"] = True
                 return {"respuesta": respuesta_default_fuera_de_contexto()}
-
+        
         except Exception as e:
             print(f"🧠❌ Error en clasificación contextual: {e}")
- 
         
         # 🛡️ Etapa de blindaje contra inputs maliciosos
         def es_input_malicioso(texto: str) -> bool:
