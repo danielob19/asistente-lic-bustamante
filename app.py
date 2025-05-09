@@ -1577,7 +1577,7 @@ async def asistente(input_data: UserInput):
         if contador == 1:
             tipo_input = clasificar_input_inicial(mensaje_usuario)
         
-            if tipo_input == "CLINICO":
+            if tipo_input == CLINICO:
                 return {
                     "respuesta": (
                         "¡Hola! Bienvenido. Por lo que mencionás, parece que estás atravesando un malestar emocional. "
@@ -1585,7 +1585,7 @@ async def asistente(input_data: UserInput):
                     )
                 }
         
-            elif tipo_input == "ADMINISTRATIVO":
+            elif tipo_input == ADMINISTRATIVO:
                 return {
                     "respuesta": (
                         "¡Hola! Soy el asistente del Lic. Daniel O. Bustamante. Si querés contactarlo, podés escribirle por WhatsApp al +54 911 3310-1186. "
@@ -1593,12 +1593,12 @@ async def asistente(input_data: UserInput):
                     )
                 }
         
-            elif tipo_input == "SALUDO":
+            elif tipo_input == SALUDO:
                 return {
                     "respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"
                 }
             
-            elif tipo_input == "CORTESIA":
+            elif tipo_input == CORTESIA:
                 return {
                     "respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."
                 }
