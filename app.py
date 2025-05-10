@@ -1495,6 +1495,11 @@ async def asistente(input_data: UserInput):
         # Registrar interacción con mensaje original incluido
         interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
 
+        # 🔄 Si el input actual es ambiguo, pero ya hubo emociones antes, forzar continuidad clínica
+        if tipo_input in ["FUERA_DE_CONTEXTO", "INDEFINIDO", "CONFUSO", "OTRO"]:
+            if hay_contexto_clinico_anterior(user_id):
+                tipo_input = CLINICO_CONTINUACION
+
         # Actualiza la sesión del usuario
         session["ultima_interaccion"] = time.time()
         session["contador_interacciones"] += 1  # ✅ Incrementar contador aquí
