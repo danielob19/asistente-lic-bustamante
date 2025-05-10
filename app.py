@@ -1946,6 +1946,11 @@ async def asistente(input_data: UserInput):
                 "El Lic. Daniel O. Bustamante es psicólogo clínico. Si querés saber más sobre los servicios que ofrece, "
                 "podés escribirle directamente por WhatsApp al +54 911 3310-1186 y te brindará toda la información necesaria."
             )
+
+        # 🔍 Filtro para eliminar encabezados como “Estimado/a usuario/a”
+        if respuesta_original.lower().startswith("estimado") or "estimado/a" in respuesta_original.lower():
+            respuesta_original = re.sub(r"(?i)^estimado/a\s+usuario/a,?\s*", "", respuesta_original).strip()
+
         
         # 🔍 Reemplazo de marcador si quedó en la respuesta
         respuesta_ai = respuesta_ai.replace("[Incluir número de contacto]", "+54 911 3310-1186")
