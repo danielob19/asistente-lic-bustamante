@@ -1696,13 +1696,16 @@ async def asistente(input_data: UserInput):
         
         # ✅ En la interacción 5 y 9, generar resumen clínico y estado emocional predominante
         if contador == 5:
+            if not session["emociones_detectadas"]:
+                nuevas = detectar_emociones_negativas(" ".join(session["mensajes"])) or []
+                session["emociones_detectadas"].extend([e for e in nuevas if e not in session["emociones_detectadas"]])
+        
             resumen = generar_resumen_clinico_y_estado(session, contador)
             respuesta = f"{resumen} ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
         
         if contador == 9:
-            # Reanalizar síntomas de las interacciones 6, 7 y 8 (últimos 3 mensajes antes del 9)
             mensajes_previos = session["mensajes"][-3:]
             emociones_nuevas = []
         
@@ -1713,10 +1716,13 @@ async def asistente(input_data: UserInput):
                     if emocion not in session["emociones_detectadas"]:
                         emociones_nuevas.append(emocion)
         
-            # Unificar y eliminar duplicados antes del resumen clínico
-            session["emociones_detectadas"] = list(set(session["emociones_detectadas"] + emociones_nuevas))
+            # Validar si hay emociones previas, y si no, intentar detectar de nuevo
+            if not session["emociones_detectadas"] and emociones_nuevas:
+                session["emociones_detectadas"].extend(emociones_nuevas)
+            else:
+                session["emociones_detectadas"] = list(set(session["emociones_detectadas"] + emociones_nuevas))
         
-            # Registrar en la BD solo las emociones nuevas no registradas aún para esta interacción
+            # Registrar solo emociones nuevas que no estén ya en BD
             emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
             for emocion in emociones_nuevas:
                 if emocion not in emociones_registradas_bd:
@@ -1724,7 +1730,6 @@ async def asistente(input_data: UserInput):
         
             # Generar resumen clínico con todas las emociones acumuladas
             respuesta = generar_resumen_clinico_y_estado(session, contador)
-        
             return {
                 "respuesta": respuesta + " ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
             }
