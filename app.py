@@ -1508,6 +1508,16 @@ async def asistente(input_data: UserInput):
                     "¡Hola! Bienvenido. Contame cómo puedo ayudarte: si estás buscando orientación emocional, información sobre consultas o simplemente querés hacer una pregunta, estoy para asistirte."
                 )
             }
+
+        # 🧼 Si la frase es neutra, no analizar emocionalmente ni registrar emociones
+        if mensaje_usuario in EXPRESIONES_DESCARTADAS or any(p in mensaje_usuario for p in ["recomienda", "opinás", "atiende"]):
+            return {
+                "respuesta": (
+                    "Si buscás una recomendación profesional, te sugiero contactar al Lic. Daniel O. Bustamante. "
+                    "Él es un especialista en psicología clínica y puede ayudarte en lo que necesites. "
+                    "Podés escribirle a su WhatsApp: +54 911 3310-1186."
+                )
+            }
                         
         # 🔍 Buscar coincidencia semántica en preguntas frecuentes
         resultado_semantico = buscar_respuesta_semantica_con_score(mensaje_usuario)
