@@ -1306,6 +1306,19 @@ async def asistente(input_data: UserInput):
         mensaje_original = input_data.mensaje.strip()
         mensaje_usuario = mensaje_original.lower()
 
+        # ✅ Frases neutrales que no deben analizarse emocionalmente
+        EXPRESIONES_DESCARTADAS = [
+            # Cortesía, cierre o testeo
+            "gracias", "ok", "listo", "ya está", "nada más", "solo eso", "solo quería saber eso",
+            "me quedó claro", "ya entendí", "era solo una duda", "era curiosidad", "me lo guardo",
+            "te consultaba por otra persona", "me interesaba saber", "después veo", "lo consulto luego",
+            "más adelante veo", "ah ok", "claro", "entiendo", "lo veo después", "todo bien", "sí",
+        
+            # Preguntas neutras o generales
+            "¿a quién me recomiendas?", "a quién me recomiendas", "me recomendarías a alguien?",
+            "qué opinas?", "el atiende estos casos?", "que tipo de casos atienden?"
+        ]
+
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
