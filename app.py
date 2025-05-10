@@ -1939,7 +1939,26 @@ async def asistente(input_data: UserInput):
             # 🧾 Auditoría: log si OpenAI intentó responder con precios
             print("⚠️ Se interceptó una respuesta con posible contenido de precios y fue reemplazada para evitar brindar esa información.")
 
-                # Detectar modificaciones y registrar auditoría
+        # ❌ Interceptar frases ambiguas que sugieran contacto antes de la interacción 5
+        if contador <= 4:
+            frases_implicitas = [
+                "si lo desea puedo brindarle más información",
+                "si desea más información",
+                "puedo brindarle más detalles si lo necesita",
+                "si quiere puedo contarle más",
+                "estoy aquí para ayudarle",
+                "podría ayudarle si lo desea",
+                "si desea saber más"
+            ]
+            if any(f in respuesta_ai.lower() for f in frases_implicitas):
+                respuesta_ai = (
+                    "Gracias por tu mensaje. En este espacio se brinda orientación clínica general. "
+                    "¿Querés contarme un poco más sobre lo que estás sintiendo para poder ayudarte mejor?"
+                )
+                motivo = "Frase ambigua de sugerencia de contacto detectada en interacción temprana"
+
+
+        # Detectar modificaciones y registrar auditoría
         if respuesta_original != respuesta_ai:
             motivo = "Respuesta modificada por contener lenguaje institucional, temáticas no permitidas o precios"
             registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, motivo)
