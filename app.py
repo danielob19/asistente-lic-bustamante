@@ -1554,23 +1554,7 @@ async def asistente(input_data: UserInput):
                              "Si deseas consultarlo, puedes contactarlo a través de WhatsApp: +54 911 3310-1186."
             }
         
-        # 🔹 Proporciona el número de contacto si el usuario lo solicita
-        if (
-            "contacto" in mensaje_usuario or
-            "numero" in mensaje_usuario or
-            "número" in mensaje_usuario or
-            "turno" in mensaje_usuario or
-            "whatsapp" in mensaje_usuario or
-            "teléfono" in mensaje_usuario or
-            "psicologo" in mensaje_usuario or
-            "psicólogo" in mensaje_usuario or
-            "terapeuta" in mensaje_usuario or
-            "psicoterapia" in mensaje_usuario or
-            "terapia" in mensaje_usuario or
-            "tratamiento psicológico" in mensaje_usuario or
-            "recomendas" in mensaje_usuario or
-            "telefono" in mensaje_usuario
-        ):
+        if es_consulta_contacto(mensaje_usuario):
             return {
                 "respuesta": "Para contactar al Lic. Daniel O. Bustamante, podés enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
             }
