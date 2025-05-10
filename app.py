@@ -32,7 +32,13 @@ CLINICO = "CLINICO"
 CONSULTA_AGENDAR = "CONSULTA_AGENDAR"
 CONSULTA_MODALIDAD = "CONSULTA_MODALIDAD"
 
-
+def es_consulta_contacto(mensaje: str) -> bool:
+    expresiones = [
+        "contacto", "numero", "número", "whatsapp", "teléfono", "telefono",
+        "turno", "agenda", "psicologo", "psicólogo", "terapeuta",
+        "psicoterapia", "terapia", "tratamiento psicológico", "recomendas"
+    ]
+    return any(palabra in mensaje for palabra in expresiones)
 
 # ✅ Función reutilizable de seguridad textual
 def contiene_elementos_peligrosos(texto: str) -> bool:
@@ -859,22 +865,6 @@ def clasificar_input_inicial(texto: str) -> str:
     cortesias = ["gracias", "muy amable", "te agradezco", "muchas gracias", "ok gracias", "perfecto, gracias", "mil gracias", "gracias por todo"]
     if any(frase in texto for frase in cortesias):
         return "CORTESIA"
-
-    # 📨 Consultas administrativas directas
-    consultas_admin = [
-        "contacto", "número", "numero", "whatsapp", "teléfono", "telefono",
-        "turno", "agenda", "valor", "precio", "costo", "honorario", "cómo me atiendo",
-        "cómo pedir cita", "cómo se agenda", "cómo sacar turno", "cómo pedir turno",
-        "cómo me contacto", "cómo empezar", "quiero reservar", "quiero una consulta",
-        "quiero atenderme", "necesito hablar con alguien", "quiero consultar",
-        "cómo pedir sesión", "cómo puedo atenderme", "quiero atención", "puedo pedir sesión",
-        "formas de pago", "cómo se paga", "cuánto se paga", "qué valor tiene",
-        "cuánto cuesta", "quiero coordinar", "cómo funciona", "cómo es el tratamiento",
-        "cómo son las sesiones", "cómo se hace", "cómo empezar terapia"
-    ]
-
-    if any(palabra in texto for palabra in consultas_admin):
-        return "ADMINISTRATIVO"
 
     # Consultas sobre modalidad de atención (online/presencial) o ubicación
     consultas_modalidad = [
