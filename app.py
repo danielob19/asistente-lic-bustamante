@@ -1623,15 +1623,18 @@ async def asistente(input_data: UserInput):
         # Obtener la lista de síntomas ya registrados en la BD
         sintomas_existentes = obtener_sintomas_existentes()
         
+        # Detectar emociones desde el mensaje actual
+        emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
+        
         # Filtrar emociones detectadas para evitar registrar duplicados
         emociones_nuevas = []
         
         for emocion in emociones_detectadas:
             emocion = emocion.lower().strip()
-            
+        
             # Verificar si la emoción ya fue detectada en la sesión para evitar registrar duplicados
             if emocion not in session["emociones_detectadas"]:
-                
+        
                 # Si la emoción no está en la BD, agregarla a emociones_nuevas y registrar el síntoma
                 if emocion not in sintomas_existentes:
                     emociones_nuevas.append(emocion)
