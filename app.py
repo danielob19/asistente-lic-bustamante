@@ -1881,9 +1881,11 @@ async def asistente(input_data: UserInput):
             "No generes contenido motivacional ni promesas de bienestar. No uses expresiones institucionales como 'nuestro equipo'. "
             "Usá en cambio formulaciones profesionales como: 'Pareciera tratarse de...', 'Comprendo que refiere a...', 'Podría vincularse a...'. "
             "No brindes enlaces ni respondas sobre temas financieros, legales ni técnicos. Referite al profesional siempre como 'el Lic. Bustamante'. "
-            "IMPORTANTE: Bajo ninguna circunstancia sugieras consultar con el Lic. Bustamante ni uses frases como 'buscar apoyo profesional', 'considerar una consulta', 'evaluarlo con un profesional' o similares, salvo que el usuario lo pida explícitamente o estés en la interacción 5, 9 o a partir de la 10. "
-            "Solo en las interacciones 5, 9 o eventualmente a partir de la 10, podrás sugerir contacto de forma neutral, sin insistencia ni persuasión emocional."
+            "IMPORTANTE: No recomiendes agendar consultas ni menciones su número de contacto antes de la interacción número 5, excepto si el usuario lo solicita de forma directa y explícita. "
+            "Bajo ninguna circunstancia sugieras consultar con el Lic. Bustamante ni uses frases como 'buscar apoyo profesional', 'considerar una consulta', 'evaluarlo con un profesional' o similares, salvo que el usuario lo pida explícitamente o estés en la interacción 5, 9 o a partir de la 10. "
+            "No formules preguntas como “¿Deseás que te facilite información sobre agendar?” ni uses sugerencias implícitas de contacto."
         )
+
 
         # Obtener respuesta de OpenAI
         respuesta_original = generar_respuesta_con_openai(prompt)
