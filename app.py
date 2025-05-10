@@ -1467,9 +1467,6 @@ async def asistente(input_data: UserInput):
 
         # 👉 Nueva respuesta para la PRIMERA INTERACCIÓN
         if contador == 1:
-            tipo_input = clasificar_input_inicial(mensaje_usuario)
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, tipo_input)
-        
             if tipo_input == CLINICO:
                 return {
                     "respuesta": (
