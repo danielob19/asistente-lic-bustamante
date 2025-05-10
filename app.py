@@ -1918,6 +1918,21 @@ async def asistente(input_data: UserInput):
                 "Gracias por tu consulta. El Lic. Daniel O. Bustamante estará encantado de ayudarte. "
                 "Podés escribirle directamente al WhatsApp +54 911 3310-1186 para obtener más información."
             )
+
+        # 🔍 Filtro para lenguaje empático simulado o genérico prohibido
+        frases_empaticas_simuladas = [
+            "estoy aquí para ayudarte", "estoy aquí para ayudarle", "te puedo ayudar", 
+            "estamos para ayudarte", "cuente conmigo", "puedo ayudarte", 
+            "tranquilo", "no estás solo", "estás en buenas manos", 
+            "todo va a estar bien", "puede contar conmigo"
+        ]
+        if any(frase in respuesta_ai.lower() for frase in frases_empaticas_simuladas):
+            respuesta_ai = (
+                "Gracias por tu mensaje. Si querés, podés contarme un poco más sobre lo que estás atravesando "
+                "para poder continuar con el análisis clínico correspondiente."
+            )
+            motivo = "Frase empática simulada detectada y reemplazada"
+
         
         # 🔍 Filtro para desvíos temáticos (por si OpenAI habla de finanzas o cosas raras)
         temas_prohibidos = ["finanzas", "inversiones", "educación financiera", "consultoría financiera", "legal", "técnico"]
