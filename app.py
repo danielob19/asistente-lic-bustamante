@@ -1445,9 +1445,15 @@ async def asistente(input_data: UserInput):
             
             if clasificacion in ["TESTEO", "MALICIOSO", "IRRELEVANTE"]:
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, clasificacion)
-                session["input_sospechoso"] = True
-                return {"respuesta": respuesta_default_fuera_de_contexto()}
-
+            
+                # ⚠️ Solo bloquear si no hay contexto clínico previo
+                if not hay_contexto_clinico_anterior(user_id):
+                    session["input_sospechoso"] = True
+                    return {"respuesta": respuesta_default_fuera_de_contexto()}
+                else:
+                    # ⚠️ Forzar que siga el flujo clínico como continuación
+                    tipo_input = CLINICO_CONTINUACION
+            
         
         except Exception as e:
             print(f"🧠❌ Error en clasificación contextual: {e}")
