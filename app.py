@@ -1358,23 +1358,6 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        elif tipo_input == CLINICO or es_tema_clinico_o_emocional(mensaje_usuario):
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CLINICO)
-            if user_id not in user_sessions:
-                user_sessions[user_id] = {
-                    "contador_interacciones": 1,
-                    "ultima_interaccion": time.time(),
-                    "mensajes": [mensaje_usuario],
-                    "emociones_detectadas": [],
-                    "ultimas_respuestas": [],
-                    "input_sospechoso": False
-                }
-            return {
-                "respuesta": (
-                    "Por lo que describís, se identifican indicios de malestar emocional. "
-                    "¿Querés contarme un poco más para poder comprender mejor lo que estás atravesando?"
-                )
-            }
 
         # 🧠 Clasificación contextual con OpenAI
         try:
