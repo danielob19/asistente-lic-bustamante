@@ -1340,7 +1340,7 @@ async def asistente(input_data: UserInput):
         tipo_input = clasificar_input_inicial(mensaje_usuario)
         
         # ✅ Forzar continuidad clínica si el input es ambiguo pero hubo malestar antes
-        if tipo_input in ["INDEFINIDO", "FUERA_DE_CONTEXTO", "CONFUSO", CORTESIA]:
+        if tipo_input in ["INDEFINIDO", "FUERA_DE_CONTEXTO", "CONFUSO"]:
             if hay_contexto_clinico_anterior(user_id):
                 tipo_input = CLINICO_CONTINUACION
         
