@@ -1337,7 +1337,9 @@ async def asistente(input_data: UserInput):
         
         elif tipo_input == CORTESIA:
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
-            return {"respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."}
+            return {
+                "respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."
+            }
         
         elif tipo_input == ADMINISTRATIVO:
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, ADMINISTRATIVO)
@@ -1486,11 +1488,6 @@ async def asistente(input_data: UserInput):
             elif tipo_input == SALUDO:
                 return {
                     "respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"
-                }
-        
-            elif tipo_input == CORTESIA:
-                return {
-                    "respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."
                 }
         
             return {
