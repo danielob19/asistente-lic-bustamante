@@ -1590,11 +1590,11 @@ async def asistente(input_data: UserInput):
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
 
         
-        if es_consulta_contacto(mensaje_usuario):
+        if es_consulta_contacto(mensaje_usuario, user_id, mensaje_original):
             return {
                 "respuesta": "Para contactar al Lic. Daniel O. Bustamante, podés enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
             }
-        
+
         
         # 🔹 Proporciona el número de contacto si el usuario pregunta por el "mejor psicólogo" o especialista recomendado
         if (
