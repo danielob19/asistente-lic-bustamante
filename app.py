@@ -1569,28 +1569,12 @@ async def asistente(input_data: UserInput):
                 }
             return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
 
-
-        # 🔹 Manejo de consulta sobre si el Lic. Bustamante atiende estos casos
-        if "atienden estos casos" in mensaje_usuario or "atiende casos" in mensaje_usuario or "trata casos" in mensaje_usuario or "atiende temas" in mensaje_usuario or "trata temas" in mensaje_usuario or "atiende problemas" in mensaje_usuario or "trata problemas" in mensaje_usuario or "atiende estos" in mensaje_usuario or "trata estos" in mensaje_usuario or "atiende estos temas" in mensaje_usuario:
-            return {
-                "respuesta": "Sí, el Lic. Daniel O. Bustamante es un profesional especializado en psicología clínica y está capacitado para atender estos casos. "
-                             "Si deseas consultarlo, puedes contactarlo a través de WhatsApp: +54 911 3310-1186."
-            }
         
         if es_consulta_contacto(mensaje_usuario):
             return {
                 "respuesta": "Para contactar al Lic. Daniel O. Bustamante, podés enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
             }
         
-        # 🔹 Evitar repetir la misma respuesta si ya se dio antes en la sesión
-        if "bustamante" in mensaje_usuario or "telefono" in mensaje_usuario or "contacto" in mensaje_usuario:
-            if session.get("telefono_mencionado"):
-                return {"respuesta": "Si necesitas más información sobre la terapia, dime en qué puedo ayudarte específicamente."}
-            
-            session["telefono_mencionado"] = True
-            return {
-                "respuesta": "Para contactar al Lic. Daniel O. Bustamante, podés enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
-            }
         
         # 🔹 Proporciona el número de contacto si el usuario pregunta por el "mejor psicólogo" o especialista recomendado
         if (
