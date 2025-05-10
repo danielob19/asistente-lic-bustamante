@@ -1413,15 +1413,6 @@ async def asistente(input_data: UserInput):
         
             clasificacion = response_contextual.choices[0].message['content'].strip().upper()
 
-            # 🛡️ Validación robusta
-            opciones_validas = {
-                "CLINICO", "CORTESIA", "CONSULTA_AGENDAR", "CONSULTA_MODALIDAD",
-                "TESTEO", "MALICIOSO", "IRRELEVANTE"
-            }
-            if clasificacion not in opciones_validas:
-                print(f"⚠️ Clasificación inválida recibida de OpenAI: '{clasificacion}'")
-                clasificacion = "IRRELEVANTE"
-
             # 🔍 Validación robusta
             opciones_validas = {
                 "CLINICO", "CORTESIA", "CONSULTA_AGENDAR", "CONSULTA_MODALIDAD",
