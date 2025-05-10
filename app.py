@@ -1605,42 +1605,6 @@ async def asistente(input_data: UserInput):
                 )
             }
            
-        # Lista de frases que no deben ser analizadas en la detección de emociones
-        frases_excluidas = [
-            "¿a quién me recomiendas?", "a quién me recomiendas", "me recomendarías a alguien?",
-            "qué opinas?", "el atiende estos casos?", "que tipo de casos atienden?"
-        ]
-        
-        # Si el mensaje del usuario está en las frases excluidas, proporcionar respuesta fija
-        if mensaje_usuario in frases_excluidas:
-            return {
-                "respuesta": (
-                    "Si buscas una recomendación profesional, te sugiero contactar al Lic. Daniel O. Bustamante. "
-                    "Él es un especialista en psicología clínica y puede ayudarte en lo que necesites. "
-                    "Puedes escribirle a su WhatsApp: +54 911 3310-1186."
-                )
-            }
-        
-        
-        # ❌ Evitar análisis emocional si el mensaje es irrelevante
-        frases_omitir_emociones = [
-            "solo quería saber eso", "solo eso", "nada más", 
-            "me quedó claro", "ya entendí",
-            "era solo una duda", "era curiosidad", 
-            "me lo guardo", "te consultaba por otra persona",
-            "me interesaba saber", "después veo", "lo consulto luego", "más adelante veo",
-            "ah ok", 
-            "lo veo después", "nada en particular"
-        ]
-        
-        if any(frase in mensaje_usuario for frase in frases_omitir_emociones):
-            emociones_detectadas = []
-        else:
-            emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
-        
-        if not isinstance(emociones_detectadas, list):
-            emociones_detectadas = []
-
         # Obtener la lista de síntomas ya registrados en la BD
         sintomas_existentes = obtener_sintomas_existentes()
         
