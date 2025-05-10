@@ -32,13 +32,33 @@ CLINICO = "CLINICO"
 CONSULTA_AGENDAR = "CONSULTA_AGENDAR"
 CONSULTA_MODALIDAD = "CONSULTA_MODALIDAD"
 
-def es_consulta_contacto(mensaje: str) -> bool:
-    expresiones = [
+def es_consulta_contacto(mensaje: str, user_id: str = None, mensaje_original: str = None) -> bool:
+    """
+    Detecta si el mensaje hace referencia al deseo de contactar al profesional.
+    Si hay coincidencia y se proporciona `user_id` y `mensaje_original`, registra la auditoría automáticamente.
+    """
+    if not mensaje or not isinstance(mensaje, str):
+        return False
+
+    mensaje = mensaje.lower()
+
+    expresiones_contacto = [
         "contacto", "numero", "número", "whatsapp", "teléfono", "telefono",
-        "turno", "agenda", "psicologo", "psicólogo", "terapeuta",
-        "psicoterapia", "terapia", "tratamiento psicológico", "recomendas"
+        "como lo contacto", "quiero contactarlo", "como me comunico",
+        "quiero escribirle", "quiero hablar con él", "me das el número",
+        "como se agenda", "como saco turno", "quiero pedir turno",
+        "necesito contactarlo", "como empiezo la terapia", "quiero empezar la consulta",
+        "como me comunico con el licenciado", "mejor psicologo", "mejor terapeuta",
+        "atienden estos casos", "atiende casos", "trata casos", "atiende temas",
+        "trata temas", "atiende estos", "trata estos", "atiende estos temas"
     ]
-    return any(palabra in mensaje for palabra in expresiones)
+
+    hay_coincidencia = any(exp in mensaje for exp in expresiones_contacto)
+
+    if hay_coincidencia and user_id and mensaje_original:
+        registrar_auditoria_input_original(user_id, mensaje_original, mensaje, "CONSULTA_CONTACTO")
+
+    return hay_coincidencia
 
 # ✅ Función reutilizable de seguridad textual
 def contiene_elementos_peligrosos(texto: str) -> bool:
