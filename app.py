@@ -1621,15 +1621,6 @@ async def asistente(input_data: UserInput):
                 )
             }
         
-        # Excluir "¿A quién me recomiendas?" del análisis de emociones y darle una respuesta fija
-        if mensaje_usuario in ["¿a quién me recomiendas?", "a quién me recomiendas"]:
-            return {
-                "respuesta": (
-                    "Si buscas una recomendación profesional, te sugiero contactar al Lic. Daniel O. Bustamante. "
-                    "Él es un especialista en psicología clínica y puede ayudarte en lo que necesites. "
-                    "Puedes escribirle a su WhatsApp: +54 911 3310-1186."
-                )
-            }
         
         # ❌ Evitar análisis emocional si el mensaje es irrelevante
         frases_omitir_emociones = [
