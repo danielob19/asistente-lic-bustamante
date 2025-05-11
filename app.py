@@ -1934,7 +1934,26 @@ async def asistente(input_data: UserInput):
                 respuesta_ai = respuesta_original
         else:
             respuesta_ai = respuesta_original
+
+        # 🛑 Filtro para derivaciones implícitas indebidas
+        frases_implicitas_derivacion = [
+            "podrías trabajarlo con", "te sugiero considerarlo en una consulta",
+            "evaluarlo con un profesional", "sería conveniente que lo converses",
+            "hablarlo en un espacio terapéutico", "apoyo profesional", 
+            "ayuda especializada", "espacio terapéutico", 
+            "alguien capacitado", "profesional de la salud mental"
+        ]
         
+        if contador not in [5, 9] and contador < 10 and not es_consulta_contacto(mensaje_usuario, user_id, mensaje_original):
+            for frase in frases_implicitas_derivacion:
+                if frase in respuesta_original.lower():
+                    motivo = "Derivación implícita fuera de interacción permitida"
+                    respuesta_ai = (
+                        "Gracias por tu mensaje. Si querés, podés contarme un poco más sobre lo que estás sintiendo "
+                        "para poder continuar con el análisis clínico correspondiente."
+                    )
+                    registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, motivo)
+                    break               
         
         # 🔐 Seguridad textual: verificar si la respuesta de OpenAI contiene elementos peligrosos
         if contiene_elementos_peligrosos(respuesta_original):
