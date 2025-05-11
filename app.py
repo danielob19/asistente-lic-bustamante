@@ -1540,7 +1540,7 @@ async def asistente(input_data: UserInput):
         
             return {
                 "respuesta": (
-                    "¡Hola! Bienvenido. Contame cómo puedo ayudarte: si estás buscando orientación emocional, información sobre consultas o simplemente querés hacer una pregunta, estoy para asistirte."
+                    "Por lo que mencionás, parece que estás atravesando un malestar emocional. ¿Querés contarme un poco más para poder comprender mejor lo que estás sintiendo?"
                 )
             }
 
