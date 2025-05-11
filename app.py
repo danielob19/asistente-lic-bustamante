@@ -219,6 +219,11 @@ def generar_respuesta_con_openai(prompt, contador: int = 0, user_id: str = "", m
         print(f"❌ Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
+def estandarizar_emocion_detectada(emocion: str) -> str:
+    emocion = emocion.strip().lower()
+    emocion = re.sub(r"[.,;:!¡¿?]+$", "", emocion)
+    return emocion
+
 # 🧠 Evaluación temática: ¿el mensaje refiere a un contenido clínico o emocional?
 def es_tema_clinico_o_emocional(mensaje: str) -> bool:
     if not mensaje or not isinstance(mensaje, str):
