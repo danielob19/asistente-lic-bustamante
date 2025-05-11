@@ -185,10 +185,10 @@ if not openai.api_key:
 DATABASE_URL = "postgresql://my_postgres_db_oahe_user:AItPOENiOHIGPNva0eiCT0kK1od4UhZf@dpg-ctqqj0bqf0us73f4ar1g-a/my_postgres_db_oahe"
 
 # Generación de respuestas con OpenAI
-def generar_respuesta_con_openai(prompt):
+def generar_respuesta_con_openai(prompt, contador: int = 0, user_id: str = "", mensaje_usuario: str = "", mensaje_original: str = ""):
     try:
         print("\n===== DEPURACIÓN - GENERACIÓN DE RESPUESTA CON OPENAI =====")
-        print(f"Prompt enviado a OpenAI: {prompt}")
+        print(f"📤 Prompt enviado a OpenAI: {prompt}\n")
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -196,13 +196,27 @@ def generar_respuesta_con_openai(prompt):
             max_tokens=150,
             temperature=0.3
         )
-        
+
         respuesta = response.choices[0].message['content'].strip()
-        print(f"Respuesta generada por OpenAI: {respuesta}\n")
+        print(f"📥 Respuesta generada por OpenAI: {respuesta}\n")
+
+        # ❌ Filtro para mención indebida a contacto antes de interacción 5, 9 o 10+
+        if (
+            "bustamante" in respuesta.lower()
+            and contador not in [5, 9] and contador < 10
+            and not es_consulta_contacto(mensaje_usuario, user_id, mensaje_original)
+        ):
+            respuesta_filtrada = re.sub(
+                r"(con\s+)?(el\s+)?Lic(\.|enciado)?\s+Daniel\s+O\.?\s+Bustamante.*?(\.|\n|$)",
+                "", respuesta, flags=re.IGNORECASE
+            )
+            print("🔒 Mención indebida al Lic. Bustamante detectada y eliminada.\n")
+            return respuesta_filtrada.strip()
+
         return respuesta
 
     except Exception as e:
-        print(f"Error al generar respuesta con OpenAI: {e}")
+        print(f"❌ Error al generar respuesta con OpenAI: {e}")
         return "Lo siento, hubo un problema al generar una respuesta. Por favor, intenta nuevamente."
 
 # 🧠 Evaluación temática: ¿el mensaje refiere a un contenido clínico o emocional?
