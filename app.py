@@ -1993,6 +1993,13 @@ async def asistente(input_data: UserInput):
         # Usar el ID de interacción previamente registrado para guardar la respuesta
         registrar_respuesta_openai(interaccion_id, respuesta_ai)
 
+        # ❌ Filtrado final de menciones indebidas al Lic. Bustamante antes de interacción 5
+        if "bustamante" in respuesta_ai.lower() and contador not in [5, 9] and contador < 10 and not es_consulta_contacto(mensaje_usuario, user_id, mensaje_original):
+            respuesta_filtrada = re.sub(r"(?i)con (el )?Lic(\.|enciado)? Daniel O\.? Bustamante.*?(\.|\n|$)", "", respuesta_ai)
+            motivo = "Se eliminó mención indebida al Lic. Bustamante antes de interacción permitida"
+            registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_filtrada, motivo)
+            return {"respuesta": respuesta_filtrada}
+        
         return {"respuesta": respuesta_ai}
 
     except Exception as e:
