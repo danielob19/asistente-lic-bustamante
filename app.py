@@ -1907,7 +1907,7 @@ async def asistente(input_data: UserInput):
 
 
         # Obtener respuesta de OpenAI
-        respuesta_original = generar_respuesta_con_openai(prompt)
+        respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
         
         # 🔐 Seguridad textual: verificar si la respuesta de OpenAI contiene elementos peligrosos
         if contiene_elementos_peligrosos(respuesta_original):
