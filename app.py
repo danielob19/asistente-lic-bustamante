@@ -1953,7 +1953,8 @@ async def asistente(input_data: UserInput):
                         "para poder continuar con el análisis clínico correspondiente."
                     )
                     registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, motivo)
-                    break               
+                    break
+                return {"respuesta": respuesta_ai}
         
         # 🔐 Seguridad textual: verificar si la respuesta de OpenAI contiene elementos peligrosos
         if contiene_elementos_peligrosos(respuesta_original):
