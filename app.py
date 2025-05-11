@@ -1661,6 +1661,9 @@ async def asistente(input_data: UserInput):
         
         for emocion in emociones_detectadas:
             emocion = emocion.lower().strip()
+
+            # 🧼 Estandarizar emoción detectada (eliminar puntuación final innecesaria)
+            emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
         
             # Verificar si la emoción ya fue detectada en la sesión para evitar registrar duplicados
             if emocion not in session["emociones_detectadas"]:
