@@ -1916,6 +1916,25 @@ async def asistente(input_data: UserInput):
 
         # Obtener respuesta de OpenAI
         respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
+
+        # 🔒 Filtro contra mención indebida al Lic. Bustamante fuera de interacciones permitidas
+        if contador not in [5, 9] and contador < 10 and not es_consulta_contacto(mensaje_usuario, user_id, mensaje_original):
+            if "bustamante" in respuesta_original.lower() or "+54 911 3310-1186" in respuesta_original:
+                # Eliminar cualquier frase que mencione al Lic. Bustamante o su número
+                respuesta_filtrada = re.sub(
+                    r"(el Lic\.? Bustamante.*?[\.\!\?])",
+                    "",
+                    respuesta_original,
+                    flags=re.IGNORECASE
+                )
+                motivo = "Mención indebida a contacto fuera de interacciones 5, 9 o 10+"
+                registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_filtrada.strip(), motivo)
+                respuesta_ai = respuesta_filtrada.strip()
+            else:
+                respuesta_ai = respuesta_original
+        else:
+            respuesta_ai = respuesta_original
+        
         
         # 🔐 Seguridad textual: verificar si la respuesta de OpenAI contiene elementos peligrosos
         if contiene_elementos_peligrosos(respuesta_original):
