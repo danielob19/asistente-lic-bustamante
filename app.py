@@ -1809,12 +1809,14 @@ async def asistente(input_data: UserInput):
             print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
             
             respuestas_cierre_definitivo = [
-                "Como ya lo mencioné, no puedo continuar con esta conversación. " + obtener_mensaje_contacto(),
-                "Ya se ha completado el análisis disponible en este espacio. " + obtener_mensaje_contacto(),
-                "No tengo permitido seguir más allá de este punto. " + obtener_mensaje_contacto(),
-                "Este espacio ha alcanzado su límite. Para una consulta más profunda, " + obtener_mensaje_contacto(),
-                "Recordá que si deseás un abordaje profesional completo, " + obtener_mensaje_contacto()
+                "Gracias por compartir lo que estás sintiendo. Ya hemos recorrido juntos un análisis significativo. Para seguir avanzando, te recomiendo contactar al Lic. Bustamante. " + obtener_mensaje_contacto(),
+                "Valoro la confianza con la que expresaste tus emociones. Este espacio ya cumplió su función de orientación. Para una atención personalizada, podés continuar con el Lic. Bustamante. " + obtener_mensaje_contacto(),
+                "Hemos llegado al punto en que una intervención profesional directa sería lo más adecuado. El Lic. Bustamante está disponible para ayudarte. " + obtener_mensaje_contacto(),
+                "Agradezco tu apertura durante esta conversación. Para seguir explorando lo que estás atravesando en profundidad, lo ideal es hacerlo con el Lic. Bustamante en un entorno clínico. " + obtener_mensaje_contacto(),
+                "Lo que compartiste ha sido importante. A partir de aquí, solo un espacio terapéutico puede brindarte el acompañamiento que necesitás. " + obtener_mensaje_contacto()
             ]
+
+
             return {"respuesta": random.choice(respuestas_cierre_definitivo)}
         
         # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
