@@ -1556,8 +1556,9 @@ async def asistente(input_data: UserInput):
             elif tipo_input == ADMINISTRATIVO:
                 return {
                     "respuesta": (
-                        "¡Hola! Soy el asistente del Lic. Daniel O. Bustamante. Si querés contactarlo, podés escribirle por WhatsApp al +54 911 3310-1186. "
-                        "¿Hay algo más que te gustaría saber?"
+                        "¡Hola! Soy el asistente del Lic. Daniel O. Bustamante. "
+                        + obtener_mensaje_contacto() +
+                        " ¿Hay algo más que te gustaría saber?"
                     )
                 }
         
