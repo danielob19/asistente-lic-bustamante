@@ -1890,7 +1890,7 @@ async def asistente(input_data: UserInput):
                 "respuesta": (
                     "Las sesiones con el Lic. Daniel O. Bustamante tienen una duración aproximada de 50 minutos y se realizan por videoconsulta.\n\n"
                     "La frecuencia puede variar según cada caso, pero generalmente se recomienda un encuentro semanal para favorecer el proceso terapéutico.\n\n"
-                    "Si querés coordinar una sesión o resolver alguna duda, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
+                    + obtener_mensaje_contacto()
                 )
             }
             
@@ -1904,10 +1904,10 @@ async def asistente(input_data: UserInput):
             return {
                 "respuesta": (
                     "El Lic. Daniel O. Bustamante trabaja con modalidad de pago particular.\n\n"
-                    "Para coordinar una sesión y consultar los medios de pago disponibles, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
+                    "Para coordinar una sesión y consultar los medios de pago disponibles, "
+                    + obtener_mensaje_contacto()
                 )
             }
-
         
         
         # 🔹 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
