@@ -1548,8 +1548,8 @@ async def asistente(input_data: UserInput):
             if tipo_input == CLINICO:
                 return {
                     "respuesta": (
-                        "Por lo que mencionás, parece que estás atravesando un malestar emocional. "
-                        "¿Querés contarme un poco más para poder comprender mejor lo que estás sintiendo?"
+                        "Por lo que describís, se identifican indicios de malestar emocional. "
+                        "¿Querés contarme un poco más para poder comprender mejor lo que estás atravesando?"
                     )
                 }
         
