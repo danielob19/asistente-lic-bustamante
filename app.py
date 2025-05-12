@@ -2015,7 +2015,8 @@ async def asistente(input_data: UserInput):
         if any(tema in respuesta_ai.lower() for tema in temas_prohibidos):
             respuesta_ai = (
                 "El Lic. Daniel O. Bustamante es psicólogo clínico. Si querés saber más sobre los servicios que ofrece, "
-                "podés escribirle directamente por WhatsApp al +54 911 3310-1186 y te brindará toda la información necesaria."
+                + obtener_mensaje_contacto() +
+                " y te brindará toda la información necesaria."
             )
 
         # 🔍 Filtro para eliminar encabezados como “Estimado/a usuario/a”
