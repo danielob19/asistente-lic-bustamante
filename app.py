@@ -1561,11 +1561,6 @@ async def asistente(input_data: UserInput):
                         " ¿Hay algo más que te gustaría saber?"
                     )
                 }
-        
-            elif tipo_input == SALUDO:
-                return {
-                    "respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"
-                }
 
             # 🧩 Si no se clasificó el tipo de input o es ambiguo, retornar sin forzar respuesta clínica
             return {
