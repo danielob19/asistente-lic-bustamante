@@ -74,6 +74,14 @@ def contiene_elementos_peligrosos(texto: str) -> bool:
     ]
     return any(re.search(patron, texto, re.IGNORECASE) for patron in patrones_riesgosos)
 
+# 📞 Función centralizada para mensaje de contacto
+def obtener_mensaje_contacto():
+    return (
+        "En caso de que desees contactar al Lic. Daniel O. Bustamante, "
+        "podés hacerlo escribiéndole al WhatsApp +54 911 3310-1186, que con gusto responderá a tus inquietudes."
+    )
+
+
 # 🧠 Lista de preguntas frecuentes (FAQ) y sus respuestas fijas
 faq_respuestas = [
     {
@@ -89,7 +97,7 @@ faq_respuestas = [
             "- Problemas de autoestima y motivación\n"
             "- Dificultades vinculares y emocionales\n"
             "- Terapia de pareja online\n\n"
-            "Si querés coordinar una consulta o tenés dudas, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
+            + obtener_mensaje_contacto()
         )
     },
     {
@@ -97,17 +105,18 @@ faq_respuestas = [
         "respuesta": (
             "Las sesiones con el Lic. Daniel O. Bustamante tienen una duración aproximada de 50 minutos y se realizan por videoconsulta.\n\n"
             "La frecuencia puede variar según cada caso, pero generalmente se recomienda un encuentro semanal para favorecer el proceso terapéutico.\n\n"
-            "Si querés coordinar una sesión, podés escribirle por WhatsApp al +54 911 3310-1186."
+            + obtener_mensaje_contacto()
         )
     },
     {
         "pregunta": "¿Trabaja con obras sociales?",
         "respuesta": (
             "El Lic. Daniel O. Bustamante no trabaja con obras sociales ni prepagas. Atiende únicamente de manera particular. "
-            "Si querés coordinar una sesión, podés escribirle al WhatsApp +54 911 3310-1186."
+            + obtener_mensaje_contacto()
         )
     }
 ]
+
 
 # ⚡ Generar embeddings de las preguntas frecuentes (una sola vez al iniciar la app)
 def generar_embeddings_faq():
