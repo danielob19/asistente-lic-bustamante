@@ -1874,7 +1874,7 @@ async def asistente(input_data: UserInput):
                     "- Problemas de autoestima y motivación\n"
                     "- Dificultades vinculares y emocionales\n"
                     "- Terapia de pareja online\n\n"
-                    "Si querés coordinar una consulta o tenés dudas, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
+                    + obtener_mensaje_contacto()
                 )
             }
 
