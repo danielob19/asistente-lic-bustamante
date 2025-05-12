@@ -1573,15 +1573,15 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        # 🧼 Si la frase es neutra, no analizar emocionalmente ni registrar emociones
+        # 🟢 Si la frase es neutral, de cortesía o curiosidad, no analizar emocionalmente ni derivar
         if mensaje_usuario in EXPRESIONES_DESCARTADAS or any(p in mensaje_usuario for p in ["recomienda", "opinás", "atiende"]):
             return {
                 "respuesta": (
-                    "Si buscás una recomendación profesional, te sugiero contactar al Lic. Daniel O. Bustamante. "
-                    "Él es un especialista en psicología clínica y puede ayudarte en lo que necesites. "
-                    "Podés escribirle a su WhatsApp: +54 911 3310-1186."
+                    "Gracias por tu mensaje. Si en algún momento deseás explorar una inquietud emocional, "
+                    "estoy disponible para ayudarte desde este espacio."
                 )
             }
+
                         
         # 🔍 Buscar coincidencia semántica en preguntas frecuentes
         resultado_semantico = buscar_respuesta_semantica_con_score(mensaje_usuario)
