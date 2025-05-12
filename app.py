@@ -1804,20 +1804,29 @@ async def asistente(input_data: UserInput):
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
-        # Interacción 11 en adelante: cierre reiterado profesional
+        # Interacción 11 en adelante: cierre reiterado profesional con criterio clínico
         if contador >= 11:
             print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
             
-            respuestas_cierre_definitivo = [
-                "Gracias por compartir lo que estás sintiendo. Ya hemos recorrido juntos un análisis significativo. Para seguir avanzando, te recomiendo contactar al Lic. Bustamante. " + obtener_mensaje_contacto(),
-                "Valoro la confianza con la que expresaste tus emociones. Este espacio ya cumplió su función de orientación. Para una atención personalizada, podés continuar con el Lic. Bustamante. " + obtener_mensaje_contacto(),
-                "Hemos llegado al punto en que una intervención profesional directa sería lo más adecuado. El Lic. Bustamante está disponible para ayudarte. " + obtener_mensaje_contacto(),
-                "Agradezco tu apertura durante esta conversación. Para seguir explorando lo que estás atravesando en profundidad, lo ideal es hacerlo con el Lic. Bustamante en un entorno clínico. " + obtener_mensaje_contacto(),
-                "Lo que compartiste ha sido importante. A partir de aquí, solo un espacio terapéutico puede brindarte el acompañamiento que necesitás. " + obtener_mensaje_contacto()
-            ]
+            cantidad_emociones = len(set(session.get("emociones_detectadas", [])))
 
-
+            if cantidad_emociones >= 2:
+                respuestas_cierre_definitivo = [
+                    "Gracias por compartir lo que estás sintiendo. Ya hemos recorrido juntos un análisis significativo. Para seguir avanzando, te recomiendo contactar al Lic. Bustamante. " + obtener_mensaje_contacto(),
+                    "Valoro la confianza con la que expresaste tus emociones. Este espacio ya cumplió su función de orientación. Para una atención personalizada, podés continuar con el Lic. Bustamante. " + obtener_mensaje_contacto(),
+                    "Hemos llegado al punto en que una intervención profesional directa sería lo más adecuado. El Lic. Bustamante está disponible para ayudarte. " + obtener_mensaje_contacto(),
+                    "Agradezco tu apertura durante esta conversación. Para seguir explorando lo que estás atravesando en profundidad, lo ideal es hacerlo con el Lic. Bustamante en un entorno clínico. " + obtener_mensaje_contacto(),
+                    "Lo que compartiste ha sido importante. A partir de aquí, solo un espacio terapéutico puede brindarte el acompañamiento que necesitás. " + obtener_mensaje_contacto()
+                ]
+            else:
+                respuestas_cierre_definitivo = [
+                    "Este espacio ha llegado a su límite. Si deseás avanzar con una consulta, podés escribirle al Lic. Bustamante. " + obtener_mensaje_contacto(),
+                    "Para continuar, es necesario un espacio clínico adecuado. Podés contactar al Lic. Bustamante si querés seguir con esta consulta. " + obtener_mensaje_contacto(),
+                    "Este asistente ha cumplido su función orientativa. Para una atención más profunda, podés escribirle al Lic. Bustamante. " + obtener_mensaje_contacto()
+                ]
+            
             return {"respuesta": random.choice(respuestas_cierre_definitivo)}
+
         
         # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
         preguntas_cobertura = [
