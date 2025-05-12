@@ -1813,11 +1813,11 @@ async def asistente(input_data: UserInput):
             print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
             
             respuestas_cierre_definitivo = [
-                "Como ya lo mencioné, no puedo continuar con esta conversación. Si querés avanzar, escribile al Lic. Bustamante por WhatsApp al +54 911 3310-1186.",
-                "Ya se ha completado el análisis disponible en este espacio. Para continuar, podés contactar al Lic. Bustamante al WhatsApp +54 911 3310-1186.",
-                "No tengo permitido seguir más allá de este punto. Te recomiendo comunicarte con el Lic. Bustamante vía WhatsApp: +54 911 3310-1186.",
-                "Este espacio ha alcanzado su límite. Para una consulta más profunda, podés escribirle al Lic. Bustamante al +54 911 3310-1186.",
-                "Recordá que si deseás un abordaje profesional completo, el Lic. Bustamante está disponible en WhatsApp: +54 911 3310-1186."
+                "Como ya lo mencioné, no puedo continuar con esta conversación. " + obtener_mensaje_contacto(),
+                "Ya se ha completado el análisis disponible en este espacio. " + obtener_mensaje_contacto(),
+                "No tengo permitido seguir más allá de este punto. " + obtener_mensaje_contacto(),
+                "Este espacio ha alcanzado su límite. Para una consulta más profunda, " + obtener_mensaje_contacto(),
+                "Recordá que si deseás un abordaje profesional completo, " + obtener_mensaje_contacto()
             ]
             return {"respuesta": random.choice(respuestas_cierre_definitivo)}
         
