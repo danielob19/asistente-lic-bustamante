@@ -1566,10 +1566,11 @@ async def asistente(input_data: UserInput):
                 return {
                     "respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"
                 }
-        
+
+            # 🧩 Si no se clasificó el tipo de input o es ambiguo, retornar sin forzar respuesta clínica
             return {
                 "respuesta": (
-                    "Por lo que mencionás, parece que estás atravesando un malestar emocional. ¿Querés contarme un poco más para poder comprender mejor lo que estás sintiendo?"
+                    "Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?"
                 )
             }
 
