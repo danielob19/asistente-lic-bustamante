@@ -2031,7 +2031,8 @@ async def asistente(input_data: UserInput):
         if any(palabra in respuesta_ai.lower() for palabra in ["$", "usd", "euros", "€", "dólares", "pesos", "cuesta", "sale", "vale", "precio", "tarifa", "honorario", "paga", "cobra", "cobro"]):
             respuesta_ai = (
                 "Sobre los valores de la consulta, te sugiero contactar directamente al Lic. Daniel O. Bustamante. "
-                "Podés escribirle al WhatsApp +54 911 3310-1186 para obtener esa información de manera personalizada."
+                + obtener_mensaje_contacto() +
+                " para obtener esa información de manera personalizada."
             )
             # 🧾 Auditoría: log si OpenAI intentó responder con precios
             print("⚠️ Se interceptó una respuesta con posible contenido de precios y fue reemplazada para evitar brindar esa información.")
