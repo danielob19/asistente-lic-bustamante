@@ -1827,9 +1827,16 @@ async def asistente(input_data: UserInput):
                 "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
                 "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
             )
+        
+            # 🧠 Predicción de eventos futuros según contenido proyectivo del usuario
+            prediccion = predecir_evento_futuro(session["mensajes"])
+            if prediccion != "sin predicción identificada":
+                print(f"🔮 Proyección detectada: {prediccion}")
+                respuesta += f" Por otra parte, se identificó que mencionaste una posible consecuencia o desenlace: {prediccion}."
+        
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
-
+        
         # Interacción 11 en adelante: cierre reiterado profesional con criterio clínico
         if contador >= 11:
             print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
