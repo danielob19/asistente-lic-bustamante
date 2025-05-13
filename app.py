@@ -22,6 +22,14 @@ from fastapi.responses import FileResponse, HTMLResponse
 # 🧠 Diccionario de sesiones por usuario (en memoria)
 user_sessions = {}
 
+from cerebro_simulado import (
+    predecir_evento_futuro,
+    inferir_patron_interactivo,
+    evaluar_coherencia_mensaje,
+    clasificar_estado_mental,
+    inferir_intencion_usuario
+)
+
 # ========================== CONSTANTES DE CLASIFICACIÓN ==========================
 
 CLINICO_CONTINUACION = "CLINICO_CONTINUACION"
