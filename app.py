@@ -1766,6 +1766,12 @@ async def asistente(input_data: UserInput):
         for emocion in session["emociones_detectadas"]:
             if emocion not in emociones_registradas_bd:
                 registrar_emocion(emocion, f"interacción {contador}", user_id)
+
+        # 🧠 Detección de patrones reiterativos en interacciones 6 a 8
+        if 6 <= contador <= 8:
+            patron_detectado = inferir_patron_interactivo(session["mensajes"][-3:])
+            if patron_detectado != "sin patrón consistente":
+                print(f"🔄 Patrón interactivo detectado: {patron_detectado}")
         
         # ✅ En la interacción 5 y 9, generar resumen clínico y estado emocional predominante
         if contador == 5:
