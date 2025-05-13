@@ -1374,6 +1374,11 @@ async def asistente(input_data: UserInput):
 
         # 🧩 Clasificación local por intención general
         tipo_input = clasificar_input_inicial(mensaje_usuario)
+
+        # 🧠 Inferencia cognitiva adicional sobre intención del usuario
+        intencion_inferida = inferir_intencion_usuario(mensaje_usuario)
+        print(f"🧠 Intención inferida por el cerebro simulado: {intencion_inferida}")
+
         
         # ✅ Forzar continuidad clínica si el input es ambiguo pero hubo malestar antes
         if tipo_input in ["INDEFINIDO", "FUERA_DE_CONTEXTO", "CONFUSO"]:
