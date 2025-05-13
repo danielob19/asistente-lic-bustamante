@@ -1809,6 +1809,13 @@ async def asistente(input_data: UserInput):
         
             # Generar resumen clínico con todas las emociones acumuladas
             respuesta = generar_resumen_clinico_y_estado(session, contador)
+            
+            # 🧠 Estado emocional global sintetizado por cerebro_simulado
+            estado_global = clasificar_estado_mental(session["mensajes"])
+            if estado_global != "estado emocional no definido":
+                print(f"🧠 Estado global sintetizado: {estado_global}")
+                respuesta += f" También se identificó un posible estado emocional global: {estado_global}."
+            
             return {
                 "respuesta": respuesta + " ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
             }
