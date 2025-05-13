@@ -1866,10 +1866,12 @@ async def asistente(input_data: UserInput):
                 "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
             )
         
-            # 🧠 Predicción de eventos futuros según contenido proyectivo del usuario
+            # 🔮 Predicción de eventos futuros según contenido proyectivo del usuario
             prediccion = predecir_evento_futuro(session["mensajes"])
+        
             if prediccion != "sin predicción identificada":
                 print(f"🔮 Proyección detectada: {prediccion}")
+                registrar_inferencia(user_id, contador, "prediccion", prediccion)
                 respuesta += f" Por otra parte, se identificó que mencionaste una posible consecuencia o desenlace: {prediccion}."
         
             registrar_respuesta_openai(interaccion_id, respuesta)
