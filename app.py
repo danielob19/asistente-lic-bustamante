@@ -428,6 +428,16 @@ def init_db():
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inferencias_cerebro_simulado (
+                id SERIAL PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                interaccion_id INTEGER NOT NULL,
+                tipo TEXT NOT NULL,
+                valor TEXT NOT NULL,
+                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
         conn.commit()
         conn.close()
         print("Base de datos inicializada en PostgreSQL.")
