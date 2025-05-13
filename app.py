@@ -797,6 +797,24 @@ def registrar_similitud_semantica(user_id: str, consulta: str, pregunta_faq: str
     except Exception as e:
         print(f"❌ Error al registrar similitud semántica: {e}")
 
+def registrar_inferencia(user_id: str, interaccion_id: int, tipo: str, valor: str):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO inferencias_cerebro_simulado (user_id, interaccion_id, tipo, valor)
+            VALUES (%s, %s, %s, %s);
+        """, (user_id, interaccion_id, tipo, valor))
+
+        conn.commit()
+        conn.close()
+        print(f"🧠 Inferencia registrada: [{tipo}] → {valor}")
+
+    except Exception as e:
+        print(f"❌ Error al registrar inferencia: {e}")
+
+
 # Lista de palabras irrelevantes
 palabras_irrelevantes = {
     "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "me siento", "tambien", "tambien tengo", "que", "de", "en", 
