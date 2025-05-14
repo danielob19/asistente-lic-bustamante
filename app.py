@@ -1584,54 +1584,36 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-        # 👉 Nueva respuesta para la PRIMERA INTERACCIÓN
+        # 🧠 Nueva respuesta para la PRIMERA INTERACCIÓN
         if contador == 1:
-            if tipo_input == CLINICO:
-                return {
-                    "respuesta": (
-                        "Por lo que describís, se identifican indicios de malestar emocional. "
-                        "¿Querés contarme un poco más para poder comprender mejor lo que estás atravesando?"
-                    )
-                }
+            if tipo_input in [CLINICO, CLINICO_CONTINUACION] or hay_contexto_clinico_anterior(user_id):
+                prompt = (
+                    f"El siguiente mensaje fue recibido: '{mensaje_usuario}'. "
+                    "Redactá una respuesta breve y profesional como si fueras un asistente clínico del Lic. Daniel O. Bustamante, psicólogo. "
+                    "El estilo debe ser clínico, objetivo y respetuoso. Evitá cualquier frase emocional, coloquial o empática simulada como 'te entiendo', 'es normal', 'tranquilo/a', 'lamentablemente', etc. "
+                    "No generes contenido motivacional ni promesas de bienestar. No uses expresiones institucionales como 'nuestro equipo'. "
+                    "Usá en cambio formulaciones profesionales como: 'Pareciera tratarse de...', 'Comprendo que refiere a...', 'Podría vincularse a...'. "
+                    "No brindes enlaces ni respondas sobre temas financieros, legales ni técnicos. Referite al profesional siempre como 'el Lic. Bustamante'. "
+                    "IMPORTANTE: No recomiendes agendar consultas ni menciones su número de contacto antes de la interacción número 5, excepto si el usuario lo solicita de forma directa y explícita. "
+                    "Bajo ninguna circunstancia sugieras consultar con el Lic. Bustamante ni uses frases como 'buscar apoyo profesional', 'considerar una consulta', 'evaluarlo con un profesional' o similares, salvo que el usuario lo pida explícitamente o estés en la interacción 5, 9 o a partir de la 10. "
+                    "No formules preguntas como “¿Deseás que te facilite información sobre agendar?” ni uses sugerencias implícitas de contacto."
+                )
         
-            elif tipo_input == SALUDO:
-                if es_tema_clinico_o_emocional(mensaje_usuario):
-                    return {
-                        "respuesta": (
-                            "Hola. Por lo que mencionás, parece que hay indicios de malestar emocional. "
-                            "¿Querés contarme un poco más para poder comprender mejor lo que estás sintiendo?"
-                        )
-                    }
-                else:
-                    return {
-                        "respuesta": "¡Hola! ¿Qué te gustaría compartir o consultar en este espacio?"
-                    }
+                respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
         
-            elif tipo_input == ADMINISTRATIVO:
-                return {
-                    "respuesta": (
-                        "¡Hola! Soy el asistente del Lic. Daniel O. Bustamante. "
-                        + obtener_mensaje_contacto() +
-                        " ¿Hay algo más que te gustaría saber?"
-                    )
-                }
+                # Filtrado de seguridad y registro de auditoría
+                registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
+                registrar_respuesta_openai(interaccion_id, respuesta_original)
         
-            # 🔍 Si el mensaje contiene síntomas pero no fue clasificado correctamente
-            if es_tema_clinico_o_emocional(mensaje_usuario):
-                return {
-                    "respuesta": (
-                        "Por lo que describís, podría tratarse de un malestar emocional. "
-                        "¿Querés contarme un poco más para poder comprender mejor lo que estás sintiendo?"
-                    )
-                }
+                return {"respuesta": respuesta_original}
         
-            # ❔ Si no se clasificó el tipo de input o es ambiguo
+            # 🔹 Si no es clínico ni hay contexto previo, mantener respuesta neutra
             return {
                 "respuesta": (
                     "Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?"
                 )
             }
-        
+     
 
         # 🟢 Si la frase es neutral, de cortesía o curiosidad, no analizar emocionalmente ni derivar
         if mensaje_usuario in EXPRESIONES_DESCARTADAS or any(p in mensaje_usuario for p in ["recomienda", "opinás", "atiende"]):
