@@ -1835,28 +1835,19 @@ async def asistente(input_data: UserInput):
                 if emocion not in emociones_registradas_bd:
                     registrar_emocion(emocion, f"interacción {contador}", user_id)
         
-            # 🧠 Estado emocional global sintetizado por cerebro_simulado
-            estado_global = clasificar_estado_mental(session["mensajes"])
-            if estado_global != "estado emocional no definido":
-                print(f"🧠 Estado global sintetizado: {estado_global}")
-                registrar_inferencia(user_id, contador, "estado_mental", estado_global)
+           # 🧠 Estado emocional global sintetizado por cerebro_simulado
+           estado_global = clasificar_estado_mental(session["mensajes"])
+           if estado_global != "estado emocional no definido":
+               print(f"🧠 Estado global sintetizado: {estado_global}")
+               registrar_inferencia(user_id, contador, "estado_mental", estado_global)
         
-            # 🧾 Generar resumen clínico con todas las emociones acumuladas
-            resumen = generar_resumen_clinico_y_estado(session, contador)
+           # 🧾 Generar resumen clínico con todas las emociones acumuladas
+           resumen = generar_resumen_clinico_y_estado(session, contador)
         
-            return {
-                "respuesta": resumen + f" Además, se identificó un posible estado emocional global: {estado_global}. ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
-            }
-            
-            # 🧠 Estado emocional global sintetizado por cerebro_simulado
-            estado_global = clasificar_estado_mental(session["mensajes"])
-            if estado_global != "estado emocional no definido":
-                print(f"🧠 Estado global sintetizado: {estado_global}")
-                respuesta += f" También se identificó un posible estado emocional global: {estado_global}."
-            
-            return {
-                "respuesta": respuesta + " ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
-            }
+           return {
+               "respuesta": resumen + f" Además, se identificó un posible estado emocional global: {estado_global}. ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+           }
+
                       
         # Interacción 10: cierre profesional definitivo
         if contador == 10:
