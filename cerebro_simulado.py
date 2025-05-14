@@ -36,9 +36,28 @@ def clasificar_estado_mental(mensajes):
 def inferir_intencion_usuario(mensajes):
     if not mensajes:
         return "intención no clara"
+
     ultimo = mensajes[-1].lower()
+
     if "quiero ayuda" in ultimo or "necesito hablar" in ultimo:
         return "búsqueda de asistencia"
+
     if "solo estoy probando" in ultimo:
         return "curiosidad o prueba"
+
+    patrones_cierre = [
+        "ya no sé si vale la pena", 
+        "creo que no me sirve", 
+        "hasta acá llegué",
+        "no quiero seguir", 
+        "no tiene sentido seguir",
+        "no me está ayudando", 
+        "gracias, pero ya está", 
+        "prefiero dejarlo", 
+        "no quiero continuar"
+    ]
+
+    if any(pat in ultimo for pat in patrones_cierre):
+        return "intención de cierre"
+
     return "intención no determinada"
