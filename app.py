@@ -1873,8 +1873,8 @@ async def asistente(input_data: UserInput):
             # 🔍 Detección de intención final de cierre
             cierre_detectado = inferir_intencion_usuario(session["mensajes"])
         
-            if cierre_detectado:
-                print(f"🔍 Intención de cierre detectada: {cierre_detectado}")
+            if cierre_detectado == "intención de cierre":
+                print(f"🧠 Intención de cierre detectada: {cierre_detectado}")
                 registrar_inferencia(user_id, contador, "intencion_de_cierre", cierre_detectado)
                 return {
                     "respuesta": (
