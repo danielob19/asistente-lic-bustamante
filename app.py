@@ -1594,6 +1594,19 @@ async def asistente(input_data: UserInput):
                     )
                 }
         
+            elif tipo_input == SALUDO:
+                if es_tema_clinico_o_emocional(mensaje_usuario):
+                    return {
+                        "respuesta": (
+                            "Hola. Por lo que mencionás, parece que hay indicios de malestar emocional. "
+                            "¿Querés contarme un poco más para poder comprender mejor lo que estás sintiendo?"
+                        )
+                    }
+                else:
+                    return {
+                        "respuesta": "¡Hola! ¿Qué te gustaría compartir o consultar en este espacio?"
+                    }
+        
             elif tipo_input == ADMINISTRATIVO:
                 return {
                     "respuesta": (
@@ -1602,13 +1615,23 @@ async def asistente(input_data: UserInput):
                         " ¿Hay algo más que te gustaría saber?"
                     )
                 }
-
-            # 🧩 Si no se clasificó el tipo de input o es ambiguo, retornar sin forzar respuesta clínica
+        
+            # 🔍 Si el mensaje contiene síntomas pero no fue clasificado correctamente
+            if es_tema_clinico_o_emocional(mensaje_usuario):
+                return {
+                    "respuesta": (
+                        "Por lo que describís, podría tratarse de un malestar emocional. "
+                        "¿Querés contarme un poco más para poder comprender mejor lo que estás sintiendo?"
+                    )
+                }
+        
+            # ❔ Si no se clasificó el tipo de input o es ambiguo
             return {
                 "respuesta": (
                     "Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?"
                 )
             }
+        
 
         # 🟢 Si la frase es neutral, de cortesía o curiosidad, no analizar emocionalmente ni derivar
         if mensaje_usuario in EXPRESIONES_DESCARTADAS or any(p in mensaje_usuario for p in ["recomienda", "opinás", "atiende"]):
