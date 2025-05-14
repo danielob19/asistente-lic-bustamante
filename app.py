@@ -1877,23 +1877,25 @@ async def asistente(input_data: UserInput):
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
         
-        # Interacción 11 en adelante: cierre reiterado profesional con criterio clínico
         if contador >= 11:
             print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
-        
-            # 🧭 Detección de intención final de cierre
+            
+            # 🔍 Detección de intención final de cierre
             cierre_detectado = intencion_de_cierre(session["mensajes"][-1])
+        
             if cierre_detectado:
-                print(f"🧭 Intención de cierre detectada: {cierre_detectado}")
+                print(f"🔍 Intención de cierre detectada: {cierre_detectado}")
+                registrar_inferencia(user_id, contador, "intencion_de_cierre", cierre_detectado)
                 return {
                     "respuesta": (
                         "Gracias por tu mensaje. Me alegra haber podido brindarte orientación en este espacio. "
-                        "Cualquier otra inquietud, podés escribir directamente al Lic. Bustamante. "
+                        "Además, noté que en tu último mensaje podría haber una intención de cierre: "
+                        f"{cierre_detectado}. Cualquier otra inquietud, podés escribir directamente al Lic. Bustamante. "
                         + obtener_mensaje_contacto()
                     )
                 }
         
-            # Si no hubo intención de cierre, mantener cierre reiterado por default
+            # Si no hubo intención explícita de cierre, mantener respuesta profesional según cantidad de emociones
             cantidad_emociones = len(set(session.get("emociones_detectadas", [])))
         
             if cantidad_emociones >= 2:
