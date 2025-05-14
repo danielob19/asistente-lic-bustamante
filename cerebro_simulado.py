@@ -45,19 +45,28 @@ def inferir_intencion_usuario(mensajes):
     if "solo estoy probando" in ultimo:
         return "curiosidad o prueba"
 
-    patrones_cierre = [
-        "ya no sé si vale la pena", 
-        "creo que no me sirve", 
-        "hasta acá llegué",
-        "no quiero seguir", 
-        "no tiene sentido seguir",
-        "no me está ayudando", 
-        "gracias, pero ya está", 
-        "prefiero dejarlo", 
-        "no quiero continuar"
+    frases_cierre = [
+        # Cierre explícito o directo
+        "ya dije todo lo que sentía", "ya no sé qué más decir", "es todo por ahora",
+        "no tengo más para contar", "me cansé de hablar", "esto ya me agotó",
+        "creo que no me sirve", "siento que esto no ayuda", "no le encuentro sentido a seguir",
+        "no sé si seguir hablando de esto tiene sentido", "no me está sirviendo",
+        "gracias por todo", "ya está", "eso era todo", "te agradezco igual",
+        "me ayudó aunque no lo parezca",
+
+        # Evasión o ambigüedad resignada
+        "da igual", "como sea", "no sé qué más esperás", "ya fue", "me rindo",
+        "no quiero seguir pensando en esto", "dejémoslo ahí",
+
+        # Ironía o sarcasmo resignado
+        "sí, seguro que me va a cambiar la vida", "listo, estoy curado",
+        "con eso me alcanza, gracias", "gran solución", "eso me lo arregla todo",
+
+        # Vacío o desesperanza implícita
+        "es inútil", "nada cambia", "esto no tiene sentido", "para qué seguir", "ya no importa"
     ]
 
-    if any(pat in ultimo for pat in patrones_cierre):
+    if any(frase in ultimo for frase in frases_cierre):
         return "intención de cierre"
 
     return "intención no determinada"
