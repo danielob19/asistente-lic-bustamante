@@ -1586,28 +1586,32 @@ async def asistente(input_data: UserInput):
 
         # 🧠 Nueva respuesta para la PRIMERA INTERACCIÓN
         if contador == 1:
-            if tipo_input in [CLINICO, CLINICO_CONTINUACION] or hay_contexto_clinico_anterior(user_id):
+            # ⚠️ Reforzar que si es SALUDO + contenido clínico, se trate como clínico
+            if tipo_input == SALUDO and es_tema_clinico_o_emocional(mensaje_usuario):
+                tipo_input = CLINICO
+        
+            # ✅ Si es clínico o hay contexto clínico previo, generar respuesta profesional
+            if tipo_input in [CLINICO, CLINICO_CONTINUACION] or hay_contexto_clinico_anterior(user_id) or es_tema_clinico_o_emocional(mensaje_usuario):
                 prompt = (
                     f"El siguiente mensaje fue recibido: '{mensaje_usuario}'. "
                     "Redactá una respuesta breve y profesional como si fueras un asistente clínico del Lic. Daniel O. Bustamante, psicólogo. "
-                    "El estilo debe ser clínico, objetivo y respetuoso. Evitá cualquier frase emocional, coloquial o empática simulada como 'te entiendo', 'es normal', 'tranquilo/a', 'lamentablemente', etc. "
+                    "El estilo debe ser clínico, objetivo y respetuoso. Comenzá la respuesta con un saludo estático breve como 'Hola, ¿qué tal?'. "
+                    "Luego enfocá la respuesta en el malestar clínico expresado. Evitá cualquier frase emocional, coloquial o empática simulada como 'te entiendo', 'es normal', 'tranquilo/a', etc. "
                     "No generes contenido motivacional ni promesas de bienestar. No uses expresiones institucionales como 'nuestro equipo'. "
-                    "Si el mensaje contiene un saludo + malestar emocional, comenzá la respuesta con un simple 'Hola, ¿qué tal?' o 'Hola, gracias por tu mensaje.', y luego respondé directamente al contenido emocional o clínico. "
-                    "Usá formulaciones profesionales como: 'Pareciera tratarse de...', 'Comprendo que refiere a...', 'Podría vincularse a...'. "
+                    "Usá en cambio formulaciones profesionales como: 'Pareciera tratarse de...', 'Comprendo que refiere a...', 'Podría vincularse a...'. "
                     "No brindes enlaces ni respondas sobre temas financieros, legales ni técnicos. Referite al profesional siempre como 'el Lic. Bustamante'. "
                     "IMPORTANTE: No recomiendes agendar consultas ni menciones su número de contacto antes de la interacción número 5, excepto si el usuario lo solicita de forma directa y explícita. "
-                    "Bajo ninguna circunstancia sugieras consultar con el Lic. Bustamante ni uses frases como 'buscar apoyo profesional', 'considerar una consulta', 'evaluarlo con un profesional' o similares, salvo que el usuario lo pida explícitamente o estés en la interacción 5, 9 o a partir de la 10. "
                     "No formules preguntas como “¿Deseás que te facilite información sobre agendar?” ni uses sugerencias implícitas de contacto."
                 )
-
+        
                 respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
-
+        
                 # Filtrado de seguridad y registro de auditoría
                 registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
                 registrar_respuesta_openai(interaccion_id, respuesta_original)
-
+        
                 return {"respuesta": respuesta_original}
-
+        
             # 🔹 Si no es clínico ni hay contexto previo, mantener respuesta neutra
             return {
                 "respuesta": (
@@ -1615,7 +1619,6 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-     
 
         # 🟢 Si la frase es neutral, de cortesía o curiosidad, no analizar emocionalmente ni derivar
         if mensaje_usuario in EXPRESIONES_DESCARTADAS or any(p in mensaje_usuario for p in ["recomienda", "opinás", "atiende"]):
