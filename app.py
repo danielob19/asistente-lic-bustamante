@@ -255,7 +255,9 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
         "fobia", "fobia social", "ataques de pánico", "ideación suicida",
         "desborde", "desbordamiento", "nervioso", "desesperado", "indiferente",
         "ya no siento", "nada me entusiasma", "nada me importa", "me quiero morir",
-        "pienso en morirme", "no me reconozco", "todo me supera", "no puedo dormir"
+        "pienso en morirme", "no me reconozco", "todo me supera", "no puedo dormir",
+        "me cuesta encontrarle sentido", "no encuentro sentido a nada", "me cuesta seguir adelante",
+        "siento que todo carece de sentido"
     ]
 
     for palabra in palabras_clave:
@@ -263,7 +265,6 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
             return True
 
     return False
-
 
 # 📎 Respuesta profesional para mensajes fuera de contexto clínico o emocional
 def respuesta_default_fuera_de_contexto():
