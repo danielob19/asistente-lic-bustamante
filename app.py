@@ -1871,7 +1871,7 @@ async def asistente(input_data: UserInput):
             print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
             
             # 🔍 Detección de intención final de cierre
-            cierre_detectado = intencion_de_cierre(session["mensajes"][-1])
+            cierre_detectado = inferir_intencion_usuario(session["mensajes"][-1])
         
             if cierre_detectado:
                 print(f"🔍 Intención de cierre detectada: {cierre_detectado}")
