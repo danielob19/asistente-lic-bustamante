@@ -1872,6 +1872,8 @@ async def asistente(input_data: UserInput):
             
             # 🔍 Detección de intención final de cierre
             cierre_detectado = inferir_intencion_usuario(session["mensajes"])
+            print(f"🧠 Intención inferida por el cerebro simulado: {cierre_detectado}")
+
         
             if cierre_detectado == "intención de cierre":
                 print(f"🧠 Intención de cierre detectada: {cierre_detectado}")
