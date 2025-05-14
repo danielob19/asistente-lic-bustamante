@@ -241,30 +241,38 @@ def estandarizar_emocion_detectada(emocion: str) -> str:
     emocion = re.sub(r"[.,;:!¡¿?]+$", "", emocion)
     return emocion
 
-# 🧠 Evaluación temática: ¿el mensaje refiere a un contenido clínico o emocional?
 def es_tema_clinico_o_emocional(mensaje: str) -> bool:
     if not mensaje or not isinstance(mensaje, str):
         return False
 
-    mensaje = mensaje.lower()
+    mensaje = mensaje.lower().strip()
 
+    # 🔹 Palabras clave clínicas frecuentes
     palabras_clave = [
         "triste", "ansioso", "angustia", "ansiedad", "vacío", "dolor", "sufrimiento",
         "miedo", "enojo", "culpa", "vergüenza", "desesperanza", "soledad", "estrés",
-        "anhedonia", "apatía", "apatía profunda", "insomnio", "despersonalización",
-        "fobia", "fobia social", "ataques de pánico", "ideación suicida",
-        "desborde", "desbordamiento", "nervioso", "desesperado", "indiferente",
-        "ya no siento", "nada me entusiasma", "nada me importa", "me quiero morir",
-        "pienso en morirme", "no me reconozco", "todo me supera", "no puedo dormir",
-        "me cuesta encontrarle sentido", "no encuentro sentido a nada", "me cuesta seguir adelante",
-        "siento que todo carece de sentido"
+        "anhedonia", "apatía", "insomnio", "despersonalización", "fobia", "ataques de pánico",
+        "indecisión súbita", "desborde", "desbordamiento", "nervioso", "desesperado",
+        "indiferente", "ya no siento", "nada me entusiasma", "nada me importa", "me quiero morir",
+        "pienso en morirme", "no me reconozco", "todo me supera", "no puedo dormir"
     ]
+    if any(palabra in mensaje for palabra in palabras_clave):
+        return True
 
-    for palabra in palabras_clave:
-        if palabra in mensaje:
-            return True
+    # 🔸 Estructuras típicas de malestar (regex)
+    patrones_emocionales = [
+        r"me cuesta\s+(vivir|seguir|levant[a-z]+|encontrarle sentido)",
+        r"no\s+(puedo|quiero|logro)\b.*",
+        r"ya no\s+(disfruto|me interesa|me importa)",
+        r"siento que\s+(todo está mal|no valgo|todo es en vano)",
+        r"(me siento|estoy)\s+(perdido|vacío|cansado|agotado|confundido|sin sentido)",
+        r"no le encuentro sentido (a la vida|a nada|a esto)"
+    ]
+    if any(re.search(p, mensaje) for p in patrones_emocionales):
+        return True
 
     return False
+
 
 # 📎 Respuesta profesional para mensajes fuera de contexto clínico o emocional
 def respuesta_default_fuera_de_contexto():
