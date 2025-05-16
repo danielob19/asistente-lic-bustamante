@@ -248,7 +248,7 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
 
     mensaje = mensaje.lower().strip()
 
-    # 🔹 Palabras clave clínicas frecuentes
+    # Palabras clave clínicas frecuentes
     palabras_clave = [
         "triste", "ansioso", "angustia", "ansiedad", "vacío", "dolor", "sufrimiento",
         "miedo", "enojo", "culpa", "vergüenza", "desesperanza", "soledad", "estrés",
@@ -260,19 +260,25 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
     if any(palabra in mensaje for palabra in palabras_clave):
         return True
 
-    # 🔸 Estructuras típicas de malestar (regex)
+    # Patrones típicos de malestar emocional
     patrones_emocionales = [
         r"me cuesta\s+(vivir|seguir|levant[a-z]+|encontrarle sentido)",
         r"no\s+(puedo|quiero|logro)\b.*",
         r"ya no\s+(disfruto|me interesa|me importa)",
         r"siento que\s+(todo está mal|no valgo|todo es en vano)",
-        r"(me siento|estoy)\s+(perdido|vacío|cansado|agotado|confundido|sin sentido)",
-        r"no le encuentro sentido (a la vida|a nada|a esto)"
+        r"me siento\s+(perdido|vacío|cansado|agotado|confundido|sin sentido)",
+        r"no le encuentro sentido\s+(a la vida|a nada|a esto)",
+        r"no tengo ganas", r"nada me importa", r"todo me cuesta", r"nada vale la pena",
+        r"no sirvo para nada", r"siento que.*no sirvo", r"me cuesta.*(vivir|seguir|todo)",
+        r"no sé si esto es normal", r"me siento perdido", r"siento que no puedo más",
+        r"me siento solo", r"todo me da igual", r"me levanto sin ganas",
+        r"no duermo", r"no puedo dormir", r"no tengo energía"
     ]
     if any(re.search(p, mensaje) for p in patrones_emocionales):
         return True
 
     return False
+
 
 
 # 📎 Respuesta profesional para mensajes fuera de contexto clínico o emocional
