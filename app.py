@@ -6,6 +6,7 @@ import random
 import re
 from datetime import datetime, timedelta
 from collections import Counter
+from typing import List, Optional  # ✅ Agregado para evitar NameError
 
 # 🧪 Librerías externas
 import psycopg2
