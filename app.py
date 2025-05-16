@@ -2169,17 +2169,25 @@ async def asistente(input_data: UserInput):
         
         # 🔹 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
         prompt = (
-            f"El siguiente mensaje fue recibido: '{mensaje_usuario}'. "
-            "Redactá una respuesta breve y profesional como si fueras un asistente clínico del Lic. Daniel O. Bustamante, psicólogo. "
-            "El estilo debe ser clínico, objetivo y respetuoso. Evitá cualquier frase emocional, coloquial o empática simulada como 'te entiendo', 'es normal', 'tranquilo/a', 'lamentablemente', etc. "
-            "No generes contenido motivacional ni promesas de bienestar. No uses expresiones institucionales como 'nuestro equipo'. "
-            "Usá en cambio formulaciones profesionales como: 'Pareciera tratarse de...', 'Comprendo que refiere a...', 'Podría vincularse a...'. "
-            "No brindes enlaces ni respondas sobre temas financieros, legales ni técnicos. Referite al profesional siempre como 'el Lic. Bustamante'. "
-            "IMPORTANTE: No recomiendes agendar consultas ni menciones su número de contacto antes de la interacción número 5, excepto si el usuario lo solicita de forma directa y explícita. "
-            "Bajo ninguna circunstancia sugieras consultar con el Lic. Bustamante ni uses frases como 'buscar apoyo profesional', 'considerar una consulta', 'evaluarlo con un profesional' o similares, salvo que el usuario lo pida explícitamente o estés en la interacción 5, 9 o a partir de la 10. "
-            "No formules preguntas como “¿Deseás que te facilite información sobre agendar?” ni uses sugerencias implícitas de contacto."
+            f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n\n"
+            "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n\n"
+            "Estilo y directrices obligatorias:\n"
+            "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
+            "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?'.\n"
+            "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'pareciera tratarse de...', 'podría vincularse a...', 'refiere a...' o 'se observa...'.\n"
+            "- Evitá cualquier frase emocional simulada (ej: 'te entiendo', 'estás en buenas manos', 'no estás solo/a', 'tranquilo/a', etc.).\n"
+            "- No uses frases motivacionales ni lenguaje coloquial (evitá: 'todo va a estar bien', 'contá conmigo', etc.).\n"
+            "- No uses lenguaje institucional como 'nuestro equipo', 'desde nuestro espacio', 'trabajamos en conjunto', etc.\n"
+            "- No brindes datos de contacto, precios, horarios, enlaces ni información administrativa.\n"
+            "- No recomiendes consultar con el Lic. Bustamante ni uses expresiones como 'consultar con un profesional', 'buscar ayuda especializada' u otras sugerencias implícitas.\n"
+            "- No formules preguntas como “¿Deseás que te facilite información sobre agendar?” ni menciones WhatsApp.\n"
+            "- No uses 'Estimado/a', ni encabezados de carta o email.\n"
+            "- Solamente si el mensaje es claramente clínico, generá una respuesta analítica breve y profesional.\n"
+            "- Si el mensaje no tiene contenido emocional o clínico relevante, devolvé una frase neutra como: 'Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?'\n\n"
+            "IMPORTANTE:\n"
+            "- En las interacciones 1 a 4, nunca sugieras contacto ni derivación, salvo que el usuario lo pida explícitamente.\n"
+            "- Solo en las interacciones 5, 9 o a partir de la 10, podés aceptar que se mencione el contacto si fue solicitado.\n"
         )
-
 
         # Obtener respuesta de OpenAI
         respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
