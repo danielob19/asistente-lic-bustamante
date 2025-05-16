@@ -1497,6 +1497,23 @@ async def asistente(input_data: UserInput):
             "qué opinas?", "el atiende estos casos?", "que tipo de casos atienden?"
         ]
 
+        # Comentarios metaconversacionales o de expectativa que no deben generar análisis clínico
+        EXPRESIONES_ESPERADAS_NO_CLINICAS = [
+            "esto funciona como terapia", "me gustaría que esto funcione como terapia",
+            "es como una consulta", "esto parece una consulta", "esto me ayuda como si fuera terapia",
+            "siento que esto es una sesión", "esto me resulta terapéutico", "parece una sesión real"
+        ]
+        
+        if any(expresion in mensaje_usuario for expresion in EXPRESIONES_ESPERADAS_NO_CLINICAS):
+            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "EXPECTATIVA_NO_CLINICA")
+            return {
+                "respuesta": (
+                    "Este espacio está diseñado para brindar orientación clínica general. "
+                    "Si hay algo puntual que te gustaría compartir sobre tu estado emocional, podés hacerlo con confianza."
+                )
+            }
+        
+
         if not mensaje_usuario:
             raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
 
