@@ -2019,15 +2019,14 @@ async def asistente(input_data: UserInput):
                     emocion = emocion.lower().strip()
                     if emocion not in session["emociones_detectadas"]:
                         emociones_nuevas.append(emocion)
-
         
-            # Validar si hay emociones previas, y si no, intentar detectar de nuevo
+            # ✅ Validar si hay emociones previas, y si no, intentar detectar de nuevo
             if not session["emociones_detectadas"] and emociones_nuevas:
                 session["emociones_detectadas"].extend(emociones_nuevas)
             else:
                 session["emociones_detectadas"] = list(set(session["emociones_detectadas"] + emociones_nuevas))
         
-            # Registrar emociones nuevas no presentes en BD para esta interacción
+            # 📌 Registrar emociones nuevas no presentes en BD para esta interacción
             emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
             for emocion in emociones_nuevas:
                 if emocion not in emociones_registradas_bd:
@@ -2036,35 +2035,26 @@ async def asistente(input_data: UserInput):
             # 🧠 Estado emocional global sintetizado por cerebro_simulado
             estado_global = clasificar_estado_mental(session["mensajes"])
             if estado_global != "estado emocional no definido":
-                print(f"🧠 Estado global sintetizado: {estado_global}")
+                print(f"📌 Estado global sintetizado: {estado_global}")
                 registrar_inferencia(user_id, contador, "estado_mental", estado_global)
         
-            # 🧾 Generar resumen clínico con todas las emociones acumuladas
-            resumen = generar_resumen_clinico_y_estado(session, contador)
+            # 📄 Generar resumen clínico con todas las emociones acumuladas
+            resumen = generar_resumen_clinico_y_estado(session["emociones_detectadas"])
         
-            # 🧠 Inferencia emocional adicional (segunda intuición clínica)
+            # 🧠 Inferencia emocional adicional (solo interacción clínica)
             try:
                 conn = psycopg2.connect(DATABASE_URL)
                 emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
                 conn.close()
             except Exception as e:
-                print("❌ Error al conectar a la base para inferencia en interacción 9:", e)
+                print(f"⚠️ Error en conexión a la base para inferencia en interacción 9: {e}")
                 emocion_inferida = None
         
-            session["emocion_inferida_9"] = emocion_inferida
+            if emocion_inferida and emocion_inferida not in session["emociones_detectadas"]:
+                session["emociones_detectadas"].append(emocion_inferida)
+                registrar_emocion(emocion_inferida, f"confirmación de inferencia (interacción {contador})", user_id)
         
-            if emocion_inferida:
-                respuesta = (
-                    f"{resumen} Además, ¿te ha pasado sentir también {emocion_inferida}? "
-                    f"Lo menciono porque es un patrón que suele aparecer cuando coexisten estos síntomas."
-                )
-            else:
-                respuesta = (
-                    f"{resumen} Además, se identificó un posible estado emocional global: {estado_global}. "
-                    f"¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
-                )
-        
-            registrar_respuesta_openai(interaccion_id, respuesta)
+            respuesta = resumen
             return {"respuesta": respuesta}
 
         if contador >= 11:
