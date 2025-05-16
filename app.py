@@ -1955,7 +1955,7 @@ async def asistente(input_data: UserInput):
             else:
                 session["emociones_detectadas"] = list(set(session["emociones_detectadas"] + emociones_nuevas))
         
-            # Registrar solo emociones nuevas que no estén ya en BD
+            # Registrar emociones nuevas no presentes en BD para esta interacción
             emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
             for emocion in emociones_nuevas:
                 if emocion not in emociones_registradas_bd:
@@ -1966,13 +1966,35 @@ async def asistente(input_data: UserInput):
             if estado_global != "estado emocional no definido":
                 print(f"🧠 Estado global sintetizado: {estado_global}")
                 registrar_inferencia(user_id, contador, "estado_mental", estado_global)
-
+        
             # 🧾 Generar resumen clínico con todas las emociones acumuladas
             resumen = generar_resumen_clinico_y_estado(session, contador)
+        
+            # 🧠 Inferencia emocional adicional (segunda intuición clínica)
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
+                conn.close()
+            except Exception as e:
+                print("❌ Error al conectar a la base para inferencia en interacción 9:", e)
+                emocion_inferida = None
+        
+            session["emocion_inferida_9"] = emocion_inferida
+        
+            if emocion_inferida:
+                respuesta = (
+                    f"{resumen} Además, ¿te ha pasado sentir también {emocion_inferida}? "
+                    f"Lo menciono porque es un patrón que suele aparecer cuando coexisten estos síntomas."
+                )
+            else:
+                respuesta = (
+                    f"{resumen} Además, se identificó un posible estado emocional global: {estado_global}. "
+                    f"¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+                )
+        
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
 
-            return {
-                "respuesta": resumen + f" Además, se identificó un posible estado emocional global: {estado_global}. ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
-            }
      
         # Interacción 10: cierre profesional definitivo
         if contador == 10:
