@@ -1986,7 +1986,7 @@ async def asistente(input_data: UserInput):
                 emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
                 conn.close()
             except Exception as e:
-                print("❌ Error al conectar a la base para inferencia en interacción 5:", e)
+                print("⚠️ Error al conectar a la base para inferencia en interacción 5:", e)
                 emocion_inferida = None
         
             # Guardar inferencia en la sesión
@@ -1998,9 +1998,10 @@ async def asistente(input_data: UserInput):
                     f"Lo pregunto porque suele aparecer en casos similares."
                 )
             else:
-                respuesta = f"{resumen} ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+                respuesta = f"{resumen} ¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
         
             registrar_respuesta_openai(interaccion_id, respuesta)
+            session["resumen_generado"] = True  # ✅ Para evitar repetirlo en la 9
             return {"respuesta": respuesta}
 
         if contador == 6 and session.get("emocion_inferida_5"):
