@@ -1399,6 +1399,8 @@ def registrar_auditoria_respuesta(user_id: str, respuesta_original: str, respues
     except Exception as e:
         print(f"❌ Error al registrar auditoría de respuesta: {e}")
 
+
+# 🧾 Función para generar resumen clínico y estado predominante
 def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     """
     Genera una respuesta clínica con base en emociones detectadas y síntomas coincidentes.
@@ -1408,10 +1410,10 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     mensajes = session.get("mensajes", [])
     emociones_acumuladas = session.get("emociones_detectadas", [])
 
-    # Detectar nuevas emociones
-    emociones_detectadas = detectar_emociones_negativas(" ".join(mensajes)) or []
+    # 🧠 Detectar nuevas emociones
+    emociones_detectadas = detectar_emociones_negativas(" - ".join(mensajes)) or []
 
-    # ✅ Unificación sin duplicados
+    # 🧩 Unificación sin duplicados
     emociones_unificadas = list(set(emociones_acumuladas + emociones_detectadas))
     session["emociones_detectadas"] = emociones_unificadas
 
@@ -1425,21 +1427,28 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(emociones_unificadas)
     cuadro_predominante = (
         Counter(coincidencias_sintomas).most_common(1)[0][0]
-        if len(coincidencias_sintomas) >= 2 else
-        "No se pudo establecer con certeza un estado emocional predominante."
+        if len(coincidencias_sintomas) >= 2
+        else "No se pudo establecer con certeza un estado emocional predominante."
     )
 
-    emociones_literal = ", ".join(emociones_unificadas[:3])
+    emociones_literal = " - ".join(emociones_unificadas[:3])
 
     respuesta = (
         f"Con base a lo que has descripto —{emociones_literal}—, "
-        f"pareciera ser que el malestar emocional predominante es: {cuadro_predominante}. "
-        f"Te sugiero considerar una consulta con el Lic. Daniel O. Bustamante escribiéndole al WhatsApp +54 911 3310-1186 para una evaluación más detallada."
+        f"pareciera ser que el malestar emocional predominante es: {cuadro_predominante}."
     )
 
-    print(f"🧾 Resumen clínico generado correctamente en interacción {contador}")
+    # ✅ Sugerencia de contacto solo en interacciones 5, 9 y 10
+    if contador in [5, 9, 10]:
+        respuesta += (
+            " ¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante? "
+            "Podés escribirle al WhatsApp +54 911 3310-1186 para una evaluación más detallada."
+        )
+
+    print(f"📋 Resumen clínico generado correctamente en interacción {contador}")
     session["mensajes"].clear()
     return respuesta
+
 
 def inferir_emocion_no_dicha(emociones_detectadas: List[str], conexion_pgsql) -> Optional[str]:
     """
