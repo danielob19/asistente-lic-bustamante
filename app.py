@@ -1998,15 +1998,23 @@ async def asistente(input_data: UserInput):
      
         # Interacción 10: cierre profesional definitivo
         if contador == 10:
+            emocion_inferida = session.get("emocion_inferida_9")
+        
+            if emocion_inferida and (
+                emocion_inferida in mensaje_usuario or "sí" in mensaje_usuario or "me pasa" in mensaje_usuario
+            ):
+                if emocion_inferida not in session["emociones_detectadas"]:
+                    session["emociones_detectadas"].append(emocion_inferida)
+                    registrar_emocion(emocion_inferida, f"confirmación de inferencia (interacción 10)", user_id)
+        
             respuesta = (
                 "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
                 "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
                 "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
             )
         
-            # 🔮 Predicción de eventos futuros según contenido proyectivo del usuario
+            # 🔮 Predicción de eventos futuros
             prediccion = predecir_evento_futuro(session["mensajes"])
-        
             if prediccion != "sin predicción identificada":
                 print(f"🔮 Proyección detectada: {prediccion}")
                 registrar_inferencia(user_id, contador, "prediccion", prediccion)
@@ -2014,28 +2022,26 @@ async def asistente(input_data: UserInput):
         
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
+
         
         if contador >= 11:
             print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
-            
-            # 🔍 Detección de intención final de cierre
+        
+            # 🧠 Detección de intención de cierre con cerebro_simulado
             cierre_detectado = inferir_intencion_usuario(session["mensajes"])
             print(f"🧠 Intención inferida por el cerebro simulado: {cierre_detectado}")
-
         
             if cierre_detectado == "intención de cierre":
-                print(f"🧠 Intención de cierre detectada: {cierre_detectado}")
                 registrar_inferencia(user_id, contador, "intencion_de_cierre", cierre_detectado)
                 return {
                     "respuesta": (
                         "Gracias por tu mensaje. Me alegra haber podido brindarte orientación en este espacio. "
-                        "Además, noté que en tu último mensaje podría haber una intención de cierre: "
-                        f"{cierre_detectado}. Cualquier otra inquietud, podés escribir directamente al Lic. Bustamante. "
+                        "Si en algún momento deseás avanzar con una consulta, podés escribirle al Lic. Bustamante. "
                         + obtener_mensaje_contacto()
                     )
                 }
         
-            # Si no hubo intención explícita de cierre, mantener respuesta profesional según cantidad de emociones
+            # Si no hay cierre explícito, usar cierre profesional rotativo según cantidad de emociones
             cantidad_emociones = len(set(session.get("emociones_detectadas", [])))
         
             if cantidad_emociones >= 2:
@@ -2054,6 +2060,7 @@ async def asistente(input_data: UserInput):
                 ]
         
             return {"respuesta": random.choice(respuestas_cierre_definitivo)}
+
         
         # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
         preguntas_cobertura = [
