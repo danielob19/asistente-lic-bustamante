@@ -2008,7 +2008,8 @@ async def asistente(input_data: UserInput):
                 }
 
         
-        if contador == 9:
+        # 🧩 Interacción 9: generar nuevo resumen clínico solo si el input NO fue una cortesía
+        if contador == 9 and tipo_input != CORTESIA:
             mensajes_previos = session["mensajes"][-3:]
             emociones_nuevas = []
         
@@ -2018,6 +2019,7 @@ async def asistente(input_data: UserInput):
                     emocion = emocion.lower().strip()
                     if emocion not in session["emociones_detectadas"]:
                         emociones_nuevas.append(emocion)
+
         
             # Validar si hay emociones previas, y si no, intentar detectar de nuevo
             if not session["emociones_detectadas"] and emociones_nuevas:
