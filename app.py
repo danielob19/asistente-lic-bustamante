@@ -2017,8 +2017,8 @@ async def asistente(input_data: UserInput):
                 }
 
         
-        # 🧩 Interacción 9: generar nuevo resumen clínico solo si el input NO fue una cortesía
-        if contador == 9 and tipo_input != CORTESIA:
+        # 🧩 Interacción 9: generar nuevo resumen clínico solo si el input NO fue una cortesía y no se generó antes
+        if contador == 9 and tipo_input != CORTESIA and not session.get("resumen_generado", False):
             mensajes_previos = session["mensajes"][-3:]
             emociones_nuevas = []
         
@@ -2044,10 +2044,10 @@ async def asistente(input_data: UserInput):
             # 🧠 Estado emocional global sintetizado por cerebro_simulado
             estado_global = clasificar_estado_mental(session["mensajes"])
             if estado_global != "estado emocional no definido":
-                print(f"📌 Estado global sintetizado: {estado_global}")
+                print(f"📊 Estado global sintetizado: {estado_global}")
                 registrar_inferencia(user_id, contador, "estado_mental", estado_global)
         
-            # 📄 Generar resumen clínico con todas las emociones acumuladas
+            # 🧾 Generar resumen clínico con todas las emociones acumuladas
             resumen = generar_resumen_clinico_y_estado(session["emociones_detectadas"])
         
             # 🧠 Inferencia emocional adicional (solo interacción clínica)
@@ -2063,8 +2063,10 @@ async def asistente(input_data: UserInput):
                 session["emociones_detectadas"].append(emocion_inferida)
                 registrar_emocion(emocion_inferida, f"confirmación de inferencia (interacción {contador})", user_id)
         
+            session["resumen_generado"] = True
             respuesta = resumen
             return {"respuesta": respuesta}
+
 
         if contador >= 11:
             print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
