@@ -1900,9 +1900,43 @@ async def asistente(input_data: UserInput):
                 session["emociones_detectadas"].extend([e for e in nuevas if e not in session["emociones_detectadas"]])
         
             resumen = generar_resumen_clinico_y_estado(session, contador)
-            respuesta = f"{resumen} ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+        
+            # 🧠 Realizar inferencia clínica intuitiva
+            try:
+                conn = psycopg2.connect(DATABASE_URL)
+                emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
+                conn.close()
+            except Exception as e:
+                print("❌ Error al conectar a la base para inferencia en interacción 5:", e)
+                emocion_inferida = None
+        
+            # Guardar inferencia en la sesión
+            session["emocion_inferida_5"] = emocion_inferida
+        
+            if emocion_inferida:
+                respuesta = (
+                    f"{resumen} Además, ¿dirías que también podrías estar atravesando cierta {emocion_inferida}? "
+                    f"Lo pregunto porque suele aparecer en casos similares."
+                )
+            else:
+                respuesta = f"{resumen} ¿te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+        
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
+
+        if contador == 6 and session.get("emocion_inferida_5"):
+            emocion = session["emocion_inferida_5"]
+            if emocion in mensaje_usuario or "sí" in mensaje_usuario or "me pasa" in mensaje_usuario:
+                if emocion not in session["emociones_detectadas"]:
+                    session["emociones_detectadas"].append(emocion)
+                    registrar_emocion(emocion, f"confirmación de inferencia (interacción 6)", user_id)
+        
+                return {
+                    "respuesta": (
+                        f"Gracias por confirmarlo. ¿Querés contarme un poco más sobre cómo se manifiesta esa {emocion}?"
+                    )
+                }
+
         
         if contador == 9:
             mensajes_previos = session["mensajes"][-3:]
