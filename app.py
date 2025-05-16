@@ -1674,6 +1674,31 @@ async def asistente(input_data: UserInput):
         session["contador_interacciones"] += 1  # ✅ Incrementar contador aquí
         contador = session["contador_interacciones"]
         session["mensajes"].append(mensaje_usuario)
+        
+        # 🔒 Interacción 10: cierre profesional definitivo
+        if contador == 10:
+            emocion_inferida = session.get("emocion_inferida_9")
+            if emocion_inferida and (
+                emocion_inferida in mensaje_usuario or "sí" in mensaje_usuario or "me pasa" in mensaje_usuario
+            ):
+                if emocion_inferida not in session["emociones_detectadas"]:
+                    session["emociones_detectadas"].append(emocion_inferida)
+                    registrar_emocion(emocion_inferida, f"confirmación de inferencia (interacción 10)", user_id)
+        
+            respuesta = (
+                "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
+                "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
+                "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
+            )
+        
+            prediccion = predecir_evento_futuro(session["mensajes"])
+            if prediccion != "sin predicción identificada":
+                print(f"🔮 Proyección detectada: {prediccion}")
+                registrar_inferencia(user_id, contador, "prediccion", prediccion)
+                respuesta += f" Por otra parte, se identificó que mencionaste una posible consecuencia o desenlace: {prediccion}."
+        
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}      
 
         # ⛔ Interrupción anticipada si ya se detectó input sospechoso
         if session.get("input_sospechoso"):
@@ -2020,35 +2045,6 @@ async def asistente(input_data: UserInput):
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
-     
-        # Interacción 10: cierre profesional definitivo
-        if contador == 10:
-            emocion_inferida = session.get("emocion_inferida_9")
-        
-            if emocion_inferida and (
-                emocion_inferida in mensaje_usuario or "sí" in mensaje_usuario or "me pasa" in mensaje_usuario
-            ):
-                if emocion_inferida not in session["emociones_detectadas"]:
-                    session["emociones_detectadas"].append(emocion_inferida)
-                    registrar_emocion(emocion_inferida, f"confirmación de inferencia (interacción 10)", user_id)
-        
-            respuesta = (
-                "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
-                "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
-                "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
-            )
-        
-            # 🔮 Predicción de eventos futuros
-            prediccion = predecir_evento_futuro(session["mensajes"])
-            if prediccion != "sin predicción identificada":
-                print(f"🔮 Proyección detectada: {prediccion}")
-                registrar_inferencia(user_id, contador, "prediccion", prediccion)
-                respuesta += f" Por otra parte, se identificó que mencionaste una posible consecuencia o desenlace: {prediccion}."
-        
-            registrar_respuesta_openai(interaccion_id, respuesta)
-            return {"respuesta": respuesta}
-
-        
         if contador >= 11:
             print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
         
