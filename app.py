@@ -2210,20 +2210,22 @@ async def asistente(input_data: UserInput):
             }
         
         
-        # 🔹 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
+        # 🧩 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
+        saludo_inicio = "- Comenzá la respuesta con un saludo breve como “Hola, ¿qué tal?”.\n" if contador == 1 else ""
+        
         prompt = (
             f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n\n"
             "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n\n"
             "Estilo y directrices obligatorias:\n"
             "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
-            f"{'- Comenzá la respuesta con un saludo breve como “Hola, ¿qué tal?”.\\n' if contador == 1 else ''}"
+            f"{saludo_inicio}"
             "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'pareciera tratarse de...', 'podría vincularse a...', 'refiere a...' o 'se observa...'.\n"
             "- Evitá cualquier frase emocional simulada (ej: 'te entiendo', 'estás en buenas manos', 'no estás solo/a', 'tranquilo/a', etc.).\n"
             "- No uses frases motivacionales ni lenguaje coloquial (evitá: 'todo va a estar bien', 'contá conmigo', etc.).\n"
             "- No uses lenguaje institucional como 'nuestro equipo', 'desde nuestro espacio', 'trabajamos en conjunto', etc.\n"
             "- No brindes datos de contacto, precios, horarios, enlaces ni información administrativa, salvo que el usuario lo haya pedido explícitamente.\n"
-            "- No recomiendes consultar con el Lic. Bustamante ni uses expresiones como 'consultar con un profesional', 'buscar ayuda especializada' u otras sugerencias implícitas, salvo si el usuario lo pidió o se trata de las interacciones 5, 9 o 10+.\n"
-            "- No formules preguntas como “¿Deseás que te facilite información sobre agendar?” ni menciones WhatsApp, salvo si el usuario lo solicitó.\n"
+            "- No recomiendes consultar con el Lic. Bustamante ni uses expresiones como 'consultar con un profesional', 'buscar ayuda especializada' u otras sugerencias implícitas.\n"
+            "- No formules preguntas como “¿Deseás que te facilite información sobre agendar?” ni menciones WhatsApp.\n"
             "- No uses 'Estimado/a', ni encabezados de carta o email.\n"
             "- Solamente si el mensaje es claramente clínico, generá una respuesta analítica breve y profesional.\n"
             "- Si el mensaje no tiene contenido emocional o clínico relevante, devolvé una frase neutra como: 'Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?'\n\n"
