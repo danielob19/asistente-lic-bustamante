@@ -1768,7 +1768,18 @@ async def asistente(input_data: UserInput):
                 )
 
        
+                # Obtener respuesta de OpenAI
                 respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
+                
+                # 🧽 Filtro extra: eliminar saludo si no es la interacción 1
+                if contador != 1 and respuesta_original.strip().lower().startswith("hola, ¿qué tal?"):
+                    respuesta_filtrada = respuesta_original.replace("Hola, ¿qué tal? ", "", 1).strip()
+                    motivo = "Se eliminó el saludo inicial 'Hola, ¿qué tal?' porque no corresponde repetirlo en interacciones posteriores a la primera"
+                    registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_filtrada, motivo)
+                    respuesta_ai = respuesta_filtrada
+                else:
+                    respuesta_ai = respuesta_original
+
         
                 # Filtrado de seguridad y registro de auditoría
                 registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
@@ -2221,6 +2232,16 @@ async def asistente(input_data: UserInput):
 
         # Obtener respuesta de OpenAI
         respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
+        
+        # 🧽 Filtro extra: eliminar saludo si no es la interacción 1
+        if contador != 1 and respuesta_original.strip().lower().startswith("hola, ¿qué tal?"):
+            respuesta_filtrada = respuesta_original.replace("Hola, ¿qué tal? ", "", 1).strip()
+            motivo = "Se eliminó el saludo inicial 'Hola, ¿qué tal?' porque no corresponde repetirlo en interacciones posteriores a la primera"
+            registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_filtrada, motivo)
+            respuesta_ai = respuesta_filtrada
+        else:
+            respuesta_ai = respuesta_original
+
 
         # 🔒 Filtro contra mención indebida al Lic. Bustamante fuera de interacciones permitidas
         if contador not in [5, 9] and contador < 10 and not es_consulta_contacto(mensaje_usuario, user_id, mensaje_original):
