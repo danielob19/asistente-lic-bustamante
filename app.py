@@ -1751,7 +1751,7 @@ async def asistente(input_data: UserInput):
                     "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n\n"
                     "Estilo y directrices obligatorias:\n"
                     "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
-                    "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?'.\n"
+                    f"{'- Comenzá la respuesta con un saludo breve como “Hola, ¿qué tal?”.\\n' if contador == 1 else ''}"
                     "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'pareciera tratarse de...', 'podría vincularse a...', 'refiere a...' o 'se observa...'.\n"
                     "- Evitá cualquier frase emocional simulada (ej: 'te entiendo', 'estás en buenas manos', 'no estás solo/a', 'tranquilo/a', etc.).\n"
                     "- No uses frases motivacionales ni lenguaje coloquial (evitá: 'todo va a estar bien', 'contá conmigo', etc.).\n"
@@ -1766,6 +1766,7 @@ async def asistente(input_data: UserInput):
                     "- En las interacciones 1 a 4, nunca sugieras contacto ni derivación, salvo que el usuario lo pida explícitamente.\n"
                     "- Solo en las interacciones 5, 9 o a partir de la 10, podés aceptar que se mencione el contacto si fue solicitado.\n"
                 )
+
        
                 respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
         
@@ -2202,20 +2203,20 @@ async def asistente(input_data: UserInput):
             "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n\n"
             "Estilo y directrices obligatorias:\n"
             "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
-            "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?'.\n"
+            f"{'- Comenzá la respuesta con un saludo breve como “Hola, ¿qué tal?”.\\n' if contador == 1 else ''}"
             "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'pareciera tratarse de...', 'podría vincularse a...', 'refiere a...' o 'se observa...'.\n"
             "- Evitá cualquier frase emocional simulada (ej: 'te entiendo', 'estás en buenas manos', 'no estás solo/a', 'tranquilo/a', etc.).\n"
             "- No uses frases motivacionales ni lenguaje coloquial (evitá: 'todo va a estar bien', 'contá conmigo', etc.).\n"
             "- No uses lenguaje institucional como 'nuestro equipo', 'desde nuestro espacio', 'trabajamos en conjunto', etc.\n"
-            "- No brindes datos de contacto, precios, horarios, enlaces ni información administrativa.\n"
-            "- No recomiendes consultar con el Lic. Bustamante ni uses expresiones como 'consultar con un profesional', 'buscar ayuda especializada' u otras sugerencias implícitas.\n"
-            "- No formules preguntas como “¿Deseás que te facilite información sobre agendar?” ni menciones WhatsApp.\n"
+            "- No brindes datos de contacto, precios, horarios, enlaces ni información administrativa, salvo que el usuario lo haya pedido explícitamente.\n"
+            "- No recomiendes consultar con el Lic. Bustamante ni uses expresiones como 'consultar con un profesional', 'buscar ayuda especializada' u otras sugerencias implícitas, salvo si el usuario lo pidió o se trata de las interacciones 5, 9 o 10+.\n"
+            "- No formules preguntas como “¿Deseás que te facilite información sobre agendar?” ni menciones WhatsApp, salvo si el usuario lo solicitó.\n"
             "- No uses 'Estimado/a', ni encabezados de carta o email.\n"
             "- Solamente si el mensaje es claramente clínico, generá una respuesta analítica breve y profesional.\n"
             "- Si el mensaje no tiene contenido emocional o clínico relevante, devolvé una frase neutra como: 'Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?'\n\n"
             "IMPORTANTE:\n"
-            "- En las interacciones 1 a 4, nunca sugieras contacto ni derivación, salvo que el usuario lo pida explícitamente.\n"
-            "- Solo en las interacciones 5, 9 o a partir de la 10, podés aceptar que se mencione el contacto si fue solicitado.\n"
+            "- En las interacciones 5, 9 o 10+, podés aceptar que se mencione el contacto si fue solicitado.\n"
+            "- En las demás interacciones (1 a 4), no lo menciones salvo que el usuario lo pida explícitamente.\n"
         )
 
         # Obtener respuesta de OpenAI
