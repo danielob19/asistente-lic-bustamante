@@ -2082,28 +2082,16 @@ async def asistente(input_data: UserInput):
                     if emocion not in session["emociones_detectadas"]:
                         emociones_nuevas.append(emocion)
         
-            # ✅ Validar si hay emociones previas, y si no, intentar detectar de nuevo
-            if not session["emociones_detectadas"] and emociones_nuevas:
+            if emociones_nuevas:
                 session["emociones_detectadas"].extend(emociones_nuevas)
-            else:
-                session["emociones_detectadas"] = list(set(session["emociones_detectadas"] + emociones_nuevas))
         
-            # 📌 Registrar emociones nuevas no presentes en BD para esta interacción
-            emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
-            for emocion in emociones_nuevas:
-                if emocion not in emociones_registradas_bd:
-                    registrar_emocion(emocion, f"interacción {contador}", user_id)
+                # Registrar emociones nuevas en BD si no están registradas
+                emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
+                for emocion in emociones_nuevas:
+                    if emocion not in emociones_registradas_bd:
+                        registrar_emocion(emocion, f"interacción {contador}", user_id)
         
-            # 🧠 Estado emocional global sintetizado por cerebro_simulado
-            estado_global = clasificar_estado_mental(session["mensajes"])
-            if estado_global != "estado emocional no definido":
-                print(f"📊 Estado global sintetizado: {estado_global}")
-                registrar_inferencia(user_id, contador, "estado_mental", estado_global)
-        
-            # 🧾 Generar resumen clínico con todas las emociones acumuladas
-            resumen = generar_resumen_clinico_y_estado(session["emociones_detectadas"])
-        
-            # 🧠 Inferencia emocional adicional (solo interacción clínica)
+            # Inferencia emocional intuitiva
             try:
                 conn = psycopg2.connect(DATABASE_URL)
                 emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
@@ -2116,8 +2104,39 @@ async def asistente(input_data: UserInput):
                 session["emociones_detectadas"].append(emocion_inferida)
                 registrar_emocion(emocion_inferida, f"confirmación de inferencia (interacción {contador})", user_id)
         
+            # Estado emocional global sintetizado
+            estado_global = clasificar_estado_mental(session["mensajes"])
+            if estado_global != "estado emocional no definido":
+                print(f"📊 Estado global sintetizado: {estado_global}")
+                registrar_inferencia(user_id, contador, "estado_mental", estado_global)
+        
+            # Redacción final
+            if emociones_nuevas:
+                nuevas_literal = ", ".join(emociones_nuevas)
+                respuesta = (
+                    f"Por lo que comentás, pues al malestar anímico que describiste anteriormente, advierto que se suman {nuevas_literal}, "
+                    f"por lo que daría la impresión de que se trata de un estado emocional predominantemente {estado_global}. "
+                )
+            else:
+                respuesta = (
+                    f"Por lo que comentás, se mantiene el malestar anímico previamente mencionado, "
+                    f"y daría la impresión de que se trata de un estado emocional predominantemente {estado_global}. "
+                )
+        
+            if emocion_inferida:
+                respuesta += (
+                    f"Además, ¿dirías que también podrías estar atravesando cierta {emocion_inferida}? "
+                    f"Lo pregunto porque suele aparecer en casos similares. "
+                )
+        
+            respuesta += (
+                "No obstante, para estar seguros se requiere de una evaluación psicológica profesional. "
+                "Te sugiero que te contactes con el Lic. Bustamante. "
+                "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
+            )
+        
             session["resumen_generado"] = True
-            respuesta = resumen
+            registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
 
