@@ -2173,15 +2173,21 @@ async def asistente(input_data: UserInput):
         if contador == 5:
             respuesta = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
             return {"respuesta": respuesta}
-
-
         
-        # ✅ Interacción 9: generar resumen clínico completo y cierre profesional
-        if contador == 9 and tipo_input != CORTESIA and not session.get("resumen_generado", False):
+        if contador == 9:
+            # ✅ Consolidar emociones de interacciones anteriores (1 a 5)
+            for mensaje in session["mensajes"][:-4]:
+                nuevas = detectar_emociones_negativas(mensaje) or []
+                for emocion in nuevas:
+                    emocion = emocion.lower().strip()
+                    emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
+                    if emocion not in session["emociones_detectadas"]:
+                        session["emociones_detectadas"].append(emocion)
+        
+            # 🧩 Generar resumen completo incluyendo nuevas emociones de interacciones 6 a 9
             respuesta = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
             return {"respuesta": respuesta}
         
-
         if contador >= 11:
             print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
         
