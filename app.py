@@ -2072,30 +2072,33 @@ async def asistente(input_data: UserInput):
                 }
 
         
-        # 🧩 Interacción 9: generar resumen clínico con TODAS las emociones acumuladas
+        # 🧩 Interacción 9: generar nuevo resumen clínico solo si el input NO fue una cortesía y no se generó antes
         if contador == 9 and tipo_input != CORTESIA and not session.get("resumen_generado", False):
-            # Reprocesar todas las emociones de las interacciones 6, 7, 8 y 9
-            mensajes_previos = session["mensajes"][5:9]
+            mensajes_previos = session["mensajes"][-4:]  # ← Tomamos últimos 4 mensajes (6, 7, 8, 9)
             emociones_nuevas = []
         
             for mensaje in mensajes_previos:
                 nuevas = detectar_emociones_negativas(mensaje) or []
                 for emocion in nuevas:
                     emocion = emocion.lower().strip()
+                    emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)  # Estandarización
                     if emocion not in session["emociones_detectadas"]:
                         emociones_nuevas.append(emocion)
         
-            # Agregar nuevas emociones a la sesión
             if emociones_nuevas:
                 session["emociones_detectadas"].extend(emociones_nuevas)
-        
-                # Registrar emociones nuevas en BD si no están registradas
                 emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
                 for emocion in emociones_nuevas:
                     if emocion not in emociones_registradas_bd:
                         registrar_emocion(emocion, f"interacción {contador}", user_id)
         
-            # Inferencia emocional intuitiva
+            # Estado emocional global sintetizado
+            estado_global = clasificar_estado_mental(session["mensajes"])
+            if estado_global != "estado emocional no definido":
+                print(f"📊 Estado global sintetizado: {estado_global}")
+                registrar_inferencia(user_id, contador, "estado_mental", estado_global)
+        
+            # Inferencia emocional adicional (intuitiva)
             try:
                 conn = psycopg2.connect(DATABASE_URL)
                 emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
@@ -2108,24 +2111,19 @@ async def asistente(input_data: UserInput):
                 session["emociones_detectadas"].append(emocion_inferida)
                 registrar_emocion(emocion_inferida, f"confirmación de inferencia (interacción {contador})", user_id)
         
-            # Estado emocional global sintetizado
-            estado_global = clasificar_estado_mental(session["mensajes"])
-            if estado_global != "estado emocional no definido":
-                print(f"📊 Estado global sintetizado: {estado_global}")
-                registrar_inferencia(user_id, contador, "estado_mental", estado_global)
-        
-            # Descripción completa de todas las emociones acumuladas
-            emociones_totales = session["emociones_detectadas"]
-            if len(emociones_totales) == 1:
-                lista_emociones = emociones_totales[0]
+            # Redacción final con todas las emociones descriptas
+            if session["emociones_detectadas"]:
+                emociones_literal = ", ".join(session["emociones_detectadas"])
+                respuesta = (
+                    f"Por lo que comentás, pues al malestar anímico que describiste anteriormente, "
+                    f"advierto que se suman {emociones_literal}, por lo que daría la impresión de que se trata "
+                    f"de un estado emocional predominantemente {estado_global}. "
+                )
             else:
-                lista_emociones = ", ".join(emociones_totales[:-1]) + " y " + emociones_totales[-1]
-        
-            # Redacción final
-            respuesta = (
-                f"Por lo que comentás, pues al malestar anímico que describiste anteriormente, advierto que se suman emociones como {lista_emociones}, "
-                f"por lo que daría la impresión de que se trata de un estado emocional predominantemente {estado_global}. "
-            )
+                respuesta = (
+                    f"Por lo que comentás, se mantiene el malestar anímico previamente mencionado, "
+                    f"y daría la impresión de que se trata de un estado emocional predominantemente {estado_global}. "
+                )
         
             if emocion_inferida:
                 respuesta += (
