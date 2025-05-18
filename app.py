@@ -1702,9 +1702,10 @@ async def asistente(input_data: UserInput):
         contador = session["contador_interacciones"]
         session["mensajes"].append(mensaje_usuario)
 
-        # ✅ Si hay una respuesta personalizada para esta interacción, se devuelve directamente
-        if contador in respuestas_personalizadas:
-            respuesta_manual = respuestas_personalizadas[contador]
+        # ✅ Si hay una respuesta clínica manual para esta interacción, se devuelve directamente
+        # 🔄 (Se reemplazó el uso de 'respuestas_personalizadas' por 'RESPUESTAS_CLINICAS' del módulo importado)
+        if contador in RESPUESTAS_CLINICAS:
+            respuesta_manual = RESPUESTAS_CLINICAS[contador]
         
             # Auditoría (registro explícito como respuesta manual no generada por OpenAI)
             registrar_auditoria_respuesta(
@@ -1716,6 +1717,7 @@ async def asistente(input_data: UserInput):
         
             return {"respuesta": respuesta_manual}
         
+                
                 
         # 🔒 Interacción 10: cierre profesional definitivo
         if contador == 10:
