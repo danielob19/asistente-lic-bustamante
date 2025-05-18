@@ -1557,6 +1557,39 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
     registrar_respuesta_openai(interaccion_id, respuesta)
     return respuesta
 
+def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
+    # Si no hay emociones todavía, intentar extraer de los mensajes acumulados
+    if not session["emociones_detectadas"]:
+        nuevas = detectar_emociones_negativas(" ".join(session["mensajes"])) or []
+        session["emociones_detectadas"].extend([e for e in nuevas if e not in session["emociones_detectadas"]])
+
+    # Generar resumen clínico y estado emocional predominante
+    resumen = generar_resumen_clinico_y_estado(session, contador)
+
+    # Inferencia clínica adicional
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
+        conn.close()
+    except Exception as e:
+        print("⚠️ Error al conectar a la base para inferencia en interacción 5:", e)
+        emocion_inferida = None
+
+    # Guardar inferencia en sesión
+    session["emocion_inferida_5"] = emocion_inferida
+
+    if emocion_inferida:
+        respuesta = (
+            f"{resumen} Además, ¿dirías que también podrías estar atravesando cierta {emocion_inferida}? "
+            f"Lo pregunto porque suele aparecer en casos similares."
+        )
+    else:
+        respuesta = f"{resumen} ¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+
+    registrar_respuesta_openai(interaccion_id, respuesta)
+    session["resumen_generado"] = True
+    return respuesta
+
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
