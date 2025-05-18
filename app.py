@@ -1716,12 +1716,11 @@ async def asistente(input_data: UserInput):
             )
         
             return {"respuesta": respuesta_manual}
-        
-                
+           
                 
         # 🔒 Interacción 10: cierre profesional definitivo
         if contador == 10:
-            print("🔒 Cierre definitivo activado en la interacción 10")  # ← Línea de log agregada
+            print("🔒 Cierre definitivo activado en la interacción 10")
         
             emocion_inferida = session.get("emocion_inferida_9")
             if emocion_inferida and (
@@ -1730,6 +1729,9 @@ async def asistente(input_data: UserInput):
                 if emocion_inferida not in session["emociones_detectadas"]:
                     session["emociones_detectadas"].append(emocion_inferida)
                     registrar_emocion(emocion_inferida, f"confirmación de inferencia (interacción 10)", user_id)
+        
+            # 🧾 Guardar el resumen clínico total en sesión
+            session["resumen_clinico_total"] = generar_resumen_clinico_y_estado(session["emociones_detectadas"])
         
             respuesta = (
                 "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
