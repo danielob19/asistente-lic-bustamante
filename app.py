@@ -1717,7 +1717,22 @@ async def asistente(input_data: UserInput):
         session["contador_interacciones"] += 1  # ✅ Incrementar contador aquí
         contador = session["contador_interacciones"]
         session["mensajes"].append(mensaje_usuario)
+
+        # ✅ Si hay una respuesta personalizada para esta interacción, se devuelve directamente
+        if contador in respuestas_personalizadas:
+            respuesta_manual = respuestas_personalizadas[contador]
         
+            # Auditoría (registro explícito como respuesta manual no generada por OpenAI)
+            registrar_auditoria_respuesta(
+                user_id=user_id,
+                respuesta_original=respuesta_manual,
+                respuesta_final=respuesta_manual,
+                motivo_modificacion="respuesta manual predefinida"
+            )
+        
+            return {"respuesta": respuesta_manual}
+        
+                
         # 🔒 Interacción 10: cierre profesional definitivo
         if contador == 10:
             print("🔒 Cierre definitivo activado en la interacción 10")  # ← Línea de log agregada
