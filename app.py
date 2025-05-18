@@ -1015,12 +1015,6 @@ def clasificar_input_inicial(texto: str) -> str:
 
     return "OTRO"
 
-
-    # Expresiones típicas de saludo
-    saludos = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches", "qué tal", "como estás", "como esta"]
-    if any(frase in texto for frase in saludos):
-        return "SALUDO"
-
     # Frases de agradecimiento o cierre amable
     cortesias = ["gracias", "muy amable", "te agradezco", "muchas gracias", "ok gracias", "perfecto, gracias", "mil gracias", "gracias por todo"]
     if any(frase in texto for frase in cortesias):
@@ -1038,7 +1032,6 @@ def clasificar_input_inicial(texto: str) -> str:
     
     if any(frase in texto for frase in consultas_modalidad):
         return "CONSULTA_MODALIDAD"
-
     
     # 🧠 Consultas indirectas sobre si se tratan ciertos cuadros emocionales usando síntomas cacheados
     verbos_consulta = [
