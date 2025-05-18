@@ -2175,9 +2175,11 @@ async def asistente(input_data: UserInput):
 
 
         
+        # ✅ Interacción 9: generar resumen clínico completo y cierre profesional
         if contador == 9 and tipo_input != CORTESIA and not session.get("resumen_generado", False):
             respuesta = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
             return {"respuesta": respuesta}
+        
 
         if contador >= 11:
             print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
