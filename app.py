@@ -30,6 +30,7 @@ from cerebro_simulado import (
     clasificar_estado_mental,
     inferir_intencion_usuario
 )
+from respuestas_clinicas import RESPUESTAS_CLINICAS
 
 # ========================== CONSTANTES DE CLASIFICACIÓN ==========================
 
