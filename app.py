@@ -2074,7 +2074,7 @@ async def asistente(input_data: UserInput):
         
         # 🧩 Interacción 9: generar nuevo resumen clínico solo si el input NO fue una cortesía y no se generó antes
         if contador == 9 and tipo_input != CORTESIA and not session.get("resumen_generado", False):
-            mensajes_previos = session["mensajes"][-3:]
+            mensajes_previos = session["mensajes"][-4:]  # ← incluye 6,7,8,9
             emociones_nuevas = []
         
             for mensaje in mensajes_previos:
