@@ -2166,9 +2166,11 @@ async def asistente(input_data: UserInput):
             if patron_detectado != "sin patrón consistente":
                 print(f"🔄 Patrón interactivo detectado: {patron_detectado}")
         
+        # ✅ En la interacción 5, generar resumen clínico y estado emocional predominante
         if contador == 5:
             respuesta = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
             return {"respuesta": respuesta}
+
 
         
         if contador == 9 and tipo_input != CORTESIA and not session.get("resumen_generado", False):
