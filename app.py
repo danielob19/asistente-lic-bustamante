@@ -1560,37 +1560,71 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
     return respuesta
 
 def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
-    # Si no hay emociones todavía, intentar extraer de los mensajes acumulados
-    if not session["emociones_detectadas"]:
-        nuevas = detectar_emociones_negativas(" ".join(session["mensajes"])) or []
-        session["emociones_detectadas"].extend([e for e in nuevas if e not in session["emociones_detectadas"]])
+    print("🧩 Generando resumen clínico en interacción 5")
 
-    # Generar resumen clínico y estado emocional predominante
-    resumen = generar_resumen_clinico_y_estado(session, contador)
+    # 🔍 Revisión de todas las emociones detectadas hasta ahora
+    emociones_previas = session.get("emociones_detectadas", [])
+    mensajes_previos = session["mensajes"]
+    nuevas_emociones = []
 
-    # Inferencia clínica adicional
+    for mensaje in mensajes_previos:
+        nuevas = detectar_emociones_negativas(mensaje) or []
+        for emocion in nuevas:
+            emocion = emocion.lower().strip()
+            emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
+            if emocion not in emociones_previas:
+                nuevas_emociones.append(emocion)
+
+    if nuevas_emociones:
+        session["emociones_detectadas"].extend(nuevas_emociones)
+        emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
+        for emocion in nuevas_emociones:
+            if emocion not in emociones_registradas_bd:
+                registrar_emocion(emocion, f"interacción {contador}", user_id)
+
+    # 🧠 Estado emocional global
+    estado_global = clasificar_estado_mental(mensajes_previos)
+    if estado_global != "estado emocional no definido":
+        print(f"📊 Estado global sintetizado: {estado_global}")
+        registrar_inferencia(user_id, contador, "estado_mental", estado_global)
+
+    # 🔮 Inferencia clínica intuitiva desde base de datos
     try:
         conn = psycopg2.connect(DATABASE_URL)
         emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
         conn.close()
     except Exception as e:
-        print("⚠️ Error al conectar a la base para inferencia en interacción 5:", e)
+        print(f"⚠️ Error al conectar a la base para inferencia en interacción 5: {e}")
         emocion_inferida = None
 
-    # Guardar inferencia en sesión
-    session["emocion_inferida_5"] = emocion_inferida
+    if emocion_inferida and emocion_inferida not in session["emociones_detectadas"]:
+        session["emocion_inferida_5"] = emocion_inferida
+
+    # Redacción del resumen clínico
+    if session["emociones_detectadas"]:
+        emociones_literal = ", ".join(session["emociones_detectadas"])
+        resumen = (
+            f"Por lo que mencionaste hasta ahora, se identifican las siguientes emociones: {emociones_literal}. "
+            f"Impresiona ser un estado emocional predominantemente {estado_global}. "
+        )
+    else:
+        resumen = (
+            f"Por lo que mencionaste hasta ahora, se observa un malestar anímico que daría la impresión de corresponder "
+            f"a un estado emocional predominantemente {estado_global}. "
+        )
 
     if emocion_inferida:
-        respuesta = (
-            f"{resumen} Además, ¿dirías que también podrías estar atravesando cierta {emocion_inferida}? "
+        resumen += (
+            f"Además, ¿dirías que también podrías estar atravesando cierta {emocion_inferida}? "
             f"Lo pregunto porque suele aparecer en casos similares."
         )
     else:
-        respuesta = f"{resumen} ¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+        resumen += "¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
 
-    registrar_respuesta_openai(interaccion_id, respuesta)
     session["resumen_generado"] = True
-    return respuesta
+    registrar_respuesta_openai(interaccion_id, resumen)
+    return resumen
+
 
 def generar_resumen_interaccion_10(session, user_id, interaccion_id, contador):
     print("🔒 Cierre definitivo activado en la interacción 10")
