@@ -2187,45 +2187,7 @@ async def asistente(input_data: UserInput):
             # 🧩 Generar resumen completo incluyendo nuevas emociones de interacciones 6 a 9
             respuesta = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
             return {"respuesta": respuesta}
-        
-        if contador >= 11:
-            print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
-        
-            # 🧠 Detección de intención de cierre con cerebro_simulado
-            cierre_detectado = inferir_intencion_usuario(session["mensajes"])
-            print(f"🧠 Intención inferida por el cerebro simulado: {cierre_detectado}")
-        
-            if cierre_detectado == "intención de cierre":
-                registrar_inferencia(user_id, contador, "intencion_de_cierre", cierre_detectado)
-                return {
-                    "respuesta": (
-                        "Gracias por tu mensaje. Me alegra haber podido brindarte orientación en este espacio. "
-                        "Si en algún momento deseás avanzar con una consulta, podés escribirle al Lic. Bustamante. "
-                        + obtener_mensaje_contacto()
-                    )
-                }
-        
-            # Si no hay cierre explícito, usar cierre profesional rotativo según cantidad de emociones
-            cantidad_emociones = len(set(session.get("emociones_detectadas", [])))
-        
-            if cantidad_emociones >= 2:
-                respuestas_cierre_definitivo = [
-                    "Gracias por compartir lo que estás sintiendo. Ya hemos recorrido juntos un análisis significativo. Para seguir avanzando, te recomiendo contactar al Lic. Bustamante. " + obtener_mensaje_contacto(),
-                    "Valoro la confianza con la que expresaste tus emociones. Este espacio ya cumplió su función de orientación. Para una atención personalizada, podés continuar con el Lic. Bustamante. " + obtener_mensaje_contacto(),
-                    "Hemos llegado al punto en que una intervención profesional directa sería lo más adecuado. El Lic. Bustamante está disponible para ayudarte. " + obtener_mensaje_contacto(),
-                    "Agradezco tu apertura durante esta conversación. Para seguir explorando lo que estás atravesando en profundidad, lo ideal es hacerlo con el Lic. Bustamante en un entorno clínico. " + obtener_mensaje_contacto(),
-                    "Lo que compartiste ha sido importante. A partir de aquí, solo un espacio terapéutico puede brindarte el acompañamiento que necesitás. " + obtener_mensaje_contacto()
-                ]
-            else:
-                respuestas_cierre_definitivo = [
-                    "Este espacio ha llegado a su límite. Si deseás avanzar con una consulta, podés escribirle al Lic. Bustamante. " + obtener_mensaje_contacto(),
-                    "Para continuar, es necesario un espacio clínico adecuado. Podés contactar al Lic. Bustamante si querés seguir con esta consulta. " + obtener_mensaje_contacto(),
-                    "Este asistente ha cumplido su función orientativa. Para una atención más profunda, podés escribirle al Lic. Bustamante. " + obtener_mensaje_contacto()
-                ]
-        
-            return {"respuesta": random.choice(respuestas_cierre_definitivo)}
 
-        
         # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
         preguntas_cobertura = [
             r"(atiende[n|s]?|trabaja[n|s]?|acepta[n|s]?|tom[a|ás]|toma[n]?|atiendo)\s+(por|con)?\s*(osde|swiss medical|galeno|prepaga|obra social|cobertura médica|asistencia psicológica)",
