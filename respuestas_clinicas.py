@@ -11,7 +11,7 @@ RESPUESTAS_CLINICAS = {
 
     5: "Con base en lo que has descrito —aislamiento, desgano, desesperanza—, pareciera tratarse de un estado emocional predominantemente depresivo. ¿Te interesaría consultarlo con el Lic. Bustamante?",
 
-    6: "Gracias por confirmarlo. ¿Querés contarme un poco más sobre cómo se manifiesta esa emoción en tu vida cotidiana?",
+    6: "Comprendo. ¿Querés contarme un poco más sobre cómo se manifiesta esa emoción en tu vida cotidiana?",
 
     7: "Normalmente se trata de una dificultad en el sostenimiento atencional, posiblemente influida por factores emocionales o contextuales. ¿Este problema de concentración suele presentarse con frecuencia?",
 
