@@ -1900,6 +1900,20 @@ async def asistente(input_data: UserInput):
             respuesta = generar_resumen_interaccion_10(session, user_id, interaccion_id, contador)
             return {"respuesta": respuesta}
 
+        # ✅ Confirmación de inferencia emocional previa entre interacciones 6 a 8
+        if 6 <= contador <= 8 and session.get("emocion_inferida_5"):
+            emocion = session["emocion_inferida_5"]
+            if emocion in mensaje_usuario or "sí" in mensaje_usuario or "me pasa" in mensaje_usuario:
+                if emocion not in session["emociones_detectadas"]:
+                    session["emociones_detectadas"].append(emocion)
+                    registrar_emocion(emocion, f"confirmación de inferencia (interacción {contador})", user_id)
+        
+                return {
+                    "respuesta": (
+                        f"Gracias por confirmarlo. ¿Querés contarme un poco más sobre cómo se manifiesta esa {emocion}?"
+                    )
+                }
+
         # 🧠 Nueva respuesta para la PRIMERA INTERACCIÓN
         if contador == 1:
             # ⚠️ Reforzar que si es SALUDO + contenido clínico, se trate como clínico
