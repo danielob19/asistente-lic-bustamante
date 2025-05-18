@@ -5,7 +5,7 @@ RESPUESTAS_CLINICAS = {
 
     2: "Se advierte una sensación de fatiga persistente, incluso después de haber dormido adecuadamente. ¿Hay otros aspectos que te gustaría mencionar?",
 
-    3: "Impersiona un estado de retraimiento afectivo, con posibles signos de desconexión emocional del entorno cercano. ¿Notás si esto se intensificó en algún momento particular?",
+    3: "Impresiona ser un estado de retraimiento afectivo, con posibles signos de desconexión emocional del entorno cercano. ¿Notás si esto se intensificó en algún momento particular?",
 
     4: "Podría tratarse de un estado de autovaloración negativa, con pensamientos autorreferenciales que refieren a carga o inutilidad. ¿Te ocurre con frecuencia?",
 
