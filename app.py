@@ -2072,9 +2072,10 @@ async def asistente(input_data: UserInput):
                 }
 
         
-        # 🧩 Interacción 9: generar nuevo resumen clínico solo si el input NO fue una cortesía y no se generó antes
+        # 🧩 Interacción 9: generar resumen clínico con TODAS las emociones acumuladas
         if contador == 9 and tipo_input != CORTESIA and not session.get("resumen_generado", False):
-            mensajes_previos = session["mensajes"][-4:]  # ← incluye interacciones 6,7,8,9
+            # Reprocesar todas las emociones de las interacciones 6, 7, 8 y 9
+            mensajes_previos = session["mensajes"][5:9]
             emociones_nuevas = []
         
             for mensaje in mensajes_previos:
@@ -2084,6 +2085,7 @@ async def asistente(input_data: UserInput):
                     if emocion not in session["emociones_detectadas"]:
                         emociones_nuevas.append(emocion)
         
+            # Agregar nuevas emociones a la sesión
             if emociones_nuevas:
                 session["emociones_detectadas"].extend(emociones_nuevas)
         
@@ -2112,22 +2114,18 @@ async def asistente(input_data: UserInput):
                 print(f"📊 Estado global sintetizado: {estado_global}")
                 registrar_inferencia(user_id, contador, "estado_mental", estado_global)
         
-            # Redacción final
-            if emociones_nuevas:
-                if len(emociones_nuevas) == 1:
-                    nuevas_literal = emociones_nuevas[0]
-                else:
-                    nuevas_literal = ", ".join(emociones_nuevas[:-1]) + " y " + emociones_nuevas[-1]
-        
-                respuesta = (
-                    f"Por lo que comentás, pues al malestar anímico que describiste anteriormente, advierto que se suman emociones como {nuevas_literal}, "
-                    f"por lo que daría la impresión de que se trata de un estado emocional predominantemente {estado_global}. "
-                )
+            # Descripción completa de todas las emociones acumuladas
+            emociones_totales = session["emociones_detectadas"]
+            if len(emociones_totales) == 1:
+                lista_emociones = emociones_totales[0]
             else:
-                respuesta = (
-                    f"Por lo que comentás, se mantiene el malestar anímico previamente mencionado, "
-                    f"y daría la impresión de que se trata de un estado emocional predominantemente {estado_global}. "
-                )
+                lista_emociones = ", ".join(emociones_totales[:-1]) + " y " + emociones_totales[-1]
+        
+            # Redacción final
+            respuesta = (
+                f"Por lo que comentás, pues al malestar anímico que describiste anteriormente, advierto que se suman emociones como {lista_emociones}, "
+                f"por lo que daría la impresión de que se trata de un estado emocional predominantemente {estado_global}. "
+            )
         
             if emocion_inferida:
                 respuesta += (
