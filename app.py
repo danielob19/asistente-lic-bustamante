@@ -1803,10 +1803,30 @@ async def asistente(input_data: UserInput):
                 )
 
        
-                # Obtener respuesta de OpenAI
+                # ✅ Bloque de generación de respuesta clínica personalizada
+                # Generación del prompt clínico personalizado según interacción
+                prompt = (
+                    f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
+                    "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n"
+                    "Estilo y directrices obligatorias:\n"
+                    "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
+                    "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?' solo si es la interacción 1.\n"
+                    "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'se advierte...', 'impresiona...', 'podría tratarse de...', 'da la sensación de ser...', 'normalmente se trata de un...', etc.\n"
+                    "- Evitá la frase 'Pareciera tratarse de...' en todas las interacciones, excepto en la 5 y 9.\n"
+                    "- En la interacción 1 usá la frase 'Se observa una vivencia de falta de sentido...'\n"
+                    "- No uses agradecimientos en ninguna interacción (ni al inicio ni al final).\n"
+                    "- No uses frases motivacionales ni simulaciones empáticas (ej: 'te entiendo', 'estás en buenas manos', etc.).\n"
+                    "- No uses lenguaje institucional ni expresiones como 'nuestro equipo', 'desde este espacio', etc.\n"
+                    "- No brindes datos de contacto, precios ni derivaciones, salvo que sea interacción 5, 9 o a partir de la 10.\n"
+                    "- Solo si el mensaje es claramente clínico, generá una respuesta analítica breve y profesional.\n"
+                    "- Si no tiene contenido clínico o emocional, devolvé una frase neutra: 'Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?'\n"
+                    f"- IMPORTANTE: estás en la interacción {contador}.\n"
+                )
+                
+                # Solicitar respuesta a OpenAI con el nuevo prompt clínico
                 respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
                 
-                # 🧽 Filtro extra: eliminar saludo si no es la interacción 1
+                # 🔍 Filtro para remover saludo 'Hola, ¿qué tal?' si no es la primera interacción
                 if contador != 1 and respuesta_original.strip().lower().startswith("hola, ¿qué tal?"):
                     respuesta_filtrada = respuesta_original.replace("Hola, ¿qué tal? ", "", 1).strip()
                     motivo = "Se eliminó el saludo inicial 'Hola, ¿qué tal?' porque no corresponde repetirlo en interacciones posteriores a la primera"
@@ -1814,8 +1834,8 @@ async def asistente(input_data: UserInput):
                     respuesta_ai = respuesta_filtrada
                 else:
                     respuesta_ai = respuesta_original
+                
 
-        
                 # Filtrado de seguridad y registro de auditoría
                 registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
                 registrar_respuesta_openai(interaccion_id, respuesta_original)
@@ -2267,10 +2287,30 @@ async def asistente(input_data: UserInput):
             "- En las demás interacciones (1 a 4), no lo menciones salvo que el usuario lo pida explícitamente.\n"
         )
 
-        # Obtener respuesta de OpenAI
+        # ✅ Bloque de generación de respuesta clínica personalizada
+        # Generación del prompt clínico personalizado según interacción
+        prompt = (
+            f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
+            "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n"
+            "Estilo y directrices obligatorias:\n"
+            "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
+            "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?' solo si es la interacción 1.\n"
+            "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'se advierte...', 'impresiona...', 'podría tratarse de...', 'da la sensación de ser...', 'normalmente se trata de un...', etc.\n"
+            "- Evitá la frase 'Pareciera tratarse de...' en todas las interacciones, excepto en la 5 y 9.\n"
+            "- En la interacción 1 usá la frase 'Se observa una vivencia de falta de sentido...'\n"
+            "- No uses agradecimientos en ninguna interacción (ni al inicio ni al final).\n"
+            "- No uses frases motivacionales ni simulaciones empáticas (ej: 'te entiendo', 'estás en buenas manos', etc.).\n"
+            "- No uses lenguaje institucional ni expresiones como 'nuestro equipo', 'desde este espacio', etc.\n"
+            "- No brindes datos de contacto, precios ni derivaciones, salvo que sea interacción 5, 9 o a partir de la 10.\n"
+            "- Solo si el mensaje es claramente clínico, generá una respuesta analítica breve y profesional.\n"
+            "- Si no tiene contenido clínico o emocional, devolvé una frase neutra: 'Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?'\n"
+            f"- IMPORTANTE: estás en la interacción {contador}.\n"
+        )
+        
+        # Solicitar respuesta a OpenAI con el nuevo prompt clínico
         respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
         
-        # 🧽 Filtro extra: eliminar saludo si no es la interacción 1
+        # 🔍 Filtro para remover saludo 'Hola, ¿qué tal?' si no es la primera interacción
         if contador != 1 and respuesta_original.strip().lower().startswith("hola, ¿qué tal?"):
             respuesta_filtrada = respuesta_original.replace("Hola, ¿qué tal? ", "", 1).strip()
             motivo = "Se eliminó el saludo inicial 'Hola, ¿qué tal?' porque no corresponde repetirlo en interacciones posteriores a la primera"
@@ -2278,6 +2318,7 @@ async def asistente(input_data: UserInput):
             respuesta_ai = respuesta_filtrada
         else:
             respuesta_ai = respuesta_original
+        
 
 
         # 🔒 Filtro contra mención indebida al Lic. Bustamante fuera de interacciones permitidas
