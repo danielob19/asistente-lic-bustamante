@@ -2074,7 +2074,7 @@ async def asistente(input_data: UserInput):
         
         # 🧩 Interacción 9: generar nuevo resumen clínico solo si el input NO fue una cortesía y no se generó antes
         if contador == 9 and tipo_input != CORTESIA and not session.get("resumen_generado", False):
-            mensajes_previos = session["mensajes"][-4:]  # ← incluye 6,7,8,9
+            mensajes_previos = session["mensajes"][-4:]  # ← incluye interacciones 6,7,8,9
             emociones_nuevas = []
         
             for mensaje in mensajes_previos:
@@ -2114,9 +2114,13 @@ async def asistente(input_data: UserInput):
         
             # Redacción final
             if emociones_nuevas:
-                nuevas_literal = ", ".join(emociones_nuevas)
+                if len(emociones_nuevas) == 1:
+                    nuevas_literal = emociones_nuevas[0]
+                else:
+                    nuevas_literal = ", ".join(emociones_nuevas[:-1]) + " y " + emociones_nuevas[-1]
+        
                 respuesta = (
-                    f"Por lo que comentás, pues al malestar anímico que describiste anteriormente, advierto que se suman {nuevas_literal}, "
+                    f"Por lo que comentás, pues al malestar anímico que describiste anteriormente, advierto que se suman emociones como {nuevas_literal}, "
                     f"por lo que daría la impresión de que se trata de un estado emocional predominantemente {estado_global}. "
                 )
             else:
