@@ -1857,47 +1857,10 @@ async def asistente(input_data: UserInput):
             )
         
             return {"respuesta": respuesta_manual}
-           
-                
-        # 🔒 Interacción 10: cierre profesional definitivo
+                   
         if contador == 10:
-            print("🔒 Cierre definitivo activado en la interacción 10")
-        
-            emocion_inferida = session.get("emocion_inferida_9")
-            if emocion_inferida and (
-                emocion_inferida in mensaje_usuario or "sí" in mensaje_usuario or "me pasa" in mensaje_usuario
-            ):
-                if emocion_inferida not in session["emociones_detectadas"]:
-                    session["emociones_detectadas"].append(emocion_inferida)
-                    registrar_emocion(emocion_inferida, f"confirmación de inferencia (interacción 10)", user_id)
-        
-            # 🧾 Guardar el resumen clínico total en sesión
-            session["resumen_clinico_total"] = generar_resumen_clinico_y_estado(session["emociones_detectadas"])
-        
-            respuesta = (
-                "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
-                "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
-                "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
-            )
-        
-            prediccion = predecir_evento_futuro(session["mensajes"])
-            if prediccion != "sin predicción identificada":
-                print(f"🔮 Proyección detectada: {prediccion}")
-                registrar_inferencia(user_id, contador, "prediccion", prediccion)
-                respuesta += f" Por otra parte, se identificó que mencionaste una posible consecuencia o desenlace: {prediccion}."
-        
-            registrar_respuesta_openai(interaccion_id, respuesta)
+            respuesta = generar_resumen_interaccion_10(session, user_id, interaccion_id, contador)
             return {"respuesta": respuesta}
-        
-
-        # ⛔ Interrupción anticipada si ya se detectó input sospechoso
-        if session.get("input_sospechoso"):
-            return {
-                "respuesta": (
-                    "Recordá que este espacio está destinado a consultas clínicas. "
-                    "Si necesitás ayuda emocional, contámelo con claridad."
-                )
-            }
 
         # 🧠 Nueva respuesta para la PRIMERA INTERACCIÓN
         if contador == 1:
