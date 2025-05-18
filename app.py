@@ -1490,7 +1490,7 @@ def hay_contexto_clinico_anterior(user_id: str) -> bool:
 def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
     print("🧩 Generando resumen clínico en interacción 9")
 
-    # 🔍 Emociones nuevas entre interacciones 6, 7, 8 y 9
+    # Detectar emociones nuevas desde las últimas 4 interacciones
     mensajes_6_a_9 = session["mensajes"][-4:]
     emociones_nuevas = []
 
@@ -1502,7 +1502,7 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
             if emocion not in session["emociones_detectadas"]:
                 emociones_nuevas.append(emocion)
 
-    # Agregar nuevas emociones a sesión y registrar
+    # Registrar emociones nuevas
     if emociones_nuevas:
         session["emociones_detectadas"].extend(emociones_nuevas)
         emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
@@ -1510,19 +1510,19 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
             if emocion not in emociones_registradas_bd:
                 registrar_emocion(emocion, f"interacción {contador}", user_id)
 
-    # 🧠 Estado emocional global
+    # Inferencia del estado emocional predominante
     estado_global = clasificar_estado_mental(session["mensajes"])
     if estado_global != "estado emocional no definido":
         print(f"📊 Estado global sintetizado: {estado_global}")
         registrar_inferencia(user_id, contador, "estado_mental", estado_global)
 
-    # 🧠 Inferencia adicional desde emociones acumuladas
+    # Inferencia adicional no dicha
     try:
         conn = psycopg2.connect(DATABASE_URL)
         emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
         conn.close()
     except Exception as e:
-        print(f"⚠️ Error en conexión a la base para inferencia en interacción 9: {e}")
+        print(f"⚠️ Error en inferencia conexión BD: {e}")
         emocion_inferida = None
 
     if emocion_inferida and emocion_inferida not in session["emociones_detectadas"]:
@@ -1530,19 +1530,13 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
         registrar_emocion(emocion_inferida, f"confirmación de inferencia (interacción {contador})", user_id)
         session["emocion_inferida_9"] = emocion_inferida
 
-    # Redacción final con emociones acumuladas
-    if session["emociones_detectadas"]:
-        emociones_literal = ", ".join(session["emociones_detectadas"])
-        respuesta = (
-            f"Por lo que comentás, pues al malestar anímico que describiste anteriormente, "
-            f"advierto que se suman {emociones_literal}, por lo que daría la impresión de que se trata "
-            f"de un estado emocional predominantemente {estado_global}. "
-        )
-    else:
-        respuesta = (
-            f"Por lo que comentás, se mantiene el malestar anímico previamente mencionado, "
-            f"y daría la impresión de que se trata de un estado emocional predominantemente {estado_global}. "
-        )
+    # Redacción
+    emociones_literal = ", ".join(session["emociones_detectadas"])
+    respuesta = (
+        f"Por lo que comentás, pues al malestar anímico que describiste anteriormente, "
+        f"advierto que se suman {emociones_literal}, por lo que daría la impresión de que se trata "
+        f"de un estado emocional predominantemente {estado_global}. "
+    )
 
     if emocion_inferida:
         respuesta += (
@@ -1556,8 +1550,8 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
         "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
     )
 
-    registrar_respuesta_openai(interaccion_id, respuesta)
     session["resumen_generado"] = True
+    registrar_respuesta_openai(interaccion_id, respuesta)
     return respuesta
 
 
