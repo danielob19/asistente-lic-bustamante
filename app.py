@@ -2129,50 +2129,9 @@ async def asistente(input_data: UserInput):
             if patron_detectado != "sin patrón consistente":
                 print(f"🔄 Patrón interactivo detectado: {patron_detectado}")
         
-        # ✅ En la interacción 5 y 9, generar resumen clínico y estado emocional predominante
         if contador == 5:
-            if not session["emociones_detectadas"]:
-                nuevas = detectar_emociones_negativas(" ".join(session["mensajes"])) or []
-                session["emociones_detectadas"].extend([e for e in nuevas if e not in session["emociones_detectadas"]])
-        
-            resumen = generar_resumen_clinico_y_estado(session, contador)
-        
-            # 🧠 Realizar inferencia clínica intuitiva
-            try:
-                conn = psycopg2.connect(DATABASE_URL)
-                emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
-                conn.close()
-            except Exception as e:
-                print("⚠️ Error al conectar a la base para inferencia en interacción 5:", e)
-                emocion_inferida = None
-        
-            # Guardar inferencia en la sesión
-            session["emocion_inferida_5"] = emocion_inferida
-        
-            if emocion_inferida:
-                respuesta = (
-                    f"{resumen} Además, ¿dirías que también podrías estar atravesando cierta {emocion_inferida}? "
-                    f"Lo pregunto porque suele aparecer en casos similares."
-                )
-            else:
-                respuesta = f"{resumen} ¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
-        
-            registrar_respuesta_openai(interaccion_id, respuesta)
-            session["resumen_generado"] = True  # ✅ Para evitar repetirlo en la 9
+            respuesta = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
             return {"respuesta": respuesta}
-
-        if contador == 6 and session.get("emocion_inferida_5"):
-            emocion = session["emocion_inferida_5"]
-            if emocion in mensaje_usuario or "sí" in mensaje_usuario or "me pasa" in mensaje_usuario:
-                if emocion not in session["emociones_detectadas"]:
-                    session["emociones_detectadas"].append(emocion)
-                    registrar_emocion(emocion, f"confirmación de inferencia (interacción 6)", user_id)
-        
-                return {
-                    "respuesta": (
-                        f"Gracias por confirmarlo. ¿Querés contarme un poco más sobre cómo se manifiesta esa {emocion}?"
-                    )
-                }
 
         
         if contador == 9 and tipo_input != CORTESIA and not session.get("resumen_generado", False):
