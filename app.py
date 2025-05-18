@@ -1590,6 +1590,44 @@ def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
     session["resumen_generado"] = True
     return respuesta
 
+def generar_resumen_interaccion_10(session, user_id, interaccion_id, contador):
+    print("🔒 Cierre definitivo activado en la interacción 10")
+
+    emocion_inferida = session.get("emocion_inferida_9")
+    mensaje_usuario_actual = session["mensajes"][-1] if session["mensajes"] else ""
+
+    # Confirmar inferencia si el usuario lo acepta explícitamente
+    if emocion_inferida and (
+        emocion_inferida in mensaje_usuario_actual or
+        "sí" in mensaje_usuario_actual or
+        "me pasa" in mensaje_usuario_actual
+    ):
+        if emocion_inferida not in session["emociones_detectadas"]:
+            session["emociones_detectadas"].append(emocion_inferida)
+            registrar_emocion(emocion_inferida, "confirmación de inferencia (interacción 10)", user_id)
+
+    # Guardar resumen clínico total
+    resumen_total = generar_resumen_clinico_y_estado(session["emociones_detectadas"])
+    session["resumen_clinico_total"] = resumen_total
+
+    # Redacción del mensaje de cierre definitivo
+    respuesta = (
+        "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
+        "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
+        "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
+    )
+
+    # Agregar predicción de desenlace si fue inferida
+    prediccion = predecir_evento_futuro(session["mensajes"])
+    if prediccion != "sin predicción identificada":
+        print(f"🔮 Proyección detectada: {prediccion}")
+        registrar_inferencia(user_id, contador, "prediccion", prediccion)
+        respuesta += f" Por otra parte, se identificó que mencionaste una posible consecuencia o desenlace: {prediccion}."
+
+    # Registrar y retornar
+    registrar_respuesta_openai(interaccion_id, respuesta)
+    return respuesta
+
 @app.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
