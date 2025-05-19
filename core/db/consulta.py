@@ -84,3 +84,29 @@ def obtener_combinaciones_no_registradas(dias=7):
     except Exception as e:
         print(f"❌ Error al obtener combinaciones no registradas: {e}")
         return []
+
+def es_saludo(texto: str) -> bool:
+    """
+    Detecta si el texto contiene un saludo inicial.
+    """
+    saludos = ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches", "qué tal", "como estás", "cómo te va"]
+    texto = texto.lower()
+    return any(saludo in texto for saludo in saludos)
+
+
+def es_cortesia(texto: str) -> bool:
+    """
+    Detecta si el texto contiene una expresión de cortesía o cierre amable.
+    """
+    expresiones = ["gracias", "muchas gracias", "muy amable", "te agradezco", "ok gracias", "buena jornada", "saludos"]
+    texto = texto.lower()
+    return any(expresion in texto for expresion in expresiones)
+
+
+def contiene_expresion_administrativa(texto: str) -> bool:
+    """
+    Detecta si el texto contiene términos administrativos comunes.
+    """
+    frases_administrativas = ["arancel", "valor", "costo", "duración", "modalidad", "turno", "día y horario", "sesión", "forma de pago", "atención"]
+    texto = texto.lower()
+    return any(frase in texto for frase in frases_administrativas)
