@@ -6,23 +6,21 @@ import random
 import re
 from datetime import datetime, timedelta
 from collections import Counter
-from typing import List, Optional  # ✅ Agregado para evitar NameError
+from typing import List, Optional
 
 # 🧪 Librerías externas
 import psycopg2
-from psycopg2 import sql
-import numpy as np
 import openai
 from pydantic import BaseModel
 
 # 🚀 Framework FastAPI
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
 
 # 🧠 Diccionario de sesiones por usuario (en memoria)
 user_sessions = {}
 
+# 🤖 Módulo del "cerebro simulado"
 from cerebro_simulado import (
     predecir_evento_futuro,
     inferir_patron_interactivo,
@@ -30,19 +28,40 @@ from cerebro_simulado import (
     clasificar_estado_mental,
     inferir_intencion_usuario
 )
+
+# 🧾 Respuestas clínicas fijas
 from respuestas_clinicas import RESPUESTAS_CLINICAS
 
+# 📩 Funciones auxiliares
 from core.utils_contacto import es_consulta_contacto, obtener_mensaje_contacto
 from core.utils_seguridad import contiene_elementos_peligrosos
-from core.faq_semantica import (
-    generar_embeddings_faq,
-    buscar_respuesta_semantica_con_score
-)
+from core.faq_semantica import generar_embeddings_faq, buscar_respuesta_semantica_con_score
 
+# ⚙️ Constantes
 from core.constantes import (
     CLINICO_CONTINUACION, SALUDO, CORTESIA,
     ADMINISTRATIVO, CLINICO, CONSULTA_AGENDAR,
     CONSULTA_MODALIDAD
+)
+
+# 🗂️ Funciones de base de datos
+from core.db.registro import (
+    registrar_emocion,
+    registrar_interaccion,
+    registrar_respuesta_openai,
+    registrar_auditoria_input_original,
+    registrar_similitud_semantica,
+    registrar_log_similitud,
+    registrar_auditoria_respuesta,
+    registrar_inferencia,
+)
+
+from core.db.sintomas import (
+    registrar_sintoma,
+    actualizar_sintomas_sin_estado_emocional,
+    obtener_sintomas_existentes,
+    obtener_sintomas_con_estado_emocional,
+    obtener_coincidencias_sintomas_y_registrar,
 )
 
 # ========================== CONSTANTES DE CLASIFICACIÓN ==========================
@@ -333,377 +352,6 @@ def init_db():
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
 
-# ===================== OPERACIONES CLÍNICAS SOBRE 'palabras_clave' =====================
-
-# Registrar un síntoma con cuadro clínico asignado por OpenAI si no se proporciona
-def registrar_sintoma(sintoma: str, estado_emocional: str = None):
-    """
-    Registra un síntoma en la base de datos con su estado emocional.
-    Si no se proporciona un estado, lo clasifica automáticamente con OpenAI.
-    """
-
-    # Si no se proporciona un estado emocional, usar OpenAI para asignarlo
-    if not estado_emocional or not estado_emocional.strip():
-        try:
-            prompt = (
-                f"Asigna un estado emocional clínicamente relevante a la siguiente emoción o síntoma: '{sintoma}'.\n\n"
-                "Seleccioná un estado con base en categorías clínicas como trastornos, síndromes o patrones emocionales reconocidos.\n\n"
-                "Si no corresponde a ninguno en particular, clasificá como 'Patrón emocional detectado'.\n\n"
-                "Respondé exclusivamente con el nombre del estado, sin explicaciones.\n\n"
-                "Ejemplos válidos:\n"
-                "- Trastorno de ansiedad\n"
-                "- Cuadro de depresión\n"
-                "- Estrés postraumático\n"
-                "- Baja autoestima\n"
-                "- Desgaste emocional\n"
-                "- Sentimientos de inutilidad\n"
-                "- Trastorno de impulsividad\n"
-                "- Insomnio crónico\n"
-                "- Patrón emocional detectado"
-            )
-
-            response = openai.ChatCompletion.create(
-                model="gpt-4",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=50,
-                temperature=0
-            )
-
-            estado_emocional = response.choices[0].message["content"].strip()
-
-            if not estado_emocional:
-                print(f"⚠️ OpenAI devolvió vacío. Se asignará 'Patrón emocional detectado' para '{sintoma}'.")
-                estado_emocional = "Patrón emocional detectado"
-
-            print(f"🧠 OpenAI asignó el estado emocional: {estado_emocional} para '{sintoma}'.")
-
-        except Exception as e:
-            print(f"❌ Error al clasificar '{sintoma}' con OpenAI: {e}")
-            estado_emocional = "Patrón emocional detectado"
-
-    # Insertar o actualizar en la base de datos
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO palabras_clave (sintoma, estado_emocional)
-            VALUES (%s, %s)
-            ON CONFLICT (sintoma) DO UPDATE SET estado_emocional = EXCLUDED.estado_emocional;
-        """, (sintoma.strip().lower(), estado_emocional))
-        conn.commit()
-        conn.close()
-        print(f"✅ Síntoma '{sintoma}' registrado con estado emocional '{estado_emocional}'.")
-    except Exception as e:
-        print(f"❌ Error al registrar síntoma '{sintoma}' en la base: {e}")
-
-def actualizar_sintomas_sin_estado_emocional():
-    """
-    Busca síntomas en la base de datos que no tienen estado_emocional asignado,
-    les solicita una clasificación clínica a OpenAI y actualiza la tabla.
-    """
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-
-        # Obtener síntomas sin estado emocional asignado
-        cursor.execute("SELECT sintoma FROM palabras_clave WHERE estado_emocional IS NULL;")
-        sintomas_pendientes = [row[0] for row in cursor.fetchall()]
-        conn.close()
-
-        if not sintomas_pendientes:
-            print("✅ No hay síntomas pendientes de clasificación en estado_emocional.")
-            return
-
-        print(f"🔍 Clasificando {len(sintomas_pendientes)} síntomas sin estado_emocional...")
-
-        for sintoma in sintomas_pendientes:
-            prompt = (
-                f"Asigná un estado emocional clínico adecuado al siguiente síntoma: '{sintoma}'.\n\n"
-                "Seleccioná un estado emocional clínico compatible con clasificaciones como: Trastorno de ansiedad, Depresión mayor, Estrés postraumático, "
-                "Trastorno de pánico, Baja autoestima, Desgaste emocional, Sentimientos de aislamiento, Insomnio crónico, etc.\n\n"
-                "Si el síntoma no se vincula a un estado clínico específico, respondé con: 'Patrón emocional detectado'.\n\n"
-                "Devolvé exclusivamente el nombre del estado emocional sin texto adicional ni explicaciones."
-            )
-
-            try:
-                respuesta = openai.ChatCompletion.create(
-                    model="gpt-4",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=50,
-                    temperature=0.0
-                )
-
-                estado_emocional = respuesta["choices"][0]["message"]["content"].strip()
-                print(f"📌 Estado emocional para '{sintoma}': {estado_emocional}")
-
-                # Actualizar en la base de datos
-                conn = psycopg2.connect(DATABASE_URL)
-                cursor = conn.cursor()
-                cursor.execute(
-                    "UPDATE palabras_clave SET estado_emocional = %s WHERE sintoma = %s;",
-                    (estado_emocional, sintoma)
-                )
-                conn.commit()
-                conn.close()
-
-            except Exception as e:
-                print(f"⚠️ Error al clasificar o actualizar '{sintoma}': {e}")
-
-    except Exception as e:
-        print(f"❌ Error al conectar con la base de datos para actualizar estado_emocional: {e}")
-
-# Obtener síntomas existentes
-def obtener_sintomas_existentes():
-    """
-    Obtiene todos los síntomas almacenados en la base de datos PostgreSQL y los devuelve como un conjunto en minúsculas.
-    Esto mejora la comparación y evita problemas con mayúsculas/minúsculas.
-    """
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute("SELECT LOWER(sintoma) FROM palabras_clave")  # Convierte a minúsculas desde la BD
-        sintomas = {row[0] for row in cursor.fetchall()}  # Convierte en un conjunto para búsqueda eficiente
-        conn.close()
-        return sintomas
-    except Exception as e:
-        print(f"❌ Error al obtener síntomas existentes: {e}")
-        return set()
-
-# ===================== REGISTRO DE EMOCIONES DETECTADAS =====================
-
-def registrar_emocion(emocion: str, contexto: str, user_id: str = None):
-    """
-    Registra una emoción detectada en la base de datos PostgreSQL.
-    Si ya existe, actualiza el contexto concatenando. Si no existe, la inserta.
-    Si la tabla tiene una columna 'user_id', se registra también.
-    """
-    try:
-        print("\n======= 📌 REGISTRO DE EMOCIÓN DETECTADA =======")
-        print(f"🧠 Emoción detectada: {emocion}")
-        print(f"🧾 Contexto asociado: {contexto}")
-        print(f"👤 Usuario: {user_id if user_id else 'No especificado'}")
-
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                # Verifica si la columna user_id existe
-                cursor.execute("""
-                    SELECT column_name FROM information_schema.columns 
-                    WHERE table_name = 'emociones_detectadas' AND column_name = 'user_id';
-                """)
-                tiene_user_id = bool(cursor.fetchone())
-
-                # Verifica si ya existe una emoción con o sin user_id
-                if tiene_user_id and user_id:
-                    cursor.execute(
-                        "SELECT contexto FROM emociones_detectadas WHERE emocion = %s AND user_id = %s;",
-                        (emocion.strip().lower(), user_id)
-                    )
-                else:
-                    cursor.execute(
-                        "SELECT contexto FROM emociones_detectadas WHERE emocion = %s;",
-                        (emocion.strip().lower(),)
-                    )
-
-                resultado = cursor.fetchone()
-
-                if resultado:
-                    nuevo_contexto = f"{resultado[0]}; {contexto.strip()}"
-                    if tiene_user_id and user_id:
-                        cursor.execute(
-                            "UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s AND user_id = %s;",
-                            (nuevo_contexto, emocion.strip().lower(), user_id)
-                        )
-                    else:
-                        cursor.execute(
-                            "UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s;",
-                            (nuevo_contexto, emocion.strip().lower())
-                        )
-                    print("🔄 Emoción existente. Contexto actualizado.")
-                else:
-                    if tiene_user_id and user_id:
-                        cursor.execute(
-                            "INSERT INTO emociones_detectadas (emocion, contexto, user_id) VALUES (%s, %s, %s);",
-                            (emocion.strip().lower(), contexto.strip(), user_id)
-                        )
-                    else:
-                        cursor.execute(
-                            "INSERT INTO emociones_detectadas (emocion, contexto) VALUES (%s, %s);",
-                            (emocion.strip().lower(), contexto.strip())
-                        )
-                    print("🆕 Nueva emoción registrada exitosamente.")
-
-                conn.commit()
-
-        print("===============================================\n")
-
-    except Exception as e:
-        print(f"❌ Error al registrar emoción '{emocion}': {e}")
-
-
-
-# ===================== REGISTRO DE INTERACCIONES Y RESPUESTAS =====================
-
-# Registrar una interacción (versión extendida)
-def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = None):
-    try:
-        print("\n===== DEPURACIÓN - REGISTRO DE INTERACCIÓN =====")
-        print(f"Intentando registrar interacción: user_id={user_id}")
-        print(f"Consulta purificada: {consulta}")
-        print(f"Mensaje original: {mensaje_original}")
-
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-
-        # Verifica si la columna "mensaje_original" existe; si no, la crea automáticamente
-        cursor.execute("""
-            SELECT column_name FROM information_schema.columns 
-            WHERE table_name = 'interacciones' AND column_name = 'mensaje_original';
-        """)
-        columna_existente = cursor.fetchone()
-
-        if not columna_existente:
-            print("⚠️ La columna 'mensaje_original' no existe. Creándola...")
-            cursor.execute("ALTER TABLE interacciones ADD COLUMN mensaje_original TEXT;")
-            conn.commit()
-
-        # Inserta la interacción con el mensaje original
-        cursor.execute("""
-            INSERT INTO interacciones (user_id, consulta, mensaje_original) 
-            VALUES (%s, %s, %s) RETURNING id;
-        """, (user_id, consulta, mensaje_original))
-        
-        interaccion_id = cursor.fetchone()[0]
-        conn.commit()
-        conn.close()
-
-        print(f"✅ Interacción registrada con éxito. ID asignado: {interaccion_id}\n")
-        return interaccion_id
-
-    except Exception as e:
-        print(f"❌ Error al registrar interacción en la base de datos: {e}\n")
-        return None
-
-# Registrar una respuesta generada por OpenAI en la base de datos
-def registrar_respuesta_openai(interaccion_id: int, respuesta: str):
-    """
-    Registra la respuesta generada por OpenAI en la base de datos PostgreSQL.
-    """
-    try:
-        print("\n===== DEPURACIÓN - REGISTRO DE RESPUESTA OPENAI =====")
-        print(f"Intentando registrar respuesta para interacción ID={interaccion_id}")
-
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        
-        # Verifica si la columna "respuesta" ya existe en la tabla "interacciones"
-        cursor.execute("""
-            SELECT column_name FROM information_schema.columns 
-            WHERE table_name = 'interacciones' AND column_name = 'respuesta';
-        """)
-        columna_existente = cursor.fetchone()
-
-        if not columna_existente:
-            print("⚠️ La columna 'respuesta' no existe en la tabla 'interacciones'. Creándola...")
-            cursor.execute("ALTER TABLE interacciones ADD COLUMN respuesta TEXT;")
-            conn.commit()
-
-        # Actualiza la interacción con la respuesta generada por OpenAI
-        cursor.execute("""
-            UPDATE interacciones 
-            SET respuesta = %s 
-            WHERE id = %s;
-        """, (respuesta, interaccion_id))
-        
-        conn.commit()
-        conn.close()
-        
-        print(f"✅ Respuesta registrada con éxito para interacción ID={interaccion_id}\n")
-
-    except Exception as e:
-        print(f"❌ Error al registrar respuesta en la base de datos: {e}\n")
-
-
-def registrar_auditoria_input_original(user_id: str, mensaje_original: str, mensaje_purificado: str, clasificacion: str = None):
-    """
-    Registra el input original, su versión purificada y la clasificación contextual (opcional) en una tabla de auditoría.
-    Permite trazabilidad entre lo que dijo el usuario y cómo fue interpretado.
-    """
-    try:
-        print("\n📋 Registrando input original y purificado en auditoría")
-        print(f"👤 user_id: {user_id}")
-        print(f"📝 Original: {mensaje_original}")
-        print(f"🧼 Purificado: {mensaje_purificado}")
-        print(f"🏷️ Clasificación: {clasificacion}")
-
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-
-        # Crear tabla si no existe, con columna de clasificación incluida
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS auditoria_input_original (
-                id SERIAL PRIMARY KEY,
-                user_id TEXT NOT NULL,
-                mensaje_original TEXT NOT NULL,
-                mensaje_purificado TEXT NOT NULL,
-                clasificacion TEXT,
-                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-
-        # Insertar datos con clasificación
-        cursor.execute("""
-            INSERT INTO auditoria_input_original (
-                user_id, mensaje_original, mensaje_purificado, clasificacion
-            ) VALUES (%s, %s, %s, %s);
-        """, (user_id, mensaje_original.strip(), mensaje_purificado.strip(), clasificacion))
-
-        conn.commit()
-        conn.close()
-        print("✅ Auditoría registrada exitosamente.\n")
-
-    except Exception as e:
-        print(f"❌ Error al registrar auditoría del input original: {e}")
-
-
-# Registrar una similitud semántica en la base de datos
-def registrar_similitud_semantica(user_id: str, consulta: str, pregunta_faq: str, similitud: float):
-    """
-    Registra la similitud semántica en la tabla faq_similitud_logs.
-    """
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            INSERT INTO faq_similitud_logs (user_id, consulta, pregunta_faq, similitud)
-            VALUES (%s, %s, %s, %s);
-        """, (user_id, consulta, pregunta_faq, similitud))
-
-        conn.commit()
-        conn.close()
-        print(f"🧠 Similitud registrada con éxito (Score: {similitud}) para FAQ: '{pregunta_faq}'\n")
-
-    except Exception as e:
-        print(f"❌ Error al registrar similitud semántica: {e}")
-
-def registrar_inferencia(user_id: str, interaccion_id: int, tipo: str, valor: str):
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            INSERT INTO inferencias_cerebro_simulado (user_id, interaccion_id, tipo, valor)
-            VALUES (%s, %s, %s, %s);
-        """, (user_id, interaccion_id, tipo, valor))
-
-        conn.commit()
-        conn.close()
-        print(f"🧠 Inferencia registrada: [{tipo}] → {valor}")
-
-    except Exception as e:
-        print(f"❌ Error al registrar inferencia: {e}")
-
-
 # Lista de palabras irrelevantes
 palabras_irrelevantes = {
     "un", "una", "el", "la", "lo", "es", "son", "estoy", "siento", "me siento", "tambien", "tambien tengo", "que", "de", "en", 
@@ -945,22 +593,6 @@ def clasificar_input_inicial(texto: str) -> str:
 
     return "OTRO"
 
-
-def obtener_sintomas_con_estado_emocional():
-    """
-    Devuelve una lista de tuplas (sintoma, estado_emocional) desde la base de datos.
-    """
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute("SELECT LOWER(sintoma), estado_emocional FROM palabras_clave")
-        resultados = cursor.fetchall()
-        conn.close()
-        return resultados
-    except Exception as e:
-        print(f"❌ Error al obtener síntomas con estado emocional: {e}")
-        return []
-
 # Análisis de texto del usuario
 def analizar_texto(mensajes_usuario):
     """
@@ -1104,50 +736,6 @@ def evitar_repeticion(respuesta, historial):
     historial.append(respuesta)
     return respuesta
 
-def obtener_coincidencias_sintomas_y_registrar(emociones):
-    """
-    Busca coincidencias de síntomas en la base de datos y devuelve una lista de estados emocionales relacionados.
-    Si una emoción no tiene coincidencias exactas ni parciales, la registra en la base de datos para futura clasificación.
-    Luego, usa OpenAI para clasificar cualquier síntoma sin estado emocional asignado y lo actualiza en la base de datos.
-    """
-    if not emociones:
-        return []
-
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-
-        print("\n===== DEPURACIÓN SQL =====")
-        print("Emociones detectadas:", emociones)
-
-        # Buscar coincidencias exactas en la base de datos
-        consulta = "SELECT sintoma, estado_emocional FROM palabras_clave WHERE sintoma = ANY(%s)"
-        cursor.execute(consulta, (emociones,))
-        resultados = cursor.fetchall()
-
-        estados_emocionales = [resultado[1] for resultado in resultados]
-        sintomas_existentes = [resultado[0] for resultado in resultados]
-
-        print("Síntomas encontrados en la BD:", sintomas_existentes)
-        print("Estados emocionales encontrados:", estados_emocionales)
-
-        # Identificar emociones que no están en la base de datos y registrarlas sin estado emocional
-        emociones_nuevas = [emocion for emocion in emociones if emocion not in sintomas_existentes]
-        for emocion in emociones_nuevas:
-            registrar_sintoma(emocion, None)  # Se registra sin estado emocional
-
-        conn.commit()
-        conn.close()
-
-        # Ahora clasificamos los síntomas que se registraron sin estado emocional
-        actualizar_sintomas_sin_estado_emocional()
-
-        return estados_emocionales if estados_emocionales else []
-
-    except Exception as e:
-        print(f"❌ Error al obtener coincidencias de síntomas o registrar nuevos síntomas: {e}")
-        return []
-
 def obtener_emociones_ya_registradas(user_id, interaccion_id):
     try:
         conn = psycopg2.connect(DATABASE_URL)
@@ -1196,63 +784,6 @@ def obtener_combinaciones_no_registradas(dias=7):
     except Exception as e:
         print(f"❌ Error al obtener combinaciones no registradas: {e}")
         return []
-
-# ===================== REGISTRO DE SIMILITUD SEMÁNTICA =====================
-
-def registrar_log_similitud(user_id: str, consulta: str, pregunta_faq: str, similitud: float):
-    """
-    Registra en la base de datos la similitud semántica detectada entre una consulta del usuario
-    y una de las preguntas frecuentes, junto con su score.
-    """
-    try:
-        print("\n======= 📌 REGISTRO DE SIMILITUD SEMÁNTICA =======")
-        print(f"👤 user_id: {user_id}")
-        print(f"🗨️ Consulta: {consulta}")
-        print(f"❓ Pregunta FAQ: {pregunta_faq}")
-        print(f"📏 Score de similitud: {similitud:.4f}")
-
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            INSERT INTO faq_similitud_logs (user_id, consulta, pregunta_faq, similitud)
-            VALUES (%s, %s, %s, %s);
-        """, (user_id, consulta, pregunta_faq, float(similitud)))
-
-        conn.commit()
-        conn.close()
-        print("✅ Similitud registrada correctamente.\n")
-
-    except Exception as e:
-        print(f"❌ Error al registrar log de similitud: {e}")
-
-def registrar_auditoria_respuesta(user_id: str, respuesta_original: str, respuesta_final: str, motivo_modificacion: str = None):
-    """
-    Registra la respuesta original de OpenAI y su versión final (modificada) en una tabla de auditoría.
-    """
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS auditoria_respuestas (
-                id SERIAL PRIMARY KEY,
-                user_id TEXT NOT NULL,
-                respuesta_original TEXT NOT NULL,
-                respuesta_final TEXT NOT NULL,
-                motivo_modificacion TEXT,
-                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)  # Seguridad: autocrea la tabla si no existe
-
-        cursor.execute("""
-            INSERT INTO auditoria_respuestas (user_id, respuesta_original, respuesta_final, motivo_modificacion)
-            VALUES (%s, %s, %s, %s);
-        """, (user_id, respuesta_original.strip(), respuesta_final.strip(), motivo_modificacion))
-        conn.commit()
-        conn.close()
-        print("📑 Auditoría registrada en auditoria_respuestas.")
-    except Exception as e:
-        print(f"❌ Error al registrar auditoría de respuesta: {e}")
 
 
 # 🧾 Función para generar resumen clínico y estado predominante
@@ -2391,3 +1922,45 @@ async def asistente(input_data: UserInput):
                 "o escribirle al Lic. Bustamante por WhatsApp: +54 911 3310-1186."
             )
         }
+
+
+
+#------------------ SCRIPT DE PRUEBA DE IMPORTACION CORRECTA DE LOS IMPORT--- LUEGO ELIMINAR ESTE SCRIPT-----------------
+
+from fastapi.responses import HTMLResponse
+
+@app.get("/verificar-imports", response_class=HTMLResponse)
+async def verificar_imports():
+    return HTMLResponse(content="""
+    <html>
+    <head><title>Verificación de Imports</title></head>
+    <body>
+        <h2>🔍 Verificación manual de imports desde <code>core.db</code></h2>
+        <ul>
+            <li><strong>✔️ registro.py:</strong>
+                <ul>
+                    <li>registrar_emocion</li>
+                    <li>registrar_interaccion</li>
+                    <li>registrar_respuesta_openai</li>
+                    <li>registrar_auditoria_input_original</li>
+                    <li>registrar_similitud_semantica</li>
+                    <li>registrar_log_similitud</li>
+                    <li>registrar_auditoria_respuesta</li>
+                    <li>registrar_inferencia</li>
+                </ul>
+            </li>
+            <li><strong>✔️ sintomas.py:</strong>
+                <ul>
+                    <li>registrar_sintoma</li>
+                    <li>actualizar_sintomas_sin_estado_emocional</li>
+                    <li>obtener_sintomas_existentes</li>
+                    <li>obtener_sintomas_con_estado_emocional</li>
+                    <li>obtener_coincidencias_sintomas_y_registrar</li>
+                </ul>
+            </li>
+        </ul>
+        <p>📌 Si alguna de estas funciones está definida en <code>app.py</code> en lugar de ser importada desde <code>core.db</code>, deberías moverla para evitar duplicación.</p>
+    </body>
+    </html>
+    """)
+
