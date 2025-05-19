@@ -69,7 +69,6 @@ from core.db.consulta import (
     obtener_combinaciones_no_registradas,
 )
 
-# ========================== CONSTANTES DE CLASIFICACIÓN ==========================
 
 CLINICO_CONTINUACION = "CLINICO_CONTINUACION"
 SALUDO = "SALUDO"
