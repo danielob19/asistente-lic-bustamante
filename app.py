@@ -37,12 +37,6 @@ from core.utils_contacto import es_consulta_contacto, obtener_mensaje_contacto
 from core.utils_seguridad import contiene_elementos_peligrosos
 from core.faq_semantica import generar_embeddings_faq, buscar_respuesta_semantica_con_score
 
-# ⚙️ Constantes
-from core.constantes import (
-    CLINICO_CONTINUACION, SALUDO, CORTESIA,
-    ADMINISTRATIVO, CLINICO, CONSULTA_AGENDAR,
-    CONSULTA_MODALIDAD
-)
 
 # 📁 Funciones de base de datos reestructuradas
 from core.db.registro import (
