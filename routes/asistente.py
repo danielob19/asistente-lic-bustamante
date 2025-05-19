@@ -12,7 +12,6 @@ from core.db.consulta import obtener_emociones_ya_registradas
 from core.funciones_asistente import clasificar_input_inicial
 from app import (
     generar_respuesta_con_openai,
-    evitar_repeticion,
     detectar_emociones_negativas,
     generar_resumen_interaccion_5,
     generar_resumen_interaccion_9,
