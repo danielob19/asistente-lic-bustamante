@@ -15,11 +15,14 @@ from core.utils_generales import evitar_repeticion
 from app import (
     generar_respuesta_con_openai,
     detectar_emociones_negativas,
-    generar_resumen_interaccion_5,
-    generar_resumen_interaccion_9,
-    generar_resumen_interaccion_10,
     hay_contexto_clinico_anterior,
     user_sessions
+)
+
+from core.funciones_asistente import (
+    generar_resumen_interaccion_5,
+    generar_resumen_interaccion_9,
+    generar_resumen_interaccion_10
 )
 
 router = APIRouter()
