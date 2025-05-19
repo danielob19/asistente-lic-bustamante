@@ -741,56 +741,6 @@ def evitar_repeticion(respuesta, historial):
     historial.append(respuesta)
     return respuesta
 
-def obtener_emociones_ya_registradas(user_id, interaccion_id):
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT emocion FROM emociones_detectadas
-            WHERE user_id = %s AND contexto = %s
-        """, (user_id, f"interacción {interaccion_id}"))
-        resultados = cur.fetchall()
-        emociones = [r[0].lower().strip() for r in resultados]
-        cur.close()
-        conn.close()
-        return emociones
-    except Exception as e:
-        print(f"❌ Error al obtener emociones ya registradas en la BD: {e}")
-        return []
-
-def obtener_combinaciones_no_registradas(dias=7):
-    """
-    Devuelve una lista de combinaciones emocionales detectadas por el bot pero que aún no tienen frase registrada.
-    Por defecto, muestra las registradas en los últimos 'dias' (7 por defecto).
-    """
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-
-        # Calcular fecha límite
-        fecha_limite = datetime.now() - timedelta(days=dias)
-
-        consulta = """
-            SELECT emocion_1, emocion_2, fecha 
-            FROM combinaciones_no_registradas
-            WHERE fecha >= %s
-            ORDER BY fecha DESC;
-        """
-        cursor.execute(consulta, (fecha_limite,))
-        combinaciones = cursor.fetchall()
-        conn.close()
-
-        print(f"\n📋 Combinaciones emocionales no registradas (últimos {dias} días):")
-        for emocion_1, emocion_2, fecha in combinaciones:
-            print(f" - {emocion_1} + {emocion_2} → {fecha.strftime('%Y-%m-%d %H:%M')}")
-
-        return combinaciones
-
-    except Exception as e:
-        print(f"❌ Error al obtener combinaciones no registradas: {e}")
-        return []
-
-
 # 🧾 Función para generar resumen clínico y estado predominante
 def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     """
