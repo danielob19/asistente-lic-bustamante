@@ -63,6 +63,7 @@ from core.db.consulta import (
     obtener_combinaciones_no_registradas,
 )
 
+from core.config.palabras_irrelevantes import palabras_irrelevantes
 
 CLINICO_CONTINUACION = "CLINICO_CONTINUACION"
 SALUDO = "SALUDO"
