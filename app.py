@@ -127,55 +127,6 @@ def estandarizar_emocion_detectada(emocion: str) -> str:
     emocion = re.sub(r"[.,;:!¡¿?]+$", "", emocion)
     return emocion
 
-def es_tema_clinico_o_emocional(mensaje: str) -> bool:
-    if not mensaje or not isinstance(mensaje, str):
-        return False
-
-    mensaje = mensaje.lower().strip()
-
-    # Palabras clave clínicas frecuentes
-    palabras_clave = [
-        "triste", "ansioso", "angustia", "ansiedad", "vacío", "dolor", "sufrimiento",
-        "miedo", "enojo", "culpa", "vergüenza", "desesperanza", "soledad", "estrés",
-        "abandono", "apatía", "insomnio", "despersonalización", "fobia", "ataques de pánico",
-        "indecisión súbita", "desborde", "desbordamiento", "nervioso", "desesperado",
-        "indiferente", "ya no siento", "nada me entusiasma", "me quiero morir",
-        "pienso en morirme", "no me reconozco", "todo me supera", "no puedo dormir"
-    ]
-    if any(palabra in mensaje for palabra in palabras_clave):
-        return True
-
-    # Patrones típicos de malestar emocional
-    patrones_emocionales = [
-        r"me cuesta\s+(vivir|seguir|levant[a-z]+|encontrarle sentido)",
-        r"no\s+(puedo|quiero|logro)\b.*",
-        r"ya no\s+(disfruto|me interesa|me importa)",
-        r"siento que\s+(todo está mal|no valgo|todo es en vano)",
-        r"me siento\s+(perdido|vacío|cansado|agotado|confundido|sin sentido)",
-        r"no le encuentro sentido\s+(a la vida|a nada|a esto)",
-        r"no tengo ganas", r"nada me importa", r"todo me cuesta", r"nada vale la pena",
-        r"no sirvo para nada", r"siento que no sirvo", r"me cuesta\s+(vivir|seguir|todo)",
-        r"no sé si esto es normal", r"me siento perdido", r"siento que no puedo más",
-        r"me siento solo", r"todo me da igual", r"me tiene sin ganas",
-        r"no duermo", r"no puedo dormir", r"no tengo energía",
-    ]
-    if any(re.search(p, mensaje) for p in patrones_emocionales):
-        return True
-
-    # ⚠️ Nuevos patrones de aislamiento o desinterés confundidos con cortesía
-    patrones_aislamiento = [
-        r"\bno\s+me\s+interesa\s+hablar\s+con\s+nadie\b",
-        r"\bno\s+quiero\s+hablar\s+con\s+nadie\b",
-        r"\bno\s+quiero\s+ver\s+a\s+nadie\b",
-        r"\bno\s+tengo\s+ganas\s+de\s+hablar\b",
-        r"\bprefiero\s+estar\s+solo[a]?\b",
-        r"\bquiero\s+aislarme\b"
-    ]
-    if any(re.search(p, mensaje) for p in patrones_aislamiento):
-        return True
-
-    return False
-
 
 # 📎 Respuesta profesional para mensajes fuera de contexto clínico o emocional
 def respuesta_default_fuera_de_contexto():
