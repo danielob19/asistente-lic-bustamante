@@ -893,18 +893,18 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
 def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
     print("🧩 Generando resumen clínico en interacción 5")
 
-    # 🔍 Revisión de todas las emociones detectadas hasta ahora
     emociones_previas = session.get("emociones_detectadas", [])
-    mensajes_previos = session["mensajes"]
+    mensajes_previos = session.get("mensajes", [])
     nuevas_emociones = []
 
     for mensaje in mensajes_previos:
-        nuevas = detectar_emociones_negativas(mensaje) or []
-        for emocion in nuevas:
-            emocion = emocion.lower().strip()
-            emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
-            if emocion not in emociones_previas:
-                nuevas_emociones.append(emocion)
+        if mensaje.strip():
+            nuevas = detectar_emociones_negativas(mensaje) or []
+            for emocion in nuevas:
+                emocion = emocion.lower().strip()
+                emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
+                if emocion not in emociones_previas:
+                    nuevas_emociones.append(emocion)
 
     if nuevas_emociones:
         session["emociones_detectadas"].extend(nuevas_emociones)
@@ -913,13 +913,11 @@ def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
             if emocion not in emociones_registradas_bd:
                 registrar_emocion(emocion, f"interacción {contador}", user_id)
 
-    # 🧠 Estado emocional global
     estado_global = clasificar_estado_mental(mensajes_previos)
     if estado_global != "estado emocional no definido":
         print(f"📊 Estado global sintetizado: {estado_global}")
         registrar_inferencia(user_id, contador, "estado_mental", estado_global)
 
-    # 🔮 Inferencia clínica intuitiva desde base de datos
     try:
         conn = psycopg2.connect(DATABASE_URL)
         emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
@@ -931,7 +929,6 @@ def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
     if emocion_inferida and emocion_inferida not in session["emociones_detectadas"]:
         session["emocion_inferida_5"] = emocion_inferida
 
-    # Redacción del resumen clínico
     if session["emociones_detectadas"]:
         emociones_literal = ", ".join(session["emociones_detectadas"])
         resumen = (
