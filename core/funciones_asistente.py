@@ -9,6 +9,7 @@ from core.db.sintomas import detectar_emociones_negativas
 from collections import Counter
 import psycopg2
 from core.db.config import conn  # Asegurate de tener la conexión importada correctamente
+import re
 
 
 def clasificar_input_inicial(texto: str) -> str:
@@ -154,4 +155,57 @@ def inferir_estado_emocional_predominante(emociones: list[str]) -> str | None:
     except Exception as e:
         print(f"Error al inferir estado emocional: {e}")
         return None
+
+def purificar_input_clinico(texto: str) -> str:
+
+    try:
+        if not isinstance(texto, str):
+            return ""
+
+        texto_original = texto.strip().lower()
+        texto = texto_original
+
+        # 🛡️ Detectar negación para no perder sentido clínico
+        negadores_criticos = ["nada", "nadie", "ninguno", "ninguna", "no"]
+        contiene_negador = any(re.search(rf'\b{n}\b', texto_original) for n in negadores_criticos)
+
+        # 🗑️ Limpieza de muletillas
+        muletillas = [
+            r'\b(este|eh+|mmm+|ajá|tipo|digamos|sea|viste|bueno|a ver|me explico|ehh*)\b',
+            r'\b(sí|si|claro)\b'
+        ]
+        for patron in muletillas:
+            texto = re.sub(patron, '', texto, flags=re.IGNORECASE)
+
+        texto = re.sub(r'\s{2,}', ' ', texto).strip()
+
+        # ✅ Coincidencias clínicas completas
+        coincidencias_exactas = {
+            "nada me entusiasma, ni siquiera lo que solía gustarme": "anhedonia",
+            "nada me importa, ni lo que antes me importaba": "apatía profunda",
+            "no quiero ver a nadie ni salir de casa": "aislamiento",
+            "pienso en morirme todo el tiempo": "ideación suicida",
+            "lloro sin razón y no sé por qué": "llanto sin motivo"
+        }
+        for frase, valor in coincidencias_exactas.items():
+            if frase in texto:
+                texto = valor
+                break
+
+        # ✂️ Limpieza final y estandarización gramatical
+        texto = re.sub(r'\b(\w{1}) (\w+)', r'\1 \2', texto)
+        texto = re.sub(r'(\.{2,})', '.', texto)
+        texto = re.sub(r'(,{2,})', ',', texto)
+        texto = re.sub(r'[\s\.,!?]+$', '', texto)
+        texto = texto.strip()
+
+        # Capitalización
+        if texto:
+            texto = texto[0].upper() + texto[1:]
+
+        return texto
+
+    except Exception as e:
+        print(f"[Error] purificar_input_clinico: {e}")
+        return ""
 
