@@ -6,6 +6,9 @@ from core.utils_seguridad import contiene_elementos_peligrosos, contiene_frase_d
 from core.db.registro import registrar_auditoria_input_original
 from core.db.consulta import es_saludo, es_cortesia, contiene_expresion_administrativa
 from core.db.sintomas import detectar_emociones_negativas
+from collections import Counter
+import psycopg2
+from core.db.config import conn  # Asegurate de tener la conexión importada correctamente
 
 
 def clasificar_input_inicial(mensaje: str) -> str:
@@ -80,3 +83,39 @@ def generar_resumen_interaccion_10(session, user_id, contador, interaccion):
         "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
         "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
     )
+
+def inferir_estado_emocional_predominante(emociones: list[str]) -> str | None:
+    """
+    Dada una lista de emociones o síntomas, infiere el estado emocional predominante
+    a partir de coincidencias en la tabla `palabras_clave`.
+
+    Retorna el estado emocional más frecuente solo si hay 2 o más coincidencias.
+    """
+    if not emociones:
+        return None
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT estado_emocional
+                FROM palabras_clave
+                WHERE LOWER(sintoma) = ANY(%s)
+                """,
+                (emociones,)
+            )
+            resultados = cur.fetchall()
+
+        estados = [fila[0].strip() for fila in resultados if fila[0]]
+
+        if len(estados) < 2:
+            return None
+
+        conteo = Counter(estados)
+        estado_predominante, _ = conteo.most_common(1)[0]
+        return estado_predominante
+
+    except Exception as e:
+        print(f"Error al inferir estado emocional: {e}")
+        return None
+
