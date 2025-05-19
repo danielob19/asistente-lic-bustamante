@@ -9,8 +9,8 @@ from core.db.registro import registrar_interaccion, registrar_respuesta_openai
 from core.db.sintomas import obtener_sintomas_existentes
 from core.db.consulta import obtener_emociones_ya_registradas
 
+from core.funciones_asistente import clasificar_input_inicial
 from app import (
-    clasificar_input_inicial,
     generar_respuesta_con_openai,
     evitar_repeticion,
     detectar_emociones_negativas,
