@@ -114,3 +114,79 @@ def actualizar_sintomas_sin_estado_emocional():
 
     except Exception as e:
         print(f"❌ Error al conectar para actualizar síntomas: {e}")
+
+def obtener_sintomas_existentes():
+    """
+    Devuelve todos los síntomas almacenados en la base de datos como un conjunto en minúsculas.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("SELECT LOWER(sintoma) FROM palabras_clave;")
+        sintomas = {row[0] for row in cursor.fetchall()}
+        conn.close()
+        return sintomas
+    except Exception as e:
+        print(f"❌ Error al obtener síntomas existentes: {e}")
+        return set()
+
+
+def obtener_sintomas_con_estado_emocional():
+    """
+    Devuelve una lista de tuplas (sintoma, estado_emocional) desde la base de datos.
+    """
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("SELECT LOWER(sintoma), estado_emocional FROM palabras_clave;")
+        resultados = cursor.fetchall()
+        conn.close()
+        return resultados
+    except Exception as e:
+        print(f"❌ Error al obtener síntomas con estado emocional: {e}")
+        return []
+
+
+def obtener_coincidencias_sintomas_y_registrar(emociones):
+    """
+    Busca coincidencias exactas en la base de datos con las emociones detectadas.
+    Si alguna no existe, se registra como síntoma nuevo y se actualiza su estado emocional.
+    """
+    if not emociones:
+        return []
+
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+
+        print("\n===== DEPURACIÓN SQL =====")
+        print("Emociones detectadas:", emociones)
+
+        # Buscar coincidencias exactas
+        consulta = "SELECT sintoma, estado_emocional FROM palabras_clave WHERE sintoma = ANY(%s);"
+        cursor.execute(consulta, (emociones,))
+        resultados = cursor.fetchall()
+
+        estados_emocionales = [r[1] for r in resultados]
+        sintomas_encontrados = [r[0] for r in resultados]
+
+        print("Síntomas en BD:", sintomas_encontrados)
+        print("Estados emocionales encontrados:", estados_emocionales)
+
+        # Detectar emociones no registradas y agregarlas
+        emociones_nuevas = [e for e in emociones if e not in sintomas_encontrados]
+        for emocion in emociones_nuevas:
+            registrar_sintoma(emocion, None)
+
+        conn.commit()
+        conn.close()
+
+        # Clasificación posterior
+        actualizar_sintomas_sin_estado_emocional()
+
+        return estados_emocionales if estados_emocionales else []
+
+    except Exception as e:
+        print(f"❌ Error al obtener o registrar síntomas: {e}")
+        return []
+
