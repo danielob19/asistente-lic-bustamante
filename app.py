@@ -44,7 +44,6 @@ from core.constantes import (
     CONSULTA_MODALIDAD
 )
 
-# 🗂️ Funciones de base de datos
 from core.db.registro import (
     registrar_emocion,
     registrar_interaccion,
@@ -63,6 +62,7 @@ from core.db.sintomas import (
     obtener_sintomas_con_estado_emocional,
     obtener_coincidencias_sintomas_y_registrar,
 )
+
 
 # ========================== CONSTANTES DE CLASIFICACIÓN ==========================
 
