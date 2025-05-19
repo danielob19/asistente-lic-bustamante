@@ -1,4 +1,4 @@
-from core.auditorias import registrar_auditoria_input_original
+from core.db.registro import registrar_auditoria_input_original
 
 def es_consulta_contacto(mensaje: str, user_id: str = None, mensaje_original: str = None) -> bool:
     """
