@@ -10,6 +10,8 @@ from core.db.sintomas import obtener_sintomas_existentes
 from core.db.consulta import obtener_emociones_ya_registradas
 
 from core.funciones_asistente import clasificar_input_inicial
+from core.utils_generales import evitar_repeticion
+
 from app import (
     generar_respuesta_con_openai,
     detectar_emociones_negativas,
