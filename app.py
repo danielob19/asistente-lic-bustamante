@@ -999,8 +999,14 @@ def generar_resumen_interaccion_10(session, user_id, interaccion_id, contador):
 async def asistente(input_data: UserInput):
     try:
         user_id = input_data.user_id
-        mensaje_original = input_data.mensaje.strip()
+        mensaje_original = input_data.mensaje
+
+        if not mensaje_original or not isinstance(mensaje_original, str):
+            raise HTTPException(status_code=400, detail="El mensaje recibido no es válido.")
+        
+        mensaje_original = mensaje_original.strip()
         mensaje_usuario = mensaje_original.lower()
+
 
         # ✅ Frases neutrales que no deben analizarse emocionalmente
         EXPRESIONES_DESCARTADAS = [
