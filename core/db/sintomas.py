@@ -1,6 +1,7 @@
 import openai
 import psycopg2
 from core.constantes import DATABASE_URL
+import re
 
 
 def registrar_sintoma(sintoma: str, estado_emocional: str = None):
@@ -189,4 +190,30 @@ def obtener_coincidencias_sintomas_y_registrar(emociones):
     except Exception as e:
         print(f"❌ Error al obtener o registrar síntomas: {e}")
         return []
+
+def detectar_emociones_negativas(texto: str) -> list:
+    """
+    Detecta emociones o síntomas desde el texto ingresado por el usuario, 
+    comparando con los registros existentes en la base de datos.
+    """
+    try:
+        import psycopg2
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("SELECT LOWER(sintoma) FROM palabras_clave")
+        sintomas_db = [row[0] for row in cursor.fetchall()]
+        conn.close()
+
+        texto = texto.lower()
+        emociones_detectadas = []
+
+        for sintoma in sintomas_db:
+            if sintoma in texto and sintoma not in emociones_detectadas:
+                emociones_detectadas.append(sintoma)
+
+        return emociones_detectadas
+    except Exception as e:
+        print(f"⚠️ Error al detectar emociones: {e}")
+        return []
+
 
