@@ -732,18 +732,6 @@ def start_session_cleaner():
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
 
-# Manejo de respuestas repetitivas
-def evitar_repeticion(respuesta, historial):
-    respuestas_alternativas = [
-        "Entiendo. ¿Podrías contarme más sobre cómo te sientes?",
-        "Gracias por compartirlo. ¿Cómo ha sido tu experiencia con esto?",
-        "Eso parece importante. ¿Te ha pasado antes?"
-    ]
-    if respuesta in historial:
-        return random.choice(respuestas_alternativas)
-    historial.append(respuesta)
-    return respuesta
-
 # 🧾 Función para generar resumen clínico y estado predominante
 def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     """
