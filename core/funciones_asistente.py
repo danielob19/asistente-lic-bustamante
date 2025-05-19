@@ -10,6 +10,7 @@ from collections import Counter
 import psycopg2
 from core.db.config import conn  # Asegurate de tener la conexión importada correctamente
 import re
+import openai
 
 
 def clasificar_input_inicial(texto: str) -> str:
@@ -266,4 +267,53 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
         return True
 
     return False
+
+
+def detectar_emociones_negativas(mensaje):
+    if not mensaje or not isinstance(mensaje, str):
+        print("⚠️ Input inválido para detectar emociones: no es string o es None")
+        return []
+
+    prompt = (
+        "Analizá el siguiente mensaje desde una perspectiva clínica y detectá exclusivamente emociones negativas o estados afectivos vinculados a malestar psicológico. "
+        "Tu tarea es identificar manifestaciones emocionales que indiquen sufrimiento, alteración afectiva o malestar clínico.\n\n"
+
+        "Indicaciones:\n"
+        "- Devolvé una lista separada por comas, sin explicaciones ni texto adicional.\n"
+        "- Si hay ambigüedad, asigná la emoción negativa más cercana desde el punto de vista clínico.\n"
+        "- Si hay múltiples emociones, incluilas todas separadas por comas.\n"
+        "- Si no se detectan emociones negativas, devolvé únicamente: ninguna.\n\n"
+
+        "Ejemplos clínicamente válidos:\n"
+        "- Emociones simples: tristeza, ansiedad, culpa, vergüenza, impotencia, miedo, irritabilidad, angustia.\n"
+        "- Estados complejos: vacío emocional, desgaste emocional, desesperanza, sensación de abandono, temor al rechazo, apatía profunda.\n\n"
+        f"Mensaje: {mensaje}"
+    )
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=50,
+            temperature=0.0
+        )
+        emociones = response.choices[0].message.get("content", "").strip().lower()
+
+        print("\n===== DEPURACIÓN - DETECCIÓN DE EMOCIONES =====")
+        print(f"Mensaje analizado: {mensaje}")
+        print(f"Respuesta de OpenAI: {emociones}")
+
+        emociones = emociones.replace("emociones negativas detectadas:", "").strip()
+        emociones = [emocion.strip() for emocion in emociones.split(",") if emocion.strip()]
+
+        if "ninguna" in emociones:
+            print("No se detectaron emociones negativas.\n")
+            return []
+
+        print(f"Emociones detectadas: {emociones}\n")
+        return emociones
+
+    except Exception as e:
+        print(f"❌ Error al detectar emociones negativas: {e}")
+        return []
 
