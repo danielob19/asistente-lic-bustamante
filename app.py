@@ -746,8 +746,9 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     mensajes = session.get("mensajes", [])
     emociones_acumuladas = session.get("emociones_detectadas", [])
 
-    # 🧠 Detectar nuevas emociones
-    emociones_detectadas = detectar_emociones_negativas(" - ".join(mensajes)) or []
+    # ✅ Detectar nuevas emociones (previniendo errores por string vacío)
+    texto_emocional = " - ".join(mensajes).strip()
+    emociones_detectadas = detectar_emociones_negativas(texto_emocional) if texto_emocional else []
 
     # 🧩 Unificación sin duplicados
     emociones_unificadas = list(set(emociones_acumuladas + emociones_detectadas))
@@ -784,7 +785,6 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
     print(f"📋 Resumen clínico generado correctamente en interacción {contador}")
     session["mensajes"].clear()
     return respuesta
-
 
 def inferir_emocion_no_dicha(emociones_detectadas: List[str], conexion_pgsql) -> Optional[str]:
     """
