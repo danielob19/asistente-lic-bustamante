@@ -64,6 +64,11 @@ from core.db.sintomas import (
     obtener_coincidencias_sintomas_y_registrar,
 )
 
+from core.db.consulta import (
+    obtener_emociones_ya_registradas,
+    obtener_combinaciones_no_registradas,
+)
+
 # ========================== CONSTANTES DE CLASIFICACIÓN ==========================
 
 CLINICO_CONTINUACION = "CLINICO_CONTINUACION"
