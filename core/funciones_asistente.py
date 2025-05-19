@@ -2,7 +2,7 @@
 
 from core.constantes import CLINICO, SALUDO, CORTESIA, ADMINISTRATIVO, CONSULTA_AGENDAR, CONSULTA_MODALIDAD
 from core.utils_contacto import es_consulta_contacto
-from core.utils_seguridad import es_mensaje_sospechoso, contiene_frase_de_peligro
+from core.utils_seguridad import contiene_elementos_peligrosos, contiene_frase_de_peligro
 from core.db.registro import registrar_auditoria_input_original
 from core.db.consulta import es_saludo, es_cortesia, contiene_expresion_administrativa
 from core.db.sintomas import detectar_emociones_negativas
@@ -11,7 +11,7 @@ from core.db.sintomas import detectar_emociones_negativas
 def clasificar_input_inicial(mensaje: str) -> str:
     mensaje = mensaje.lower().strip()
 
-    if es_mensaje_sospechoso(mensaje):
+    if contiene_elementos_peligrosos(mensaje):
         return "INPUT_SOSPECHOSO"
 
     if contiene_frase_de_peligro(mensaje):
