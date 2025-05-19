@@ -290,6 +290,10 @@ def gestionar_combinacion_emocional(emocion1, emocion2):
 # Inicialización de FastAPI
 app = FastAPI()
 
+# 📌 Importar y montar el router de /asistente
+from routes.asistente import router as asistente_router
+app.include_router(asistente_router)
+
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
