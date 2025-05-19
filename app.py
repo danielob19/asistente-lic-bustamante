@@ -32,6 +32,19 @@ from cerebro_simulado import (
 )
 from respuestas_clinicas import RESPUESTAS_CLINICAS
 
+from core.utils_contacto import es_consulta_contacto, obtener_mensaje_contacto
+from core.utils_seguridad import contiene_elementos_peligrosos
+from core.faq_semantica import (
+    generar_embeddings_faq,
+    buscar_respuesta_semantica_con_score
+)
+
+from core.constantes import (
+    CLINICO_CONTINUACION, SALUDO, CORTESIA,
+    ADMINISTRATIVO, CLINICO, CONSULTA_AGENDAR,
+    CONSULTA_MODALIDAD
+)
+
 # ========================== CONSTANTES DE CLASIFICACIÓN ==========================
 
 CLINICO_CONTINUACION = "CLINICO_CONTINUACION"
@@ -42,158 +55,6 @@ CLINICO = "CLINICO"
 CONSULTA_AGENDAR = "CONSULTA_AGENDAR"
 CONSULTA_MODALIDAD = "CONSULTA_MODALIDAD"
 
-def es_consulta_contacto(mensaje: str, user_id: str = None, mensaje_original: str = None) -> bool:
-    """
-    Detecta si el mensaje hace referencia al deseo de contactar al profesional.
-    Si hay coincidencia y se proporciona `user_id` y `mensaje_original`, registra la auditoría automáticamente.
-    """
-    if not mensaje or not isinstance(mensaje, str):
-        return False
-
-    mensaje = mensaje.lower()
-
-    expresiones_contacto = [
-        "contacto", "numero", "número", "whatsapp", "teléfono", "telefono",
-        "como lo contacto", "quiero contactarlo", "como me comunico",
-        "quiero escribirle", "quiero hablar con él", "me das el número",
-        "como se agenda", "como saco turno", "quiero pedir turno",
-        "necesito contactarlo", "como empiezo la terapia", "quiero empezar la consulta",
-        "como me comunico con el licenciado", "mejor psicologo", "mejor terapeuta",
-        "atienden estos casos", "atiende casos", "trata casos", "atiende temas",
-        "trata temas", "atiende estos", "trata estos", "atiende estos temas"
-    ]
-
-    hay_coincidencia = any(exp in mensaje for exp in expresiones_contacto)
-
-    if hay_coincidencia and user_id and mensaje_original:
-        registrar_auditoria_input_original(user_id, mensaje_original, mensaje, "CONSULTA_CONTACTO")
-
-    return hay_coincidencia
-
-# ✅ Función reutilizable de seguridad textual
-def contiene_elementos_peligrosos(texto: str) -> bool:
-    """
-    Detecta si un texto contiene patrones potencialmente peligrosos o maliciosos
-    como comandos de sistema, código fuente o expresiones técnicas sensibles.
-    """
-    patrones_riesgosos = [
-        r"openai\.api_key", r"import\s", r"os\.system", r"eval\(", r"exec\(",
-        r"<script", r"</script>", r"\bdrop\b.*\btable\b", r"\bdelete\b.*\bfrom\b",
-        r"\brm\s+-rf\b", r"\bchmod\b", r"\bmkfs\b", r"\bshutdown\b", r"\breboot\b",
-        r"SELECT\s+.*\s+FROM", r"INSERT\s+INTO", r"UPDATE\s+\w+\s+SET", r"DELETE\s+FROM"
-    ]
-    return any(re.search(patron, texto, re.IGNORECASE) for patron in patrones_riesgosos)
-
-# 📞 Función centralizada para mensaje de contacto
-def obtener_mensaje_contacto():
-    return (
-        "En caso de que desees contactar al Lic. Daniel O. Bustamante, "
-        "podés hacerlo escribiéndole al WhatsApp +54 911 3310-1186, que con gusto responderá a tus inquietudes."
-    )
-
-
-# 🧠 Lista de preguntas frecuentes (FAQ) y sus respuestas fijas
-faq_respuestas = [
-    {
-        "pregunta": "¿Qué servicios ofrece?",
-        "respuesta": (
-            "El Lic. Daniel O. Bustamante brinda atención psicológica exclusivamente online, a través de videoconsultas.\n\n"
-            "Entre los principales motivos de consulta que aborda se encuentran:\n"
-            "- Psicoterapia individual para adultos (modalidad online)\n"
-            "- Tratamiento de crisis emocionales\n"
-            "- Abordaje de ansiedad, estrés y ataques de pánico\n"
-            "- Procesos de duelo y cambios vitales\n"
-            "- Estados anímicos depresivos\n"
-            "- Problemas de autoestima y motivación\n"
-            "- Dificultades vinculares y emocionales\n"
-            "- Terapia de pareja online\n\n"
-            + obtener_mensaje_contacto()
-        )
-    },
-    {
-        "pregunta": "¿Cuánto dura la sesión?",
-        "respuesta": (
-            "Las sesiones con el Lic. Daniel O. Bustamante tienen una duración aproximada de 50 minutos y se realizan por videoconsulta.\n\n"
-            "La frecuencia puede variar según cada caso, pero generalmente se recomienda un encuentro semanal para favorecer el proceso terapéutico.\n\n"
-            + obtener_mensaje_contacto()
-        )
-    },
-    {
-        "pregunta": "¿Trabaja con obras sociales?",
-        "respuesta": (
-            "El Lic. Daniel O. Bustamante no trabaja con obras sociales ni prepagas. Atiende únicamente de manera particular. "
-            + obtener_mensaje_contacto()
-        )
-    }
-]
-
-
-# ⚡ Generar embeddings de las preguntas frecuentes (una sola vez al iniciar la app)
-def generar_embeddings_faq():
-    preguntas = [item["pregunta"] for item in faq_respuestas]
-    response = openai.Embedding.create(
-        model="text-embedding-ada-002",
-        input=preguntas
-    )
-    for i, embedding in enumerate(response["data"]):
-        faq_respuestas[i]["embedding"] = np.array(embedding["embedding"])
-
-from numpy.linalg import norm
-
-def buscar_respuesta_semantica(mensaje: str, umbral=0.88) -> str | None:
-    try:
-        # Embedding del mensaje del usuario
-        embedding_usuario = openai.Embedding.create(
-            model="text-embedding-ada-002",
-            input=mensaje
-        )["data"][0]["embedding"]
-        embedding_usuario = np.array(embedding_usuario)
-
-        # Calcular similitud con cada pregunta frecuente
-        mejor_score = 0
-        mejor_respuesta = None
-        for item in faq_respuestas:
-            emb_faq = item.get("embedding")
-            if emb_faq is not None:
-                similitud = np.dot(embedding_usuario, emb_faq) / (norm(embedding_usuario) * norm(emb_faq))
-                if similitud > mejor_score and similitud >= umbral:
-                    mejor_score = similitud
-                    mejor_respuesta = item["respuesta"]
-
-        return mejor_respuesta
-
-    except Exception as e:
-        print(f"❌ Error en detección semántica: {e}")
-        return None
-
-def buscar_respuesta_semantica_con_score(mensaje: str, umbral=0.88):
-    try:
-        embedding_usuario = openai.Embedding.create(
-            model="text-embedding-ada-002",
-            input=mensaje
-        )["data"][0]["embedding"]
-        embedding_usuario = np.array(embedding_usuario)
-
-        mejor_score = 0
-        mejor_pregunta = None
-        mejor_respuesta = None
-
-        for item in faq_respuestas:
-            emb_faq = item.get("embedding")
-            if emb_faq is not None:
-                similitud = np.dot(embedding_usuario, emb_faq) / (norm(embedding_usuario) * norm(emb_faq))
-                if similitud > mejor_score:
-                    mejor_score = similitud
-                    mejor_pregunta = item["pregunta"]
-                    mejor_respuesta = item["respuesta"]
-
-        if mejor_score >= umbral:
-            return mejor_pregunta, mejor_respuesta, mejor_score
-        return None
-
-    except Exception as e:
-        print(f"❌ Error en buscar_respuesta_semantica_con_score: {e}")
-        return None
 
 # Configuración de la clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
