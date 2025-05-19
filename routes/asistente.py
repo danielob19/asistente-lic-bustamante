@@ -12,12 +12,8 @@ from core.db.consulta import obtener_emociones_ya_registradas
 from core.funciones_asistente import clasificar_input_inicial
 from core.utils_generales import evitar_repeticion
 
-from app import (
-    generar_respuesta_con_openai,
-    detectar_emociones_negativas,
-    hay_contexto_clinico_anterior,
-    user_sessions
-)
+from app import generar_respuesta_con_openai, detectar_emociones_negativas, user_sessions
+from core.funciones_clinicas import hay_contexto_clinico_anterior
 
 from core.funciones_asistente import (
     generar_resumen_interaccion_5,
@@ -26,6 +22,7 @@ from core.funciones_asistente import (
 )
 
 router = APIRouter()
+
 
 class UserInput(BaseModel):
     mensaje: str
