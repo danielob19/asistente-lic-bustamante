@@ -41,48 +41,6 @@ def clasificar_input_inicial(mensaje: str) -> str:
 
     return "FUERA_DE_CONTEXTO"
 
-def generar_resumen_interaccion_5(session, user_id, contador, interaccion):
-    emociones = session.get("emociones_detectadas", [])
-    if emociones:
-        resumen = (
-            f"Por lo que comentás, se observa un conjunto de emociones asociadas a malestar: {', '.join(emociones)}. "
-            f"¿Considerás que podría tratarse de un estado depresivo, ansioso o algún otro?"
-        )
-        return resumen
-    return "¿Podés contarme un poco más para comprender mejor lo que estás sintiendo?"
-
-def generar_resumen_interaccion_9(session, user_id, contador, interaccion):
-    emociones_previas = session.get("emociones_detectadas", [])
-    mensajes_previos = session.get("mensajes", [])[-4:]  # interacciones 6, 7, 8 y 9
-
-    emociones_nuevas = []
-    for mensaje in mensajes_previos:
-        nuevas = detectar_emociones_negativas(mensaje) or []
-        for emocion in nuevas:
-            emocion = emocion.lower().strip()
-            if emocion not in emociones_previas and emocion not in emociones_nuevas:
-                emociones_nuevas.append(emocion)
-
-    if emociones_nuevas:
-        emociones_totales = emociones_previas + emociones_nuevas
-        resumen = (
-            f"Por lo que comentas, pues al malestar anímico que describiste anteriormente, "
-            f"advierto que se suman {', '.join(emociones_nuevas)}, "
-            f"por lo que daría la impresión de que se trata de un estado emocional predominantemente "
-            f"{inferir_estado_emocional_predominante(emociones_totales)}. "
-            f"No obstante, para estar seguros se requiere de una evaluación psicológica profesional. "
-            f"Te sugiero que lo consultes con el Lic. Bustamante."
-        )
-        return resumen
-
-    return "¿Querés contarme un poco más para que podamos profundizar en lo que estás sintiendo?"
-
-def generar_resumen_interaccion_10(session, user_id, contador, interaccion):
-    return (
-        "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
-        "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
-        "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
-    )
 
 def inferir_estado_emocional_predominante(emociones: list[str]) -> str | None:
     """
