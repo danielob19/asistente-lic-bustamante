@@ -1,0 +1,21 @@
+# Ignorar entorno virtual
+.venv/
+env/
+
+# Archivos de Python compilados
+__pycache__/
+*.py[cod]
+
+# Configuración sensible
+.env
+*.env
+
+# Archivos de base de datos locales
+*.sqlite3
+*.db
+
+# Archivos del sistema operativo
+.DS_Store
+
+# Archivos de logs
+*.log
