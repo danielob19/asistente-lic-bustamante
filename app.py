@@ -188,6 +188,10 @@ def respuesta_default_fuera_de_contexto():
 
 # Función para detectar emociones negativas usando OpenAI
 def detectar_emociones_negativas(mensaje):
+    if not mensaje or not isinstance(mensaje, str):
+        print("⚠️ Input inválido para detectar emociones: no es string o es None")
+        return []
+
     prompt = (
         "Analizá el siguiente mensaje desde una perspectiva clínica y detectá exclusivamente emociones negativas o estados afectivos vinculados a malestar psicológico. "
         "Tu tarea es identificar manifestaciones emocionales que indiquen sufrimiento, alteración afectiva o malestar clínico.\n\n"
@@ -201,7 +205,6 @@ def detectar_emociones_negativas(mensaje):
         "Ejemplos clínicamente válidos:\n"
         "- Emociones simples: tristeza, ansiedad, culpa, vergüenza, impotencia, miedo, irritabilidad, angustia.\n"
         "- Estados complejos: vacío emocional, desgaste emocional, desesperanza, sensación de abandono, temor al rechazo, apatía profunda.\n\n"
-
         f"Mensaje: {mensaje}"
     )
 
@@ -231,6 +234,7 @@ def detectar_emociones_negativas(mensaje):
     except Exception as e:
         print(f"❌ Error al detectar emociones negativas: {e}")
         return []
+
 
 # Generar frase disparadora según emoción detectada
 def generar_disparador_emocional(emocion):
