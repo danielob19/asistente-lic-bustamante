@@ -35,6 +35,7 @@ from respuestas_clinicas import RESPUESTAS_CLINICAS
 # 📩 Funciones auxiliares
 from core.utils_contacto import es_consulta_contacto, obtener_mensaje_contacto
 from core.utils_seguridad import contiene_elementos_peligrosos
+from core.utils_seguridad import es_input_malicioso
 from core.faq_semantica import generar_embeddings_faq, buscar_respuesta_semantica_con_score
 
 
