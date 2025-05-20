@@ -65,6 +65,8 @@ from core.db.consulta import (
 )
 
 from core.config.palabras_irrelevantes import palabras_irrelevantes
+from core.modelos import UserInput
+
 
 # Inicialización de FastAPI
 app = FastAPI()
