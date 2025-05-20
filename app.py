@@ -101,12 +101,6 @@ if not openai.api_key:
 # Configuración de la URL de la base de datos PostgreSQL
 DATABASE_URL = "postgresql://my_postgres_db_oahe_user:AItPOENiOHIGPNva0eiCT0kK1od4UhZf@dpg-ctqqj0bqf0us73f4ar1g-a/my_postgres_db_oahe"
 
-
-# Clase para solicitudes del usuario
-class UserInput(BaseModel):
-    mensaje: str
-    user_id: str
-
 # Gestión de sesiones (en memoria)
 user_sessions = {}
 SESSION_TIMEOUT = 60  # Tiempo en segundos para limpiar sesiones inactivas
