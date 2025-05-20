@@ -37,3 +37,22 @@ def contiene_frase_de_peligro(texto: str) -> bool:
     ]
     return any(re.search(frase, texto, re.IGNORECASE) for frase in frases_peligrosas)
 
+
+def es_input_malicioso(texto: str) -> bool:
+    """
+    Evalúa si el mensaje del usuario contiene patrones maliciosos típicos
+    de código, intentos de inyección o comandos peligrosos.
+
+    Retorna True si detecta contenido sospechoso.
+    """
+    patrones_maliciosos = [
+        r"(\bimport\b|\bos\b|\bsystem\b|\beval\b|\bexec\b|\bopenai\.api_key\b)",  # Código Python
+        r"(\bdrop\b|\bdelete\b|\binsert\b|\bupdate\b).*?\b(table|database)\b",     # SQL Injection
+        r"(--|#|;|//).*?(drop|delete|system|rm\s+-rf)",                             # Comentarios maliciosos
+        r"<script.*?>|</script>",                                                  # HTML/JS malicioso
+        r"\b(shutdown|reboot|rm\s+-rf|mkfs|chmod|chown)\b"                          # Comandos Shell peligrosos
+    ]
+    for patron in patrones_maliciosos:
+        if re.search(patron, texto, re.IGNORECASE):
+            return True
+    return False
