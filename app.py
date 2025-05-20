@@ -65,6 +65,22 @@ from core.db.consulta import (
 
 from core.config.palabras_irrelevantes import palabras_irrelevantes
 
+# Inicialización de FastAPI
+app = FastAPI()
+
+# 📌 Importar y montar el router de /asistente
+from routes.asistente import router as asistente_router
+app.include_router(asistente_router)
+
+# Configuración de CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 CLINICO_CONTINUACION = "CLINICO_CONTINUACION"
 SALUDO = "SALUDO"
 CORTESIA = "CORTESIA"
@@ -152,22 +168,6 @@ def gestionar_combinacion_emocional(emocion1, emocion2):
     except Exception as e:
         print(f"❌ Error al gestionar combinación emocional: {e}")
         return None
-
-# Inicialización de FastAPI
-app = FastAPI()
-
-# 📌 Importar y montar el router de /asistente
-from routes.asistente import router as asistente_router
-app.include_router(asistente_router)
-
-# Configuración de CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Configuración de la base de datos PostgreSQL
 def init_db():
