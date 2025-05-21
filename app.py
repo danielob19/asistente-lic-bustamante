@@ -34,11 +34,12 @@ DATABASE_URL = "postgresql://<TU_URL_AQUÍ>"
 user_sessions = {}
 SESSION_TIMEOUT = 60 * 8  # Tiempo en segundos para limpiar sesiones inactivas
 
-# 🧠 Cache de síntomas registrados en la base
-sintomas_cacheados = set()
 
 @app.on_event("startup")
 def startup_event():
+    global sintomas_cacheados
+    sintomas_cacheados = set()
+
     # 🔁 Inicializa la base de datos
     init_db()
     # 🧠 Genera embeddings de Faq al iniciar
@@ -46,18 +47,18 @@ def startup_event():
     # 🧹 Limpia sesiones inactivas
     start_session_cleaner()
 
-# 🧠 Inicializar cache de síntomas registrados
-global sintomas_cacheados
-try:
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor()
-    cursor.execute("SELECT LOWER(sintoma) FROM palabras_clave")
-    sintomas = cursor.fetchall()
-    sintomas_cacheados = {s[0].strip() for s in sintomas if s[0]}
-    conn.close()
-    print(f"✅ Cache inicial de síntomas cargado: {len(sintomas_cacheados)} ítems.")
-except Exception as e:
-    print(f"⚠️ Error al inicializar cache de síntomas: {e}")
+    # 🧠 Inicializar cache de síntomas registrados
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        cursor.execute("SELECT LOWER(sintoma) FROM palabras_clave")
+        sintomas = cursor.fetchall()
+        sintomas_cacheados = {s[0].strip() for s in sintomas if s[0]}
+        conn.close()
+        print(f"✅ Cache inicial de síntomas cargado: {len(sintomas_cacheados)} ítems.")
+    except Exception as e:
+        print(f"⚠️ Error al inicializar cache de síntomas: {e}")
+
 
 # 🧹 Función para limpiar sesiones inactivas
 def start_session_cleaner():
