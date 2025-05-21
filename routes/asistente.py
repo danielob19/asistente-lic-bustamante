@@ -33,7 +33,8 @@ from core.db.sintomas import (
     obtener_sintomas_con_estado_emocional,
     obtener_coincidencias_sintomas_y_registrar,
 )
-from core.analisis_emocional import detectar_emociones_negativas
+
+from core.funciones_asistente import detectar_emociones_negativas
 from core.db.consulta import obtener_emociones_ya_registradas
 from core.config.palabras_irrelevantes import palabras_irrelevantes
 from respuestas_clinicas import RESPUESTAS_CLINICAS
