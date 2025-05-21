@@ -6,7 +6,7 @@ from core.db.sintomas import obtener_coincidencias_sintomas_y_registrar
 from core.db.registro import registrar_respuesta_openai, registrar_emocion, registrar_inferencia
 from core.constantes import DATABASE_URL
 from cerebro_simulado import predecir_evento_futuro, clasificar_estado_mental
-from core.analisis_emocional import detectar_emociones_negativas, inferir_emocion_no_dicha
+from core.funciones_asistente import detectar_emociones_negativas, inferir_emocion_no_dicha
 
 
 def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
