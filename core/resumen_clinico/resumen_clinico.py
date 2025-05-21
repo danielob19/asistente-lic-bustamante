@@ -5,7 +5,6 @@ import psycopg2
 from core.db.sintomas import obtener_coincidencias_sintomas_y_registrar
 from core.db.registro import registrar_respuesta_openai, registrar_emocion, registrar_inferencia
 from core.constantes import DATABASE_URL
-from core.utils_seguridad import contiene_elementos_peligrosos
 from cerebro_simulado import predecir_evento_futuro, clasificar_estado_mental
 from core.analisis_emocional import detectar_emociones_negativas, inferir_emocion_no_dicha
 
