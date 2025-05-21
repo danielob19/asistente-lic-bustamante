@@ -56,3 +56,22 @@ def es_input_malicioso(texto: str) -> bool:
         if re.search(patron, texto, re.IGNORECASE):
             return True
     return False
+
+def clasificar_input_inicial(mensaje: str) -> str:
+    """
+    Clasifica el tipo de mensaje inicial del usuario según su contenido.
+    """
+    mensaje = mensaje.lower().strip()
+
+    if any(palabra in mensaje for palabra in ["hola", "buenas", "qué tal", "buen día", "buenas tardes", "buenas noches"]):
+        return "SALUDO"
+    elif any(palabra in mensaje for palabra in ["gracias", "ok", "de acuerdo", "entendido", "perfecto", "dale"]):
+        return "CORTESIA"
+    elif any(palabra in mensaje for palabra in ["turno", "agenda", "cita", "sesión", "consultar", "atención"]):
+        return "CONSULTA_AGENDAR"
+    elif any(palabra in mensaje for palabra in ["modalidad", "online", "presencial", "videollamada", "consultorio"]):
+        return "CONSULTA_MODALIDAD"
+    elif any(palabra in mensaje for palabra in ["sentido", "vacío", "angustia", "ansiedad", "tristeza", "depresión", "duelo", "soledad", "inestabilidad"]):
+        return "CLINICO"
+    else:
+        return "FUERA_DE_CONTEXTO"
