@@ -6,7 +6,7 @@ from core.utils_seguridad import (
     es_input_malicioso
 )
 
-from core.utils_generales import (
+from core.funciones_asistente import (
     clasificar_input_inicial,
     es_tema_clinico_o_emocional
 )
