@@ -3,7 +3,7 @@
 import psycopg2
 import re
 from typing import List, Optional
-from app import DATABASE_URL, user_sessions
+from core.config.db_contexto import DATABASE_URL, user_sessions
 
 
 def hay_contexto_clinico_anterior(user_id: str) -> bool:
