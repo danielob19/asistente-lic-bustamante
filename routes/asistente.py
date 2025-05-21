@@ -43,7 +43,8 @@ from cerebro_simulado import (
     clasificar_estado_mental,
     inferir_intencion_usuario
 )
-from core.resumen_clinico import (
+
+from core.utils.resumen_clinico import (
     detectar_emociones_negativas,
     generar_resumen_clinico_y_estado,
     generar_resumen_interaccion_5,
@@ -52,6 +53,7 @@ from core.resumen_clinico import (
     analizar_texto,
     generar_respuesta_con_openai
 )
+
 from core.contexto import user_sessions
 import openai
 import re
