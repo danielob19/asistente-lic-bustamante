@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from core.modelos import UserInput
+from core.modelos.base import UserInput
 from core.utils_seguridad import (
     contiene_elementos_peligrosos,
     es_input_malicioso,
