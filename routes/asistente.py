@@ -1,11 +1,16 @@
 from fastapi import APIRouter, HTTPException
 from core.modelos.base import UserInput
+
 from core.utils_seguridad import (
     contiene_elementos_peligrosos,
-    es_input_malicioso,
+    es_input_malicioso
+)
+
+from core.utils_generales import (
     clasificar_input_inicial,
     es_tema_clinico_o_emocional
 )
+
 from core.utils_contacto import (
     es_consulta_contacto,
     obtener_mensaje_contacto
