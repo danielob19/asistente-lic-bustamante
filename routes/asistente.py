@@ -43,7 +43,7 @@ from cerebro_simulado import (
     clasificar_estado_mental,
     inferir_intencion_usuario
 )
-from core.clinico import (
+from core.resumen_clinico import (
     detectar_emociones_negativas,
     generar_resumen_clinico_y_estado,
     generar_resumen_interaccion_5,
