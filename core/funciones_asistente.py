@@ -1,5 +1,6 @@
 # core/funciones_asistente.py
 
+from core.db.sintomas import obtener_sintomas_existentes
 from core.constantes import CLINICO, SALUDO, CORTESIA, ADMINISTRATIVO, CONSULTA_AGENDAR, CONSULTA_MODALIDAD
 from core.utils_contacto import es_consulta_contacto
 from core.utils_seguridad import contiene_elementos_peligrosos, contiene_frase_de_peligro
