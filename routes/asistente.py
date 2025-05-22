@@ -58,7 +58,7 @@ from core.utils.generador_openai import generar_respuesta_con_openai
 
 
 from core.contexto import user_sessions
-from core.constantes import CLINICO, SALUDO, CORTESIA, ADMINISTRATIVO, CONSULTA_AGENDAR, CONSULTA_MODALIDAD
+from core.constantes import CLINICO_CONTINUACION, CLINICO, SALUDO, CORTESIA, ADMINISTRATIVO, CONSULTA_AGENDAR, CONSULTA_MODALIDAD
 import openai
 import re
 import time
