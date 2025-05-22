@@ -11,6 +11,7 @@ import psycopg2
 from core.db.config import conn  # Asegurate de tener la conexión importada correctamente
 import re
 
+sintomas_cacheados = set()
 
 def clasificar_input_inicial(texto: str) -> str:
     if not texto or not isinstance(texto, str):
