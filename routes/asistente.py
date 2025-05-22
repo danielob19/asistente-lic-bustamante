@@ -603,7 +603,7 @@ async def asistente(input_data: UserInput):
 
         
         if contador == 9:
-            # ✅ Consolidar emociones de interacciones anteriores (1 a 5)
+            # ✅ Consolidar emociones de interacciones 1 a 5 (por seguridad)
             for mensaje in session["mensajes"][:-4]:
                 nuevas = detectar_emociones_negativas(mensaje) or []
                 for emocion in nuevas:
@@ -612,7 +612,7 @@ async def asistente(input_data: UserInput):
                     if emocion not in session["emociones_detectadas"]:
                         session["emociones_detectadas"].append(emocion)
         
-            # ✅ Detectar emociones nuevas de las interacciones 6, 7, 8 y 9
+            # ✅ Detectar emociones nuevas de interacciones 6 a 9
             mensajes_previos = session["mensajes"][-4:]
             emociones_nuevas = []
         
@@ -625,13 +625,19 @@ async def asistente(input_data: UserInput):
                         emociones_nuevas.append(emocion)
                         session["emociones_detectadas"].append(emocion)
         
-            # ✅ Generar resumen final con nueva inferencia emocional
-            respuesta = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
+            # 🧠 Clasificación mental basada en síntomas acumulados
+            clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
+            inferencia_adicional = ""
+            if clasificacion_mental:
+                inferencia_adicional = f" Clasificación mental preliminar: {clasificacion_mental}."
         
-            # ✅ Registrar respuesta generada
+            # ✅ Generar resumen clínico con nueva inferencia emocional
+            resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
+            respuesta = resumen_clinico + inferencia_adicional
+        
             registrar_respuesta_openai(interaccion_id, respuesta)
-        
             return {"respuesta": respuesta}
+
 
         # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
         preguntas_cobertura = [
