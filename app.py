@@ -30,10 +30,6 @@ CLINICO = "CLINICO"
 CONSULTA_AGENDAR = "CONSULTA_AGENDAR"
 CONSULTA_MODALIDAD = "CONSULTA_MODALIDAD"
 
-# 🔑 Clave API de OpenAI desde entorno
-openai.api_key = os.getenv("OPENAI_API_KEY")
-if not openai.api_key:
-    raise ValueError("OPENAI_API_KEY no está configurada en las variables de entorno.")
 
 # 🔗 URL de conexión PostgreSQL desde entorno
 DATABASE_URL = os.getenv("DATABASE_URL")
