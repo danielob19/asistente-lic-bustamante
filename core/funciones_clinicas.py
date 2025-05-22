@@ -4,7 +4,6 @@ from core.db.registro import registrar_emocion
 from core.utils.palabras_irrelevantes import palabras_irrelevantes
 from core.utils_contacto import es_consulta_contacto
 from core.funciones_asistente import detectar_emociones_negativas
-from core.funciones_clinicas import clasificar_estado_mental
 from app import generar_respuesta_con_openai
 import re
 
