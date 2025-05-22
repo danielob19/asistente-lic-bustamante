@@ -585,12 +585,20 @@ async def asistente(input_data: UserInput):
         
         # ✅ En la interacción 5, generar resumen clínico y estado emocional predominante
         if contador == 5:
-            # ✅ Generar resumen clínico con emociones detectadas hasta aquí e inferencia
-            respuesta = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
+            # ✅ Generar resumen clínico con inferencia emocional
+            resumen_clinico = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
         
-            # ✅ Registrar respuesta generada
+            # 🧠 Predicción hipotética basada en emociones detectadas
+            prediccion = predecir_evento_futuro(session["emociones_detectadas"])
+            if prediccion:
+                prediccion_formulada = f" Si este estado se mantiene en el tiempo, podría tratarse de una tendencia hacia {prediccion.lower()}."
+            else:
+                prediccion_formulada = ""
+        
+            # ✅ Redacción conjunta con cierre profesional
+            respuesta = resumen_clinico + prediccion_formulada
+        
             registrar_respuesta_openai(interaccion_id, respuesta)
-        
             return {"respuesta": respuesta}
 
         
