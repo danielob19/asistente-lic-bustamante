@@ -608,8 +608,14 @@ async def asistente(input_data: UserInput):
         
         # ✅ En la interacción 5, generar resumen clínico y estado emocional predominante
         if contador == 5:
+            # ✅ Generar resumen clínico con emociones detectadas hasta aquí e inferencia
             respuesta = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
+        
+            # ✅ Registrar respuesta generada
+            registrar_respuesta_openai(interaccion_id, respuesta)
+        
             return {"respuesta": respuesta}
+
         
         if contador == 9:
             # ✅ Consolidar emociones de interacciones anteriores (1 a 5)
@@ -621,8 +627,25 @@ async def asistente(input_data: UserInput):
                     if emocion not in session["emociones_detectadas"]:
                         session["emociones_detectadas"].append(emocion)
         
-            # 🧩 Generar resumen completo incluyendo nuevas emociones de interacciones 6 a 9
+            # ✅ Detectar emociones nuevas de las interacciones 6, 7, 8 y 9
+            mensajes_previos = session["mensajes"][-4:]
+            emociones_nuevas = []
+        
+            for mensaje in mensajes_previos:
+                nuevas = detectar_emociones_negativas(mensaje) or []
+                for emocion in nuevas:
+                    emocion = emocion.lower().strip()
+                    emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
+                    if emocion not in session["emociones_detectadas"]:
+                        emociones_nuevas.append(emocion)
+                        session["emociones_detectadas"].append(emocion)
+        
+            # ✅ Generar resumen final con nueva inferencia emocional
             respuesta = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
+        
+            # ✅ Registrar respuesta generada
+            registrar_respuesta_openai(interaccion_id, respuesta)
+        
             return {"respuesta": respuesta}
 
         # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
