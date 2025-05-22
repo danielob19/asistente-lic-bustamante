@@ -1,6 +1,9 @@
+# core/utils/generador_openai.py
+
 import openai
 import os
 
+# ✅ Configurar la API key aquí, donde se usa
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def generar_respuesta_con_openai(prompt: str) -> str:
