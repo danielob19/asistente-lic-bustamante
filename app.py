@@ -1,3 +1,23 @@
+# Bloque de verificación de imports críticos
+import os
+import traceback
+
+IMPORTS_CRITICOS = [
+    "openai", "psycopg2", "fastapi", "uvicorn",
+    "dotenv", "requests", "pydantic"
+]
+
+ruta_log = os.path.join("logs", "test_imports.log")
+with open(ruta_log, "w", encoding="utf-8") as log:
+    for nombre in IMPORTS_CRITICOS:
+        try:
+            __import__(nombre)
+        except Exception:
+            log.write(f"[ERROR] Falló el import de: {nombre}\n")
+            log.write(traceback.format_exc() + "\n")
+
+
+
 import os
 import psycopg2
 import threading
