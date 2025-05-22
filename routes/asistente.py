@@ -55,6 +55,7 @@ from core.resumen_clinico import (
 )
 
 from core.utils.generador_openai import generar_respuesta_con_openai
+from core.utils.clinico_contexto import hay_contexto_clinico_anterior
 
 
 from core.contexto import user_sessions
