@@ -10,7 +10,6 @@ from collections import Counter
 import psycopg2
 from core.db.config import conn  # Asegurate de tener la conexión importada correctamente
 import re
-import openai
 
 
 def clasificar_input_inicial(texto: str) -> str:
