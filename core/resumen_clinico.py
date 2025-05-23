@@ -1,5 +1,6 @@
 from collections import Counter
 import re
+import random
 import openai  # ✅ Necesario para funciones que usan ChatCompletion
 import psycopg2
 
@@ -89,7 +90,7 @@ def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
         emociones_literal = ", ".join(session["emociones_detectadas"])
         resumen = (
             f"Por lo que mencionaste hasta ahora, se identifican las siguientes emociones: {emociones_literal}. "
-            f"Impresiona ser un estado emocional predominantemente {estado_global}. "
+            f"{random.choice(['Se observa', 'Impresiona', 'Podría tratarse de', 'Da la sensación de ser'])} un estado emocional predominantemente {estado_global}. "
         )
     else:
         resumen = (
@@ -99,15 +100,13 @@ def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
 
     if emocion_inferida:
         resumen += (
-            f"Además, diría que también podrías estar atravesando cierta {emocion_inferida} "
-            f"Lo digo porque suele aparecer en casos similares."
+            f" Además, se infiere la presencia de cierta {emocion_inferida}, ya que suele asociarse a combinaciones emocionales como las que presentaste."
         )
-    else:
-        resumen += "¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
 
     session["resumen_generado"] = True
     registrar_respuesta_openai(interaccion_id, resumen)
     return resumen
+
 
 
 def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
