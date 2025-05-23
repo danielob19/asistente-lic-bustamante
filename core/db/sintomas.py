@@ -194,6 +194,8 @@ def obtener_coincidencias_sintomas_y_registrar(emociones):
         return []
 
 def detectar_emociones_negativas(texto: str) -> list:
+    import openai  # ✅ Necesario tras modularización
+    
     """
     Detecta emociones o síntomas desde el texto ingresado por el usuario, 
     comparando con los registros existentes en la base de datos.
