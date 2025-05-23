@@ -768,8 +768,14 @@ async def asistente(input_data: UserInput):
         
                 respuesta += "¿Querés contarme un poco más sobre cómo estás atravesando esto?"
         
-                registrar_respuesta_openai(interaccion_id, respuesta)
-                return {"respuesta": respuesta}
+            else:
+                respuesta = (
+                    "Entiendo. ¿Podés contarme un poco más sobre lo que estás sintiendo "
+                    "para poder brindarte una orientación adecuada?"
+                )
+        
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
 
         
         # 🧩 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
