@@ -279,6 +279,41 @@ async def asistente(input_data: UserInput):
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
+        # ====================== INTERACCIÓN 5 – Resumen clínico preliminar e inferencia ======================
+        if contador == 5:
+            # Consolidar emociones detectadas en las interacciones 1 a 5
+            for mensaje in session["mensajes"]:
+                nuevas = detectar_emociones_negativas(mensaje) or []
+                for emocion in nuevas:
+                    emocion = emocion.lower().strip()
+                    emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
+                    if emocion not in session["emociones_detectadas"]:
+                        session["emociones_detectadas"].append(emocion)
+        
+            # Clasificación emocional basada en emociones acumuladas
+            clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
+        
+            # Generar resumen clínico
+            resumen_clinico = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
+        
+            if clasificacion_mental:
+                inferencia_adicional = (
+                    f" Da la impresión de tratarse de un estado emocional predominantemente vinculado a la {clasificacion_mental.lower()}."
+                )
+            else:
+                inferencia_adicional = ""
+        
+            respuesta = (
+                resumen_clinico
+                + inferencia_adicional
+                + " ¿Considerás que podría tratarse de un cuadro depresivo mayor? "
+                + "Lo consulto porque suele presentarse en casos similares. "
+                + "Si este estado se mantiene en el tiempo, podría corresponder a una tendencia que merece una evaluación clínica detallada."
+            )
+        
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
+
 
         # ✅ Interacción 9 – Consolidar síntomas previos y sumar nuevas emociones
         if contador == 9:
