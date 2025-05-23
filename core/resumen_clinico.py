@@ -1,6 +1,6 @@
-import openai
 from collections import Counter
 import re
+import openai  # ✅ Necesario para funciones que usan ChatCompletion
 import psycopg2
 
 from core.db.sintomas import obtener_coincidencias_sintomas_y_registrar
