@@ -1,4 +1,5 @@
 # cerebro_simulado.py
+import openai
 
 def predecir_evento_futuro(mensajes):
     # Análisis simple de proyección futura basada en contenido
