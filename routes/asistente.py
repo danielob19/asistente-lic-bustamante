@@ -266,18 +266,26 @@ async def asistente(input_data: UserInput):
         contador = session["contador_interacciones"]
         session["mensajes"].append(mensaje_usuario)
 
-# ====================== INTERACCIÓN 10 O POSTERIOR: CIERRE DEFINITIVO ======================
-
-        # ✅ Interacción 10 o superior – Cierre definitivo profesional
-        if contador >= 10:
+        # ====================== INTERACCIÓN 10 O POSTERIOR: CIERRE DEFINITIVO ======================
+        if contador == 10:
             respuesta = (
                 "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
                 "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
                 "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
             )
+        elif contador >= 11:
+            opciones_cierre = [
+                "Como indiqué antes, no puedo continuar. Te sugiero que contactes al Lic. Bustamante.",
+                "La conversación ha llegado a su fin. Para más ayuda, podés contactar con el Lic. Daniel O. Bustamante.",
+                "Ya no me es posible continuar. Te sugiero hablar directamente con el Licenciado.",
+                "No puedo avanzar más en esta conversación. El Lic. Bustamante podrá orientarte mejor.",
+                "Para una evaluación adecuada, deberías contactar con el Lic. Daniel O. Bustamante."
+            ]
+            respuesta = random.choice(opciones_cierre)
         
-            registrar_respuesta_openai(interaccion_id, respuesta)
-            return {"respuesta": respuesta}
+        registrar_respuesta_openai(interaccion_id, respuesta)
+        return {"respuesta": respuesta}
+
 
         # ====================== INTERACCIÓN 5 – Resumen clínico preliminar e inferencia ======================
         if contador == 5:
