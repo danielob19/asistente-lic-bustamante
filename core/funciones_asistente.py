@@ -7,6 +7,7 @@ from core.utils_seguridad import contiene_elementos_peligrosos, contiene_frase_d
 from core.db.registro import registrar_auditoria_input_original
 from core.db.consulta import es_saludo, es_cortesia, contiene_expresion_administrativa
 from core.db.sintomas import detectar_emociones_negativas
+import openai
 from collections import Counter
 import psycopg2
 from core.db.config import conn  # Asegurate de tener la conexión importada correctamente
