@@ -283,8 +283,10 @@ async def asistente(input_data: UserInput):
             ]
             respuesta = random.choice(opciones_cierre)
         
-        registrar_respuesta_openai(interaccion_id, respuesta)
-        return {"respuesta": respuesta}
+        if contador >= 10:
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
+
 
 
         # ====================== INTERACCIÓN 5 – Resumen clínico preliminar e inferencia ======================
@@ -298,12 +300,18 @@ async def asistente(input_data: UserInput):
                         session["emociones_detectadas"].append(emocion)
         
             clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
-            resumen_clinico = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
         
-            respuesta = (
-                resumen_clinico
-                + " ¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
-            )
+            if session["emociones_detectadas"]:
+                resumen_clinico = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
+        
+                respuesta = (
+                    resumen_clinico
+                    + " ¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+                )
+            else:
+                respuesta = (
+                    "Comprendo. Para poder ayudarte mejor, ¿podrías contarme cómo te sentís últimamente?"
+                )
         
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
@@ -347,7 +355,7 @@ async def asistente(input_data: UserInput):
                 )
             else:
                 respuesta = (
-                    "Gracias por tu mensaje. Para continuar, necesito que me cuentes un poco más sobre cómo te estás sintiendo. "
+                    "Entiendo. Para continuar, necesito que me cuentes un poco más sobre cómo te estás sintiendo. "
                     "¿Podrías describirme lo que estás atravesando emocionalmente?"
                 )
         
