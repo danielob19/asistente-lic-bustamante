@@ -336,14 +336,20 @@ async def asistente(input_data: UserInput):
             # Clasificación mental basada en síntomas acumulados
             clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
         
-            # Generar resumen clínico con inferencia emocional
-            resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
+            if session["emociones_detectadas"]:
+                # Generar resumen clínico con inferencia emocional
+                resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
         
-            respuesta = (
-                resumen_clinico
-                + " No obstante, para estar seguros se requiere de una evaluación psicológica profesional. "
-                + "Te sugiero que lo consultes con el Lic. Daniel O. Bustamante."
-            )
+                respuesta = (
+                    resumen_clinico
+                    + " No obstante, para estar seguros se requiere de una evaluación psicológica profesional. "
+                    + "Te sugiero que lo consultes con el Lic. Daniel O. Bustamante."
+                )
+            else:
+                respuesta = (
+                    "Gracias por tu mensaje. Para continuar, necesito que me cuentes un poco más sobre cómo te estás sintiendo. "
+                    "¿Podrías describirme lo que estás atravesando emocionalmente?"
+                )
         
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
