@@ -303,7 +303,7 @@ async def asistente(input_data: UserInput):
 
         # ✅ Interacción 9 – Consolidar síntomas previos y sumar nuevas emociones
         if contador == 9:
-            # ✅ Consolidar emociones de interacciones 1 a 5 (por seguridad)
+            # Consolidar emociones de interacciones 1 a 5 (por seguridad)
             for mensaje in session["mensajes"][:-4]:
                 nuevas = detectar_emociones_negativas(mensaje) or []
                 for emocion in nuevas:
@@ -312,7 +312,7 @@ async def asistente(input_data: UserInput):
                     if emocion not in session["emociones_detectadas"]:
                         session["emociones_detectadas"].append(emocion)
         
-            # ✅ Detectar emociones nuevas de interacciones 6 a 9
+            # Detectar emociones nuevas de interacciones 6 a 9
             mensajes_previos = session["mensajes"][-4:]
             emociones_nuevas = []
         
@@ -325,26 +325,16 @@ async def asistente(input_data: UserInput):
                         emociones_nuevas.append(emocion)
                         session["emociones_detectadas"].append(emocion)
         
-            # 🧠 Clasificación mental basada en síntomas acumulados
+            # Clasificación mental basada en síntomas acumulados
             clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
         
-            # ✅ Generar resumen clínico con inferencia emocional
+            # Generar resumen clínico con inferencia emocional
             resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
-        
-            # ✅ Redacción con inferencia reforzada y cierre profesional
-            if clasificacion_mental:
-                inferencia_adicional = (
-                    f" que se suma, claro está, a la posible {clasificacion_mental.lower()} que te mencioné anteriormente..."
-                )
-            else:
-                inferencia_adicional = ""
         
             respuesta = (
                 resumen_clinico
-                + inferencia_adicional
                 + " No obstante, para estar seguros se requiere de una evaluación psicológica profesional. "
-                + "Te sugiero que te contactes con el Lic. Bustamante. "
-                + "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
+                + "Te sugiero que lo consultes con el Lic. Daniel O. Bustamante."
             )
         
             registrar_respuesta_openai(interaccion_id, respuesta)
