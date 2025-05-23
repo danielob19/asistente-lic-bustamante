@@ -144,10 +144,18 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
         session["emocion_inferida_9"] = emocion_inferida
 
     emociones_literal = ", ".join(session["emociones_detectadas"])
+    frase_diagnostica = random.choice([
+        "Se observa",
+        "Impresiona ser",
+        "Podría tratarse de",
+        "Da la sensación de ser",
+        "Normalmente se trata de un"
+    ])
+
     respuesta = (
         f"Por lo que comentás, pues al malestar anímico que describiste anteriormente, "
-        f"advierto que se suman {emociones_literal}, por lo que daría la impresión de que se trata "
-        f"de un estado emocional predominantemente {estado_global}. "
+        f"advierto que se suman {emociones_literal}, por lo que {frase_diagnostica.lower()} "
+        f"un estado emocional predominantemente {estado_global}. "
     )
 
     if emocion_inferida:
@@ -158,6 +166,7 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
     session["resumen_generado"] = True
     registrar_respuesta_openai(interaccion_id, respuesta)
     return respuesta
+
 
 
 def generar_resumen_interaccion_10(session, user_id, interaccion_id, contador):
