@@ -1,3 +1,4 @@
+import openai
 from collections import Counter
 import re
 import psycopg2
