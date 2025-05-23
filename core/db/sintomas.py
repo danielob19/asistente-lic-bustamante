@@ -5,6 +5,8 @@ import re
 
 
 def registrar_sintoma(sintoma: str, estado_emocional: str = None):
+    import openai  # 🔧 Import directo dentro de la función
+    
     """
     Registra un síntoma en la base de datos con su estado emocional.
     Si no se proporciona, se clasifica automáticamente con OpenAI.
