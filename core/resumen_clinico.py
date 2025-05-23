@@ -99,8 +99,8 @@ def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
 
     if emocion_inferida:
         resumen += (
-            f"Además, ¿dirías que también podrías estar atravesando cierta {emocion_inferida}? "
-            f"Lo pregunto porque suele aparecer en casos similares."
+            f"Además, diría que también podrías estar atravesando cierta {emocion_inferida} "
+            f"Lo digo porque suele aparecer en casos similares."
         )
     else:
         resumen += "¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
@@ -154,8 +154,8 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
 
     if emocion_inferida:
         respuesta += (
-            f"Además, ¿dirías que también podrías estar atravesando cierta {emocion_inferida}? "
-            f"Lo pregunto porque suele aparecer en casos similares. "
+            f"Además, sospecho que también podrías estar atravesando cierta {emocion_inferida}? "
+            f"Lo menciono porque suele aparecer en casos similares. "
         )
 
     respuesta += (
