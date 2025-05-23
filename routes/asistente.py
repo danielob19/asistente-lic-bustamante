@@ -268,10 +268,8 @@ async def asistente(input_data: UserInput):
 
 # ====================== INTERACCIÓN 10 O POSTERIOR: CIERRE DEFINITIVO ======================
 
-        # ✅ Activar cierre definitivo a partir de la interacción 10
+        # ✅ Interacción 10 o superior – Cierre definitivo profesional
         if contador >= 10:
-            print(f"🔒 Interacción {contador}: se activó el modo de cierre definitivo. No se realizará nuevo análisis clínico.")
-        
             respuesta = (
                 "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
                 "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
@@ -281,6 +279,8 @@ async def asistente(input_data: UserInput):
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
+
+        # ✅ Interacción 9 – Consolidar síntomas previos y sumar nuevas emociones
         if contador == 9:
             # ✅ Consolidar emociones de interacciones 1 a 5 (por seguridad)
             for mensaje in session["mensajes"][:-4]:
@@ -306,31 +306,25 @@ async def asistente(input_data: UserInput):
         
             # 🧠 Clasificación mental basada en síntomas acumulados
             clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
-            inferencia_adicional = ""
-            if clasificacion_mental:
-                inferencia_adicional = f" Clasificación mental preliminar: {clasificacion_mental}."
         
-            # ✅ Generar resumen clínico con nueva inferencia emocional
-            resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
-            respuesta = resumen_clinico + inferencia_adicional
-        
-            registrar_respuesta_openai(interaccion_id, respuesta)
-            return {"respuesta": respuesta}
-
-        # ✅ En la interacción 5, generar resumen clínico y estado emocional predominante
-        if contador == 5:
             # ✅ Generar resumen clínico con inferencia emocional
-            resumen_clinico = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
+            resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
         
-            # 🧠 Predicción hipotética basada en emociones detectadas
-            prediccion = predecir_evento_futuro(session["emociones_detectadas"])
-            if prediccion:
-                prediccion_formulada = f" Si este estado se mantiene en el tiempo, podría tratarse de una tendencia hacia {prediccion.lower()}."
+            # ✅ Redacción con inferencia reforzada y cierre profesional
+            if clasificacion_mental:
+                inferencia_adicional = (
+                    f" que se suma, claro está, a la posible {clasificacion_mental.lower()} que te mencioné anteriormente..."
+                )
             else:
-                prediccion_formulada = ""
+                inferencia_adicional = ""
         
-            # ✅ Redacción conjunta con cierre profesional
-            respuesta = resumen_clinico + prediccion_formulada
+            respuesta = (
+                resumen_clinico
+                + inferencia_adicional
+                + " No obstante, para estar seguros se requiere de una evaluación psicológica profesional. "
+                + "Te sugiero que te contactes con el Lic. Bustamante. "
+                + "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
+            )
         
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
