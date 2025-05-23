@@ -2,11 +2,14 @@
 import openai
 
 def predecir_evento_futuro(mensajes):
+    import openai  # 🔧 Import directo dentro de la función para evitar errores
+
     # Análisis simple de proyección futura basada en contenido
     for mensaje in mensajes[::-1]:  # analizamos desde el más reciente
         if "me va a pasar" in mensaje or "seguro que terminaré" in mensaje:
             return mensaje
     return "sin predicción identificable"
+
 
 def inferir_patron_interactivo(mensajes):
     if len(mensajes) < 3:
