@@ -108,7 +108,6 @@ def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
     return resumen
 
 
-
 def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
     print("🧩 Generando resumen clínico en interacción 9")
     mensajes_6_a_9 = session["mensajes"][-4:]
@@ -153,15 +152,8 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
 
     if emocion_inferida:
         respuesta += (
-            f"Además, sospecho que también podrías estar atravesando cierta {emocion_inferida}? "
-            f"Lo menciono porque suele aparecer en casos similares. "
+            f"Además, se infiere también cierta {emocion_inferida}, ya que suele estar presente en combinaciones emocionales como las que expresaste."
         )
-
-    respuesta += (
-        "No obstante, para estar seguros se requiere de una evaluación psicológica profesional. "
-        "Te sugiero que te contactes con el Lic. Bustamante. "
-        "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
-    )
 
     session["resumen_generado"] = True
     registrar_respuesta_openai(interaccion_id, respuesta)
