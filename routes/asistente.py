@@ -281,6 +281,60 @@ async def asistente(input_data: UserInput):
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
+        if contador == 9:
+            # ✅ Consolidar emociones de interacciones 1 a 5 (por seguridad)
+            for mensaje in session["mensajes"][:-4]:
+                nuevas = detectar_emociones_negativas(mensaje) or []
+                for emocion in nuevas:
+                    emocion = emocion.lower().strip()
+                    emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
+                    if emocion not in session["emociones_detectadas"]:
+                        session["emociones_detectadas"].append(emocion)
+        
+            # ✅ Detectar emociones nuevas de interacciones 6 a 9
+            mensajes_previos = session["mensajes"][-4:]
+            emociones_nuevas = []
+        
+            for mensaje in mensajes_previos:
+                nuevas = detectar_emociones_negativas(mensaje) or []
+                for emocion in nuevas:
+                    emocion = emocion.lower().strip()
+                    emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
+                    if emocion not in session["emociones_detectadas"]:
+                        emociones_nuevas.append(emocion)
+                        session["emociones_detectadas"].append(emocion)
+        
+            # 🧠 Clasificación mental basada en síntomas acumulados
+            clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
+            inferencia_adicional = ""
+            if clasificacion_mental:
+                inferencia_adicional = f" Clasificación mental preliminar: {clasificacion_mental}."
+        
+            # ✅ Generar resumen clínico con nueva inferencia emocional
+            resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
+            respuesta = resumen_clinico + inferencia_adicional
+        
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
+
+        # ✅ En la interacción 5, generar resumen clínico y estado emocional predominante
+        if contador == 5:
+            # ✅ Generar resumen clínico con inferencia emocional
+            resumen_clinico = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
+        
+            # 🧠 Predicción hipotética basada en emociones detectadas
+            prediccion = predecir_evento_futuro(session["emociones_detectadas"])
+            if prediccion:
+                prediccion_formulada = f" Si este estado se mantiene en el tiempo, podría tratarse de una tendencia hacia {prediccion.lower()}."
+            else:
+                prediccion_formulada = ""
+        
+            # ✅ Redacción conjunta con cierre profesional
+            respuesta = resumen_clinico + prediccion_formulada
+        
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
+
 
         # ✅ Si hay una respuesta clínica manual para esta interacción, se devuelve directamente
         # 🔄 (Se reemplazó el uso de 'respuestas_personalizadas' por 'RESPUESTAS_CLINICAS' del módulo importado)
@@ -296,10 +350,7 @@ async def asistente(input_data: UserInput):
             )
         
             return {"respuesta": respuesta_manual}
-                   
-        if contador == 10:
-            respuesta = generar_resumen_interaccion_10(session, user_id, interaccion_id, contador)
-            return {"respuesta": respuesta}
+            
 
         # ✅ Confirmación de inferencia emocional previa entre interacciones 6 a 8
         if 6 <= contador <= 8 and session.get("emocion_inferida_5"):
@@ -582,61 +633,6 @@ async def asistente(input_data: UserInput):
             patron_detectado = inferir_patron_interactivo(session["mensajes"][-3:])
             if patron_detectado != "sin patrón consistente":
                 print(f"🔄 Patrón interactivo detectado: {patron_detectado}")
-        
-        # ✅ En la interacción 5, generar resumen clínico y estado emocional predominante
-        if contador == 5:
-            # ✅ Generar resumen clínico con inferencia emocional
-            resumen_clinico = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
-        
-            # 🧠 Predicción hipotética basada en emociones detectadas
-            prediccion = predecir_evento_futuro(session["emociones_detectadas"])
-            if prediccion:
-                prediccion_formulada = f" Si este estado se mantiene en el tiempo, podría tratarse de una tendencia hacia {prediccion.lower()}."
-            else:
-                prediccion_formulada = ""
-        
-            # ✅ Redacción conjunta con cierre profesional
-            respuesta = resumen_clinico + prediccion_formulada
-        
-            registrar_respuesta_openai(interaccion_id, respuesta)
-            return {"respuesta": respuesta}
-
-        
-        if contador == 9:
-            # ✅ Consolidar emociones de interacciones 1 a 5 (por seguridad)
-            for mensaje in session["mensajes"][:-4]:
-                nuevas = detectar_emociones_negativas(mensaje) or []
-                for emocion in nuevas:
-                    emocion = emocion.lower().strip()
-                    emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
-                    if emocion not in session["emociones_detectadas"]:
-                        session["emociones_detectadas"].append(emocion)
-        
-            # ✅ Detectar emociones nuevas de interacciones 6 a 9
-            mensajes_previos = session["mensajes"][-4:]
-            emociones_nuevas = []
-        
-            for mensaje in mensajes_previos:
-                nuevas = detectar_emociones_negativas(mensaje) or []
-                for emocion in nuevas:
-                    emocion = emocion.lower().strip()
-                    emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
-                    if emocion not in session["emociones_detectadas"]:
-                        emociones_nuevas.append(emocion)
-                        session["emociones_detectadas"].append(emocion)
-        
-            # 🧠 Clasificación mental basada en síntomas acumulados
-            clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
-            inferencia_adicional = ""
-            if clasificacion_mental:
-                inferencia_adicional = f" Clasificación mental preliminar: {clasificacion_mental}."
-        
-            # ✅ Generar resumen clínico con nueva inferencia emocional
-            resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
-            respuesta = resumen_clinico + inferencia_adicional
-        
-            registrar_respuesta_openai(interaccion_id, respuesta)
-            return {"respuesta": respuesta}
 
 
         # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
