@@ -72,6 +72,36 @@ def generar_hipotesis_psicodinamica(emociones_detectadas: list, mensajes: list) 
 
     for claves, hipotesis in combinaciones.items():
         if all(any(clave in emocion for emocion in emociones_normalizadas) for clave in claves):
-            return reformular_hipotesis(hipotesis, estilo)
+            hipotesis_reformulada = reformular_hipotesis(hipotesis, estilo)
+            orientacion = detectar_orientacion_reflexiva(mensajes)
+            
+            if orientacion == "relacional":
+                hipotesis_reformulada += " El conflicto parece vincularse principalmente con la forma en que se perciben las relaciones interpersonales."
+            elif orientacion == "intrapersonal":
+                hipotesis_reformulada += " La dinámica emocional sugiere un foco en la autoimagen y el juicio hacia uno mismo."
+            elif orientacion == "insight":
+                hipotesis_reformulada += " Se evidencia un nivel de reflexión que podría facilitar el abordaje terapéutico si se profundiza clínicamente."
+            
+            return hipotesis_reformulada
 
     return "Podría existir un conflicto intrapsíquico no consciente que requiere mayor exploración para ser comprendido en profundidad."
+
+
+def detectar_orientacion_reflexiva(mensajes: list) -> str:
+    texto = " ".join(mensajes).lower()
+    
+    if any(palabra in texto for palabra in ["me doy cuenta", "a veces creo que", "entiendo que", "siento que esto viene", "creo que esto es por", "esto debe venir de"]):
+        return "insight"
+
+    emociones_vinculo = {"rechazo", "abandono", "desaprobación", "soledad", "temor al rechazo", "desconfianza"}
+    emociones_autovaloracion = {"culpa", "fracaso", "autocrítica", "insuficiencia", "inseguridad", "ansiedad"}
+
+    emociones_detectadas = set(texto.split())
+
+    if emociones_vinculo & emociones_detectadas:
+        return "relacional"
+    elif emociones_autovaloracion & emociones_detectadas:
+        return "intrapersonal"
+    
+    return "general"
+
