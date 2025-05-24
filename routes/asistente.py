@@ -273,15 +273,48 @@ async def asistente(input_data: UserInput):
                 "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
                 "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
             )
+        # ======================= INTERACCIONES POSTERIORES A LA 10 =======================
         elif contador >= 11:
-            opciones_cierre = [
-                "Como indiqué antes, no puedo continuar. Te sugiero que contactes al Lic. Bustamante.",
-                "La conversación ha llegado a su fin. Para más ayuda, podés contactar con el Lic. Daniel O. Bustamante.",
-                "Ya no me es posible continuar. Te sugiero hablar directamente con el Licenciado.",
-                "No puedo avanzar más en esta conversación. El Lic. Bustamante podrá orientarte mejor.",
-                "Para una evaluación adecuada, deberías contactar con el Lic. Daniel O. Bustamante."
+            # Lista de frases variadas de cierre
+            cierres_basicos = [
+                "Como indiqué antes, no puedo continuar.",
+                "Ya he concluido esta conversación.",
+                "No tengo más recursos que ofrecerte aquí.",
+                "Como mencioné antes, ya he concluido esta conversación.",
+                "No puedo avanzar más desde aquí.",
+                "He alcanzado mi límite de intervención."
             ]
-            respuesta = random.choice(opciones_cierre)
+        
+            recordatorios_profesionales = [
+                "Te sugiero que lo consultes con el Lic. Daniel O. Bustamante para una mejor orientación.",
+                "Recordá que el Lic. Bustamante podría ayudarte con mayor profundidad.",
+                "Te recuerdo que sería recomendable que consultes al Lic. Daniel O. Bustamante para continuar.",
+                "Una evaluación clínica directa con el Lic. Bustamante sería lo más indicado."
+            ]
+        
+            hipotesis_psicodinamicas = [
+                "A veces estos sentimientos aparecen como defensa frente a un temor más profundo.",
+                "Este tipo de vivencias podrían vincularse con experiencias tempranas no resueltas.",
+                "Quizás haya una parte de vos que busca protección frente a una amenaza emocional no identificada.",
+                "En ocasiones, el retraimiento puede funcionar como escudo ante vínculos que generan ambivalencia."
+            ]
+        
+            # Elegir cierre básico
+            respuesta = random.choice(cierres_basicos)
+        
+            # Cada 2 o 3 interacciones posteriores a la 10, agregar recordatorio profesional
+            if contador % random.choice([2, 3]) == 0:
+                recordatorio = random.choice(recordatorios_profesionales)
+                respuesta += " " + recordatorio
+        
+            # Ocasionalmente intercalar una hipótesis psicodinámica sugerente
+            if contador % random.choice([3, 4]) == 0:
+                hipotesis = random.choice(hipotesis_psicodinamicas)
+                respuesta += " " + hipotesis
+        
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
+
         
         if contador >= 10:
             registrar_respuesta_openai(interaccion_id, respuesta)
