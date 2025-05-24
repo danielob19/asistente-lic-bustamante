@@ -341,23 +341,33 @@ async def asistente(input_data: UserInput):
                         emociones_nuevas.append(emocion)
                         session["emociones_detectadas"].append(emocion)
         
-            # Clasificación mental basada en síntomas acumulados
+            # Clasificación mental basada en emociones acumuladas
             clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
         
-            if session["emociones_detectadas"]:
-                # Generar resumen clínico con inferencia emocional
-                resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
+            # Generar resumen clínico basado en mensajes y emociones
+            resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
         
-                respuesta = (
-                    resumen_clinico
-                    + " No obstante, para estar seguros se requiere de una evaluación psicológica profesional. "
-                    + "Te sugiero que lo consultes con el Lic. Daniel O. Bustamante."
+            # Generar hipótesis psicodinámica tentativa
+            from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica
+            hipotesis_psico = generar_hipotesis_psicodinamica(session["emociones_detectadas"], session["mensajes"])
+        
+            # Redacción final con inferencia reforzada y cierre profesional
+            respuesta = resumen_clinico
+        
+            if hipotesis_psico:
+                respuesta += f" {hipotesis_psico} "
+        
+            if clasificacion_mental:
+                respuesta += (
+                    f" Además, se suma una impresión de posible {clasificacion_mental.lower()} predominante, "
+                    "tal como se mencionó anteriormente."
                 )
-            else:
-                respuesta = (
-                    "Entiendo. Para continuar, necesito que me cuentes un poco más sobre cómo te estás sintiendo. "
-                    "¿Podrías describirme lo que estás atravesando emocionalmente?"
-                )
+        
+            respuesta += (
+                " No obstante, para estar seguros se requiere de una evaluación psicológica profesional. "
+                "Te sugiero que te contactes con el Lic. Bustamante. "
+                "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
+            )
         
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
