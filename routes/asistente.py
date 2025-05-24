@@ -367,6 +367,18 @@ async def asistente(input_data: UserInput):
         
                 respuesta_variable = seleccionar_estilo_clinico_variable()
                 respuesta = respuesta_variable + recordatorio
+
+            elif contador == 14:
+                respuesta = (
+                    "Comprendo que lo que venís expresando podría estar relacionado con un estado emocional sostenido. "
+                    "Sin embargo, ya te he brindado toda la orientación posible desde este espacio. "
+                    "Te reitero que lo más indicado es que consultes directamente con el Lic. Daniel O. Bustamante, "
+                    "quien podrá acompañarte de forma profesional. "
+                    "No me es posible continuar con la conversación."
+                )
+                registrar_respuesta_openai(interaccion_id, respuesta)
+                return {"respuesta": respuesta}
+            
         
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
