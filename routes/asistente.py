@@ -57,6 +57,7 @@ from core.resumen_clinico import (
 from core.utils.generador_openai import generar_respuesta_con_openai
 from core.utils.clinico_contexto import hay_contexto_clinico_anterior
 
+from core.estilos_post10 import seleccionar_estilo_clinico_variable
 
 from core.contexto import user_sessions
 from core.constantes import CLINICO_CONTINUACION, CLINICO, SALUDO, CORTESIA, ADMINISTRATIVO, CONSULTA_AGENDAR, CONSULTA_MODALIDAD
