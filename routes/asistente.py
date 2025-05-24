@@ -267,23 +267,6 @@ async def asistente(input_data: UserInput):
         contador = session["contador_interacciones"]
         session["mensajes"].append(mensaje_usuario)
 
-        # ====================== INTERACCIÓN 10 O POSTERIOR: CIERRE DEFINITIVO ======================
-        if contador == 10:
-            respuesta = (
-                "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
-                "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
-                "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
-            )
-        elif contador >= 11:
-            recordatorio = ""
-            if (contador - 10) % 2 == 0:
-                recordatorio = " Te recuerdo que para una orientación adecuada, deberías consultar con el Lic. Daniel O. Bustamante."
-        
-            respuesta_variable = seleccionar_estilo_clinico_variable()
-            respuesta = respuesta_variable + recordatorio
-        
-        registrar_respuesta_openai(interaccion_id, respuesta)
-        return {"respuesta": respuesta}
 
 
         # ====================== INTERACCIÓN 5 – Resumen clínico preliminar e inferencia ======================
