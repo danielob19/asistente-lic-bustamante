@@ -1,5 +1,6 @@
 import random
 
+
 def seleccionar_estilo_redaccion() -> str:
     estilos = [
         "clasico",
@@ -7,9 +8,20 @@ def seleccionar_estilo_redaccion() -> str:
         "estructural",
         "fenomenologico",
         "breve",
-        "integrativo"
+        "integrativo",
+        "narrativo"  # ✅ Nuevo estilo agregado
     ]
     return random.choice(estilos)
+
+
+def reformular_estilo_narrativo(base: str) -> str:
+    return (
+        "A lo largo de lo expresado, se configura un hilo emocional que podría estar atravesado por lo siguiente: "
+        + base +
+        " Este relato, aunque fragmentario, permite entrever una vivencia que no ha sido plenamente significada, "
+        "pero que resuena como una constante interna que podría estar operando en silencio desde hace tiempo."
+    )
+
 
 def reformular_hipotesis(base: str, estilo: str) -> str:
     if estilo == "clasico":
@@ -24,8 +36,11 @@ def reformular_hipotesis(base: str, estilo: str) -> str:
         return "Surge una tensión entre necesidad de validación y miedo al rechazo."
     elif estilo == "integrativo":
         return "Podría tratarse de un patrón donde el deseo de ser aceptado convive con el temor profundo a la desaprobación."
+    elif estilo == "narrativo":
+        return reformular_estilo_narrativo(base)
     else:
         return base  # fallback
+
 
 def generar_hipotesis_psicodinamica(emociones_detectadas: list, mensajes: list) -> str:
     """
