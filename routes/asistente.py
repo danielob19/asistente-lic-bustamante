@@ -1,3 +1,4 @@
+from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica
 from fastapi import APIRouter, HTTPException
 from core.modelos.base import UserInput
 
