@@ -371,13 +371,24 @@ async def asistente(input_data: UserInput):
                 respuesta = respuesta_variable + recordatorio
 
             elif contador == 14:
+                hipotesis_psico = generar_hipotesis_psicodinamica(
+                    session["emociones_detectadas"], session["mensajes"]
+                )
+            
                 respuesta = (
                     "Comprendo que lo que venís expresando podría estar relacionado con un estado emocional sostenido. "
                     "Sin embargo, ya te he brindado toda la orientación posible desde este espacio. "
+                )
+            
+                if hipotesis_psico:
+                    respuesta += hipotesis_psico + " "
+            
+                respuesta += (
                     "Te reitero que lo más indicado es que consultes directamente con el Lic. Daniel O. Bustamante, "
                     "quien podrá acompañarte de forma profesional. "
                     "No me es posible continuar con la conversación."
                 )
+            
                 registrar_respuesta_openai(interaccion_id, respuesta)
                 return {"respuesta": respuesta}
 
