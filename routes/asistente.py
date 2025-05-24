@@ -401,7 +401,7 @@ async def asistente(input_data: UserInput):
                 )
                 registrar_respuesta_openai(interaccion_id, respuesta)
                 return {"respuesta": respuesta}
-            
+       
         
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
