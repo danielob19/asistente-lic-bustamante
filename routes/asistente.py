@@ -378,6 +378,16 @@ async def asistente(input_data: UserInput):
                 )
                 registrar_respuesta_openai(interaccion_id, respuesta)
                 return {"respuesta": respuesta}
+
+            elif contador == 15:
+                respuesta = (
+                    "Ya en este punto, no puedo seguir brindándote orientación desde este espacio. "
+                    "Lo más apropiado es que puedas consultarlo directamente con el Lic. Daniel O. Bustamante, "
+                    "quien podrá ofrecerte un acompañamiento profesional. "
+                    "No me es posible continuar con la conversación."
+                )
+                registrar_respuesta_openai(interaccion_id, respuesta)
+                return {"respuesta": respuesta}
             
         
             registrar_respuesta_openai(interaccion_id, respuesta)
