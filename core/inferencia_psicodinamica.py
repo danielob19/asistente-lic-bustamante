@@ -1,5 +1,32 @@
 import random
 
+def seleccionar_estilo_redaccion() -> str:
+    estilos = [
+        "clasico",
+        "inferencial",
+        "estructural",
+        "fenomenologico",
+        "breve",
+        "integrativo"
+    ]
+    return random.choice(estilos)
+
+def reformular_hipotesis(base: str, estilo: str) -> str:
+    if estilo == "clasico":
+        return base
+    elif estilo == "inferencial":
+        return base.replace("Podría estar operando", "Da la impresión de que se configura").replace("y el", "y un")
+    elif estilo == "estructural":
+        return "Se sugiere un conflicto estructural entre demandas internas y la vivencia de insuficiencia afectiva."
+    elif estilo == "fenomenologico":
+        return "La experiencia parece teñida por una oscilación entre búsqueda de aprobación y temor a no ser suficiente."
+    elif estilo == "breve":
+        return "Surge una tensión entre necesidad de validación y miedo al rechazo."
+    elif estilo == "integrativo":
+        return "Podría tratarse de un patrón donde el deseo de ser aceptado convive con el temor profundo a la desaprobación."
+    else:
+        return base  # fallback
+
 def generar_hipotesis_psicodinamica(emociones_detectadas: list, mensajes: list) -> str:
     """
     Genera una hipótesis psicodinámica tentativa a partir de emociones acumuladas y mensajes previos.
@@ -7,7 +34,7 @@ def generar_hipotesis_psicodinamica(emociones_detectadas: list, mensajes: list) 
     if not emociones_detectadas or not mensajes:
         return ""
 
-        combinaciones = {
+    combinaciones = {
         ("insuficiencia", "rechazo", "inseguridad"): (
             "Podría estar operando un conflicto entre la necesidad de validación y el temor a la desaprobación."
         ),
@@ -23,11 +50,10 @@ def generar_hipotesis_psicodinamica(emociones_detectadas: list, mensajes: list) 
         ("enojo", "irritabilidad", "aislamiento"): (
             "Podría tratarse de una modalidad defensiva basada en el retraimiento hostil ante frustraciones relacionales no tramitadas."
         ),
-        # Nuevas combinaciones propuestas
         ("apatía", "vacío", "desesperanza"): (
             "Podría vincularse a una vivencia de agotamiento psíquico o desvitalización, donde el deseo y la expectativa emocional se encuentran inhibidos."
         ),
-        ("culpa", "autoexigencia", "fracaso"): (
+        ("culpa", "autocrítica", "fracaso"): (
             "Se observa un patrón de autovaloración crítica, posiblemente originado en mandatos internalizados que dificultan la autoaceptación."
         ),
         ("temor al rechazo", "insuficiencia", "inseguridad"): (
@@ -42,9 +68,10 @@ def generar_hipotesis_psicodinamica(emociones_detectadas: list, mensajes: list) 
     }
 
     emociones_normalizadas = [e.lower().strip().replace(".", "") for e in emociones_detectadas]
+    estilo = seleccionar_estilo_redaccion()
 
     for claves, hipotesis in combinaciones.items():
         if all(any(clave in emocion for emocion in emociones_normalizadas) for clave in claves):
-            return hipotesis
+            return reformular_hipotesis(hipotesis, estilo)
 
     return "Podría existir un conflicto intrapsíquico no consciente que requiere mayor exploración para ser comprendido en profundidad."
