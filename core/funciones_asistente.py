@@ -82,13 +82,16 @@ def clasificar_input_inicial(texto: str) -> str:
 
     # 📋 Consultas indirectas: verbo + tema clínico (frecuentes en landing pages)
     temas_clinicos_comunes = [
-        "terapia de pareja", "psicoterapia", "tratamiento psicológico", "consultas psicológicas",
-        "abordaje emocional", "tratamiento emocional", "atención psicológica"
+    "terapia de pareja", "psicoterapia", "tratamiento psicológico", "consultas psicológicas",
+    "abordaje emocional", "tratamiento emocional", "atención psicológica", "pareja"
     ]
-    for verbo in [
+    
+    verbos_clinicos = [
         "hace", "hacen", "dan", "atiende", "atienden", "realiza", "realizan", "ofrece", "ofrecen",
         "trabaja con", "trabajan con", "brinda", "brindan"
-    ]:
+    ]
+    
+    for verbo in verbos_clinicos:
         for tema in temas_clinicos_comunes:
             patron = rf"{verbo}\s*(el|la|los|las)?\s*{re.escape(tema)}"
             if re.search(patron, texto, re.IGNORECASE):
@@ -99,6 +102,17 @@ def clasificar_input_inicial(texto: str) -> str:
                     clasificacion="ADMINISTRATIVO (verbo + tema clínico común)"
                 )
                 return "ADMINISTRATIVO"
+    
+    # 🆕 Captura directa de frases como “atienden pareja”
+    if re.search(r"\b(atiende|atienden|trabaja con|trabajan con|hace|hacen|dan|ofrece|ofrecen)\s+(una\s+)?pareja\b", texto, re.IGNORECASE):
+        registrar_auditoria_input_original(
+            user_id="sistema",
+            mensaje_original=texto,
+            mensaje_purificado=texto,
+            clasificacion="ADMINISTRATIVO (mención directa a pareja)"
+        )
+        return "ADMINISTRATIVO"
+
 
     # 🧠 Consultas indirectas sobre síntomas mediante verbos + síntomas cacheados
     verbos_consulta = [
