@@ -377,7 +377,6 @@ async def asistente(input_data: UserInput):
                 )
         
             elif contador >= 14:
-                # A partir de la interacción 14, se fuerza el uso del estilo narrativo por decisión del autor
                 from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, reformular_estilo_narrativo
             
                 hipotesis_base = generar_hipotesis_psicodinamica(
@@ -385,9 +384,22 @@ async def asistente(input_data: UserInput):
                 )
                 hipotesis_psico = reformular_estilo_narrativo(hipotesis_base)
             
+                # Evitar duplicados si OpenAI repite frase inicial
+                if hipotesis_psico.count("A lo largo de lo expresado") > 1:
+                    partes = hipotesis_psico.split("A lo largo de lo expresado")
+                    hipotesis_psico = "A lo largo de lo expresado" + partes[1]
+            
+                frases_cierre_varias = [
+                    "Como mencioné en otra ocasión, no puedo continuar respondiendo desde este espacio.",
+                    "Tal como advertí antes, no es posible continuar esta conversación por este medio.",
+                    "Ya te indiqué que este canal tiene un límite de interacción.",
+                    "Como fue señalado, este espacio no permite continuar más allá de este punto.",
+                    "Como fue expresado antes, no podré seguir dialogando por esta vía.",
+                ]
+                cierre = random.choice(frases_cierre_varias)
+            
                 respuesta = (
-                    hipotesis_psico + " "
-                    "Como te mencioné anteriormente, ya no puedo continuar con esta conversación desde aquí. "
+                    hipotesis_psico + " " + cierre + " "
                     "Es fundamental que, si deseás avanzar, lo hagas consultando directamente con el Lic. Daniel O. Bustamante, "
                     "quien podrá brindarte el acompañamiento profesional que necesitás. "
                     "No me es posible continuar respondiendo mensajes en este espacio."
@@ -395,6 +407,7 @@ async def asistente(input_data: UserInput):
             
                 registrar_respuesta_openai(interaccion_id, respuesta)
                 return {"respuesta": respuesta}
+
             
                     
             elif contador == 15:
