@@ -441,7 +441,17 @@ async def asistente(input_data: UserInput):
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
-        
+        # 🛑 Filtro definitivo para inputs irrelevantes post-cierre
+        if contador >= 10 and clasificacion in ["IRRELEVANTE", "MALICIOSO"]:
+            respuesta = (
+                "Como fue señalado, este espacio no permite continuar más allá de este punto. "
+                "Es fundamental que, si deseás avanzar, lo hagas consultando directamente con el Lic. Daniel O. Bustamante, "
+                "quien podrá brindarte el acompañamiento profesional que necesitás. "
+                "No me es posible continuar respondiendo mensajes en este espacio."
+            )
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
+
 
         # ✅ Si hay una respuesta clínica manual para esta interacción, se devuelve directamente
         # 🔄 (Se reemplazó el uso de 'respuestas_personalizadas' por 'RESPUESTAS_CLINICAS' del módulo importado)
@@ -472,6 +482,48 @@ async def asistente(input_data: UserInput):
                         f"Gracias por confirmarlo. ¿Querés contarme un poco más sobre cómo se manifiesta esa {emocion}?"
                     )
                 }
+        
+        # 🧠 Inferencia emocional dinámica en 6-8 si no hay confirmación
+        if 6 <= contador <= 8 and not session.get("emocion_inferida_5"):
+            mensaje_actual = session["mensajes"][-1]
+            nuevas_emociones = detectar_emociones_negativas(mensaje_actual) or []
+            emociones_nuevas_detectadas = []
+        
+            for emocion in nuevas_emociones:
+                emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion.lower().strip())
+                if emocion not in session["emociones_detectadas"]:
+                    emociones_nuevas_detectadas.append(emocion)
+                    session["emociones_detectadas"].append(emocion)
+                    registrar_emocion(emocion, f"interacción {contador}", user_id)
+        
+            if emociones_nuevas_detectadas:
+                frase_diagnostica = random.choice([
+                    "Se observa",
+                    "Podría tratarse de",
+                    "Impresiona",
+                    "Da la sensación de",
+                    "Suele corresponder a"
+                ])
+                emociones_literal = ", ".join(sorted(set(emociones_nuevas_detectadas)))
+                estado_inferido = clasificar_estado_mental([mensaje_actual])
+        
+                respuesta = (
+                    f"{frase_diagnostica} un aumento en el malestar emocional, asociado a {emociones_literal}. "
+                )
+                if estado_inferido and estado_inferido != "estado emocional no definido":
+                    respuesta += f"Esto podría vincularse con un estado emocional del tipo {estado_inferido}. "
+        
+                respuesta += "¿Querés contarme un poco más sobre cómo estás atravesando esto?"
+        
+            else:
+                respuesta = (
+                    "¿Podés contarme un poco más sobre lo que estás sintiendo "
+                    "para poder brindarte una orientación adecuada?"
+                )
+        
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
+
 
         # 🧠 Nueva respuesta para la PRIMERA INTERACCIÓN
         if contador == 1:
