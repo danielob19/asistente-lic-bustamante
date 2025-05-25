@@ -1,5 +1,6 @@
 import random
 
+# ------------------------ Selección de estilo ------------------------
 
 def seleccionar_estilo_redaccion() -> str:
     estilos = [
@@ -13,15 +14,17 @@ def seleccionar_estilo_redaccion() -> str:
     ]
     return random.choice(estilos)
 
+# ------------------------ Reformulación narrativa ------------------------
 
 def reformular_estilo_narrativo(base: str) -> str:
     return (
         "A lo largo de lo expresado, se configura un hilo emocional que podría estar atravesado por lo siguiente: "
-        + base +
-        " Este relato, aunque fragmentario, permite entrever una vivencia que no ha sido plenamente significada, "
-        "pero que resuena como una constante interna que podría estar operando en silencio desde hace tiempo."
+        + base + " "
+        + "Este relato, aunque fragmentario, permite entrever una vivencia que no ha sido plenamente significada, "
+        + "pero que resuena como una constante interna que podría estar operando en silencio desde hace tiempo."
     )
 
+# ------------------------ Reformulación según estilo ------------------------
 
 def reformular_hipotesis(base: str, estilo: str) -> str:
     if estilo == "clasico":
@@ -41,6 +44,7 @@ def reformular_hipotesis(base: str, estilo: str) -> str:
     else:
         return base  # fallback
 
+# ------------------------ Hipótesis psicodinámica principal ------------------------
 
 def generar_hipotesis_psicodinamica(emociones_detectadas: list, mensajes: list) -> str:
     """
@@ -101,11 +105,15 @@ def generar_hipotesis_psicodinamica(emociones_detectadas: list, mensajes: list) 
 
     return "Podría existir un conflicto intrapsíquico no consciente que requiere mayor exploración para ser comprendido en profundidad."
 
+# ------------------------ Detección de orientación reflexiva ------------------------
 
 def detectar_orientacion_reflexiva(mensajes: list) -> str:
     texto = " ".join(mensajes).lower()
     
-    if any(palabra in texto for palabra in ["me doy cuenta", "a veces creo que", "entiendo que", "siento que esto viene", "creo que esto es por", "esto debe venir de"]):
+    if any(palabra in texto for palabra in [
+        "me doy cuenta", "a veces creo que", "entiendo que", "siento que esto viene",
+        "creo que esto es por", "esto debe venir de"
+    ]):
         return "insight"
 
     emociones_vinculo = {"rechazo", "abandono", "desaprobación", "soledad", "temor al rechazo", "desconfianza"}
@@ -119,4 +127,3 @@ def detectar_orientacion_reflexiva(mensajes: list) -> str:
         return "intrapersonal"
     
     return "general"
-
