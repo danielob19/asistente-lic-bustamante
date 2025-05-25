@@ -54,7 +54,6 @@ def inferir_intencion_usuario(mensajes):
         return "curiosidad o prueba"
 
     frases_cierre = [
-        # Cierre explícito o directo
         "ya dije todo lo que sentía", "ya no sé qué más decir", "es todo por ahora",
         "no tengo más para contar", "me cansé de hablar", "esto ya me agotó",
         "creo que no me sirve", "siento que esto no ayuda", "no le encuentro sentido a seguir",
@@ -62,9 +61,8 @@ def inferir_intencion_usuario(mensajes):
         "gracias por todo", "ya está", "eso era todo", "te agradezco igual",
         "me ayudó aunque no lo parezca",
 
-        # Evasión o ambigüedad resignada
-        "da igual", "como sea", "ya fue", "me rindo",
-        "no quiero seguir pensando en esto", "dejémoslo ahí",
+        # Ambigüedad resignada
+        "da igual", "como sea", "ya fue", "me rindo", "dejémoslo ahí",
 
         # Ironía o sarcasmo resignado
         "sí, seguro que me va a cambiar la vida", "listo, estoy curado",
@@ -73,7 +71,6 @@ def inferir_intencion_usuario(mensajes):
         # Vacío o desesperanza implícita
         "es inútil", "nada cambia", "esto no tiene sentido", "para qué seguir", "ya no importa"
     ]
-
     if any(frase in ultimo for frase in frases_cierre):
         return "intención de cierre"
 
