@@ -90,9 +90,10 @@ async def asistente(input_data: UserInput):
         user_id = input_data.user_id
         mensaje_original = input_data.mensaje
 
-        if not mensaje_original or not isinstance(mensaje_original, str):
+        # 🛡️ Validación anticipada para evitar errores de tipo NoneType
+        if mensaje_original is None or not isinstance(mensaje_original, str):
             raise HTTPException(status_code=400, detail="El mensaje recibido no es válido.")
-        
+            
         mensaje_original = mensaje_original.strip()
         mensaje_usuario = mensaje_original.lower()
 
