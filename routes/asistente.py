@@ -70,6 +70,8 @@ import random
 
 router = APIRouter()
 
+LIMITE_INTERACCIONES = 20  # 🔒 Límite máximo de interacciones permitidas por usuario
+
 @router.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
@@ -1055,6 +1057,20 @@ async def asistente(input_data: UserInput):
             motivo = "Se eliminó mención indebida al Lic. Bustamante antes de interacción permitida"
             registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_filtrada, motivo)
             return {"respuesta": respuesta_filtrada}
+
+        # ----------------------------- LÍMITE DE INTERACCIONES -----------------------------
+        if contador >= LIMITE_INTERACCIONES:
+            respuesta = (
+                "Este canal ha alcanzado su límite de interacciones permitidas. "
+                "Por razones clínicas y éticas, no es posible continuar. "
+                "Te recomiendo que contactes directamente al Lic. Daniel O. Bustamante para el seguimiento profesional."
+            )
+        
+            motivo = "Cierre automático por alcanzar el límite de interacciones permitidas"
+            registrar_auditoria_respuesta(user_id, "Límite alcanzado", respuesta, motivo)
+        
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
         
         return {"respuesta": respuesta_ai}
 
