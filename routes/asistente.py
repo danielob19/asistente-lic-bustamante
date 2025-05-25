@@ -188,6 +188,15 @@ async def asistente(input_data: UserInput):
         
         elif tipo_input == ADMINISTRATIVO:
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, ADMINISTRATIVO)
+        
+            if es_tema_clinico_o_emocional(mensaje_usuario):
+                return {
+                    "respuesta": (
+                        "Interpreto que estás buscando información sobre tratamientos psicológicos. "
+                        "En caso de ser así, ¿querés contarme un poco más sobre tu situación emocional para poder orientarte mejor?"
+                    )
+                }
+        
             return {
                 "respuesta": (
                     "¡Hola! Soy el asistente del Lic. Daniel O. Bustamante. "
@@ -195,6 +204,7 @@ async def asistente(input_data: UserInput):
                     "¿Hay algo más que te gustaría saber?"
                 )
             }
+
         
         elif tipo_input == CLINICO_CONTINUACION:
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CLINICO_CONTINUACION)
