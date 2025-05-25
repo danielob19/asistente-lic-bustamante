@@ -1069,6 +1069,9 @@ async def asistente(input_data: UserInput):
             motivo = "Cierre automático por alcanzar el límite de interacciones permitidas"
             registrar_auditoria_respuesta(user_id, "Límite alcanzado", respuesta, motivo)
         
+            session.setdefault("interacciones_previas", []).append("CIERRE_LIMITE")
+            user_sessions[user_id] = session  # ✅ Persistencia del cambio
+        
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
         
