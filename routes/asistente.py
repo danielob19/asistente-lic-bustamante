@@ -831,6 +831,25 @@ async def asistente(input_data: UserInput):
                 )
             }
 
+        # 🆕 Respuesta específica si el usuario menciona tratamiento + pareja
+        if "pareja" in mensaje_usuario and "tratamiento" in mensaje_usuario:
+            return {
+                "respuesta": (
+                    "El Lic. Daniel O. Bustamante brinda atención psicológica exclusivamente online, a través de videoconsultas.\n\n"
+                    "Entre los principales motivos de consulta que aborda se encuentran:\n"
+                    "- Psicoterapia individual para adultos (modalidad online)\n"
+                    "- Tratamiento de crisis emocionales\n"
+                    "- Abordaje de ansiedad, estrés y ataques de pánico\n"
+                    "- Procesos de duelo y cambios vitales\n"
+                    "- Estados anímicos depresivos\n"
+                    "- Problemas de autoestima y motivación\n"
+                    "- Dificultades vinculares y emocionales\n"
+                    "- Terapia de pareja online\n\n"
+                    + obtener_mensaje_contacto()
+                )
+            }
+        
+
 
         # 🔹 Consultas sobre los servicios psicológicos que ofrece
         consultas_servicios = [
