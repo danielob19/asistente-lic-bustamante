@@ -72,6 +72,13 @@ router = APIRouter()
 
 LIMITE_INTERACCIONES = 20  # 🔒 Límite máximo de interacciones permitidas por usuario
 
+def respuesta_default_fuera_de_contexto() -> str:
+    return (
+        "Este canal está diseñado para ofrecer orientación psicológica. "
+        "Si hay algún malestar emocional o inquietud personal que desees compartir, podés describirlo con tus palabras."
+    )
+
+
 @router.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
