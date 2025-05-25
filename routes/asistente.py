@@ -399,6 +399,16 @@ async def asistente(input_data: UserInput):
                     "quien podrá brindarte el acompañamiento profesional que necesitás. "
                     "No me es posible continuar respondiendo mensajes en este espacio."
                 )
+
+            elif contador >= 17:
+                respuesta = (
+                    "Ya he sido claro en que no puedo continuar respondiendo mensajes por este medio. "
+                    "Te reitero que lo indicado es que consultes directamente con el Lic. Daniel O. Bustamante, "
+                    "quien podrá brindarte el acompañamiento profesional que necesitás. "
+                    "No insistas por este canal, ya que no podré responderte."
+                )
+                registrar_respuesta_openai(interaccion_id, respuesta)
+                return {"respuesta": respuesta}
         
             else:
                 recordatorio = ""
