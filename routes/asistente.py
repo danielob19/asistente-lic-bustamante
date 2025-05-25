@@ -1,4 +1,4 @@
-from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica
+from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, reformular_estilo_narrativo
 from fastapi import APIRouter, HTTPException
 from core.modelos.base import UserInput
 
