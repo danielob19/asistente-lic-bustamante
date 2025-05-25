@@ -153,6 +153,17 @@ async def asistente(input_data: UserInput):
             "input_sospechoso": False,
             "interacciones_previas": []
         })
+
+        # 🛑 Corte anticipado si ya se registró cierre definitivo en una interacción previa
+        if "CIERRE_LIMITE" in session.get("interacciones_previas", []):
+            respuesta = (
+                "Este canal ha alcanzado su límite de interacciones permitidas. "
+                "Por razones clínicas y éticas, no es posible continuar. "
+                "Te recomiendo que contactes directamente al Lic. Daniel O. Bustamante para el seguimiento profesional."
+            )
+            registrar_respuesta_openai(None, respuesta)  # No se genera nuevo ID de interacción
+            return {"respuesta": respuesta}
+
         session.setdefault("interacciones_previas", []).append(tipo_input)
         user_sessions[user_id] = session
         
