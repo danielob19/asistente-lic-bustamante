@@ -21,6 +21,16 @@ def clasificar_input_inicial(texto: str) -> str:
 
     texto = texto.lower().strip()
 
+    # 🧠 Frases clínicas indirectas que expresan necesidad de iniciar terapia
+    frases_necesidad_terapia = [
+        "necesito hacer terapia", "quiero empezar terapia", "necesito un tratamiento", "buscar ayuda psicológica",
+        "necesito hablar con alguien", "quisiera hacer terapia", "podría iniciar terapia", "empezar psicoterapia",
+        "hacer terapia de pareja", "hacer psicoterapia", "necesito ayuda", "quiero tratarme", "buscar un terapeuta"
+    ]
+    if any(frase in texto for frase in frases_necesidad_terapia):
+        return "CLINICO"
+    
+
     # 🧠 Cargar síntomas desde la BD si el set global está vacío
     global sintomas_cacheados
     if not sintomas_cacheados:
