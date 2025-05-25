@@ -3,16 +3,9 @@ import random
 # ------------------------ Selección de estilo ------------------------
 
 def seleccionar_estilo_redaccion() -> str:
-    estilos = [
-        "clasico",
-        "inferencial",
-        "estructural",
-        "fenomenologico",
-        "breve",
-        "integrativo",
-        "narrativo"  # ✅ Nuevo estilo agregado
-    ]
-    return random.choice(estilos)
+    import random
+    return random.choice(["relacional", "intrapersonal", "insight"])
+
 
 # ------------------------ Reformulación narrativa ------------------------
 
