@@ -378,17 +378,11 @@ async def asistente(input_data: UserInput):
                 )
         
             elif contador >= 14:
-                from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, reformular_estilo_narrativo
+                from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica
             
-                hipotesis_base = generar_hipotesis_psicodinamica(
+                hipotesis_psico = generar_hipotesis_psicodinamica(
                     session["emociones_detectadas"], session["mensajes"]
                 )
-                hipotesis_psico = reformular_estilo_narrativo(hipotesis_base)
-            
-                # Evitar duplicados si OpenAI repite frase inicial
-                if hipotesis_psico.count("A lo largo de lo expresado") > 1:
-                    partes = hipotesis_psico.split("A lo largo de lo expresado")
-                    hipotesis_psico = "A lo largo de lo expresado" + partes[1]
             
                 frases_cierre_varias = [
                     "Como mencioné en otra ocasión, no puedo continuar respondiendo desde este espacio.",
@@ -408,8 +402,7 @@ async def asistente(input_data: UserInput):
             
                 registrar_respuesta_openai(interaccion_id, respuesta)
                 return {"respuesta": respuesta}
-
-            
+                      
                     
             elif contador == 15:
                 respuesta = (
