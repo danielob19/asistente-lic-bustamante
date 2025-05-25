@@ -363,25 +363,27 @@ async def asistente(input_data: UserInput):
                     "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
                 )
         
-            elif contador == 14:
-                hipotesis_psico = generar_hipotesis_psicodinamica(
+            elif contador >= 14:
+                # A partir de la interacción 14, se fuerza el uso del estilo narrativo por decisión del autor
+                from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, reformular_estilo_narrativo
+            
+                hipotesis_base = generar_hipotesis_psicodinamica(
                     session["emociones_detectadas"], session["mensajes"]
                 )
-        
+                hipotesis_psico = reformular_estilo_narrativo(hipotesis_base)
+            
                 respuesta = (
-                    "Comprendo que lo que venís expresando podría estar relacionado con un estado emocional sostenido. "
-                    "Sin embargo, ya te he brindado toda la orientación posible desde este espacio. "
+                    hipotesis_psico + " "
+                    "Como te mencioné anteriormente, ya no puedo continuar con esta conversación desde aquí. "
+                    "Es fundamental que, si deseás avanzar, lo hagas consultando directamente con el Lic. Daniel O. Bustamante, "
+                    "quien podrá brindarte el acompañamiento profesional que necesitás. "
+                    "No me es posible continuar respondiendo mensajes en este espacio."
                 )
-        
-                if hipotesis_psico:
-                    respuesta += hipotesis_psico + " "
-        
-                respuesta += (
-                    "Te reitero que lo más indicado es que consultes directamente con el Lic. Daniel O. Bustamante, "
-                    "quien podrá acompañarte de forma profesional. "
-                    "No me es posible continuar con la conversación."
-                )
-        
+            
+                registrar_respuesta_openai(interaccion_id, respuesta)
+                return {"respuesta": respuesta}
+            
+                    
             elif contador == 15:
                 respuesta = (
                     "Ya en este punto, no puedo seguir brindándote orientación desde este espacio. "
