@@ -125,7 +125,7 @@ async def asistente(input_data: UserInput):
             "siento que esto es una sesión", "esto me resulta terapéutico", "parece una sesión real"
         ]
         
-        if any(expresion in mensaje_usuario for expresion in EXPRESIONES_ESPERADAS_NO_CLINICAS):
+        if mensaje_usuario and isinstance(mensaje_usuario, str) and any(expresion in mensaje_usuario for expresion in EXPRESIONES_ESPERADAS_NO_CLINICAS):
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "EXPECTATIVA_NO_CLINICA")
             return {
                 "respuesta": (
