@@ -1,6 +1,7 @@
 # cerebro_simulado.py
 import openai
 
+
 def predecir_evento_futuro(mensajes):
     import openai  # 🔧 Import directo dentro de la función para evitar errores
 
@@ -20,12 +21,14 @@ def inferir_patron_interactivo(mensajes):
         return "interpelación al otro"
     return "sin patrón definido"
 
+
 def evaluar_coherencia_mensaje(mensaje):
     if len(mensaje.split()) < 3:
         return "mensaje muy breve"
     if any(palabra in mensaje.lower() for palabra in ["odio", "muerte", "desaparecer"]):
         return "mensaje de riesgo"
     return "mensaje coherente"
+
 
 def clasificar_estado_mental(mensajes):
     texto = " ".join(mensajes).lower()
@@ -37,16 +40,17 @@ def clasificar_estado_mental(mensajes):
         return "estado defensivo o paranoide"
     return "estado emocional no definido"
 
+
 def inferir_intencion_usuario(mensajes):
     if not mensajes:
-        return "intención no clara"
+        return "intención no determinada"
 
     ultimo = mensajes[-1].lower()
 
     if "quiero ayuda" in ultimo or "necesito hablar" in ultimo:
         return "búsqueda de asistencia"
 
-    if "solo estoy probando" in ultimo:
+    if "solo estoy probando" in ultimo or "estoy testeando" in ultimo:
         return "curiosidad o prueba"
 
     frases_cierre = [
@@ -59,7 +63,7 @@ def inferir_intencion_usuario(mensajes):
         "me ayudó aunque no lo parezca",
 
         # Evasión o ambigüedad resignada
-        "da igual", "como sea", "no sé qué más esperás", "ya fue", "me rindo",
+        "da igual", "como sea", "ya fue", "me rindo",
         "no quiero seguir pensando en esto", "dejémoslo ahí",
 
         # Ironía o sarcasmo resignado
@@ -72,5 +76,9 @@ def inferir_intencion_usuario(mensajes):
 
     if any(frase in ultimo for frase in frases_cierre):
         return "intención de cierre"
+
+    # 🆕 Detección específica de menciones clínicas relacionadas con pareja
+    if any(p in ultimo for p in ["pareja", "terapia de pareja", "consultar por pareja", "atienden pareja"]):
+        return "consulta por terapia de pareja"
 
     return "intención no determinada"
