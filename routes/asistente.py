@@ -841,55 +841,48 @@ async def asistente(input_data: UserInput):
                 mensaje_actual = session["mensajes"][-1]
                 nuevas_emociones = detectar_emociones_negativas(mensaje_actual) or []
                 emociones_nuevas_detectadas = []
-        
+            
                 for emocion in nuevas_emociones:
                     emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion.lower().strip())
                     if emocion not in session["emociones_detectadas"]:
                         emociones_nuevas_detectadas.append(emocion)
                         session["emociones_detectadas"].append(emocion)
                         registrar_emocion(emocion, f"interacción {contador}", user_id)
-        
+            
                 if emociones_nuevas_detectadas:
-                    emociones_literal = ", ".join(emociones_nuevas_detectadas)
-                    frase_diagnostica = random.choice([
-                        "Se observa",
-                        "Podría tratarse de",
-                        "Impresiona",
-                        "Da la sensación de",
-                        "Suele corresponder a"
-                    ])
-        
-                    # 🔍 Lógica específica para insomnio
-                    if "insomnio" in emociones_nuevas_detectadas:
+                    if "insomnio" in mensaje_actual.lower():
                         respuesta = (
-                            f"{frase_diagnostica} una disritmia del sueño vinculada a estados de ansiedad persistente. "
+                            "La dificultad para conciliar el sueño podría estar vinculada a estados de ansiedad persistente. "
                             "¿Querés contarme un poco más sobre cómo te afecta en tu vida cotidiana?"
                         )
-        
-                    # 🔍 Lógica específica para aislamiento o desgano social
-                    elif any(p in emociones_nuevas_detectadas for p in ["aislamiento", "desgano", "evitación social"]):
-                        respuesta = (
-                            f"{frase_diagnostica} un patrón de retraimiento interpersonal o desconexión social. "
-                            "¿Podés contarme cómo vivís esta tendencia a alejarte de los demás?"
-                        )
-        
                     else:
+                        frase_diagnostica = random.choice([
+                            "Se observa",
+                            "Podría tratarse de",
+                            "Impresiona",
+                            "Da la sensación de",
+                            "Suele corresponder a"
+                        ])
+                        emociones_literal = ", ".join(emociones_nuevas_detectadas)
                         estado_inferido = clasificar_estado_mental([mensaje_actual])
+            
                         respuesta = (
                             f"{frase_diagnostica} un aumento en el malestar emocional, asociado a {emociones_literal}. "
                         )
                         if estado_inferido and estado_inferido != "estado emocional no definido":
                             respuesta += f"Esto podría vincularse con un estado emocional del tipo {estado_inferido}. "
+            
                         respuesta += "¿Querés contarme un poco más sobre cómo estás atravesando esto?"
-        
+            
                 else:
                     respuesta = (
-                        "Entiendo. ¿Podés contarme un poco más sobre lo que estás sintiendo "
+                        "¿Podés contarme un poco más sobre lo que estás sintiendo "
                         "para poder brindarte una orientación adecuada?"
                     )
-        
+            
                 registrar_respuesta_openai(interaccion_id, respuesta)
                 return {"respuesta": respuesta}
+
 
         
         # 🧩 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
