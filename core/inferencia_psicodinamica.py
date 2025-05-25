@@ -16,13 +16,30 @@ def seleccionar_estilo_redaccion() -> str:
 
 # ------------------------ Reformulación narrativa ------------------------
 
-def reformular_estilo_narrativo(base: str) -> str:
-    return (
-        "A lo largo de lo expresado, se configura un hilo emocional que podría estar atravesado por lo siguiente: "
-        + base + " "
-        + "Este relato, aunque fragmentario, permite entrever una vivencia que no ha sido plenamente significada, "
-        + "pero que resuena como una constante interna que podría estar operando en silencio desde hace tiempo."
-    )
+def reformular_estilo_narrativo(mensaje_usuario: str) -> str:
+    """
+    Reformula el estilo narrativo post-cierre definitivo para evitar repeticiones
+    y aportar matices clínicos distintos según el contenido expresado.
+    """
+
+    introducciones = [
+        "Tu forma de expresarte permite entrever que existe algo que no ha sido completamente simbolizado.",
+        "Lo que comentás sugiere un trasfondo emocional más profundo, aún no del todo procesado.",
+        "Pareciera que hay un hilo subjetivo persistente que atraviesa lo que has expresado.",
+        "Se vislumbra una tonalidad emocional que no ha podido ser integrada del todo.",
+        "En tu modo de decir, se advierte una constancia afectiva no elaborada."
+    ]
+
+    clausuras = [
+        "Como mencioné previamente, no puedo continuar la conversación desde aquí.",
+        "Lamentablemente, no estoy habilitado para proseguir con esta interacción.",
+        "Mi participación concluye en este punto por razones clínicas y éticas.",
+        "Desde este espacio ya no puedo continuar la interacción de forma productiva.",
+        "Es importante que, si deseás profundizar, lo hagas con un profesional."
+    ]
+
+    estilo = random.choice(introducciones) + " " + random.choice(clausuras)
+    return estilo
 
 # ------------------------ Reformulación según estilo ------------------------
 
