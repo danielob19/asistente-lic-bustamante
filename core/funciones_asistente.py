@@ -83,7 +83,7 @@ def clasificar_input_inicial(texto: str) -> str:
     # 📋 Consultas indirectas: verbo + tema clínico (frecuentes en landing pages)
     temas_clinicos_comunes = [
     "terapia de pareja", "psicoterapia", "tratamiento psicológico", "consultas psicológicas",
-    "abordaje emocional", "tratamiento emocional", "atención psicológica", "pareja"
+    "abordaje emocional", "tratamiento emocional", "atención psicológica", "tratamiento de pareja"
     ]
     
     verbos_clinicos = [
@@ -93,7 +93,12 @@ def clasificar_input_inicial(texto: str) -> str:
     
     for verbo in verbos_clinicos:
         for tema in temas_clinicos_comunes:
-            patron = rf"{verbo}\s*(el|la|los|las)?\s*{re.escape(tema)}"
+            # 🔄 Ajuste específico para tratamiento(s) de pareja
+            if tema == "tratamiento de pareja":
+                patron = rf"{verbo}\s*(el|la|los|las)?\s*tratamientos?\s+de\s+pareja"
+            else:
+                patron = rf"{verbo}\s*(el|la|los|las)?\s*{re.escape(tema)}"
+    
             if re.search(patron, texto, re.IGNORECASE):
                 registrar_auditoria_input_original(
                     user_id="sistema",
@@ -102,6 +107,7 @@ def clasificar_input_inicial(texto: str) -> str:
                     clasificacion="ADMINISTRATIVO (verbo + tema clínico común)"
                 )
                 return "ADMINISTRATIVO"
+
     
     # 🆕 Captura directa de frases como “atienden pareja”
     if re.search(r"\b(atiende|atienden|trabaja con|trabajan con|hace|hacen|dan|ofrece|ofrecen)\s+(una\s+)?pareja\b", texto, re.IGNORECASE):
