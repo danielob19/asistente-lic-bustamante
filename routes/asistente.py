@@ -1206,6 +1206,10 @@ async def asistente(input_data: UserInput):
                 "Gracias por tu consulta. El Lic. Daniel O. Bustamante estará encantado de ayudarte. "
                 "Podés escribirle directamente al WhatsApp +54 911 3310-1186 para obtener más información."
             )
+            session["ultimas_respuestas"].append(respuesta_ai)
+            user_sessions[user_id] = session
+            return {"respuesta": respuesta_ai}
+
 
         # 🔍 Filtro para lenguaje empático simulado o genérico prohibido
         frases_empaticas_simuladas = [
