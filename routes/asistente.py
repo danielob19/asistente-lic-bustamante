@@ -740,6 +740,8 @@ async def asistente(input_data: UserInput):
             # Registrar similitud en la tabla correspondiente
             registrar_log_similitud(user_id, mensaje_usuario, pregunta_faq, similitud)
         
+            session["ultimas_respuestas"].append(respuesta_semantica)
+            user_sessions[user_id] = session
             return {"respuesta": respuesta_semantica}
 
         # 🔍 DEPURACIÓN: Mostrar estado actual de la sesión
