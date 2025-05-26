@@ -1277,6 +1277,8 @@ async def asistente(input_data: UserInput):
             respuesta_filtrada = re.sub(r"(?i)con (el )?Lic(\.|enciado)? Daniel O\.? Bustamante.*?(\.|\n|$)", "", respuesta_ai)
             motivo = "Se eliminó mención indebida al Lic. Bustamante antes de interacción permitida"
             registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_filtrada, motivo)
+            session["ultimas_respuestas"].append(respuesta_filtrada)
+            user_sessions[user_id] = session
             return {"respuesta": respuesta_filtrada}
 
         # ----------------------------- LÍMITE DE INTERACCIONES -----------------------------
