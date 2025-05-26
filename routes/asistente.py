@@ -355,6 +355,8 @@ async def asistente(input_data: UserInput):
                 # ⚠️ Solo bloquear si no hay contexto clínico previo
                 if not hay_contexto_clinico_anterior(user_id):
                     session["input_sospechoso"] = True
+                    session["ultimas_respuestas"].append(respuesta_default_fuera_de_contexto())
+                    user_sessions[user_id] = session
                     return {"respuesta": respuesta_default_fuera_de_contexto()}
                 else:
                     # ⚠️ Forzar que siga el flujo clínico como continuación
