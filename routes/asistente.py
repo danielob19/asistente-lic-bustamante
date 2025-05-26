@@ -259,13 +259,6 @@ async def asistente(input_data: UserInput):
         session.setdefault("interacciones_previas", []).append(tipo_input)
         user_sessions[user_id] = session
         
-                
-        if tipo_input == SALUDO:
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, SALUDO)
-            session["ultimas_respuestas"].append(respuesta)
-            user_sessions[user_id] = session
-            return {"respuesta": "¡Hola! ¿En qué puedo ayudarte hoy?"}
-        
         elif tipo_input == CORTESIA:
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
             return {
