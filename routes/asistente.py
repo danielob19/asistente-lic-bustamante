@@ -96,13 +96,25 @@ async def asistente(input_data: UserInput):
         
         user_id = input_data.user_id
         mensaje_original = input_data.mensaje
-
+        
+        # ✅ Inicializar sesión del usuario lo antes posible para evitar errores
+        session = user_sessions.get(user_id, {
+            "contador_interacciones": 0,
+            "ultima_interaccion": time.time(),
+            "mensajes": [],
+            "emociones_detectadas": [],
+            "ultimas_respuestas": [],
+            "input_sospechoso": False,
+            "interacciones_previas": []
+        })
+        
         # 🛡️ Validación anticipada para evitar errores de tipo NoneType
         if mensaje_original is None or not isinstance(mensaje_original, str):
             raise HTTPException(status_code=400, detail="El mensaje recibido no es válido.")
-            
+        
         mensaje_original = mensaje_original.strip()
         mensaje_usuario = mensaje_original.lower()
+
 
         # 🚦 NUEVO: Inferencia bifurcada de intención del usuario (clínica vs administrativa)
         from core.utils.intencion_usuario import detectar_intencion_bifurcada
