@@ -245,6 +245,8 @@ async def asistente(input_data: UserInput):
                 "Por razones clínicas y éticas, no es posible continuar. "
                 "Te recomiendo que contactes directamente al Lic. Daniel O. Bustamante para el seguimiento profesional."
             )
+            session["ultimas_respuestas"].append(respuesta)
+            user_sessions[user_id] = session  # Asegura persistencia en la sesión
             registrar_respuesta_openai(None, respuesta)  # No se genera nuevo ID de interacción
             return {"respuesta": respuesta}
 
@@ -402,6 +404,8 @@ async def asistente(input_data: UserInput):
                     "Comprendo. Para poder ayudarte mejor, ¿podrías contarme cómo te sentís últimamente?"
                 )
         
+            session["ultimas_respuestas"].append(respuesta)
+            user_sessions[user_id] = session  # Asegura persistencia en la sesión
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
@@ -458,6 +462,8 @@ async def asistente(input_data: UserInput):
                 "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
             )
         
+            session["ultimas_respuestas"].append(respuesta)
+            user_sessions[user_id] = session  # Asegura persistencia en la sesión
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
@@ -493,6 +499,8 @@ async def asistente(input_data: UserInput):
                     "No me es posible continuar respondiendo mensajes en este espacio."
                 )
             
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session  # Asegura persistencia en la sesión
                 registrar_respuesta_openai(interaccion_id, respuesta)
                 return {"respuesta": respuesta}
                       
@@ -520,6 +528,8 @@ async def asistente(input_data: UserInput):
                     "quien podrá brindarte el acompañamiento profesional que necesitás. "
                     "No insistas por este canal, ya que no podré responderte."
                 )
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session  # Asegura persistencia en la sesión
                 registrar_respuesta_openai(interaccion_id, respuesta)
                 return {"respuesta": respuesta}
         
@@ -531,6 +541,8 @@ async def asistente(input_data: UserInput):
                 respuesta_variable = seleccionar_estilo_clinico_variable()
                 respuesta = respuesta_variable + recordatorio
         
+            session["ultimas_respuestas"].append(respuesta)
+            user_sessions[user_id] = session  # Asegura persistencia en la sesión
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
@@ -542,6 +554,8 @@ async def asistente(input_data: UserInput):
                 "quien podrá brindarte el acompañamiento profesional que necesitás. "
                 "No me es posible continuar respondiendo mensajes en este espacio."
             )
+            session["ultimas_respuestas"].append(respuesta)
+            user_sessions[user_id] = session  # Asegura persistencia en la sesión
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
@@ -614,6 +628,8 @@ async def asistente(input_data: UserInput):
                     "para poder brindarte una orientación adecuada?"
                 )
         
+            session["ultimas_respuestas"].append(respuesta)
+            user_sessions[user_id] = session  # Asegura persistencia en la sesión
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
@@ -1038,6 +1054,8 @@ async def asistente(input_data: UserInput):
                         "para poder brindarte una orientación adecuada?"
                     )
             
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session  # Asegura persistencia en la sesión
                 registrar_respuesta_openai(interaccion_id, respuesta)
                 return {"respuesta": respuesta}
 
@@ -1261,6 +1279,8 @@ async def asistente(input_data: UserInput):
             session.setdefault("interacciones_previas", []).append("CIERRE_LIMITE")
             user_sessions[user_id] = session  # ✅ Persistencia del cambio
         
+            session["ultimas_respuestas"].append(respuesta)
+            user_sessions[user_id] = session  # Asegura persistencia en la sesión
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
         
