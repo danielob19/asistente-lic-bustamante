@@ -113,6 +113,48 @@ async def asistente(input_data: UserInput):
         intencion_general = intencion_bifurcada.get("intencion_general", "INDEFINIDA")
         emociones_detectadas_bifurcacion = intencion_bifurcada.get("emociones_detectadas", [])
         temas_administrativos_detectados = intencion_bifurcada.get("temas_administrativos", [])
+
+        # 🧠 Si se detecta una intención claramente administrativa y NO hay emoción relevante, responder con mensaje informativo
+        if intencion_general == "ADMINISTRATIVA" and not emociones_detectadas_bifurcacion:
+            if "tratamientos" in mensaje_usuario or "tipo de terapia" in mensaje_usuario or "qué atiende" in mensaje_usuario:
+                return {
+                    "respuesta": (
+                        "El Lic. Bustamante es psicólogo especializado en psicología clínica. "
+                        "Realiza tratamientos psicológicos individuales y terapia de pareja. "
+                        "Si es de tu interés, podés solicitar un turno escribiéndole al WhatsApp +54 911 3310-1186."
+                    )
+                }
+        
+            if "depresión" in mensaje_usuario or "fobia" in mensaje_usuario:
+                return {
+                    "respuesta": (
+                        f"Sí, por supuesto. El Lic. Bustamante está especializado en {temas_administrativos_detectados[0]}. "
+                        "Si es de tu interés, podés solicitar un turno escribiéndole al WhatsApp +54 911 3310-1186."
+                    )
+                }
+        
+            return {
+                "respuesta": (
+                    "Gracias por tu consulta. Si querés coordinar una sesión, podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+                )
+            }
+        
+        # 🧠 Si se detecta intención clínica y emociones claras, continuar por el flujo clínico habitual (sin intervención)
+        if intencion_general == "CLINICA" and emociones_detectadas_bifurcacion:
+            session["emociones_detectadas"].extend([
+                emocion for emocion in emociones_detectadas_bifurcacion
+                if emocion not in session["emociones_detectadas"]
+            ])
+            print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
+        
+        # 🧠 Si se detecta intención MIXTA, invitar al usuario a decidir por dónde continuar
+        if intencion_general == "MIXTA":
+            return {
+                "respuesta": (
+                    "Entiendo que estás buscando información sobre psicoterapia, pero también mencionás un aspecto emocional importante. "
+                    "¿Preferís contarme un poco más sobre cómo lo estás viviendo últimamente o querés resolverlo directamente con el Lic. Bustamante?"
+                )
+            }
         
 
         # ✅ Frases neutrales que no deben analizarse emocionalmente
