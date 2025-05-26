@@ -573,6 +573,8 @@ async def asistente(input_data: UserInput):
                 motivo_modificacion="respuesta manual predefinida"
             )
         
+            session["ultimas_respuestas"].append(respuesta_manual)
+            user_sessions[user_id] = session
             return {"respuesta": respuesta_manual}
             
 
