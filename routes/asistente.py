@@ -231,16 +231,6 @@ async def asistente(input_data: UserInput):
             if hay_contexto_clinico_anterior(user_id):
                 tipo_input = CLINICO_CONTINUACION
         
-        # 🧠 Registrar todas las etiquetas anteriores en la sesión
-        session = user_sessions.get(user_id, {
-            "contador_interacciones": 0,
-            "ultima_interaccion": time.time(),
-            "mensajes": [],
-            "emociones_detectadas": [],
-            "ultimas_respuestas": [],
-            "input_sospechoso": False,
-            "interacciones_previas": []
-        })
 
         # 🛑 Corte anticipado si ya se registró cierre definitivo en una interacción previa
         if "CIERRE_LIMITE" in session.get("interacciones_previas", []):
