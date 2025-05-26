@@ -22,10 +22,13 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
 
     if not emociones_unificadas:
         print(f"⚠️ No se detectaron emociones al llegar a la interacción {contador}")
-        return (
+        respuesta = (
             "No se identificaron emociones predominantes en este momento. "
             "Te sugiero contactar al Lic. Bustamante al WhatsApp +54 911 3310-1186 para una evaluación más precisa."
         )
+        session["ultimas_respuestas"].append(respuesta)
+        user_sessions[session["user_id"]] = session
+        return respuesta
 
     coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(emociones_unificadas)
     cuadro_predominante = (
@@ -49,7 +52,10 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
 
     print(f"📋 Resumen clínico generado correctamente en interacción {contador}")
     session["mensajes"].clear()
+    session["ultimas_respuestas"].append(respuesta)
+    user_sessions[session["user_id"]] = session
     return respuesta
+
 
 
 def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
