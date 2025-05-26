@@ -725,12 +725,14 @@ async def asistente(input_data: UserInput):
 
         # 🟢 Si la frase es neutral, de cortesía o curiosidad, no analizar emocionalmente ni derivar
         if mensaje_usuario in EXPRESIONES_DESCARTADAS or any(p in mensaje_usuario for p in ["recomienda", "opinás", "atiende"]):
-            return {
-                "respuesta": (
-                    "Gracias por tu mensaje. Si en algún momento deseás explorar una inquietud emocional, "
-                    "estoy disponible para ayudarte desde este espacio."
-                )
-            }
+            respuesta = (
+                "Gracias por tu mensaje. Si en algún momento deseás explorar una inquietud emocional, "
+                "estoy disponible para ayudarte desde este espacio."
+            )
+            session["ultimas_respuestas"].append(respuesta)
+            user_sessions[user_id] = session
+            return {"respuesta": respuesta}
+
 
                         
         # 🔍 Buscar coincidencia semántica en preguntas frecuentes
