@@ -104,6 +104,16 @@ async def asistente(input_data: UserInput):
         mensaje_original = mensaje_original.strip()
         mensaje_usuario = mensaje_original.lower()
 
+        # 🚦 NUEVO: Inferencia bifurcada de intención del usuario (clínica vs administrativa)
+        from core.utils.intencion_usuario import detectar_intencion_bifurcada
+        
+        intencion_bifurcada = detectar_intencion_bifurcada(mensaje_usuario)
+        print(f"🧠 Intención bifurcada detectada: {intencion_bifurcada}")
+        
+        intencion_general = intencion_bifurcada.get("intencion_general", "INDEFINIDA")
+        emociones_detectadas_bifurcacion = intencion_bifurcada.get("emociones_detectadas", [])
+        temas_administrativos_detectados = intencion_bifurcada.get("temas_administrativos", [])
+        
 
         # ✅ Frases neutrales que no deben analizarse emocionalmente
         EXPRESIONES_DESCARTADAS = [
