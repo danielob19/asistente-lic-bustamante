@@ -146,6 +146,7 @@ async def asistente(input_data: UserInput):
                 if emocion not in session["emociones_detectadas"]
             ])
             print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
+
         
         # 🧠 Si se detecta intención MIXTA, invitar al usuario a decidir por dónde continuar
         if intencion_general == "MIXTA":
@@ -155,7 +156,30 @@ async def asistente(input_data: UserInput):
                     "¿Preferís contarme un poco más sobre cómo lo estás viviendo últimamente o querés resolverlo directamente con el Lic. Bustamante?"
                 )
             }
+
+
+        # 🧠 Si el usuario respondió a la bifurcación mixta, interpretar su preferencia
+        if "preferís contarme" in session.get("ultimas_respuestas", [])[-1].lower():
+            if any(frase in mensaje_usuario for frase in ["sí", "quiero", "me gustaría", "contar", "decirte", "hablarlo", "compartirlo"]):
+                # Elige continuar clínicamente
+                session["emociones_detectadas"].extend([
+                    emocion for emocion in detectar_emociones_negativas(mensaje_usuario)
+                    if emocion not in session["emociones_detectadas"]
+                ])
+                return {
+                    "respuesta": (
+                        "Gracias por compartirlo. ¿Querés contarme un poco más sobre cómo se manifiesta esta situación últimamente?"
+                    )
+                }
         
+            elif any(frase in mensaje_usuario for frase in ["no", "preferiría", "directamente", "prefiero hablar", "contactar"]):
+                # Elige ir por la vía administrativa
+                return {
+                    "respuesta": (
+                        "Perfecto. Podés escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186 para coordinar una consulta o resolver tus dudas."
+                    )
+                }
+    
 
         # ✅ Frases neutrales que no deben analizarse emocionalmente
         EXPRESIONES_DESCARTADAS = [
