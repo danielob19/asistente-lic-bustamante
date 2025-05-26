@@ -256,36 +256,12 @@ async def asistente(input_data: UserInput):
             registrar_respuesta_openai(None, respuesta)  # No se genera nuevo ID de interacción
             return {"respuesta": respuesta}
 
+        # ✅ Registrar el tipo de interacción actual
         session.setdefault("interacciones_previas", []).append(tipo_input)
         user_sessions[user_id] = session
-        
-        elif tipo_input == CORTESIA:
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
-            return {
-                "respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."
-            }
-        
-        elif tipo_input == ADMINISTRATIVO:
-            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, ADMINISTRATIVO)
-        
-            if es_tema_clinico_o_emocional(mensaje_usuario):
-                return {
-                    "respuesta": (
-                        "Interpreto que estás buscando información sobre tratamientos psicológicos. "
-                        "En caso de ser así, ¿querés contarme un poco más sobre tu situación emocional para poder orientarte mejor?"
-                    )
-                }
-        
-            return {
-                "respuesta": (
-                    "¡Hola! Soy el asistente del Lic. Daniel O. Bustamante. "
-                    + obtener_mensaje_contacto() +
-                    "¿Hay algo más que te gustaría saber?"
-                )
-            }
 
-        
-        elif tipo_input == CLINICO_CONTINUACION:
+        # 🧠 Continuación de tema clínico si fue identificado previamente
+        if tipo_input == CLINICO_CONTINUACION:
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CLINICO_CONTINUACION)
             return {
                 "respuesta": (
@@ -293,6 +269,7 @@ async def asistente(input_data: UserInput):
                     "¿Querés que exploremos un poco más lo que estás sintiendo últimamente?"
                 )
             }
+
         
 
         # 🧠 Clasificación contextual con OpenAI
