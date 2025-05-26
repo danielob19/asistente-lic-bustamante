@@ -1164,6 +1164,8 @@ async def asistente(input_data: UserInput):
                     )
                     registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, motivo)
                     break
+                session["ultimas_respuestas"].append(respuesta_ai)
+                user_sessions[user_id] = session
                 return {"respuesta": respuesta_ai}
         
         # 🔐 Seguridad textual: verificar si la respuesta de OpenAI contiene elementos peligrosos
@@ -1173,6 +1175,8 @@ async def asistente(input_data: UserInput):
                 "Podés intentar formular tu consulta de otra manera o escribir directamente al WhatsApp del Lic. Bustamante: +54 911 3310-1186."
             )
             registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, "Respuesta descartada por contener elementos peligrosos")
+            session["ultimas_respuestas"].append(respuesta_ai)
+            user_sessions[user_id] = session
             return {"respuesta": respuesta_ai}
 
         
@@ -1182,6 +1186,8 @@ async def asistente(input_data: UserInput):
                 "Lo siento, hubo un inconveniente al generar una respuesta automática. Podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
             )
             registrar_auditoria_respuesta(user_id, "Error al generar respuesta", respuesta_ai, "Error: OpenAI devolvió respuesta vacía")
+            session["ultimas_respuestas"].append(respuesta_ai)
+            user_sessions[user_id] = session
             return {"respuesta": respuesta_ai}
         
         respuesta_ai = respuesta_original  # Copia editable
