@@ -111,7 +111,10 @@ def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
 
     session["resumen_generado"] = True
     registrar_respuesta_openai(interaccion_id, resumen)
+    session["ultimas_respuestas"].append(resumen)
+    user_sessions[user_id] = session
     return resumen
+
 
 
 def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
@@ -171,6 +174,8 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
 
     session["resumen_generado"] = True
     registrar_respuesta_openai(interaccion_id, respuesta)
+    session["ultimas_respuestas"].append(respuesta)
+    user_sessions[user_id] = session
     return respuesta
 
 
@@ -206,4 +211,6 @@ def generar_resumen_interaccion_10(session, user_id, interaccion_id, contador):
         respuesta += f" Por otra parte, se identificó que mencionaste una posible consecuencia o desenlace: {prediccion}."
 
     registrar_respuesta_openai(interaccion_id, respuesta)
+    session["ultimas_respuestas"].append(respuesta)
+    user_sessions[user_id] = session
     return respuesta
