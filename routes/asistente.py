@@ -178,7 +178,6 @@ async def asistente(input_data: UserInput):
         ultimas_respuestas = session.get("ultimas_respuestas", [])
         if ultimas_respuestas and "preferís contarme" in ultimas_respuestas[-1].lower():
             if any(frase in mensaje_usuario for frase in ["sí", "quiero", "me gustaría", "contar", "decirte", "hablarlo", "compartirlo"]):
-                # Elige continuar clínicamente
                 session["emociones_detectadas"].extend([
                     emocion for emocion in detectar_emociones_negativas(mensaje_usuario)
                     if emocion not in session["emociones_detectadas"]
@@ -189,7 +188,7 @@ async def asistente(input_data: UserInput):
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
-
+        
             elif any(frase in mensaje_usuario for frase in ["no", "preferiría", "directamente", "prefiero hablar", "contactar"]):
                 respuesta = (
                     "Perfecto. Podés escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186 para coordinar una consulta o resolver tus dudas."
@@ -197,6 +196,7 @@ async def asistente(input_data: UserInput):
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
+
 
     
 
