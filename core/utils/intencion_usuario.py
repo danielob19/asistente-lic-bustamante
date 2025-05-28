@@ -1,33 +1,53 @@
-import re
+import openai
 
-def detectar_intencion_bifurcada(mensaje: str) -> dict:
-    mensaje = mensaje.lower()
+def detectar_intencion_bifurcada(mensaje_usuario: str) -> dict:
+    mensaje_usuario = mensaje_usuario.strip().lower()
 
-    # Patrones para detectar intención clínica
-    patrones_clinicos = [
-        r"\b(triste|deprimido|ansioso|estresado|miedo|fobia|ansiedad|depresión|pánico)\b",
-        r"no\s+puedo\s+más",
-        r"me\s+siento\s+mal",
-        r"no\s+quiero\s+vivir",
-        r"estoy\s+agotado",
-        r"me\s+cuesta\s+todo",
-    ]
+    try:
+        # Prompt para detectar intención general + posibles síntomas clínicos
+        prompt = (
+            f"Analizá el siguiente mensaje del usuario y clasificá su intención general como una de las siguientes opciones:\n"
+            "- CLINICA: si expresa malestar vivido o pide ayuda emocional.\n"
+            "- ADMINISTRATIVA: si consulta por servicios, precios, disponibilidad, etc.\n"
+            "- MIXTA: si menciona un tema clínico pero de forma informativa.\n"
+            "- INDEFINIDA: si no puede determinarse con claridad.\n\n"
+            "Además, si detectás temas clínicos mencionados (como ansiedad, insomnio, tristeza, etc.), listalos.\n\n"
+            "Mensaje: '''" + mensaje_usuario + "'''\n\n"
+            "Respondé en formato JSON con estas claves:\n"
+            "{\n"
+            "  \"intencion_general\": \"CLINICA\" | \"ADMINISTRATIVA\" | \"MIXTA\" | \"INDEFINIDA\",\n"
+            "  \"temas_administrativos\": [lista de términos clínicos detectados o vacío],\n"
+            "  \"emociones_detectadas\": [opcional, si se detecta CLINICA o MIXTA con carga emocional]\n"
+            "}"
+        )
 
-    # Patrones para detectar intención administrativa
-    patrones_administrativos = [
-        r"\b(costo|precio|cuánto\s+cuesta|modalidad|horarios|dónde\s+atiende|cómo\s+se\s+paga|turno|agenda|disponibilidad)\b",
-        r"\b(atienden|tratan|realizan)\b.*\b(depresión|fobia|ansiedad|terapia|tratamiento)\b",
-        r"\b(quiero|necesito|busco|estoy\s+buscando)\b.*\b(terapia|psicoterapia|tratamiento)\b",
-    ]
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.0
+        )
 
-    es_clinico = any(re.search(patron, mensaje) for patron in patrones_clinicos)
-    es_administrativo = any(re.search(patron, mensaje) for patron in patrones_administrativos)
+        import json
+        raw = response.choices[0].message["content"]
+        resultado = json.loads(raw)
 
-    if es_clinico and es_administrativo:
-        return {"intencion": "MIXTA"}
-    elif es_clinico:
-        return {"intencion": "CLINICA"}
-    elif es_administrativo:
-        return {"intencion": "ADMINISTRATIVA"}
-    else:
-        return {"intencion": "INDEFINIDA"}
+        # Validación mínima
+        if "intencion_general" not in resultado:
+            resultado["intencion_general"] = "INDEFINIDA"
+
+        if "temas_administrativos" not in resultado:
+            resultado["temas_administrativos"] = []
+
+        if "emociones_detectadas" not in resultado:
+            resultado["emociones_detectadas"] = []
+
+        return resultado
+
+    except Exception as e:
+        print(f"❌ Error en detectar_intencion_bifurcada: {e}")
+        return {
+            "intencion_general": "INDEFINIDA",
+            "temas_administrativos": [],
+            "emociones_detectadas": []
+        }
