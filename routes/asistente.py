@@ -128,6 +128,7 @@ async def asistente(input_data: UserInput):
 
         # 🧠 Si se detecta una intención claramente administrativa y NO hay emoción relevante, responder con mensaje informativo
         if intencion_general == "ADMINISTRATIVA" and not emociones_detectadas_bifurcacion:
+        
             if "tratamientos" in mensaje_usuario or "tipo de terapia" in mensaje_usuario or "qué atiende" in mensaje_usuario:
                 respuesta = (
                     "El Lic. Bustamante es psicólogo especializado en psicología clínica. "
@@ -138,15 +139,18 @@ async def asistente(input_data: UserInput):
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
         
-            if "depresión" in mensaje_usuario or "fobia" in mensaje_usuario:
+            # ✅ Si se detecta un término clínico en temas administrativos (como insomnio, fobia, depresión, etc.)
+            if temas_administrativos_detectados:
+                cuadro_detectado = temas_administrativos_detectados[0]
                 respuesta = (
-                    f"Sí, por supuesto. El Lic. Bustamante está especializado en {temas_administrativos_detectados[0]}. "
-                    "Si es de tu interés, podés solicitar un turno escribiéndole al WhatsApp +54 911 3310-1186."
+                    f"Sí, por supuesto. El Lic. Bustamante trabaja con casos vinculados a {cuadro_detectado}. "
+                    "Si considerás que podría ayudarte, te sugiero contactarlo directamente para un análisis más profundo de sus causas."
                 )
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
         
+            # Respuesta general por defecto para intenciones administrativas sin detalles clínicos
             respuesta = (
                 "Gracias por tu consulta. Si querés coordinar una sesión, podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
             )
