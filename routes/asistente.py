@@ -139,7 +139,6 @@ async def asistente(input_data: UserInput):
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
         
-            # ✅ Si se detecta un término clínico en temas administrativos (como insomnio, fobia, depresión, etc.)
             if temas_administrativos_detectados:
                 cuadro_detectado = temas_administrativos_detectados[0]
                 respuesta = (
@@ -150,7 +149,18 @@ async def asistente(input_data: UserInput):
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
         
-            # Respuesta general por defecto para intenciones administrativas sin detalles clínicos
+            # 🔄 Fallback: si no se detectó automáticamente pero hay síntomas evidentes
+            elif any(kw in mensaje_usuario for kw in ["ansiedad", "bajones", "tristeza", "angustia", "desánimo", "desmotivación", "desvelo"]):
+                cuadro_detectado = next((kw for kw in ["ansiedad", "bajones", "tristeza", "angustia"] if kw in mensaje_usuario), "el motivo que mencionás")
+                respuesta = (
+                    f"Sí, el Lic. Bustamante trabaja con situaciones relacionadas con {cuadro_detectado}. "
+                    "Si lo considerás oportuno, podés contactarlo para un análisis más detallado de sus causas."
+                )
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session
+                return {"respuesta": respuesta}
+        
+            # Respuesta general por defecto para consultas administrativas
             respuesta = (
                 "Gracias por tu consulta. Si querés coordinar una sesión, podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
             )
