@@ -691,6 +691,17 @@ async def asistente(input_data: UserInput):
                 
                 # Solicitar respuesta a OpenAI con el nuevo prompt clínico
                 respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
+
+                # 🛑 Validación de seguridad por si OpenAI devuelve None o texto inválido
+                if not respuesta_original or not isinstance(respuesta_original, str) or len(respuesta_original.strip()) < 5:
+                    respuesta_ai = (
+                        "Lo siento, hubo un inconveniente al generar una respuesta automática. "
+                        "Podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+                    )
+                    registrar_auditoria_respuesta(user_id, "respuesta vacía", respuesta_ai, "Error: respuesta nula o inválida")
+                    session["ultimas_respuestas"].append(respuesta_ai)
+                    user_sessions[user_id] = session
+                    return {"respuesta": respuesta_ai}
                 
                 # 🔍 Filtro para remover saludo 'Hola, ¿qué tal?' si no es la primera interacción
                 if contador != 1 and respuesta_original.strip().lower().startswith("hola, ¿qué tal?"):
