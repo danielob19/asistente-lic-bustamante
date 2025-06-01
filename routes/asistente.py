@@ -642,44 +642,29 @@ async def asistente(input_data: UserInput):
             return {"respuesta": respuesta_manual}
 
         
-        # ✅ Inferencia emocional dinámica en interacciones 6 a 8
-        if 6 <= contador <= 8 and not session.get("emocion_inferida_5"):
-            mensajes_previos = session.get("mensajes", [])
-            if mensajes_previos:
-                mensaje_actual = mensajes_previos[-1]
-                nuevas_emociones = detectar_emociones_negativas(mensaje_actual) or []
-                emociones_nuevas_detectadas = []
+        # ✅ Interacciones 6 a 8 – Confirmación implícita de emoción inferida 5 si aún no fue confirmada
+        if 6 <= contador <= 8 and session.get("emocion_inferida_5") and session["emocion_inferida_5"] not in session["emociones_detectadas"]:
+            emocion = session["emocion_inferida_5"]
         
-                for emocion in nuevas_emociones:
-                    emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion.lower().strip())
-                    if emocion not in session["emociones_detectadas"]:
-                        emociones_nuevas_detectadas.append(emocion)
-                        session["emociones_detectadas"].append(emocion)
-                        registrar_emocion(emocion, f"interacción {contador}", user_id)
+            expresiones_asociadas = {
+                "ansiedad": ["me acelero", "me pongo nervioso", "no puedo respirar", "taquicardia", "me siento agitado", "inquietud"],
+                "tristeza": ["sin ganas", "todo me cuesta", "me siento vacío", "sin sentido", "todo me da igual"],
+                "angustia": ["presión en el pecho", "nudo en la garganta", "me cuesta tragar", "llanto contenido"],
+                "enojo": ["estallo fácil", "me irrito con todo", "no tolero nada", "me molesta todo", "explotó por nada"],
+                "miedo": ["me paralizo", "no puedo salir", "me da terror", "me da miedo enfrentarlo", "evito esas situaciones"]
+            }
         
-                if emociones_nuevas_detectadas:
-                    frase_diagnostica = random.choice([
-                        "Se observa",
-                        "Podría tratarse de",
-                        "Impresiona",
-                        "Da la sensación de",
-                        "Suele corresponder a"
-                    ])
-                    emociones_literal = ", ".join(sorted(set(emociones_nuevas_detectadas)))
-                    estado_inferido = clasificar_estado_mental([mensaje_actual])
+            expresiones = expresiones_asociadas.get(emocion.lower(), [])
+            emocion_sugerida = any(expresion in mensaje_usuario for expresion in expresiones)
         
-                    respuesta = (
-                        f"{frase_diagnostica} un aumento en el malestar emocional, asociado a {emociones_literal}. "
-                    )
-                    if estado_inferido and estado_inferido != "estado emocional no definido":
-                        respuesta += f"Esto podría vincularse con un estado emocional del tipo {estado_inferido}. "
+            if emocion in mensaje_usuario or emocion_sugerida or "sí" in mensaje_usuario or "me pasa" in mensaje_usuario:
+                if emocion not in session["emociones_detectadas"]:
+                    session["emociones_detectadas"].append(emocion)
+                    registrar_emocion(emocion, f"confirmación implícita reforzada (interacción {contador})", user_id)
         
-                    respuesta += "¿Querés contarme un poco más sobre cómo estás atravesando esto?"
-                else:
-                    respuesta = (
-                        "¿Podés contarme un poco más sobre lo que estás sintiendo "
-                        "para poder brindarte una orientación adecuada?"
-                    )
+                respuesta = (
+                    f"Gracias por confirmarlo. ¿Querés contarme un poco más sobre cómo se manifiesta esa {emocion} en tu día a día?"
+                )
         
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
