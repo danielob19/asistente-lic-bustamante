@@ -407,11 +407,15 @@ async def asistente(input_data: UserInput):
         
             if session["emociones_detectadas"]:
                 resumen_clinico = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador)
-        
-                respuesta = (
-                    resumen_clinico
-                    + " ¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
-                )
+            
+                if not resumen_clinico or len(resumen_clinico.strip()) < 5:
+                    respuesta = "¿Querés contarme un poco más sobre cómo te sentís últimamente?"
+                else:
+                    respuesta = (
+                        resumen_clinico
+                        + " ¿Te interesaría consultarlo con el Lic. Daniel O. Bustamante?"
+                    )
+
             else:
                 respuesta = (
                     "Comprendo. Para poder ayudarte mejor, ¿podrías contarme cómo te sentís últimamente?"
@@ -481,7 +485,7 @@ async def asistente(input_data: UserInput):
             return {"respuesta": respuesta}
 
         # ====================== INTERACCIÓN 10 O POSTERIOR: CIERRE DEFINITIVO ======================
-        if contador >= 10:
+        if contador >= 10 and tipo_input == CLINICO:
             if contador == 10:
                 respuesta = (
                     "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
@@ -559,20 +563,17 @@ async def asistente(input_data: UserInput):
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
 
-        # 🛑 Filtro definitivo para inputs irrelevantes post-cierre
-        if contador >= 10 and clasificacion in ["IRRELEVANTE", "MALICIOSO"]:
+        # 🛑 Filtro definitivo para inputs irrelevantes, maliciosos o de cortesía post-cierre
+        if contador >= 10 and clasificacion in ["IRRELEVANTE", "MALICIOSO", "CORTESIA"]:
             respuesta = (
-                "Como fue señalado, este espacio no permite continuar más allá de este punto. "
-                "Es fundamental que, si deseás avanzar, lo hagas consultando directamente con el Lic. Daniel O. Bustamante, "
-                "quien podrá brindarte el acompañamiento profesional que necesitás. "
-                "No me es posible continuar respondiendo mensajes en este espacio."
+                "Gracias por tu mensaje. Ya no puedo continuar con esta conversación por este medio. "
+                "Te recomiendo que contactes directamente con el Lic. Daniel O. Bustamante para una evaluación adecuada."
             )
             session["ultimas_respuestas"].append(respuesta)
-            user_sessions[user_id] = session  # Asegura persistencia en la sesión
+            user_sessions[user_id] = session
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
-
-
+        
         # ✅ Si hay una respuesta clínica manual para esta interacción, se devuelve directamente
         # 🔄 (Se reemplazó el uso de 'respuestas_personalizadas' por 'RESPUESTAS_CLINICAS' del módulo importado)
         if contador in RESPUESTAS_CLINICAS:
