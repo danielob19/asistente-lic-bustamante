@@ -384,15 +384,18 @@ async def asistente(input_data: UserInput):
             if clasificacion in ["TESTEO", "MALICIOSO", "IRRELEVANTE"]:
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, clasificacion)
             
-                # ⚠️ Solo bloquear si no hay contexto clínico previo
-                if not hay_contexto_clinico_anterior(user_id):
+                # ⚠️ Solo bloquear si NO hay emociones registradas y es muy temprano
+                if (
+                    not hay_contexto_clinico_anterior(user_id)
+                    and not session.get("emociones_detectadas")
+                    and session.get("contador_interacciones", 0) <= 2
+                ):
                     session["input_sospechoso"] = True
                     session["ultimas_respuestas"].append(respuesta_default_fuera_de_contexto())
                     user_sessions[user_id] = session
                     return {"respuesta": respuesta_default_fuera_de_contexto()}
                 else:
-                    tipo_input = CLINICO_CONTINUACION
-            
+                    tipo_input = CLINICO_CONTINUACION                        
                         
         
         except Exception as e:
