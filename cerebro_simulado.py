@@ -47,6 +47,14 @@ def inferir_intencion_usuario(mensajes):
 
     ultimo = mensajes[-1].lower()
 
+    # 🧼 Filtro para saludos simples
+    saludos_simples = {
+        "hola", "buenas", "buenas tardes", "buenas noches", "buen día",
+        "holis", "¿hola?", "¿estás ahí?", "hey", "hello", "hi", "holaa", "probando"
+    }
+    if ultimo in saludos_simples:
+        return "cortesía"
+
     if "quiero ayuda" in ultimo or "necesito hablar" in ultimo:
         return "búsqueda de asistencia"
 
