@@ -458,17 +458,36 @@ async def asistente(input_data: UserInput):
             return {"respuesta": respuesta}
 
 
-        # ✅ Interacción 9 – Consolidar síntomas previos y sumar nuevas emociones
-        if contador == 9:
-            # Consolidar emociones de interacciones 1 a 5 (por seguridad)
-            for mensaje in session["mensajes"][:-4]:
-                nuevas = detectar_emociones_negativas(mensaje) or []
-                for emocion in nuevas:
-                    emocion = emocion.lower().strip()
-                    emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
-                    if emocion not in session["emociones_detectadas"]:
-                        session["emociones_detectadas"].append(emocion)
+        # ✅ Interacción 9 – Confirmación indirecta de emoción inferida en la 5
+        if contador == 9 and session.get("emocion_inferida_5") and session["emocion_inferida_5"] not in session["emociones_detectadas"]:
+            emocion = session["emocion_inferida_5"]
         
+            expresiones_asociadas = {
+                "ansiedad": ["me acelero", "me pongo nervioso", "no puedo respirar", "taquicardia", "me siento agitado", "inquietud"],
+                "tristeza": ["sin ganas", "todo me cuesta", "me siento vacío", "sin sentido", "todo me da igual"],
+                "angustia": ["presión en el pecho", "nudo en la garganta", "me cuesta tragar", "llanto contenido"],
+                "enojo": ["estallo fácil", "me irrito con todo", "no tolero nada", "me molesta todo", "exploto por nada"],
+                "miedo": ["me paralizo", "no puedo salir", "me da terror", "me da miedo enfrentarlo", "evito esas situaciones"]
+            }
+        
+            expresiones = expresiones_asociadas.get(emocion.lower(), [])
+            emocion_sugerida = any(expresion in mensaje_usuario for expresion in expresiones)
+        
+            if emocion in mensaje_usuario or emocion_sugerida or "sí" in mensaje_usuario or "me pasa" in mensaje_usuario:
+                session["emociones_detectadas"].append(emocion)
+                registrar_emocion(emocion, f"confirmación implícita reforzada (interacción 9)", user_id)
+        
+                respuesta = (
+                    f"Gracias por retomarlo. Parece tratarse de una experiencia emocional vinculada a {emocion.lower()}. "
+                    "¿Querés contarme un poco más sobre cómo se fue desarrollando últimamente?"
+                )
+        
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session
+                registrar_respuesta_openai(interaccion_id, respuesta)
+                return {"respuesta": respuesta}
+        
+                
             # Detectar emociones nuevas de interacciones 6 a 9
             mensajes_previos = session["mensajes"][-4:]
             emociones_nuevas = []
