@@ -350,12 +350,14 @@ async def asistente(input_data: UserInput):
                 print(f"⚠️ Clasificación inválida recibida de OpenAI: '{clasificacion}'")
                 clasificacion = "IRRELEVANTE"
             
-            if clasificacion == "CORTESIA":
+            # Solo permitir cortesía si no hay emociones activas en la sesión
+            if clasificacion == "CORTESIA" and not session.get("emociones_detectadas"):
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
                 respuesta = "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
+            
 
             
             if clasificacion == "CONSULTA_AGENDAR":
