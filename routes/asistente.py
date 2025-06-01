@@ -115,6 +115,20 @@ async def asistente(input_data: UserInput):
         mensaje_original = mensaje_original.strip()
         mensaje_usuario = mensaje_original.lower()
 
+        # 🧼 Filtro anticipado para saludos simples (evita análisis clínico innecesario)
+        SALUDOS_SIMPLES = {
+            "hola", "buenas", "buenas tardes", "buenas noches", "buen día", "holis",
+            "¿hola?", "¿estás ahí?", "hey", "hello", "hi", "holaa", "probando"
+        }
+        
+        if mensaje_usuario.strip() in SALUDOS_SIMPLES:
+            tipo_input = CORTESIA
+            respuesta = "Hola, ¿en qué puedo ayudarte?"
+            session["ultimas_respuestas"].append(respuesta)
+            user_sessions[user_id] = session
+            registrar_respuesta_openai(None, respuesta)
+            return {"respuesta": respuesta}
+        
 
         # 🚦 NUEVO: Inferencia bifurcada de intención del usuario (clínica vs administrativa)
         from core.utils.intencion_usuario import detectar_intencion_bifurcada
