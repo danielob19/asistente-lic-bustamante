@@ -42,10 +42,12 @@ def clasificar_input_inicial(texto: str) -> str:
 
     # 👋 Saludos y detección combinada con malestar clínico
     saludos = ["hola", "buenos días", "buenas tardes", "buenas noches", "qué tal", "como estás", "como esta"]
+    # Saludos simples deben clasificarse como CORTESIA antes de analizar emoción
+    if texto in saludos:
+        return "CORTESIA"
     if any(s in texto for s in saludos) and es_tema_clinico_o_emocional(texto):
         return "CLINICO"
-    if texto in saludos:
-        return "SALUDO"
+
 
     # 🙏 Frases de agradecimiento o cortesía
     expresiones_cortesia = [
