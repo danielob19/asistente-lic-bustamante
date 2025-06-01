@@ -358,11 +358,13 @@ async def asistente(input_data: UserInput):
             
             if clasificacion == "CONSULTA_AGENDAR":
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CONSULTA_AGENDAR)
-                return {
-                    "respuesta": (
-                        "Para agendar una sesión o conocer disponibilidad, podés escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
-                    )
-                }
+                respuesta = (
+                    "Para agendar una sesión o conocer disponibilidad, podés escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+                )
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session
+                return {"respuesta": respuesta}
+
             
             if clasificacion == "CONSULTA_MODALIDAD":
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CONSULTA_MODALIDAD)
