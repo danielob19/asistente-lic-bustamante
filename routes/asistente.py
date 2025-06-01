@@ -368,12 +368,14 @@ async def asistente(input_data: UserInput):
             
             if clasificacion == "CONSULTA_MODALIDAD":
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CONSULTA_MODALIDAD)
-                return {
-                    "respuesta": (
-                        "El Lic. Bustamante atiende exclusivamente en modalidad Online, a través de videollamadas. "
-                        "Podés consultarle directamente al WhatsApp +54 911 3310-1186 si querés coordinar una sesión."
-                    )
-                }
+                respuesta = (
+                    "El Lic. Bustamante atiende exclusivamente en modalidad Online, a través de videollamadas. "
+                    "Podés consultarle directamente al WhatsApp +54 911 3310-1186 si querés coordinar una sesión."
+                )
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session
+                return {"respuesta": respuesta}
+
             
             if clasificacion in ["TESTEO", "MALICIOSO", "IRRELEVANTE"]:
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, clasificacion)
