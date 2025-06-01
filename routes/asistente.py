@@ -357,7 +357,6 @@ async def asistente(input_data: UserInput):
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
-            
 
             
             if clasificacion == "CONSULTA_AGENDAR":
