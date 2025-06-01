@@ -352,9 +352,11 @@ async def asistente(input_data: UserInput):
             
             if clasificacion == "CORTESIA":
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
+                respuesta = "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
-                return {"respuesta": "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."}
+                return {"respuesta": respuesta}
+
             
             if clasificacion == "CONSULTA_AGENDAR":
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CONSULTA_AGENDAR)
