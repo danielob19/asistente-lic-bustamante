@@ -155,13 +155,20 @@ async def asistente(input_data: UserInput):
         
             if temas_administrativos_detectados:
                 cuadro_detectado = temas_administrativos_detectados[0]
+            
+                # 🛡️ Corrección: evitar respuestas como "casos vinculados a psicólogo"
+                if cuadro_detectado.lower() in ["psicologo", "psicóloga", "psicologa", "terapeuta"]:
+                    cuadro_detectado = "consultas psicológicas"
+            
                 respuesta = (
                     f"Sí, por supuesto. El Lic. Bustamante trabaja con casos vinculados a {cuadro_detectado}. "
                     "Si considerás que podría ayudarte, te sugiero contactarlo directamente para un análisis más profundo de sus causas."
                 )
+            
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
+
         
             # 🔄 Fallback: si no se detectó automáticamente pero hay síntomas evidentes
             elif any(kw in mensaje_usuario for kw in ["ansiedad", "bajones", "tristeza", "angustia", "desánimo", "desmotivación", "desvelo"]):
