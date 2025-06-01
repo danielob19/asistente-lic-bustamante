@@ -640,35 +640,6 @@ async def asistente(input_data: UserInput):
             session["ultimas_respuestas"].append(respuesta_manual)
             user_sessions[user_id] = session
             return {"respuesta": respuesta_manual}
-            
-
-        # ✅ Confirmación emocional implícita luego de inferencia en la interacción 5
-        if 6 <= contador <= 8 and session.get("emocion_inferida_5"):
-            emocion = session["emocion_inferida_5"]
-            expresiones_asociadas = {
-                "ansiedad": ["me acelero", "me pongo nervioso", "no puedo respirar", "taquicardia", "me siento agitado", "inquietud"],
-                "tristeza": ["sin ganas", "todo me cuesta", "me siento vacío", "sin sentido", "todo me da igual"],
-                "angustia": ["presión en el pecho", "nudo en la garganta", "me cuesta tragar", "llanto contenido"],
-                "enojo": ["estallo fácil", "me irrito con todo", "no tolero nada", "me molesta todo", "exploto por nada"],
-                "miedo": ["me paralizo", "no puedo salir", "me da terror", "me da miedo enfrentarlo", "evito esas situaciones"]
-            }
-        
-            expresiones = expresiones_asociadas.get(emocion.lower(), [])
-            emocion_sugerida = any(expresion in mensaje_usuario for expresion in expresiones)
-        
-            if emocion in mensaje_usuario or emocion_sugerida or "sí" in mensaje_usuario or "me pasa" in mensaje_usuario:
-                if emocion not in session["emociones_detectadas"]:
-                    session["emociones_detectadas"].append(emocion)
-                    registrar_emocion(emocion, f"confirmación de inferencia (interacción {contador})", user_id)
-        
-                respuesta = (
-                    f"Gracias por confirmarlo. ¿Querés contarme un poco más sobre cómo se manifiesta esa {emocion} en tu día a día?"
-                )
-        
-                session["ultimas_respuestas"].append(respuesta)
-                user_sessions[user_id] = session
-                registrar_respuesta_openai(interaccion_id, respuesta)
-                return {"respuesta": respuesta}
 
         
         # ✅ Inferencia emocional dinámica en interacciones 6 a 8
@@ -714,7 +685,6 @@ async def asistente(input_data: UserInput):
                 user_sessions[user_id] = session
                 registrar_respuesta_openai(interaccion_id, respuesta)
                 return {"respuesta": respuesta}
-
 
 
         # 🧠 Nueva respuesta para la PRIMERA INTERACCIÓN
