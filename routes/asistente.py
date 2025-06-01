@@ -291,6 +291,19 @@ async def asistente(input_data: UserInput):
         session.setdefault("interacciones_previas", []).append(tipo_input)
         user_sessions[user_id] = session
 
+        # ✅ Manejo para mensajes de cortesía simples sin contenido clínico
+        if tipo_input == CORTESIA:
+            respuesta = (
+                "Gracias por tu mensaje. Si más adelante deseás compartir algo personal o emocional, "
+                "podés hacerlo cuando lo sientas necesario."
+            )
+            session["ultimas_respuestas"].append(respuesta)
+            user_sessions[user_id] = session
+            registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, tipo_input)
+            registrar_respuesta_openai(None, respuesta)
+            return {"respuesta": respuesta}
+
+
         # 🧠 Continuación de tema clínico si fue identificado previamente
         if tipo_input == CLINICO_CONTINUACION:
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CLINICO_CONTINUACION)
