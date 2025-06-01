@@ -181,6 +181,14 @@ async def asistente(input_data: UserInput):
             session["ultimas_respuestas"].append(respuesta)
             user_sessions[user_id] = session
             return {"respuesta": respuesta}
+        
+        # 🧠 Si es administrativo PERO hay emoción detectada: redirigir por flujo clínico
+        if intencion_general == "ADMINISTRATIVA" and emociones_detectadas_bifurcacion:
+            session["emociones_detectadas"].extend([
+                emocion for emocion in emociones_detectadas_bifurcacion
+                if emocion not in session["emociones_detectadas"]
+            ])
+            tipo_input = CLINICO  # ⚠️ Fuerza el tratamiento clínico del mensaje
 
         
         # 🧠 Si se detecta intención clínica y emociones claras, continuar por el flujo clínico habitual (sin intervención)
