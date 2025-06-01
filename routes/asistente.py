@@ -731,10 +731,10 @@ async def asistente(input_data: UserInput):
                 # 🛑 Validación de seguridad por si OpenAI devuelve None o texto inválido
                 if not respuesta_original or not isinstance(respuesta_original, str) or len(respuesta_original.strip()) < 5:
                     respuesta_ai = (
-                        "Lo siento, hubo un inconveniente al generar una respuesta automática. "
-                        "Podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+                        "¿Podés contarme un poco más sobre cómo lo estás viviendo estos días? "
+                        "A veces ponerlo en palabras ayuda a entenderlo mejor."
                     )
-                    registrar_auditoria_respuesta(user_id, "respuesta vacía", respuesta_ai, "Error: respuesta nula o inválida")
+                    registrar_auditoria_respuesta(user_id, "respuesta vacía", respuesta_ai, "Fallback clínico: respuesta nula o inválida de OpenAI")
                     session["ultimas_respuestas"].append(respuesta_ai)
                     user_sessions[user_id] = session
                     return {"respuesta": respuesta_ai}
