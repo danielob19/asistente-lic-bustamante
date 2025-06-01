@@ -391,9 +391,9 @@ async def asistente(input_data: UserInput):
                     user_sessions[user_id] = session
                     return {"respuesta": respuesta_default_fuera_de_contexto()}
                 else:
-                    # ⚠️ Forzar que siga el flujo clínico como continuación
                     tipo_input = CLINICO_CONTINUACION
             
+                        
         
         except Exception as e:
             print(f"🧠❌ Error en clasificación contextual: {e}")
