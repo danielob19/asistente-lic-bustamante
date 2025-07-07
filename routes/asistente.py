@@ -142,7 +142,20 @@ async def asistente(input_data: UserInput):
 
         # 🧠 Si se detecta una intención claramente administrativa y NO hay emoción relevante, responder con mensaje informativo
         if intencion_general == "ADMINISTRATIVA" and not emociones_detectadas_bifurcacion:
-        
+
+            # ✅ Detección directa de obras sociales en consultas administrativas
+            if any(palabra in mensaje_usuario for palabra in [
+                "obra social", "obras sociales", "prepaga", "prepagas",
+                "osde", "swiss medical", "galeno", "cobertura médica", "plan médico"
+            ]):
+                respuesta = (
+                    "El Lic. Daniel O. Bustamante no trabaja con obras sociales ni prepagas. "
+                    "Atiende únicamente de manera particular. Si querés coordinar una sesión, podés escribirle al WhatsApp +54 911 3310-1186."
+                )
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session
+                return {"respuesta": respuesta}
+                    
             if "tratamientos" in mensaje_usuario or "tipo de terapia" in mensaje_usuario or "qué atiende" in mensaje_usuario:
                 respuesta = (
                     "El Lic. Bustamante es psicólogo especializado en psicología clínica. "
