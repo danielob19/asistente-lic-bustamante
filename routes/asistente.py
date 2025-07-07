@@ -155,7 +155,22 @@ async def asistente(input_data: UserInput):
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
-                    
+
+            # ✅ Detección directa de consultas sobre precio dentro del flujo administrativo
+            if any(palabra in mensaje_usuario for palabra in [
+                "precio", "cuánto cuesta", "cuánto sale", "valor", "tarifa", 
+                "honorario", "cuánto vale", "cuánto cobran", "cuánto tengo que pagar",
+                "cuánto cobra", "cuánto es", "cuánto cuesta la consulta", "sale la consulta"
+            ]):
+                respuesta = (
+                    "El valor de la sesión puede variar según el tipo de tratamiento (individual o de pareja), "
+                    "y también según las actualizaciones de honorarios vigentes. "
+                    "Para conocer el valor actual, podés escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+                )
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session
+                return {"respuesta": respuesta}
+                      
             if "tratamientos" in mensaje_usuario or "tipo de terapia" in mensaje_usuario or "qué atiende" in mensaje_usuario:
                 respuesta = (
                     "El Lic. Bustamante es psicólogo especializado en psicología clínica. "
