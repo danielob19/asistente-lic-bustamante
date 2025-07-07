@@ -67,6 +67,7 @@ import openai
 import re
 import time
 import random
+import unicodedata
 
 router = APIRouter()
 
@@ -113,7 +114,8 @@ async def asistente(input_data: UserInput):
             raise HTTPException(status_code=400, detail="El mensaje recibido no es válido.")
         
         mensaje_original = mensaje_original.strip()
-        mensaje_usuario = mensaje_original.lower()
+        mensaje_usuario = unicodedata.normalize('NFKD', mensaje_original).encode('ASCII', 'ignore').decode('utf-8').lower()
+
 
         # 🧼 Filtro anticipado para saludos simples (evita análisis clínico innecesario)
         SALUDOS_SIMPLES = {
