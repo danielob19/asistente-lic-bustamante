@@ -172,6 +172,21 @@ async def asistente(input_data: UserInput):
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
+
+            # ✅ Detección de consultas sobre días y horarios de atención
+            if any(p in mensaje_usuario for p in [
+                "qué días atiende", "que dias atiende", "días de atención", "dias de atencion",
+                "en qué horario", "que horario", "qué horarios", "cuándo atiende", "cuando atiende",
+                "disponibilidad", "qué días", "en qué días", "qué día", "qué momento", "que momento"
+            ]):
+                respuesta = (
+                    "El Lic. Bustamante atiende de lunes a viernes, entre las 13:00 y las 20:00 hs. "
+                    "La disponibilidad específica dependerá del momento en que se solicite el turno y del día elegido. "
+                    "Podés consultarlo directamente por WhatsApp al +54 911 3310-1186 para coordinar un horario."
+                )
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session
+                return {"respuesta": respuesta}
                       
             if "tratamientos" in mensaje_usuario or "tipo de terapia" in mensaje_usuario or "qué atiende" in mensaje_usuario:
                 respuesta = (
