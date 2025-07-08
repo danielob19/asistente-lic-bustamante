@@ -158,11 +158,11 @@ async def asistente(input_data: UserInput):
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
 
-            # ✅ Detección directa de consultas sobre precio dentro del flujo administrativo
-            if any(palabra in mensaje_usuario for palabra in [
-                "precio", "cuánto cuesta", "cuánto sale", "valor", "tarifa", 
-                "honorario", "cuánto vale", "cuánto cobran", "cuánto tengo que pagar",
-                "cuánto cobra", "cuánto es", "cuánto cuesta la consulta", "sale la consulta"
+            # ✅ Detección directa de consultas sobre precios, valor o honorarios
+            if any(p in mensaje_usuario for p in [
+                "precio", "valor", "cuánto cuesta", "cuanto cuesta", "cuánto cobra", "cuanto cobra",
+                "tarifa", "cuánto vale", "cuanto vale", "cuánto sale", "cuanto sale",
+                "cuánto cobran", "cuánto tengo que pagar", "cuánto cuesta la consulta", "vale la consulta"
             ]):
                 respuesta = (
                     "El valor de la sesión puede variar según el tipo de tratamiento (individual o de pareja), "
