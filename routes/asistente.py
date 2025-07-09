@@ -824,25 +824,6 @@ async def asistente(input_data: UserInput):
                 )
             }
            
-        
-        # 🔍 Confirmación final de emociones registradas
-        if emociones_nuevas:
-            print(f"✅ Se registraron las siguientes emociones nuevas en palabras_clave: {emociones_nuevas}")
-        else:
-            print("✅ No hubo emociones nuevas para registrar en palabras_clave.")
-
-
-        # Evitar agregar duplicados en emociones detectadas
-        nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
-        session["emociones_detectadas"].extend(nuevas_emociones)
-        
-        # ✅ Registrar emociones en la base solo si aún no están registradas en esta interacción
-        emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
-        
-        for emocion in session["emociones_detectadas"]:
-            if emocion not in emociones_registradas_bd:
-                registrar_emocion(emocion, f"interacción {contador}", user_id)
-
         # 🧠 Detección de patrones reiterativos en interacciones 6 a 8
         if 6 <= contador <= 8:
             patron_detectado = inferir_patron_interactivo(session["mensajes"][-3:])
