@@ -824,12 +824,6 @@ async def asistente(input_data: UserInput):
                 )
             }
            
-        # 🧠 Detección de patrones reiterativos en interacciones 6 a 8
-        if 6 <= contador <= 8:
-            patron_detectado = inferir_patron_interactivo(session["mensajes"][-3:])
-            if patron_detectado != "sin patrón consistente":
-                print(f"🔄 Patrón interactivo detectado: {patron_detectado}")
-
 
         # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
         preguntas_cobertura = [
