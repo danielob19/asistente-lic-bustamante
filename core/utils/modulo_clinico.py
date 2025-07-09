@@ -32,11 +32,39 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     :return: Diccionario con respuesta final {"respuesta": ...}
     """
 
-    # 🧠 Este cuerpo será completado progresivamente con los bloques migrados desde asistente.py
+    mensaje_original = input_data["mensaje_original"]
+    mensaje_usuario = input_data["mensaje_usuario"]
+    user_id = input_data["user_id"]
+    session = input_data["session"]
+    contador = input_data["contador"]
+
+    # Obtener lista de síntomas ya registrados en la base de datos
+    sintomas_existentes = obtener_sintomas_existentes()
+
+    # Detectar emociones desde el mensaje actual
+    emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
+
+    # Filtrar emociones detectadas para evitar registrar duplicados
+    emociones_nuevas = []
+    for emocion in emociones_detectadas:
+        emocion = emocion.lower().strip()
+        emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
+
+        # Verificar si la emoción ya fue detectada en la sesión
+        if emocion not in session["emociones_detectadas"]:
+            # Si la emoción no está en la base de datos, agregarla y registrarla
+            if emocion not in sintomas_existentes:
+                emociones_nuevas.append(emocion)
+                registrar_sintoma(emocion)  # ✅ Registrar solo si no existe
+
+    # ✅ Esta función será extendida para:
+    # - Registrar en PostgreSQL
+    # - Obtener cuadro clínico por OpenAI
+    # - Generar respuesta clínica profesional
+    # - Registrar auditoría y respuesta final
 
     return {
         "respuesta": (
             "El módulo clínico ha sido activado correctamente. Falta completar el procesamiento completo."
         )
     }
-
