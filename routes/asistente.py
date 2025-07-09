@@ -145,95 +145,10 @@ async def asistente(input_data: UserInput):
 
         # 🧠 Si se detecta una intención claramente administrativa y NO hay emoción relevante, responder con mensaje informativo
         if intencion_general == "ADMINISTRATIVA" and not emociones_detectadas_bifurcacion:
+            respuesta_admin = procesar_administrativo(mensaje_usuario, session, user_id)
+            if respuesta_admin:
+                return respuesta_admin
 
-            # ✅ Detección directa de obras sociales en consultas administrativas
-            if any(palabra in mensaje_usuario for palabra in [
-                "obra social", "obras sociales", "prepaga", "prepagas",
-                "osde", "swiss medical", "galeno", "cobertura médica", "plan médico"
-            ]):
-                respuesta = (
-                    "El Lic. Daniel O. Bustamante no trabaja con obras sociales ni prepagas. "
-                    "Atiende únicamente de manera particular. Si querés coordinar una sesión, podés escribirle al WhatsApp +54 911 3310-1186."
-                )
-                session["ultimas_respuestas"].append(respuesta)
-                user_sessions[user_id] = session
-                return {"respuesta": respuesta}
-
-            # ✅ Detección directa de consultas sobre precios, valor o honorarios
-            if any(p in mensaje_usuario for p in [
-                "precio", "valor", "cuánto cuesta", "cuanto cuesta", "cuánto cobra", "cuanto cobra",
-                "tarifa", "cuánto vale", "cuanto vale", "cuánto sale", "cuanto sale",
-                "cuánto cobran", "cuánto tengo que pagar", "cuánto cuesta la consulta", "vale la consulta"
-            ]):
-                respuesta = (
-                    "El valor de la sesión puede variar según el tipo de tratamiento (individual o de pareja), "
-                    "y también según las actualizaciones de honorarios vigentes. "
-                    "Para conocer el valor actual, podés escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
-                )
-                session["ultimas_respuestas"].append(respuesta)
-                user_sessions[user_id] = session
-                return {"respuesta": respuesta}
-
-            # ✅ Detección de consultas sobre días y horarios de atención
-            if any(p in mensaje_usuario for p in [
-                "qué días atiende", "que dias atiende", "días de atención", "dias de atencion",
-                "en qué horario", "que horario", "qué horarios", "cuándo atiende", "cuando atiende",
-                "disponibilidad", "qué días", "en qué días", "qué día", "qué momento", "que momento"
-            ]):
-                respuesta = (
-                    "El Lic. Bustamante atiende de lunes a viernes, entre las 13:00 y las 20:00 hs. "
-                    "La disponibilidad específica dependerá del momento en que se solicite el turno y del día elegido. "
-                    "Podés consultarlo directamente por WhatsApp al +54 911 3310-1186 para coordinar un horario."
-                )
-                session["ultimas_respuestas"].append(respuesta)
-                user_sessions[user_id] = session
-                return {"respuesta": respuesta}
-                      
-            if "tratamientos" in mensaje_usuario or "tipo de terapia" in mensaje_usuario or "qué atiende" in mensaje_usuario:
-                respuesta = (
-                    "El Lic. Bustamante es psicólogo especializado en psicología clínica. "
-                    "Realiza tratamientos psicológicos individuales y terapia de pareja. "
-                    "Si es de tu interés, podés solicitar un turno escribiéndole al WhatsApp +54 911 3310-1186."
-                )
-                session["ultimas_respuestas"].append(respuesta)
-                user_sessions[user_id] = session
-                return {"respuesta": respuesta}
-        
-            if temas_administrativos_detectados:
-                cuadro_detectado = temas_administrativos_detectados[0]
-            
-                # 🛡️ Corrección: evitar respuestas como "casos vinculados a psicólogo"
-                if cuadro_detectado.lower() in ["psicologo", "psicóloga", "psicologa", "terapeuta"]:
-                    cuadro_detectado = "consultas psicológicas"
-            
-                respuesta = (
-                    f"Sí, por supuesto. El Lic. Bustamante trabaja con casos vinculados a {cuadro_detectado}. "
-                    "Si considerás que podría ayudarte, te sugiero contactarlo directamente para un análisis más profundo de sus causas."
-                )
-            
-                session["ultimas_respuestas"].append(respuesta)
-                user_sessions[user_id] = session
-                return {"respuesta": respuesta}
-
-        
-            # 🔄 Fallback: si no se detectó automáticamente pero hay síntomas evidentes
-            elif any(kw in mensaje_usuario for kw in ["ansiedad", "bajones", "tristeza", "angustia", "desánimo", "desmotivación", "desvelo"]):
-                cuadro_detectado = next((kw for kw in ["ansiedad", "bajones", "tristeza", "angustia"] if kw in mensaje_usuario), "el motivo que mencionás")
-                respuesta = (
-                    f"Sí, el Lic. Bustamante trabaja con situaciones relacionadas con {cuadro_detectado}. "
-                    "Si lo considerás oportuno, podés contactarlo para un análisis más detallado de sus causas."
-                )
-                session["ultimas_respuestas"].append(respuesta)
-                user_sessions[user_id] = session
-                return {"respuesta": respuesta}
-        
-            # Respuesta general por defecto para consultas administrativas
-            respuesta = (
-                "Gracias por tu consulta. Si querés coordinar una sesión, podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
-            )
-            session["ultimas_respuestas"].append(respuesta)
-            user_sessions[user_id] = session
-            return {"respuesta": respuesta}
         
         # 🧠 Si es administrativo PERO hay emoción detectada: redirigir por flujo clínico
         if intencion_general == "ADMINISTRATIVA" and emociones_detectadas_bifurcacion:
