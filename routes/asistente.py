@@ -823,24 +823,6 @@ async def asistente(input_data: UserInput):
                     f"+54 911 3310-1186 para una evaluación más detallada."
                 )
             }
-           
-
-        # 🔹 Consultas sobre obras sociales, prepagas o asistencia psicológica
-        preguntas_cobertura = [
-            r"(atiende[n|s]?|trabaja[n|s]?|acepta[n|s]?|tom[a|ás]|toma[n]?|atiendo)\s+(por|con)?\s*(osde|swiss medical|galeno|prepaga|obra social|cobertura médica|asistencia psicológica)",
-            r"(osde|swiss medical|galeno|prepaga|obra social|cobertura médica|asistencia psicológica)\s+.*(cubren|incluye|incluyen|puedo usar|sirve|vale|acepta|aceptan|trabaja|trabajan|atiende|atienden)",
-            r"(puedo|quiero|necesito).*(usar|utilizar).*(osde|swiss medical|galeno|prepaga|obra social)",
-            r"(cubren|cubre|acepta|aceptás|aceptan|trabaja|trabajás|trabajan|atiende|atendés|atienden).*?(osde|swiss medical|galeno|prepaga|obra social)"
-        ]
-        
-        for patron in preguntas_cobertura:
-            if re.search(patron, mensaje_usuario):
-                return {
-                    "respuesta": (
-                        "El Lic. Daniel O. Bustamante no trabaja con obras sociales ni prepagas. "
-                        "Atiende únicamente de manera particular. Si querés coordinar una sesión, podés escribirle al WhatsApp +54 911 3310-1186."
-                    )
-                }
         
         # 🔹 Consultas sobre precios, honorarios o valor de la sesión
         if any(palabra in mensaje_usuario for palabra in [
