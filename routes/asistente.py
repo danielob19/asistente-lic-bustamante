@@ -1,3 +1,4 @@
+from core.utils.modulo_clinico import procesar_clinico  # (solo si no fue importado aún)
 from core.administrativo.procesar_administrativo import procesar_administrativo
 from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, reformular_estilo_narrativo
 from fastapi import APIRouter, HTTPException
@@ -825,28 +826,16 @@ async def asistente(input_data: UserInput):
            
         # Obtener la lista de síntomas ya registrados en la BD
         sintomas_existentes = obtener_sintomas_existentes()
-        
-        # Detectar emociones desde el mensaje actual
-        emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
-        
-        # Filtrar emociones detectadas para evitar registrar duplicados
-        emociones_nuevas = []
-        
-        for emocion in emociones_detectadas:
-            emocion = emocion.lower().strip()
 
-            # 🧼 Estandarizar emoción detectada (eliminar puntuación final innecesaria)
-            emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion)
-        
-            # Verificar si la emoción ya fue detectada en la sesión para evitar registrar duplicados
-            if emocion not in session["emociones_detectadas"]:
-        
-                # Si la emoción no está en la BD, agregarla a emociones_nuevas y registrar el síntoma
-                if emocion not in sintomas_existentes:
-                    emociones_nuevas.append(emocion)
-                    registrar_sintoma(emocion)  # ✅ Registrar en palabras_clave solo si no existe
+        # 🧠 Procesamiento clínico inicial: emociones, síntomas y validación
+        procesar_clinico({
+            "mensaje_original": mensaje_original,
+            "mensaje_usuario": mensaje_usuario,
+            "user_id": user_id,
+            "session": session,
+            "contador": session.get("contador_interacciones", 1)
+        })
 
-        
         # 🔍 Depuración: Mostrar qué emociones se intentarán registrar
         print(f"🔍 Emociones nuevas que intentarán registrarse en palabras_clave: {emociones_nuevas}")
                 
