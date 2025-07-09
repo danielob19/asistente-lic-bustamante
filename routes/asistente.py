@@ -824,17 +824,14 @@ async def asistente(input_data: UserInput):
                 )
             }
            
-        # Obtener la lista de síntomas ya registrados en la BD
-        sintomas_existentes = obtener_sintomas_existentes()
-
-        # 🧠 Procesamiento clínico inicial: emociones, síntomas y validación
-        procesar_clinico({
+        return procesar_clinico({
             "mensaje_original": mensaje_original,
             "mensaje_usuario": mensaje_usuario,
             "user_id": user_id,
             "session": session,
             "contador": session.get("contador_interacciones", 1)
         })
+
 
         # 🔍 Depuración: Mostrar qué emociones se intentarán registrar
         print(f"🔍 Emociones nuevas que intentarán registrarse en palabras_clave: {emociones_nuevas}")
