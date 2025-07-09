@@ -824,16 +824,6 @@ async def asistente(input_data: UserInput):
                 )
             }
            
-        return procesar_clinico({
-            "mensaje_original": mensaje_original,
-            "mensaje_usuario": mensaje_usuario,
-            "user_id": user_id,
-            "session": session,
-            "contador": session.get("contador_interacciones", 1)
-        })
-
-
-        
         
         # 🔍 Confirmación final de emociones registradas
         if emociones_nuevas:
