@@ -1,5 +1,5 @@
 from core.utils.modulo_clinico import procesar_clinico  # (solo si no fue importado aún)
-from core.administrativo.procesar_administrativo import procesar_administrativo
+from core.utils.modulo_administrativo import procesar_administrativo
 from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, reformular_estilo_narrativo
 from fastapi import APIRouter, HTTPException
 from core.modelos.base import UserInput
