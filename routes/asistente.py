@@ -833,59 +833,7 @@ async def asistente(input_data: UserInput):
         })
 
 
-        # 🔍 Depuración: Mostrar qué emociones se intentarán registrar
-        print(f"🔍 Emociones nuevas que intentarán registrarse en palabras_clave: {emociones_nuevas}")
-                
-        # Registrar solo las emociones nuevas en la base de datos con un cuadro clínico asignado por OpenAI
-        for emocion in emociones_nuevas:
-            # Generar el prompt para OpenAI
-            prompt_cuadro = (
-                f"A partir de la siguiente emoción detectada: '{emocion}', asigná un único cuadro clínico o patrón emocional.\n\n"
-                "Tu tarea es analizar el síntoma y determinar el estado clínico más adecuado, basándote en criterios diagnósticos de la psicología o la psiquiatría. "
-                "No respondas con explicaciones, sólo con el nombre del cuadro clínico más pertinente.\n\n"
-                "Si la emoción no corresponde a ningún cuadro clínico definido, indicá únicamente: 'Patrón emocional detectado'.\n\n"
-                "Ejemplos válidos de cuadros clínicos:\n"
-                "- Trastorno de ansiedad\n"
-                "- Depresión mayor\n"
-                "- Estrés postraumático\n"
-                "- Trastorno de pánico\n"
-                "- Baja autoestima\n"
-                "- Estado confusional\n"
-                "- Desgaste emocional\n"
-                "- Trastorno de impulsividad\n"
-                "- Insomnio crónico\n"
-                "- Desorientación emocional\n"
-                "- Sentimientos de aislamiento\n"
-                "- Patrón emocional detectado\n\n"
-                "Devolvé únicamente el nombre del cuadro clínico, sin explicaciones, ejemplos ni texto adicional."
-            )
         
-            try:
-                # Llamada a OpenAI para obtener el cuadro clínico
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt_cuadro}],
-                    max_tokens=50,
-                    temperature=0.0
-                )
-        
-                cuadro_asignado = response.choices[0].message['content'].strip()
-        
-                # Si OpenAI no devuelve un cuadro válido, asignar un valor por defecto
-                if not cuadro_asignado:
-                    cuadro_asignado = "Patrón emocional detectado"
-        
-                # Registrar la emoción con el cuadro clínico asignado
-                registrar_sintoma(emocion, cuadro_asignado)
-                print(f"🧠 OpenAI asignó el cuadro clínico: {cuadro_asignado} para la emoción '{emocion}'.")
-                
-                # 🔄 Agregar el nuevo síntoma al set cacheado en memoria
-                sintomas_cacheados.add(emocion.lower().strip())
-                
-                        
-            except Exception as e:
-                print(f"❌ Error al obtener el cuadro clínico de OpenAI para '{emocion}': {e}")
-
         
         # 🔍 Confirmación final de emociones registradas
         if emociones_nuevas:
