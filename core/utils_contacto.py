@@ -1,4 +1,12 @@
 from core.db.registro import registrar_auditoria_input_original
+import unicodedata
+import string
+
+def normalizar_texto(texto: str) -> str:
+    texto = texto.lower().strip()
+    texto = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("utf-8")
+    texto = texto.translate(str.maketrans("", "", string.punctuation))
+    return texto
 
 def es_consulta_contacto(mensaje: str, user_id: str = None, mensaje_original: str = None) -> bool:
     """
@@ -8,12 +16,12 @@ def es_consulta_contacto(mensaje: str, user_id: str = None, mensaje_original: st
     if not mensaje or not isinstance(mensaje, str):
         return False
 
-    mensaje = mensaje.lower()
+    mensaje_normalizado = normalizar_texto(mensaje)
 
     expresiones_contacto = [
-        "contacto", "numero", "número", "whatsapp", "teléfono", "telefono",
+        "contacto", "numero", "whatsapp", "telefono",
         "como lo contacto", "quiero contactarlo", "como me comunico",
-        "quiero escribirle", "quiero hablar con él", "me das el número",
+        "quiero escribirle", "quiero hablar con el", "me das el numero",
         "como se agenda", "como saco turno", "quiero pedir turno",
         "necesito contactarlo", "como empiezo la terapia", "quiero empezar la consulta",
         "como me comunico con el licenciado", "mejor psicologo", "mejor terapeuta",
@@ -21,10 +29,10 @@ def es_consulta_contacto(mensaje: str, user_id: str = None, mensaje_original: st
         "trata temas", "atiende estos", "trata estos", "atiende estos temas"
     ]
 
-    hay_coincidencia = any(exp in mensaje for exp in expresiones_contacto)
+    hay_coincidencia = any(exp in mensaje_normalizado for exp in expresiones_contacto)
 
     if hay_coincidencia and user_id and mensaje_original:
-        registrar_auditoria_input_original(user_id, mensaje_original, mensaje, "CONSULTA_CONTACTO")
+        registrar_auditoria_input_original(user_id, mensaje_original, mensaje_normalizado, "CONSULTA_CONTACTO")
 
     return hay_coincidencia
 
