@@ -14,7 +14,7 @@ def procesar_administrativo(mensaje_usuario: str, session: dict, user_id: str) -
 
     RESPUESTAS = [
         {
-            "claves": ["obra social", "prepaga", "osde", "swiss medical", "galeno", "aceptan obra social"],
+            "claves": ["obra social", "obras sociales", "prepaga", "osde", "swiss medical", "galeno", "aceptan obra social"],
             "respuesta": (
                 "El Lic. Daniel O. Bustamante no trabaja con obras sociales ni prepagas. "
                 "Atiende únicamente de manera particular. Si querés coordinar una sesión, podés escribirle al WhatsApp +54 911 3310-1186."
