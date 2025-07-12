@@ -41,29 +41,27 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     """
 
     mensaje_original = input_data["mensaje_original"]
-    mensaje_usuario = normalizar_texto(input_data["mensaje_usuario"])  # ← Normalizado aquí
+    mensaje_usuario = normalizar_texto(input_data["mensaje_usuario"])
     user_id = input_data["user_id"]
     session = input_data["session"]
     contador = input_data["contador"]
 
-    sintomas_existentes = obtener_sintomas_existentes()
+    sintomas_existentes = {normalizar_texto(s) for s in obtener_sintomas_existentes()}
     emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
 
     emociones_nuevas = []
     for emocion in emociones_detectadas:
-        emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion.lower().strip())
-        if emocion not in session["emociones_detectadas"]:
-            if emocion not in sintomas_existentes:
-                emociones_nuevas.append(emocion)
-                registrar_sintoma(emocion)
+        emocion_normalizada = normalizar_texto(emocion)
+        if emocion_normalizada not in {normalizar_texto(e) for e in session["emociones_detectadas"]}:
+            if emocion_normalizada not in sintomas_existentes:
+                emociones_nuevas.append(emocion_normalizada)
+                registrar_sintoma(emocion_normalizada)
 
     for emocion in emociones_nuevas:
         registrar_emocion(emocion, f"interacción {contador}", user_id)
         session["emociones_detectadas"].append(emocion)
 
-    # Registrar solo las emociones nuevas en la base de datos con un cuadro clínico asignado por OpenAI
     for emocion in emociones_nuevas:
-        # Generar el prompt para OpenAI
         prompt_cuadro = (
             f"A partir de la siguiente emoción detectada: '{emocion}', asigná un único cuadro clínico o patrón emocional.\n\n"
             "Tu tarea es analizar el síntoma y determinar el estado clínico más adecuado, basándote en criterios diagnósticos de la psicología o la psiquiatría. "
@@ -84,7 +82,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             "- Patrón emocional detectado\n\n"
             "Devolvé únicamente el nombre del cuadro clínico, sin explicaciones, ejemplos ni texto adicional."
         )
-    
+
         try:
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
@@ -92,33 +90,30 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
                 max_tokens=50,
                 temperature=0.0
             )
-    
+
             cuadro_asignado = response.choices[0].message['content'].strip()
-    
             if not cuadro_asignado:
                 cuadro_asignado = "Patrón emocional detectado"
-    
+
             registrar_sintoma(emocion, cuadro_asignado)
             print(f"🧠 OpenAI asignó el cuadro clínico: {cuadro_asignado} para la emoción '{emocion}'.")
-    
+
         except Exception as e:
             print(f"❌ Error al obtener el cuadro clínico de OpenAI para '{emocion}': {e}")
 
-    # Confirmación final de emociones registradas
     if emociones_nuevas:
         print(f"✅ Se registraron las siguientes emociones nuevas en palabras_clave: {emociones_nuevas}")
     else:
         print("✅ No hubo emociones nuevas para registrar en palabras_clave.")
-    
-    # Evitar agregar duplicados
-    nuevas_emociones = [e for e in emociones_detectadas if e not in session["emociones_detectadas"]]
+
+    nuevas_emociones = [normalizar_texto(e) for e in emociones_detectadas if normalizar_texto(e) not in {normalizar_texto(x) for x in session["emociones_detectadas"]}]
     session["emociones_detectadas"].extend(nuevas_emociones)
-    
-    # Registrar emociones en la base si no están registradas
+
     emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
-    
+    emociones_registradas_bd = {normalizar_texto(e) for e in emociones_registradas_bd}
+
     for emocion in session["emociones_detectadas"]:
-        if emocion not in emociones_registradas_bd:
+        if normalizar_texto(emocion) not in emociones_registradas_bd:
             registrar_emocion(emocion, f"interacción {contador}", user_id)
 
     interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
