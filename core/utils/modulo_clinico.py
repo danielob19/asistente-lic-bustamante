@@ -2,6 +2,7 @@ import openai
 import re
 import time
 import unicodedata
+import string
 from typing import Dict, Any
 
 from core.utils.clinico_contexto import hay_contexto_clinico_anterior
