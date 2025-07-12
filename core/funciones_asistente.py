@@ -12,6 +12,14 @@ from collections import Counter
 import psycopg2
 from core.db.config import conn  # Asegurate de tener la conexión importada correctamente
 import re
+import unicodedata
+import string
+
+def normalizar_texto(texto: str) -> str:
+    texto = texto.lower().strip()
+    texto = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("utf-8")
+    texto = texto.translate(str.maketrans("", "", string.punctuation))
+    return texto
 
 sintomas_cacheados = set()
 
@@ -19,19 +27,16 @@ def clasificar_input_inicial(texto: str) -> str:
     if not texto or not isinstance(texto, str):
         return "OTRO"
 
-    texto = texto.lower().strip()
+    texto = normalizar_texto(texto)
 
-    # 🧠 Frases clínicas indirectas que expresan necesidad de iniciar terapia
     frases_necesidad_terapia = [
-        "necesito hacer terapia", "quiero empezar terapia", "necesito un tratamiento", "buscar ayuda psicológica",
-        "necesito hablar con alguien", "quisiera hacer terapia", "podría iniciar terapia", "empezar psicoterapia",
+        "necesito hacer terapia", "quiero empezar terapia", "necesito un tratamiento", "buscar ayuda psicologica",
+        "necesito hablar con alguien", "quisiera hacer terapia", "podria iniciar terapia", "empezar psicoterapia",
         "hacer terapia de pareja", "hacer psicoterapia", "necesito ayuda", "quiero tratarme", "buscar un terapeuta"
     ]
     if any(frase in texto for frase in frases_necesidad_terapia):
         return "CLINICO"
-    
 
-    # 🧠 Cargar síntomas desde la BD si el set global está vacío
     global sintomas_cacheados
     if not sintomas_cacheados:
         try:
@@ -40,77 +45,65 @@ def clasificar_input_inicial(texto: str) -> str:
         except Exception as e:
             print(f"❌ Error al cargar síntomas cacheados en clasificar_input_inicial: {e}")
 
-    # 👋 Saludos y detección combinada con malestar clínico
-    saludos = ["hola", "buenos días", "buenas tardes", "buenas noches", "qué tal", "como estás", "como esta"]
-    # Saludos simples deben clasificarse como CORTESIA antes de analizar emoción
+    saludos = ["hola", "buenos dias", "buenas tardes", "buenas noches", "que tal", "como estas", "como esta"]
     if texto in saludos:
         return "CORTESIA"
     if any(s in texto for s in saludos) and es_tema_clinico_o_emocional(texto):
         return "CLINICO"
 
-
-    # 🙏 Frases de agradecimiento o cortesía
     expresiones_cortesia = [
-        "gracias", "muchas gracias", "muy amable", "ok gracias", "perfecto, gracias", "mil gracias",
-        "te agradezco", "todo bien", "no necesito más", "me quedó claro", "nada más"
+        "gracias", "muchas gracias", "muy amable", "ok gracias", "perfecto gracias", "mil gracias",
+        "te agradezco", "todo bien", "no necesito mas", "me quedo claro", "nada mas"
     ]
     if texto in expresiones_cortesia:
         return "CORTESIA"
 
-    # 🔎 Consultas sobre modalidad de atención (ubicación, virtualidad)
     consultas_modalidad = [
         "es presencial", "es online", "son online", "es virtual", "atiende por videollamada", "por zoom",
-        "se hace por videollamada", "atención virtual", "por llamada", "me tengo que presentar",
-        "se hace presencial", "ubicación", "dónde atiende", "donde atiende", "donde queda",
-        "dónde está", "ciudad", "zona", "provincia", "en qué parte estás", "dónde es la consulta",
-        "dirección", "en qué lugar se atiende", "dónde se realiza", "debo ir al consultorio",
-        "se hace a distancia", "atención remota", "consultorio", "atención online"
+        "se hace por videollamada", "atencion virtual", "por llamada", "me tengo que presentar",
+        "se hace presencial", "ubicacion", "donde atiende", "donde queda", "donde esta", "ciudad",
+        "zona", "provincia", "en que parte estas", "donde es la consulta", "direccion",
+        "en que lugar se atiende", "donde se realiza", "debo ir al consultorio", "se hace a distancia",
+        "atencion remota", "consultorio", "atencion online"
     ]
     if any(frase in texto for frase in consultas_modalidad):
         return "CONSULTA_MODALIDAD"
 
-    # 🧠 Malestar clínico directo (abstracciones y síntomas)
     clinicos_ampliados = [
         "nada me entusiasma", "nada me importa", "nada tiene sentido", "no tengo ganas", "no me interesa nada",
-        "no me dan ganas", "no siento nada", "me quiero morir", "pienso en morirme", "me siento vacío", "no le encuentro sentido",
-        "todo me supera", "ya no disfruto", "siento un peso", "me cuesta levantarme", "lloro sin razón", "me duele el alma",
-        "estoy muy triste", "me siento solo", "no puedo más", "no puedo dormir", "siento ansiedad", "me siento mal conmigo"
+        "no me dan ganas", "no siento nada", "me quiero morir", "pienso en morirme", "me siento vacio", "no le encuentro sentido",
+        "todo me supera", "ya no disfruto", "siento un peso", "me cuesta levantarme", "lloro sin razon", "me duele el alma",
+        "estoy muy triste", "me siento solo", "no puedo mas", "no puedo dormir", "siento ansiedad", "me siento mal conmigo"
     ]
     if any(frase in texto for frase in clinicos_ampliados):
         return "CLINICO"
 
-    # 🗒️ Consultas clínicas explícitas disfrazadas de preguntas
     frases_consulta_directa = [
-        "¿atienden estos casos?", "¿atiende estos casos?", "¿atienden el caso?", "¿atiende el caso?",
-        "¿tratan este tipo de temas?", "¿trata este tipo de temas?",
-        "¿manejan este tipo de situaciones?", "¿manejan estos casos?",
-        "¿hacen tratamiento de esto?", "¿hace tratamiento de esto?",
-        "¿el licenciado puede atender esto?", "¿pueden ayudar con esto?",
-        "¿esto lo trata el profesional?", "¿esto lo trabajan en terapia?",
-        "¿esto se trabaja en terapia?", "¿este tema lo abordan?"
+        "atienden estos casos", "atiende estos casos", "atienden el caso", "atiende el caso",
+        "tratan este tipo de temas", "trata este tipo de temas",
+        "manejan este tipo de situaciones", "manejan estos casos",
+        "hacen tratamiento de esto", "hace tratamiento de esto",
+        "el licenciado puede atender esto", "pueden ayudar con esto",
+        "esto lo trata el profesional", "esto lo trabajan en terapia",
+        "esto se trabaja en terapia", "este tema lo abordan"
     ]
     if any(frase in texto for frase in frases_consulta_directa):
         return "ADMINISTRATIVO"
 
-    # 📋 Consultas indirectas: verbo + tema clínico (frecuentes en landing pages)
     temas_clinicos_comunes = [
-    "terapia de pareja", "psicoterapia", "tratamiento psicológico", "consultas psicológicas",
-    "abordaje emocional", "tratamiento emocional", "atención psicológica", "tratamiento de pareja"
+        "terapia de pareja", "psicoterapia", "tratamiento psicologico", "consultas psicologicas",
+        "abordaje emocional", "tratamiento emocional", "atencion psicologica", "tratamiento de pareja"
     ]
-    
     verbos_clinicos = [
         "hace", "hacen", "dan", "atiende", "atienden", "realiza", "realizan", "ofrece", "ofrecen",
         "trabaja con", "trabajan con", "brinda", "brindan"
     ]
-    
     for verbo in verbos_clinicos:
         for tema in temas_clinicos_comunes:
-            # 🔄 Ajuste específico para tratamiento(s) de pareja
             if tema == "tratamiento de pareja":
                 patron = rf"{verbo}\s*(el|la|los|las)?\s*tratamientos?\s+de\s+pareja"
             else:
                 patron = rf"{verbo}\s*(el|la|los|las)?\s*{re.escape(tema)}"
-    
             if re.search(patron, texto, re.IGNORECASE):
                 registrar_auditoria_input_original(
                     user_id="sistema",
@@ -120,8 +113,6 @@ def clasificar_input_inicial(texto: str) -> str:
                 )
                 return "ADMINISTRATIVO"
 
-    
-    # 🆕 Captura directa de frases como “atienden pareja”
     if re.search(r"\b(atiende|atienden|trabaja con|trabajan con|hace|hacen|dan|ofrece|ofrecen)\s+(una\s+)?pareja\b", texto, re.IGNORECASE):
         registrar_auditoria_input_original(
             user_id="sistema",
@@ -131,30 +122,26 @@ def clasificar_input_inicial(texto: str) -> str:
         )
         return "ADMINISTRATIVO"
 
-
-    # 🧠 Consultas indirectas sobre síntomas mediante verbos + síntomas cacheados
     verbos_consulta = [
         "trata", "tratan", "atiende", "atienden", "aborda", "abordan",
         "se ocupa de", "se ocupan de", "interviene en", "intervienen en",
         "trabaja con", "trabajan con", "hace tratamiento de", "hacen tratamiento de",
         "realiza tratamiento de", "realizan tratamiento de",
         "da tratamiento a", "dan tratamiento a", "maneja", "manejan",
-        "ayuda con", "ayudan con", "acompaña en", "acompañan en",
+        "ayuda con", "ayudan con", "acompaña en", "acompanan en",
         "resuelve", "resuelven", "puede tratar", "pueden tratar",
         "puede ayudar con", "pueden ayudar con", "atiende el tema de", "trata el tema de",
-        "puede atender", "pueden atender", "está capacitado para tratar", "están capacitados para tratar"
+        "puede atender", "pueden atender", "esta capacitado para tratar", "estan capacitados para tratar"
     ]
     for verbo in verbos_consulta:
         for sintoma in sintomas_cacheados:
             if verbo in texto and sintoma in texto:
                 return "ADMINISTRATIVO"
 
-    # 🧠 Evaluación final: si el mensaje contiene síntomas o malestar
     if es_tema_clinico_o_emocional(texto):
         return "CLINICO"
 
     return "OTRO"
-
 
 def inferir_estado_emocional_predominante(emociones: list[str]) -> str | None:
     """
