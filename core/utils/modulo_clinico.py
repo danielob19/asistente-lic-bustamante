@@ -24,6 +24,13 @@ from core.db.consulta import obtener_emociones_ya_registradas
 
 from core.contexto import user_sessions
 
+# Función auxiliar para normalizar texto
+def normalizar_texto(texto: str) -> str:
+    texto = texto.lower().strip()
+    texto = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("utf-8")
+    texto = texto.translate(str.maketrans("", "", string.punctuation))
+    return texto
+
 def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     """
     Procesa mensajes clínicos: detecta emociones, realiza inferencias con OpenAI,
@@ -34,7 +41,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     """
 
     mensaje_original = input_data["mensaje_original"]
-    mensaje_usuario = input_data["mensaje_usuario"]
+    mensaje_usuario = normalizar_texto(input_data["mensaje_usuario"])  # ← Normalizado aquí
     user_id = input_data["user_id"]
     session = input_data["session"]
     contador = input_data["contador"]
