@@ -446,9 +446,11 @@ async def asistente(input_data: UserInput):
                     session["ultimas_respuestas"].append(respuesta_default_fuera_de_contexto())
                     user_sessions[user_id] = session
                     return {"respuesta": respuesta_default_fuera_de_contexto()}
+            
                 else:
-                    tipo_input = CLINICO_CONTINUACION                        
-                        
+                    tipo_input = CLINICO_CONTINUACION
+                    session["contador_interacciones"] += 1  # ✅ CORRECCIÓN CRÍTICA AQUÍ
+                    user_sessions[user_id] = session
         
         except Exception as e:
             print(f"🧠❌ Error en clasificación contextual: {e}")
