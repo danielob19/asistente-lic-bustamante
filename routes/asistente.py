@@ -328,13 +328,8 @@ async def asistente(input_data: UserInput):
                 clasificacion = "IRRELEVANTE"
             if clasificacion == "CORTESIA" and not session.get("emociones_detectadas"):
 
-                SALUDOS_APERTURA = {
-                    "hola que tal", "hola que tal?", "hola, que tal", "hola, qué tal",
-                    "hola, ¿qué tal?", "hola qué tal", "hola qué tal?", 
-                    "hola cómo estás", "hola, cómo estás", "hola, ¿cómo estás?", "hola como estas"
-                }
-            
-                if any(saludo in mensaje_usuario.strip().lower() for saludo in SALUDOS_APERTURA):
+                # 🟡 MANEJO ESPECIAL PARA "hola que tal" o "hola que tal?" como saludo inicial
+                if mensaje_usuario.strip() in ["hola que tal", "hola que tal?"]:
                     prompt_saludo_inicial = (
                         f"El usuario escribió: '{mensaje_usuario}'.\n"
                         "Redactá una respuesta breve, cordial y natural, como si fuera el INICIO de una conversación.\n"
@@ -355,17 +350,17 @@ async def asistente(input_data: UserInput):
                     user_sessions[user_id] = session
                     registrar_respuesta_openai(None, respuesta_saludo)
                     return {"respuesta": respuesta_saludo}
-                
+            
                 # 🔵 CORTESÍA GENERAL (no es saludo inicial)
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
-                
+            
                 prompt_cortesia_contextual = (
                     f"El usuario ha enviado el siguiente mensaje de cortesía o cierre: '{mensaje_usuario}'.\n"
-                    "Redactá una respuesta breve y cordial, sin repetir frases como 'Con gusto' ni 'Estoy disponible'.\n"
+                    "Redactá una respuesta breve y cordial, sin repetir frases como 'Con gusto', 'Estoy disponible' ni 'Que tengas un buen día'.\n"
                     "Debe ser fluida, natural, diferente cada vez y adaptada al contexto de una conversación informal respetuosa.\n"
-                    "Evitá cerrar de forma tajante. No uses emojis. No hagas preguntas ni ofrezcas ayuda adicional si no fue solicitada."
+                    "Evitá cerrar de forma tajante o dar a entender que la conversación terminó. No uses emojis. No hagas preguntas ni ofrezcas ayuda adicional si no fue solicitada."
                 )
-                
+            
                 respuesta_contextual = generar_respuesta_con_openai(
                     prompt_cortesia_contextual,
                     session["contador_interacciones"],
@@ -373,15 +368,23 @@ async def asistente(input_data: UserInput):
                     mensaje_usuario,
                     mensaje_original
                 )
-                
+            
+                # Validación simple
                 if not respuesta_contextual or len(respuesta_contextual.strip()) < 3:
-                    respuesta_contextual = "Perfecto, quedo a disposición si en otro momento querés continuar."
-                
+                    respuesta_contextual = "Perfecto, seguimos en contacto si más adelante querés continuar."
+            
+                # 🧼 Filtro manual contra cierres no deseados
+                for frase_final in [
+                    "que tengas un buen día", "¡que tengas un buen día!", "que tengas buen día",
+                    "buen día para vos", "que tengas un lindo día", "que tengas un excelente día"
+                ]:
+                    if frase_final in respuesta_contextual.lower():
+                        respuesta_contextual = re.sub(frase_final, "", respuesta_contextual, flags=re.IGNORECASE).strip(".! ")
+            
                 session["ultimas_respuestas"].append(respuesta_contextual)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta_contextual}
-
-
+            
             
             if clasificacion == "CONSULTA_AGENDAR":
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CONSULTA_AGENDAR)
