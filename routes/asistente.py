@@ -836,6 +836,8 @@ async def asistente(input_data: UserInput):
 
         
         if es_consulta_contacto(mensaje_usuario, user_id, mensaje_original):
+            session["contador_interacciones"] += 1
+            user_sessions[user_id] = session
             return {
                 "respuesta": "Para contactar al Lic. Daniel O. Bustamante, podés enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
             }
