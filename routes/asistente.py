@@ -858,6 +858,8 @@ async def asistente(input_data: UserInput):
             "buen profesional" in mensaje_usuario or
             "que me recomendas" in mensaje_usuario
         ):
+            session["contador_interacciones"] += 1
+            user_sessions[user_id] = session
             return {
                 "respuesta": "En mi opinión, el Lic. Daniel O. Bustamante es un excelente especialista en psicología clínica. Seguramente podrá ayudarte. "
                              "Puedes enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
