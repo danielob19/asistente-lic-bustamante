@@ -710,12 +710,16 @@ async def asistente(input_data: UserInput):
         
             # ✅ Si es clínico o hay contexto clínico previo, generar respuesta profesional
             if tipo_input in [CLINICO, CLINICO_CONTINUACION] or hay_contexto_clinico_anterior(user_id) or es_tema_clinico_o_emocional(mensaje_usuario):
+                saludo_inicio = ""
+                if contador == 1 and not session["mensajes"]:
+                    saludo_inicio = "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?'.\n"
+        
                 prompt = (
                     f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
                     "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n"
                     "Estilo y directrices obligatorias:\n"
                     "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
-                    "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?'.\n"
+                    f"{saludo_inicio}"
                     "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'se advierte...', 'impresiona...', 'podría tratarse de...', etc.\n"
                 )
                 if tipo_input == CLINICO:
@@ -758,6 +762,7 @@ async def asistente(input_data: UserInput):
                     "Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?"
                 )
             }
+
 
         # 🟢 Si la frase es neutral, de cortesía o curiosidad, no analizar emocionalmente ni derivar
         if mensaje_usuario in EXPRESIONES_DESCARTADAS or any(p in mensaje_usuario for p in ["recomienda", "opinás", "atiende"]):
