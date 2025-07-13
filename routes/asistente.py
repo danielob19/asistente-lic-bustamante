@@ -666,53 +666,30 @@ async def asistente(input_data: UserInput):
         
             # ✅ Si es clínico o hay contexto clínico previo, generar respuesta profesional
             if tipo_input in [CLINICO, CLINICO_CONTINUACION] or hay_contexto_clinico_anterior(user_id) or es_tema_clinico_o_emocional(mensaje_usuario):
-                saludo_inicio = "- Comenzá la respuesta con un saludo breve como “Hola, ¿qué tal?”.\n" if contador == 1 else ""
-        
-                prompt = (
-                    f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n\n"
-                    "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n\n"
-                    "Estilo y directrices obligatorias:\n"
-                    "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
-                    f"{saludo_inicio}"
-                    "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'pareciera tratarse de...', 'podría vincularse a...', 'refiere a...' o 'se observa...'.\n"
-                    "- Evitá cualquier frase emocional simulada (ej: 'te entiendo', 'estás en buenas manos', 'no estás solo/a', 'tranquilo/a', etc.).\n"
-                    "- No uses frases motivacionales ni lenguaje coloquial (evitá: 'todo va a estar bien', 'contá conmigo', etc.).\n"
-                    "- No uses lenguaje institucional como 'nuestro equipo', 'desde nuestro espacio', 'trabajamos en conjunto', etc.\n"
-                    "- No brindes datos de contacto, precios, horarios, enlaces ni información administrativa.\n"
-                    "- No recomiendes consultar con el Lic. Bustamante ni uses expresiones como 'consultar con un profesional', 'buscar ayuda especializada' u otras sugerencias implícitas.\n"
-                    "- No formules preguntas como “¿Deseás que te facilite información sobre agendar?” ni menciones WhatsApp.\n"
-                    "- No uses 'Estimado/a', ni encabezados de carta o email.\n"
-                    "- Solamente si el mensaje es claramente clínico, generá una respuesta analítica breve y profesional.\n"
-                    "- Si el mensaje no tiene contenido emocional o clínico relevante, devolvé una frase neutra como: 'Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?'\n\n"
-                    "IMPORTANTE:\n"
-                    "- En las interacciones 1 a 4, nunca sugieras contacto ni derivación, salvo que el usuario lo pida explícitamente.\n"
-                    "- Solo en las interacciones 5, 9 o a partir de la 10, podés aceptar que se mencione el contacto si fue solicitado.\n"
-                )
-
-       
-                # ✅ Bloque de generación de respuesta clínica personalizada
-                # Generación del prompt clínico personalizado según interacción
                 prompt = (
                     f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
                     "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n"
                     "Estilo y directrices obligatorias:\n"
                     "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
-                    "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?' solo si es la interacción 1.\n"
-                    "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'se advierte...', 'impresiona...', 'podría tratarse de...', 'da la sensación de ser...', 'normalmente se trata de un...', etc.\n"
-                    "- Evitá la frase 'Pareciera tratarse de...' en todas las interacciones, excepto en la 5 y 9.\n"
-                    "- En la interacción 1 usá la frase 'Se observa una vivencia de falta de sentido...'\n"
+                    "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?'.\n"
+                    "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'se advierte...', 'impresiona...', 'podría tratarse de...', etc.\n"
+                )
+                if tipo_input == CLINICO:
+                    prompt += "- En la interacción 1 podés usar la frase 'Se observa una vivencia de falta de sentido...' solo si hay señales claras de desorientación o vacío existencial.\n"
+        
+                prompt += (
+                    "- Evitá la frase 'Pareciera tratarse de...'.\n"
                     "- No uses agradecimientos en ninguna interacción (ni al inicio ni al final).\n"
                     "- No uses frases motivacionales ni simulaciones empáticas (ej: 'te entiendo', 'estás en buenas manos', etc.).\n"
                     "- No uses lenguaje institucional ni expresiones como 'nuestro equipo', 'desde este espacio', etc.\n"
                     "- No brindes datos de contacto, precios ni derivaciones, salvo que sea interacción 5, 9 o a partir de la 10.\n"
                     "- Solo si el mensaje es claramente clínico, generá una respuesta analítica breve y profesional.\n"
-                    "- Si no tiene contenido clínico o emocional, devolvé una frase neutra: 'Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?'\n"
+                    "- Si no tiene contenido clínico o emocional, devolvé una frase neutra como: 'Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?'\n"
                     f"- IMPORTANTE: estás en la interacción {contador}.\n"
                 )
-                
-                # Solicitar respuesta a OpenAI con el nuevo prompt clínico
+        
                 respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
-
+        
                 # 🛑 Validación de seguridad por si OpenAI devuelve None o texto inválido
                 if not respuesta_original or not isinstance(respuesta_original, str) or len(respuesta_original.strip()) < 5:
                     respuesta_ai = (
@@ -723,20 +700,9 @@ async def asistente(input_data: UserInput):
                     session["ultimas_respuestas"].append(respuesta_ai)
                     user_sessions[user_id] = session
                     return {"respuesta": respuesta_ai}
-                
-                # 🔍 Filtro para remover saludo 'Hola, ¿qué tal?' si no es la primera interacción
-                if contador != 1 and respuesta_original.strip().lower().startswith("hola, ¿qué tal?"):
-                    respuesta_filtrada = respuesta_original.replace("Hola, ¿qué tal? ", "", 1).strip()
-                    motivo = "Se eliminó el saludo inicial 'Hola, ¿qué tal?' porque no corresponde repetirlo en interacciones posteriores a la primera"
-                    registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_filtrada, motivo)
-                    respuesta_ai = respuesta_filtrada
-                else:
-                    respuesta_ai = respuesta_original
-                
-
-                # Filtrado de seguridad y registro de auditoría
+        
                 registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
-                registrar_respuesta_openai(interaccion_id, respuesta_original)
+                registrar_respuesta_openai(None, respuesta_original)
         
                 session["ultimas_respuestas"].append(respuesta_original)
                 user_sessions[user_id] = session
@@ -749,7 +715,6 @@ async def asistente(input_data: UserInput):
                 )
             }
 
-
         # 🟢 Si la frase es neutral, de cortesía o curiosidad, no analizar emocionalmente ni derivar
         if mensaje_usuario in EXPRESIONES_DESCARTADAS or any(p in mensaje_usuario for p in ["recomienda", "opinás", "atiende"]):
             respuesta = (
@@ -759,8 +724,6 @@ async def asistente(input_data: UserInput):
             session["ultimas_respuestas"].append(respuesta)
             user_sessions[user_id] = session
             return {"respuesta": respuesta}
-
-
                         
         # 🔍 Buscar coincidencia semántica en preguntas frecuentes
         resultado_semantico = buscar_respuesta_semantica_con_score(mensaje_usuario)
