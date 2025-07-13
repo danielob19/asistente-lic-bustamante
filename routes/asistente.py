@@ -327,14 +327,31 @@ async def asistente(input_data: UserInput):
                 print(f"⚠️ Clasificación inválida recibida de OpenAI: '{clasificacion}'")
                 clasificacion = "IRRELEVANTE"
             
-            # Solo permitir cortesía si no hay emociones activas en la sesión
             if clasificacion == "CORTESIA" and not session.get("emociones_detectadas"):
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
-                respuesta = "Con gusto. Si necesitás algo más, estoy disponible para ayudarte."
-                session["ultimas_respuestas"].append(respuesta)
+            
+                prompt_cortesia_contextual = (
+                    f"El usuario ha enviado el siguiente mensaje de cortesía o cierre: '{mensaje_usuario}'.\n"
+                    "Redactá una respuesta breve y cordial, sin repetir frases como 'Con gusto' ni 'Estoy disponible'.\n"
+                    "Debe ser fluida, natural, diferente cada vez y adaptada al contexto de una conversación informal respetuosa.\n"
+                    "Evitá cerrar de forma tajante. No uses emojis. No hagas preguntas ni ofrezcas ayuda adicional si no fue solicitada."
+                )
+            
+                respuesta_contextual = generar_respuesta_con_openai(
+                    prompt_cortesia_contextual,
+                    session["contador_interacciones"],
+                    user_id,
+                    mensaje_usuario,
+                    mensaje_original
+                )
+            
+                # Validación simple
+                if not respuesta_contextual or len(respuesta_contextual.strip()) < 3:
+                    respuesta_contextual = "Perfecto, quedo a disposición si en otro momento querés continuar."
+            
+                session["ultimas_respuestas"].append(respuesta_contextual)
                 user_sessions[user_id] = session
-                return {"respuesta": respuesta}
-
+                return {"respuesta": respuesta_contextual}
             
             if clasificacion == "CONSULTA_AGENDAR":
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CONSULTA_AGENDAR)
