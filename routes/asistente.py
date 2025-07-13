@@ -326,6 +326,7 @@ async def asistente(input_data: UserInput):
             if clasificacion not in opciones_validas:
                 print(f"⚠️ Clasificación inválida recibida de OpenAI: '{clasificacion}'")
                 clasificacion = "IRRELEVANTE"
+                
             if clasificacion == "CORTESIA" and not session.get("emociones_detectadas"):
 
                 # 🟡 MANEJO ESPECIAL PARA "hola que tal" o "hola que tal?" como saludo inicial
@@ -346,7 +347,9 @@ async def asistente(input_data: UserInput):
                         mensaje_usuario,
                         mensaje_original
                     )
+            
                     session["ultimas_respuestas"].append(respuesta_saludo)
+                    session["contador_interacciones"] += 1
                     user_sessions[user_id] = session
                     registrar_respuesta_openai(None, respuesta_saludo)
                     return {"respuesta": respuesta_saludo}
@@ -390,11 +393,12 @@ async def asistente(input_data: UserInput):
                 # Último refuerzo por si quedó vacía tras filtros
                 if not respuesta_contextual.strip():
                     respuesta_contextual = "Hola, contame."
-
             
                 session["ultimas_respuestas"].append(respuesta_contextual)
+                session["contador_interacciones"] += 1
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta_contextual}
+
             
             
             if clasificacion == "CONSULTA_AGENDAR":
