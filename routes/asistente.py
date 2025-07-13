@@ -416,6 +416,8 @@ async def asistente(input_data: UserInput):
                 )
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
+                session["contador_interacciones"] += 1
+                user_sessions[user_id] = session
                 return {"respuesta": respuesta}
 
             
@@ -427,8 +429,9 @@ async def asistente(input_data: UserInput):
                 )
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
+                session["contador_interacciones"] += 1
+                user_sessions[user_id] = session
                 return {"respuesta": respuesta}
-
             
             if clasificacion in ["TESTEO", "MALICIOSO", "IRRELEVANTE"]:
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, clasificacion)
