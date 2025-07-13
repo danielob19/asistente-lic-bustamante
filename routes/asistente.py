@@ -171,6 +171,8 @@ async def asistente(input_data: UserInput):
         
         # 🧠 Si se detecta intención MIXTA, invitar al usuario a decidir por dónde continuar
         if intencion_general == "MIXTA":
+            session["contador_interacciones"] += 1
+            user_sessions[user_id] = session
             return {
                 "respuesta": (
                     "Entiendo que estás buscando información sobre psicoterapia, pero también mencionás un aspecto emocional importante. "
