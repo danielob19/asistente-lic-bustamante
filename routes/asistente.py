@@ -328,6 +328,29 @@ async def asistente(input_data: UserInput):
                 clasificacion = "IRRELEVANTE"
             
             if clasificacion == "CORTESIA" and not session.get("emociones_detectadas"):
+
+                # 🟡 MANEJO ESPECIAL PARA "hola que tal" o "hola que tal?" como saludo inicial
+                if mensaje_usuario.strip() in ["hola que tal", "hola que tal?"]:
+                    prompt_saludo_inicial = (
+                        f"El usuario escribió: '{mensaje_usuario}'.\n"
+                        "Redactá una respuesta breve, cordial y natural, como si fuera el inicio de una conversación.\n"
+                        "No uses frases de cierre como 'quedo a disposición', 'si necesitás algo más', ni 'estoy para ayudarte'.\n"
+                        "No preguntes nada. No uses emojis. Mantené un tono informal y respetuoso.\n"
+                        "Ejemplo de estilo esperado: 'Hola, ¿qué tal?', '¡Hola! Qué bueno que escribas.', 'Hola, decime nomás.'"
+                    )
+                    respuesta_saludo = generar_respuesta_con_openai(
+                        prompt_saludo_inicial,
+                        session["contador_interacciones"],
+                        user_id,
+                        mensaje_usuario,
+                        mensaje_original
+                    )
+                    session["ultimas_respuestas"].append(respuesta_saludo)
+                    user_sessions[user_id] = session
+                    registrar_respuesta_openai(None, respuesta_saludo)
+                    return {"respuesta": respuesta_saludo}
+            
+                # 🔵 CORTESÍA GENERAL (no es saludo inicial)
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
             
                 prompt_cortesia_contextual = (
@@ -352,6 +375,7 @@ async def asistente(input_data: UserInput):
                 session["ultimas_respuestas"].append(respuesta_contextual)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta_contextual}
+
             
             if clasificacion == "CONSULTA_AGENDAR":
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CONSULTA_AGENDAR)
