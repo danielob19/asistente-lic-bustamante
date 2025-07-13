@@ -194,6 +194,8 @@ async def asistente(input_data: UserInput):
                 )
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
+                session["contador_interacciones"] += 1
+                user_sessions[user_id] = session
                 return {"respuesta": respuesta}
         
             elif any(frase in mensaje_usuario for frase in ["no", "preferiría", "directamente", "prefiero hablar", "contactar"]):
@@ -201,6 +203,8 @@ async def asistente(input_data: UserInput):
                     "Perfecto. Podés escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186 para coordinar una consulta o resolver tus dudas."
                 )
                 session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session
+                session["contador_interacciones"] += 1
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta}
 
