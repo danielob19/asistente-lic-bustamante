@@ -875,6 +875,8 @@ async def asistente(input_data: UserInput):
             mensajes.append(mensaje_usuario)
             respuesta_analisis = analizar_texto(mensajes)
             session["mensajes"].clear()
+            session["contador_interacciones"] += 1
+            user_sessions[user_id] = session
             return {
                 "respuesta": (
                     f"{respuesta_analisis} Si necesitas un análisis más profundo, también te recomiendo contactar al Lic. Daniel O. Bustamante al WhatsApp "
