@@ -373,13 +373,24 @@ async def asistente(input_data: UserInput):
                 if not respuesta_contextual or len(respuesta_contextual.strip()) < 3:
                     respuesta_contextual = "Perfecto, seguimos en contacto si más adelante querés continuar."
             
-                # 🧼 Filtro manual contra cierres no deseados
-                for frase_final in [
+                # 🧼 Filtro reforzado contra frases de cierre sutil
+                frases_cierre_suave = [
                     "que tengas un buen día", "¡que tengas un buen día!", "que tengas buen día",
-                    "buen día para vos", "que tengas un lindo día", "que tengas un excelente día"
-                ]:
+                    "buen día para vos", "que tengas un lindo día", "que tengas una excelente tarde",
+                    "que tengas un excelente día", "¡que tengas una excelente tarde!", "que tengas una linda tarde"
+                ]
+                for frase_final in frases_cierre_suave:
                     if frase_final in respuesta_contextual.lower():
                         respuesta_contextual = re.sub(frase_final, "", respuesta_contextual, flags=re.IGNORECASE).strip(".! ")
+            
+                # Eliminar residuos de puntuación si quedó la frase vacía o colgante
+                if respuesta_contextual.endswith(("¡", "¿", ",", ".", "!", " ")):
+                    respuesta_contextual = respuesta_contextual.rstrip("¡¿,!. ")
+            
+                # Último refuerzo por si quedó vacía tras filtros
+                if not respuesta_contextual.strip():
+                    respuesta_contextual = "Hola, contame."
+
             
                 session["ultimas_respuestas"].append(respuesta_contextual)
                 user_sessions[user_id] = session
