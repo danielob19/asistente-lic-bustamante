@@ -333,10 +333,12 @@ async def asistente(input_data: UserInput):
                 if mensaje_usuario.strip() in ["hola que tal", "hola que tal?"]:
                     prompt_saludo_inicial = (
                         f"El usuario escribió: '{mensaje_usuario}'.\n"
-                        "Redactá una respuesta breve, cordial y natural, como si fuera el inicio de una conversación.\n"
-                        "No uses frases de cierre como 'quedo a disposición', 'si necesitás algo más', ni 'estoy para ayudarte'.\n"
-                        "No preguntes nada. No uses emojis. Mantené un tono informal y respetuoso.\n"
-                        "Ejemplo de estilo esperado: 'Hola, ¿qué tal?', '¡Hola! Qué bueno que escribas.', 'Hola, decime nomás.'"
+                        "Redactá una respuesta breve, cordial y natural, como si fuera el INICIO de una conversación.\n"
+                        "No debe dar a entender que la conversación terminó, ni incluir frases como:\n"
+                        "'quedo a disposición', 'si necesitás algo más', 'estoy para ayudarte', 'que tengas un buen día', ni similares.\n"
+                        "NO uses preguntas. NO uses emojis. NO hagas cierre ni agradecimientos.\n"
+                        "Estilo sugerido: una simple bienvenida informal, por ejemplo: '¡Hola! Contame.', 'Hola, decime nomás.', 'Hola, ¿cómo estás?'.\n"
+                        "Debe sonar como alguien que saluda para iniciar un diálogo, no para despedirse ni cerrar la conversación."
                     )
                     respuesta_saludo = generar_respuesta_con_openai(
                         prompt_saludo_inicial,
