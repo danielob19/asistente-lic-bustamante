@@ -326,11 +326,15 @@ async def asistente(input_data: UserInput):
             if clasificacion not in opciones_validas:
                 print(f"⚠️ Clasificación inválida recibida de OpenAI: '{clasificacion}'")
                 clasificacion = "IRRELEVANTE"
-            
             if clasificacion == "CORTESIA" and not session.get("emociones_detectadas"):
 
-                # 🟡 MANEJO ESPECIAL PARA "hola que tal" o "hola que tal?" como saludo inicial
-                if mensaje_usuario.strip() in ["hola que tal", "hola que tal?"]:
+                SALUDOS_APERTURA = {
+                    "hola que tal", "hola que tal?", "hola, que tal", "hola, qué tal",
+                    "hola, ¿qué tal?", "hola qué tal", "hola qué tal?", 
+                    "hola cómo estás", "hola, cómo estás", "hola, ¿cómo estás?", "hola como estas"
+                }
+            
+                if any(saludo in mensaje_usuario.strip().lower() for saludo in SALUDOS_APERTURA):
                     prompt_saludo_inicial = (
                         f"El usuario escribió: '{mensaje_usuario}'.\n"
                         "Redactá una respuesta breve, cordial y natural, como si fuera el INICIO de una conversación.\n"
@@ -351,17 +355,17 @@ async def asistente(input_data: UserInput):
                     user_sessions[user_id] = session
                     registrar_respuesta_openai(None, respuesta_saludo)
                     return {"respuesta": respuesta_saludo}
-            
+                
                 # 🔵 CORTESÍA GENERAL (no es saludo inicial)
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
-            
+                
                 prompt_cortesia_contextual = (
                     f"El usuario ha enviado el siguiente mensaje de cortesía o cierre: '{mensaje_usuario}'.\n"
                     "Redactá una respuesta breve y cordial, sin repetir frases como 'Con gusto' ni 'Estoy disponible'.\n"
                     "Debe ser fluida, natural, diferente cada vez y adaptada al contexto de una conversación informal respetuosa.\n"
                     "Evitá cerrar de forma tajante. No uses emojis. No hagas preguntas ni ofrezcas ayuda adicional si no fue solicitada."
                 )
-            
+                
                 respuesta_contextual = generar_respuesta_con_openai(
                     prompt_cortesia_contextual,
                     session["contador_interacciones"],
@@ -369,14 +373,14 @@ async def asistente(input_data: UserInput):
                     mensaje_usuario,
                     mensaje_original
                 )
-            
-                # Validación simple
+                
                 if not respuesta_contextual or len(respuesta_contextual.strip()) < 3:
                     respuesta_contextual = "Perfecto, quedo a disposición si en otro momento querés continuar."
-            
+                
                 session["ultimas_respuestas"].append(respuesta_contextual)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta_contextual}
+
 
             
             if clasificacion == "CONSULTA_AGENDAR":
