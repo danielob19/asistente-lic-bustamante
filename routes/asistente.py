@@ -825,14 +825,18 @@ async def asistente(input_data: UserInput):
 
         # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
         if mensaje_usuario in ["no sé", "ninguna", "ni la menor idea"]:
+            session["contador_interacciones"] += 1  # ✅ Incremento obligatorio
             if session["contador_interacciones"] >= 9 or session["mensajes"]:
-                respuesta_clinica = generar_resumen_clinico_y_estado(session, contador)
-                return {
-                    "respuesta": (
-                        f"{respuesta_clinica} En caso de que lo desees, podés contactar al Lic. Daniel O. Bustamante escribiéndole al WhatsApp +54 911 3310-1186."
-                    )
-                }
-            return {"respuesta": "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."}
+                respuesta_clinica = generar_resumen_clinico_y_estado(session, session["contador_interacciones"])
+                respuesta = (
+                    f"{respuesta_clinica} En caso de que lo desees, podés contactar al Lic. Daniel O. Bustamante escribiéndole al WhatsApp +54 911 3310-1186."
+                )
+            else:
+                respuesta = "Entendido, quedo a tu disposición. Si necesitas algo más, no dudes en decírmelo."
+        
+            session["ultimas_respuestas"].append(respuesta)
+            user_sessions[user_id] = session
+            return {"respuesta": respuesta}
 
         
         if es_consulta_contacto(mensaje_usuario, user_id, mensaje_original):
