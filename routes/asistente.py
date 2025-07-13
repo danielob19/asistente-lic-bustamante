@@ -233,6 +233,8 @@ async def asistente(input_data: UserInput):
         
         if mensaje_usuario and isinstance(mensaje_usuario, str) and any(expresion in mensaje_usuario for expresion in EXPRESIONES_ESPERADAS_NO_CLINICAS):
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "EXPECTATIVA_NO_CLINICA")
+            session["contador_interacciones"] += 1
+            user_sessions[user_id] = session
             return {
                 "respuesta": (
                     "Este espacio está diseñado para brindar orientación clínica general. "
