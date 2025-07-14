@@ -329,8 +329,10 @@ async def asistente(input_data: UserInput):
                 
             if clasificacion == "CORTESIA" and not session.get("emociones_detectadas"):
 
+                ya_saludo = any("hola" in r.lower() for r in session.get("ultimas_respuestas", []))
+            
                 # 🟡 MANEJO ESPECIAL PARA "hola que tal" o "hola que tal?" como saludo inicial
-                if mensaje_usuario.strip() in ["hola que tal", "hola que tal?"]:
+                if mensaje_usuario.strip() in ["hola que tal", "hola que tal?"] and not ya_saludo:
                     prompt_saludo_inicial = (
                         f"El usuario escribió: '{mensaje_usuario}'.\n"
                         "Redactá una respuesta breve, cordial y natural, como si fuera el INICIO de una conversación.\n"
@@ -355,14 +357,15 @@ async def asistente(input_data: UserInput):
                     registrar_respuesta_openai(None, respuesta_saludo)
                     return {"respuesta": respuesta_saludo}
             
-                # 🔵 CORTESÍA GENERAL (no es saludo inicial)
+                # 🔵 CORTESÍA GENERAL (no es saludo inicial o ya fue saludado)
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
             
                 prompt_cortesia_contextual = (
                     f"El usuario ha enviado el siguiente mensaje de cortesía o cierre: '{mensaje_usuario}'.\n"
                     "Redactá una respuesta breve y cordial, sin repetir frases como 'Con gusto', 'Estoy disponible' ni 'Que tengas un buen día'.\n"
                     "Debe ser fluida, natural, diferente cada vez y adaptada al contexto de una conversación informal respetuosa.\n"
-                    "Evitá cerrar de forma tajante o dar a entender que la conversación terminó. No uses emojis. No hagas preguntas ni ofrezcas ayuda adicional si no fue solicitada."
+                    "Evitá cerrar de forma tajante o dar a entender que la conversación terminó. No uses emojis. No hagas preguntas ni ofrezcas ayuda adicional si no fue solicitada.\n"
+                    "NO uses frases como: '¿y tú?', '¿cómo estás tú?', '¿cómo vas?' ni ninguna variante de pregunta personal o de seguimiento."
                 )
             
                 respuesta_contextual = generar_respuesta_con_openai(
@@ -377,7 +380,7 @@ async def asistente(input_data: UserInput):
                 if not respuesta_contextual or len(respuesta_contextual.strip()) < 3:
                     respuesta_contextual = "Perfecto, seguimos en contacto si más adelante querés continuar."
             
-                # 🧼 Filtro reforzado contra frases de cierre sutil
+                # 🧼 Filtro contra frases de cierre sutil
                 frases_cierre_suave = [
                     "que tengas un buen día", "¡que tengas un buen día!", "que tengas buen día",
                     "buen día para vos", "que tengas un lindo día", "que tengas una excelente tarde",
@@ -399,6 +402,7 @@ async def asistente(input_data: UserInput):
                 session["contador_interacciones"] += 1
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta_contextual}
+            
 
             
             
