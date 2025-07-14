@@ -842,26 +842,21 @@ async def asistente(input_data: UserInput):
 
         
         # 🔹 Proporciona el número de contacto si el usuario pregunta por el "mejor psicólogo" o especialista recomendado
-        if (
-            "especialista" in mensaje_usuario or
-            "mejor psicólogo" in mensaje_usuario or
-            "mejor psicologo" in mensaje_usuario or
-            "mejor terapeuta" in mensaje_usuario or
-            "mejor psicoterapeuta" in mensaje_usuario or
-            "el mejor" in mensaje_usuario or
-            "a quien me recomendas" in mensaje_usuario or
-            "que opinas" in mensaje_usuario or
-            "qué opinas" in mensaje_usuario or
-            "excelente psicólogo" in mensaje_usuario or
-            "buen profesional" in mensaje_usuario or
-            "que me recomendas" in mensaje_usuario
-        ):
+        if any(expresion in mensaje_usuario for expresion in [
+            "especialista", "mejor psicólogo", "mejor psicologo", "mejor terapeuta", "mejor psicoterapeuta",
+            "excelente psicólogo", "excelente profesional", "buen profesional", "buen psicólogo", "bueno como profesional",
+            "a quien me recomendas", "que opinas", "qué opinas", "que me recomendas", "qué opinás del psicólogo",
+            "que opinas del psicologo", "lo recomendás", "lo recomendarias", "es recomendable", "recomendable"
+        ]):
+            respuesta = (
+                "En mi opinión, el Lic. Daniel O. Bustamante es un excelente especialista en psicología clínica. "
+                "Seguramente podrá ayudarte. Podés enviarle un mensaje al WhatsApp +54 911 3310-1186."
+            )
             session["contador_interacciones"] += 1
+            session["ultimas_respuestas"].append(respuesta)
             user_sessions[user_id] = session
-            return {
-                "respuesta": "En mi opinión, el Lic. Daniel O. Bustamante es un excelente especialista en psicología clínica. Seguramente podrá ayudarte. "
-                             "Puedes enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
-            }
+            return {"respuesta": respuesta}
+
 
         # Manejo para "solo un síntoma y no más" (responder como en la 5ª interacción y finalizar)
         if "no quiero dar más síntomas" in mensaje_usuario or "solo este síntoma" in mensaje_usuario:
