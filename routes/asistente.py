@@ -337,6 +337,7 @@ async def asistente(input_data: UserInput):
                         "No debe dar a entender que la conversación terminó, ni incluir frases como:\n"
                         "'quedo a disposición', 'si necesitás algo más', 'estoy para ayudarte', 'que tengas un buen día', ni similares.\n"
                         "NO uses preguntas. NO uses emojis. NO hagas cierre ni agradecimientos.\n"
+                        "No formules preguntas de ningún tipo, ni de seguimiento ni personales.\n"
                         "Estilo sugerido: una simple bienvenida informal, por ejemplo: '¡Hola! Contame.', 'Hola, decime nomás.', 'Hola, ¿cómo estás?'.\n"
                         "Debe sonar como alguien que saluda para iniciar un diálogo, no para despedirse ni cerrar la conversación."
                     )
