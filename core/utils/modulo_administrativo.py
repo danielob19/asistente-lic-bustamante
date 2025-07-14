@@ -68,12 +68,25 @@ def clasificar_tema_administrativo(mensaje: str) -> str:
 def procesar_administrativo(mensaje_usuario: str, session: dict, user_id: str) -> dict:
     """
     Clasifica el mensaje usando OpenAI y devuelve la respuesta administrativa correspondiente.
+    También maneja casos especiales como la consulta por atención presencial.
     """
     mensaje_normalizado = normalizar(mensaje_usuario)
-    categoria = clasificar_tema_administrativo(mensaje_normalizado)
 
+    # 🔍 MANEJO ESPECIAL: consulta por atención presencial
+    if "presencial" in mensaje_normalizado or "consultorio" in mensaje_normalizado or "forma presencial" in mensaje_normalizado:
+        respuesta = (
+            "El Lic. Bustamante trabaja exclusivamente en modalidad Online, a través de videollamadas. "
+            "No atiende de forma presencial. Podés escribirle al WhatsApp +54 911 3310-1186 si querés más información."
+        )
+        session["ultimas_respuestas"].append(respuesta)
+        session["contador_interacciones"] += 1
+        return {"respuesta": respuesta}
+
+    # 🔍 CLASIFICACIÓN por OpenAI
+    categoria = clasificar_tema_administrativo(mensaje_normalizado)
     respuesta = RESPUESTAS.get(categoria)
 
+    # 🔄 Si no se reconoció la categoría, usar fallback genérico
     if not respuesta:
         respuesta = (
             "Si querés contactar al Lic. Daniel O. Bustamante, podés escribirle directamente al WhatsApp +54 911 3310-1186. "
@@ -81,4 +94,5 @@ def procesar_administrativo(mensaje_usuario: str, session: dict, user_id: str) -
         )
 
     session["ultimas_respuestas"].append(respuesta)
+    session["contador_interacciones"] += 1
     return {"respuesta": respuesta}
