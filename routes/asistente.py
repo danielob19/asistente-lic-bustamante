@@ -746,6 +746,18 @@ async def asistente(input_data: UserInput):
 
         # 🧠 Nueva respuesta para la PRIMERA INTERACCIÓN
         if contador == 1:
+            if "saludo_reanudacion" in session and session["saludo_reanudacion"]:
+                resumen = session.pop("saludo_reanudacion")  # Se elimina tras usar
+                respuesta = (
+                    f"Hola, retomando lo que mencionaste anteriormente: {resumen.strip()} "
+                    "¿Querés contarme cómo lo estuviste llevando estos días?"
+                )
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session
+                registrar_respuesta_openai(None, respuesta)
+                return {"respuesta": respuesta}
+
+            
             # ⚠️ Reforzar que si es SALUDO + contenido clínico, se trate como clínico
             if tipo_input == SALUDO and es_tema_clinico_o_emocional(mensaje_usuario):
                 tipo_input = CLINICO
