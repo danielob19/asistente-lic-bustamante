@@ -271,12 +271,13 @@ async def asistente(input_data: UserInput):
                 "Gracias por tu mensaje. Si más adelante deseás compartir algo personal o emocional, "
                 "podés hacerlo cuando lo sientas necesario."
             )
-            session["contador_interacciones"] += 1
             session["ultimas_respuestas"].append(respuesta)
+            session["contador_interacciones"] += 1
             user_sessions[user_id] = session
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, tipo_input)
             registrar_respuesta_openai(None, respuesta)
             return {"respuesta": respuesta}
+
 
 
         # 🧠 Continuación de tema clínico si fue identificado previamente
