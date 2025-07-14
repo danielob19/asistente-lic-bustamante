@@ -841,18 +841,24 @@ async def asistente(input_data: UserInput):
             }
 
         
-        # 🔹 Proporciona el número de contacto si el usuario pregunta por el "mejor psicólogo" o especialista recomendado
-        if any(expresion in mensaje_usuario for expresion in [
-            "especialista", "mejor psicólogo", "mejor psicologo", "mejor terapeuta", "mejor psicoterapeuta",
-            "excelente psicólogo", "excelente profesional", "buen profesional", "buen psicólogo", "bueno como profesional",
-            "a quien me recomendas", "que opinas", "qué opinas", "que me recomendas", "qué opinás del psicólogo",
-            "que opinas del psicologo", "lo recomendás", "lo recomendarias", "es recomendable", "recomendable"
-        ]):
+        # 🔹 Proporciona el número de contacto si el usuario pregunta por el "mejor psicólogo" o si es buen profesional
+        frases_recomendacion = [
+            "especialista", "mejor psicologo", "mejor psicólogo", "mejor terapeuta",
+            "mejor psicoterapeuta", "el mejor", "a quien me recomendas", "que opinas",
+            "qué opinas", "excelente psicologo", "buen profesional", "que me recomendas",
+            "es bueno como profesional", "es buen profesional", "es recomendable", 
+            "lo recomendas", "lo recomendás", "confías en él", "qué tal es como profesional",
+            "que opinas del psicologo", "lo recomendarias", "es recomendable", "recomendable"
+        ]
+        
+        mensaje_normalizado = unicodedata.normalize("NFKD", mensaje_usuario).encode("ascii", "ignore").decode("utf-8").lower()
+        
+        if any(frase in mensaje_normalizado for frase in frases_recomendacion):
+            session["contador_interacciones"] += 1
             respuesta = (
                 "En mi opinión, el Lic. Daniel O. Bustamante es un excelente especialista en psicología clínica. "
-                "Seguramente podrá ayudarte. Podés enviarle un mensaje al WhatsApp +54 911 3310-1186."
+                "Seguramente podrá ayudarte. Podés escribirle directamente al WhatsApp +54 911 3310-1186."
             )
-            session["contador_interacciones"] += 1
             session["ultimas_respuestas"].append(respuesta)
             user_sessions[user_id] = session
             return {"respuesta": respuesta}
