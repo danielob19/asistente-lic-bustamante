@@ -254,10 +254,12 @@ async def asistente(input_data: UserInput):
                 "Por razones clínicas y éticas, no es posible continuar. "
                 "Te recomiendo que contactes directamente al Lic. Daniel O. Bustamante para el seguimiento profesional."
             )
+            session["contador_interacciones"] += 1
             session["ultimas_respuestas"].append(respuesta)
             user_sessions[user_id] = session  # Asegura persistencia en la sesión
             registrar_respuesta_openai(None, respuesta)  # No se genera nuevo ID de interacción
             return {"respuesta": respuesta}
+        
 
         # ✅ Registrar el tipo de interacción actual
         session.setdefault("interacciones_previas", []).append(tipo_input)
