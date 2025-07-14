@@ -110,6 +110,33 @@ async def asistente(input_data: UserInput):
             "input_sospechoso": False,
             "interacciones_previas": []
         })
+
+        TIEMPO_MAX_INACTIVIDAD = 1800  # Tiempo máximo de inactividad (30 minutos)
+
+        tiempo_actual = time.time()
+        tiempo_ultima_interaccion = session.get("ultima_interaccion", tiempo_actual)
+        tiempo_desde_ultima = tiempo_actual - tiempo_ultima_interaccion
+        
+        if tiempo_desde_ultima > TIEMPO_MAX_INACTIVIDAD:
+            print("🕒 Reinicio de sesión por inactividad. Se conserva historial clínico.")
+        
+            from core.db.consulta import obtener_emociones_ya_registradas
+            from core.resumen_clinico import generar_resumen_clinico_y_estado
+        
+            emociones_previas = obtener_emociones_ya_registradas(user_id)
+            resumen_previo = generar_resumen_clinico_y_estado(session, session.get("contador_interacciones", 0))
+        
+            session = {
+                "contador_interacciones": 0,
+                "ultima_interaccion": tiempo_actual,
+                "mensajes": [],
+                "emociones_detectadas": emociones_previas,
+                "ultimas_respuestas": [],
+                "input_sospechoso": False,
+                "interacciones_previas": [],
+                "saludo_reanudacion": resumen_previo
+            }
+
         
         # 🛡️ Validación anticipada para evitar errores de tipo NoneType
         if mensaje_original is None or not isinstance(mensaje_original, str):
