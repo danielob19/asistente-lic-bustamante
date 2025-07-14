@@ -686,7 +686,14 @@ async def asistente(input_data: UserInput):
             return {"respuesta": respuesta}
 
         # 🛑 Filtro definitivo para inputs irrelevantes, maliciosos o de cortesía post-cierre
-        if contador >= 10 and clasificacion in ["IRRELEVANTE", "MALICIOSO", "CORTESIA"]:
+        if (
+            contador >= 10
+            and clasificacion in ["IRRELEVANTE", "MALICIOSO", "CORTESIA"]
+            and mensaje_usuario.strip().lower().replace("¿", "").replace("?", "") not in {
+                "hola", "buenas", "buenas tardes", "buenas noches", "buen día", "holis",
+                "hola que tal", "hola qué tal", "hola que tal?", "hola qué tal?"
+            }
+        ):
             respuesta = (
                 "Gracias por tu mensaje. Ya no puedo continuar con esta conversación por este medio. "
                 "Te recomiendo que contactes directamente con el Lic. Daniel O. Bustamante para una evaluación adecuada."
@@ -695,6 +702,7 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id] = session
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
+
         
         # ✅ Si hay una respuesta clínica manual para esta interacción, se devuelve directamente
         # 🔄 (Se reemplazó el uso de 'respuestas_personalizadas' por 'RESPUESTAS_CLINICAS' del módulo importado)
