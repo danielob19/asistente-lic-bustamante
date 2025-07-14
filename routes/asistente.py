@@ -282,14 +282,15 @@ async def asistente(input_data: UserInput):
         # 🧠 Continuación de tema clínico si fue identificado previamente
         if tipo_input == CLINICO_CONTINUACION:
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CLINICO_CONTINUACION)
+            session["contador_interacciones"] += 1
+            user_sessions[user_id] = session
             return {
                 "respuesta": (
                     "Entiendo. Lo que mencionaste antes podría estar indicando un malestar emocional. "
                     "¿Querés que exploremos un poco más lo que estás sintiendo últimamente?"
                 )
             }
-
-        
+ 
 
         # 🧠 Clasificación contextual con OpenAI
         try:
