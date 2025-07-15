@@ -1,3 +1,4 @@
+from core.contexto import user_sessions
 from core.utils.modulo_clinico import procesar_clinico  # (solo si no fue importado aún)
 from core.utils.modulo_administrativo import procesar_administrativo
 from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, reformular_estilo_narrativo
@@ -63,7 +64,6 @@ from core.utils.clinico_contexto import hay_contexto_clinico_anterior
 
 from core.estilos_post10 import seleccionar_estilo_clinico_variable
 
-from core.contexto import user_sessions
 from core.constantes import CLINICO_CONTINUACION, CLINICO, SALUDO, CORTESIA, ADMINISTRATIVO, CONSULTA_AGENDAR, CONSULTA_MODALIDAD
 import openai
 import re
