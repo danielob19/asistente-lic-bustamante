@@ -146,18 +146,25 @@ async def asistente(input_data: UserInput):
         mensaje_original = mensaje_original.strip()
         mensaje_usuario = unicodedata.normalize('NFKD', mensaje_original).encode('ASCII', 'ignore').decode('utf-8').lower()
 
-        # 🛡️ Defensa contra repeticiones idénticas
+        # 🔄 Defensa contra repeticiones idénticas (últimos 6 mensajes)
+        session["mensajes"].append(mensaje_usuario)  # Registrar mensaje antes de contarlo
+        
         repeticiones_id = sum(1 for m in session["mensajes"][-6:] if m == mensaje_usuario)
         if repeticiones_id >= 3:
-            respuesta = (
-                "Ya te respondí anteriormente. Si hay algo distinto que quieras saber o compartir, podés contármelo."
-            )
+            respuestas_repetidas = [
+                "Parece que ya me habías preguntado eso. ¿Querés contarme algo distinto?",
+                "Eso ya lo hablamos. Si querés que hablemos de otra cosa, estoy acá.",
+                "Ya te respondí sobre eso. ¿Hay algo más que quieras compartir?",
+                "Te respondí antes lo mismo. Si querés avanzar con otra duda, te escucho.",
+                "Esa pregunta ya fue respondida. ¿Querés saber otra cosa o contarme algo distinto?"
+            ]
+            respuesta = random.choice(respuestas_repetidas)
             session["contador_interacciones"] += 1
             session["ultimas_respuestas"].append(respuesta)
             user_sessions[user_id] = session
             registrar_respuesta_openai(None, respuesta)
             return {"respuesta": respuesta}
-        
+
 
         # 🧼 Filtro anticipado para saludos simples (evita análisis clínico innecesario)
         SALUDOS_SIMPLES = {
