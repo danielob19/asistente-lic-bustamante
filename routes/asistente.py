@@ -137,6 +137,8 @@ async def asistente(input_data: UserInput):
                 "interacciones_previas": [],
                 "saludo_reanudacion": resumen_previo
             }
+            # ⛑️ Evita error 'user_sessions is not defined' tras reinicio
+            user_sessions[user_id] = session
 
         
         # 🛡️ Validación anticipada para evitar errores de tipo NoneType
