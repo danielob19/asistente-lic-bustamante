@@ -854,7 +854,7 @@ async def asistente(input_data: UserInput):
                     return {"respuesta": respuesta_ai}
         
                 registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
-                registrar_respuesta_openai(interaccion_id, respuesta_original)  ✅
+                registrar_respuesta_openai(interaccion_id, respuesta_original)  # Confirmado: se usa interaccion_id
                 session["ultimas_respuestas"].append(respuesta_original)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta_original}
