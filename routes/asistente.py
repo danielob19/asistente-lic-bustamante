@@ -797,7 +797,7 @@ async def asistente(input_data: UserInput):
                 )
                 session["ultimas_respuestas"].append(respuesta)
                 user_sessions[user_id] = session
-                registrar_respuesta_openai(None, respuesta)
+                registrar_respuesta_openai(interaccion_id, respuesta)
                 return {"respuesta": respuesta}
 
             
@@ -850,10 +850,11 @@ async def asistente(input_data: UserInput):
                     registrar_auditoria_respuesta(user_id, "respuesta vacía", respuesta_ai, "Fallback clínico: respuesta nula o inválida de OpenAI")
                     session["ultimas_respuestas"].append(respuesta_ai)
                     user_sessions[user_id] = session
+                    registrar_respuesta_openai(interaccion_id, respuesta_ai)
                     return {"respuesta": respuesta_ai}
         
                 registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
-                registrar_respuesta_openai(None, respuesta_original)
+                registrar_respuesta_openai(interaccion_id, respuesta_original)  ✅
                 session["ultimas_respuestas"].append(respuesta_original)
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta_original}
