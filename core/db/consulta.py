@@ -1,21 +1,31 @@
 import psycopg2
 from datetime import datetime, timedelta
 from core.constantes import DATABASE_URL
+from typing import Optional
 
-
-def obtener_emociones_ya_registradas(user_id, interaccion_id):
+def obtener_emociones_ya_registradas(user_id: str, interaccion_id: Optional[int] = None):
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
-        cur.execute("""
-            SELECT emocion FROM emociones_detectadas
-            WHERE user_id = %s AND contexto = %s
-        """, (user_id, f"interacción {interaccion_id}"))
+
+        if interaccion_id is not None:
+            cur.execute("""
+                SELECT emocion FROM emociones_detectadas
+                WHERE user_id = %s AND contexto = %s
+            """, (user_id, f"interacción {interaccion_id}"))
+        else:
+            cur.execute("""
+                SELECT emocion FROM emociones_detectadas
+                WHERE user_id = %s
+            """, (user_id,))
+
         resultados = cur.fetchall()
         emociones = [r[0].lower().strip() for r in resultados]
+
         cur.close()
         conn.close()
         return emociones
+
     except Exception as e:
         print(f"❌ Error al obtener emociones ya registradas en la BD: {e}")
         return []
