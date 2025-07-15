@@ -592,7 +592,20 @@ async def asistente(input_data: UserInput):
                     if emocion not in session["emociones_detectadas"]:
                         emociones_nuevas.append(emocion)
                         session["emociones_detectadas"].append(emocion)
-        
+
+            # 🛡️ Prevención clínica ante reiteración sin emociones nuevas
+            if contador > 5 and not session["emociones_detectadas"]:
+                respuesta = (
+                    "Parece que ya hablamos de esto antes. "
+                    "Si más adelante sentís algo distinto o querés compartir otra cosa, podés hacerlo con confianza."
+                )
+                session["contador_interacciones"] += 1
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session
+                registrar_respuesta_openai(interaccion_id, respuesta)
+                return {"respuesta": respuesta}
+            
+                    
             # Clasificación mental basada en emociones acumuladas
             clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
         
