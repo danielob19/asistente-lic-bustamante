@@ -1,4 +1,5 @@
 from core.contexto import user_sessions
+assert "user_sessions" in globals(), "user_sessions no está disponible en este contexto"
 from core.utils.modulo_clinico import procesar_clinico  # (solo si no fue importado aún)
 from core.utils.modulo_administrativo import procesar_administrativo
 from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, reformular_estilo_narrativo
