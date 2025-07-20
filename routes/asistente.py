@@ -99,8 +99,12 @@ async def asistente(input_data: UserInput):
         # ...
 
         
-        user_id = input_data.user_id
-        mensaje_original = input_data.mensaje
+        user_id = getattr(input_data, "user_id", None) or "anonimo"
+        mensaje_original = getattr(input_data, "mensaje", "").strip()
+        
+        if not mensaje_original or not isinstance(mensaje_original, str):
+            raise HTTPException(status_code=400, detail="El mensaje recibido no es válido.")
+        
         
         # ✅ Inicializar sesión del usuario lo antes posible para evitar errores
         session = user_sessions.get(user_id, {
