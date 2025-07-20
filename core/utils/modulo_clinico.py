@@ -158,13 +158,14 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
 
     interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
 
-    # 🧠 Generar prompt clínico personalizado según estado de sesión
+    # Generar prompt clínico personalizado según estado de sesión
     if session["emociones_corte_aplicado"]:
         prompt = (
             f"El usuario ha alcanzado el máximo de interacciones clínicas permitidas.\n"
-            "Redactá una última respuesta breve, respetuosa y profesional indicando que no podés continuar conversando por este medio y que sería conveniente derivar la consulta directamente al Lic. Bustamante.\n"
-            "No brindes más observaciones clínicas ni sugerencias. No repitas saludos ni agradecimientos."
+            "Redactá una última respuesta breve, profesional indicando que no podés continuar conversando por este medio y que sería conveniente derivar la consulta directamente al Lic. Bustamante.\n"
+            "No brindés más observaciones clínicas ni sugerencias. No repitas saludos ni agradecimientos."
         )
+    
     elif session["emociones_sugerencia_realizada"]:
         prompt = (
             f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
@@ -175,6 +176,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             "- Estilo sobrio, sin lenguaje empático ni motivacional.\n"
             f"- Interacción número: {contador}."
         )
+    
     else:
         prompt = (
             f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
@@ -187,6 +189,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             "- No uses lenguaje institucional ni brindes información administrativa.\n"
             f"- IMPORTANTE: estás en la interacción {contador}."
         )
+
 
     # Activar flags de sugerencia o corte clínico si se supera umbral
     if len(session["emociones_detectadas"]) >= 3 and not session["emociones_sugerencia_realizada"]:
