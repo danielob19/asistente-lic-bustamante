@@ -1205,11 +1205,24 @@ async def asistente(input_data: UserInput):
         return {"respuesta": respuesta_ai}
 
     except Exception as e:
-        print(f"❌ Error inesperado en el endpoint /asistente: {e}")
+        try:
+            print(f"❌ Error inesperado en el endpoint /asistente: {e}")
+        except Exception as e2:
+            print("❌ Error crítico al intentar imprimir el error original:", str(e2))
+    
+        # Intentar registrar la respuesta de emergencia
+        try:
+            user_id = input_data.user_id if input_data else "desconocido"
+            registrar_respuesta_openai(None, "ERROR FATAL EN EL ENDPOINT /asistente")
+            print(f"🛑 Error registrado para el usuario: {user_id}")
+        except Exception as e3:
+            print("⚠️ No se pudo registrar la respuesta de error:", str(e3))
+    
         return {
             "respuesta": (
-                "Ocurrió un error al procesar tu solicitud. Podés intentarlo nuevamente más tarde "
-                "o escribirle al Lic. Bustamante por WhatsApp: +54 911 3310-1186."
+                "Ocurrió un error al procesar tu solicitud. "
+                "Podés intentarlo nuevamente más tarde o escribirle al Lic. Bustamante por WhatsApp: +54 911 3310-1186."
             )
         }
-
+    
+    
