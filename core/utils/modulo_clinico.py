@@ -30,19 +30,6 @@ def normalizar_texto(texto: str) -> str:
     texto = texto.translate(str.maketrans("", "", string.punctuation))
     return texto
 
-def tokenizar_emociones_compuestas(emociones: list[str]) -> list[str]:
-    """
-    Divide expresiones como 'triste y frustrado' en emociones individuales.
-    """
-    emociones_tokenizadas = []
-    for emocion in emociones:
-        partes = re.split(r"\by\b|,|\/|&", emocion)  # separa por 'y', ',', '/' o '&'
-        for parte in partes:
-            parte = normalizar_texto(parte.strip())
-            if parte:
-                emociones_tokenizadas.append(parte)
-    return emociones_tokenizadas
-
 def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     """
     Procesa mensajes clínicos: detecta emociones, realiza inferencias con OpenAI,
@@ -68,10 +55,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     session.setdefault("emociones_corte_aplicado", False)
     
     emociones_nuevas = []
-    emociones_detectadas_normalizadas = tokenizar_emociones_compuestas(emociones_detectadas)
-
-    # Log opcional para auditar la tokenización
-    print(f"🧩 Emociones tokenizadas: {emociones_detectadas} → {emociones_detectadas_normalizadas}")
+    emociones_detectadas_normalizadas = [normalizar_texto(e) for e in emociones_detectadas]
     
     for emocion in emociones_detectadas_normalizadas:
         if emocion not in {normalizar_texto(e) for e in session["emociones_detectadas"]}:
@@ -93,10 +77,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             "Podés contactar directamente al Lic. Bustamante escribiendo al WhatsApp +54 911 3310-1186."
         )
         registrar_respuesta_openai(registrar_interaccion(user_id, mensaje_usuario, mensaje_original), respuesta_sugerencia)
-        try:
-            user_sessions[user_id] = session
-        except Exception as e:
-            print(f"🔴 Error al guardar en user_sessions para {user_id}: {e}")
+        user_sessions[user_id] = session
 
         return {"respuesta": respuesta_sugerencia}
     
@@ -108,10 +89,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             "En este espacio no podemos continuar profundizando. Podés escribir al Lic. Bustamante al WhatsApp +54 911 3310-1186 para coordinar una consulta adecuada."
         )
         registrar_respuesta_openai(registrar_interaccion(user_id, mensaje_usuario, mensaje_original), respuesta_corte)
-        try:
-            user_sessions[user_id] = session
-        except Exception as e:
-            print(f"🔴 Error al guardar en user_sessions para {user_id}: {e}")
+        user_sessions[user_id] = session
 
         return {"respuesta": respuesta_corte}
     
@@ -255,20 +233,14 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
         )
         registrar_auditoria_respuesta(user_id, "respuesta vacía", respuesta_fallback, "Fallback por respuesta nula o inválida")
         registrar_respuesta_openai(interaccion_id, respuesta_fallback)
-        try:
-            user_sessions[user_id] = session
-        except Exception as e:
-            print(f"🔴 Error al guardar en user_sessions para {user_id}: {e}")
+        user_sessions[user_id] = session
 
         return {"respuesta": respuesta_fallback}
 
     registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
     registrar_respuesta_openai(interaccion_id, respuesta_original)
     
-    try:
-        user_sessions[user_id] = session
-    except Exception as e:
-        print(f"🔴 Error al guardar en user_sessions para {user_id}: {e}")
+    user_sessions[user_id] = session
 
 
     return {"respuesta": respuesta_original}
