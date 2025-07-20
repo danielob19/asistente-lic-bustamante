@@ -126,6 +126,8 @@ async def asistente(input_data: UserInput):
         if tiempo_desde_ultima > TIEMPO_MAX_INACTIVIDAD:
             print("🕒 Reinicio de sesión por inactividad. Se conserva historial clínico.")
         
+            from core.contexto import user_sessions  # ✅ Refuerzo local crítico dentro del bloque
+        
             from core.db.consulta import obtener_emociones_ya_registradas
             from core.resumen_clinico import generar_resumen_clinico_y_estado
         
@@ -142,8 +144,9 @@ async def asistente(input_data: UserInput):
                 "interacciones_previas": [],
                 "saludo_reanudacion": resumen_previo
             }
-            # ⛑️ Evita error 'user_sessions is not defined' tras reinicio
-            user_sessions[user_id] = session
+        
+            user_sessions[user_id] = session  # ✅ Persistencia restaurada sin error
+
 
         
         # 🛡️ Validación anticipada para evitar errores de tipo NoneType
