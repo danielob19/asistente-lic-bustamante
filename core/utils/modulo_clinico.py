@@ -153,8 +153,26 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
 
     interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
 
-    # Generar prompt clínico personalizado según estado de sesión
-    if session["emociones_corte_aplicado"]:
+    # Lista de frases clínicas críticas que pueden generar errores si se procesan mal
+    frases_criticas = [
+        "me siento como con una presión constante",
+        "como si estuviera por pasar algo malo",
+        "tengo un mal presentimiento",
+        "presiento que algo malo va a pasar",
+        "tengo la sensación de que algo grave se acerca"
+    ]
+    
+    # Generar prompt clínico con fallback si se detectan frases problemáticas
+    if any(frase in mensaje_usuario for frase in frases_criticas):
+        prompt = (
+            f"Mensaje recibido: '{mensaje_usuario}'.\n"
+            "Redactá una respuesta clínica breve, sobria y profesional.\n"
+            "No uses saludos. No hagas especulaciones amplias. Limitate a una observación objetiva inicial.\n"
+            "Estilo clínico, sobrio, sin motivaciones ni frases vacías. Evitá repetir el mensaje del usuario.\n"
+            f"Interacción número: {contador}."
+        )
+    
+    elif session["emociones_corte_aplicado"]:
         prompt = (
             f"El usuario ha alcanzado el máximo de interacciones clínicas permitidas.\n"
             "Redactá una última respuesta breve, profesional indicando que no podés continuar conversando por este medio y que sería conveniente derivar la consulta directamente al Lic. Bustamante.\n"
@@ -184,9 +202,8 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             "- No uses lenguaje institucional ni brindes información administrativa.\n"
             f"- IMPORTANTE: estás en la interacción {contador}."
         )
+
     
-
-
     # Activar flags de sugerencia o corte clínico si se supera umbral
     if len(session["emociones_detectadas"]) >= 3 and not session["emociones_sugerencia_realizada"]:
         session["emociones_sugerencia_realizada"] = True
@@ -197,8 +214,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
         print("⛔ Se alcanzó el umbral de 6 emociones. Se activa 'emociones_corte_aplicado'.")
 
     
-    
-
 
     respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
 
