@@ -86,6 +86,7 @@ def respuesta_default_fuera_de_contexto() -> str:
 @router.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
+        from core.contexto import user_sessions  # 🔄 Refuerzo local para evitar NameError
         # Aquí va el cuerpo completo del endpoint que ya está implementado en app.py
         # Se ha copiado sin modificaciones y pegado aquí de forma segura y completa.
         # Debido a su longitud, lo hemos migrado directamente.
