@@ -184,6 +184,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             "- No uses lenguaje institucional ni brindes información administrativa.\n"
             f"- IMPORTANTE: estás en la interacción {contador}."
         )
+    
 
 
     # Activar flags de sugerencia o corte clínico si se supera umbral
@@ -194,6 +195,8 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     if len(session["emociones_detectadas"]) >= 6 and not session["emociones_corte_aplicado"]:
         session["emociones_corte_aplicado"] = True
         print("⛔ Se alcanzó el umbral de 6 emociones. Se activa 'emociones_corte_aplicado'.")
+
+    
     
 
 
