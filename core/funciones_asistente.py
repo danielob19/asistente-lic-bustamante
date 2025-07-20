@@ -6,7 +6,6 @@ from core.utils_contacto import es_consulta_contacto
 from core.utils_seguridad import contiene_elementos_peligrosos, contiene_frase_de_peligro
 from core.db.registro import registrar_auditoria_input_original
 from core.db.consulta import es_saludo, es_cortesia, contiene_expresion_administrativa
-from core.db.sintomas import detectar_emociones_negativas
 import openai
 from collections import Counter
 import psycopg2
