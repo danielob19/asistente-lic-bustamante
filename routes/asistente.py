@@ -113,7 +113,7 @@ async def asistente(input_data: UserInput):
             "interacciones_previas": []
         })
 
-        TIEMPO_MAX_INACTIVIDAD = 60  # Tiempo máximo de inactividad (30 minutos)
+        TIEMPO_MAX_INACTIVIDAD = 60  # Tiempo máximo de inactividad (1 minuto)
 
         tiempo_actual = time.time()
         tiempo_ultima_interaccion = session.get("ultima_interaccion", tiempo_actual)
