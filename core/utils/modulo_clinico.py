@@ -21,17 +21,14 @@ from core.db.sintomas import (
     obtener_sintomas_existentes
 )
 from core.db.consulta import obtener_emociones_ya_registradas
-from core.contexto import user_sessions
-from core.db.conexion import ejecutar_consulta  # Nueva dependencia
+from core.db.conexion import ejecutar_consulta  # Eliminado user_sessions
 
-# Función auxiliar para normalizar texto
 def normalizar_texto(texto: str) -> str:
     texto = texto.lower().strip()
     texto = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("utf-8")
     texto = texto.translate(str.maketrans("", "", string.punctuation))
     return texto
 
-# NUEVO: Recuperar historial clínico si contador == 1
 def recuperar_historial_clinico(user_id, limite=5):
     query = """
     SELECT fecha, emociones, sintomas, tema, respuesta_openai, sugerencia, fase_evaluacion
@@ -76,27 +73,24 @@ def registrar_historial_clinico(user_id, emociones, sintomas, tema, respuesta_op
     except Exception as e:
         print(f"🔴 Error al registrar historial clínico: {e}")
 
-def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
+def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     mensaje_original = input_data["mensaje_original"]
     mensaje_usuario = normalizar_texto(input_data["mensaje_usuario"])
     user_id = input_data["user_id"]
     session = input_data["session"]
     contador = input_data["contador"]
 
-    # REENGANCHE CLÍNICO SI CONTADOR == 1 Y HAY HISTORIAL
     if contador == 1:
         historial_prev = recuperar_historial_clinico(user_id)
         if historial_prev:
             resumen = construir_resumen_historial(historial_prev)
             respuesta_historial = f"Bienvenido nuevamente. La última vez conversamos sobre {resumen}. ¿Querés que retomemos desde ahí?"
             session["ultimas_respuestas"].append(respuesta_historial)
-            user_sessions[user_id] = session
-            return {"respuesta": respuesta_historial}
+            return {"respuesta": respuesta_historial, "session": session}
 
     sintomas_existentes = {normalizar_texto(s) for s in obtener_sintomas_existentes()}
     emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
 
-    # Inicializar contadores y flags de sesión si aún no existen
     session.setdefault("emociones_detectadas", [])
     session.setdefault("emociones_totales_detectadas", 0)
     session.setdefault("emociones_sugerencia_realizada", False)
@@ -111,13 +105,11 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             if emocion not in sintomas_existentes:
                 registrar_sintoma(emocion)
     
-    # Registrar emociones nuevas y acumular en sesión
     for emocion in emociones_nuevas:
         registrar_emocion(emocion, f"interacción {contador}", user_id)
         session["emociones_detectadas"].append(emocion)
         session["emociones_totales_detectadas"] += 1
 
-    # Lógica de sugerencia clínica tras 3 emociones detectadas
     if session["emociones_totales_detectadas"] >= 3 and not session["emociones_sugerencia_realizada"]:
         session["emociones_sugerencia_realizada"] = True
         respuesta_sugerencia = (
@@ -136,10 +128,8 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             fase_evaluacion=f"interacción {contador}",
             interaccion_id=interaccion_id
         )
-        user_sessions[user_id] = session
-        return {"respuesta": respuesta_sugerencia}
+        return {"respuesta": respuesta_sugerencia, "session": session}
     
-    # Lógica de corte definitivo tras 10 emociones detectadas
     if session["emociones_totales_detectadas"] >= 10 and not session["emociones_corte_aplicado"]:
         session["emociones_corte_aplicado"] = True
         respuesta_corte = (
@@ -158,8 +148,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             fase_evaluacion=f"interacción {contador}",
             interaccion_id=interaccion_id
         )
-        user_sessions[user_id] = session
-        return {"respuesta": respuesta_corte}
+        return {"respuesta": respuesta_corte, "session": session}
 
     for emocion in emociones_nuevas:
         prompt_cuadro = (
@@ -190,7 +179,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
                 max_tokens=50,
                 temperature=0.0
             )
-
             cuadro_asignado = response.choices[0].message['content'].strip()
             if not cuadro_asignado:
                 cuadro_asignado = "Patrón emocional detectado"
@@ -224,8 +212,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
         )
         registrar_auditoria_respuesta(user_id, "respuesta vacía", respuesta_fallback, "Fallback por respuesta nula o inválida")
         registrar_respuesta_openai(interaccion_id, respuesta_fallback)
-        user_sessions[user_id] = session
-        return {"respuesta": respuesta_fallback}
+        return {"respuesta": respuesta_fallback, "session": session}
 
     registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
     registrar_respuesta_openai(interaccion_id, respuesta_original)
@@ -240,5 +227,4 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
         interaccion_id=interaccion_id
     )
 
-    user_sessions[user_id] = session
-    return {"respuesta": respuesta_original}
+    return {"respuesta": respuesta_original, "session": session}
