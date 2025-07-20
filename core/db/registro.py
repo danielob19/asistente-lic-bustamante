@@ -199,14 +199,16 @@ def registrar_log_similitud(user_id: str, consulta: str, pregunta_faq: str, simi
     registrar_similitud_semantica(user_id, consulta, pregunta_faq, similitud)
 
 
-def registrar_auditoria_respuesta(user_id: str, respuesta_original: str, respuesta_final: str, motivo_modificacion: str = None):
+def registrar_auditoria_respuesta(user_id: str, respuesta_original: str, respuesta_final: str, motivo_modificacion: str = None, interaccion_id: int = None):
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS auditoria_respuestas (
                 id SERIAL PRIMARY KEY,
                 user_id TEXT NOT NULL,
+                interaccion_id INTEGER,
                 respuesta_original TEXT NOT NULL,
                 respuesta_final TEXT NOT NULL,
                 motivo_modificacion TEXT,
@@ -215,9 +217,11 @@ def registrar_auditoria_respuesta(user_id: str, respuesta_original: str, respues
         """)
 
         cursor.execute("""
-            INSERT INTO auditoria_respuestas (user_id, respuesta_original, respuesta_final, motivo_modificacion)
-            VALUES (%s, %s, %s, %s);
-        """, (user_id, respuesta_original.strip(), respuesta_final.strip(), motivo_modificacion))
+            INSERT INTO auditoria_respuestas (
+                user_id, interaccion_id, respuesta_original, respuesta_final, motivo_modificacion
+            ) VALUES (%s, %s, %s, %s, %s);
+        """, (user_id, interaccion_id, respuesta_original.strip(), respuesta_final.strip(), motivo_modificacion))
+
         conn.commit()
         conn.close()
         print("📑 Auditoría registrada en auditoria_respuestas.")
