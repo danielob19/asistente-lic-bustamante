@@ -136,8 +136,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     else:
         print("✅ No hubo emociones nuevas para registrar en palabras_clave.")
 
-    nuevas_emociones = [normalizar_texto(e) for e in emociones_detectadas if normalizar_texto(e) not in {normalizar_texto(x) for x in session["emociones_detectadas"]}]
-    session["emociones_detectadas"].extend(nuevas_emociones)
 
     emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
     emociones_registradas_bd = {normalizar_texto(e) for e in emociones_registradas_bd}
