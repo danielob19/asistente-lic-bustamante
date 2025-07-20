@@ -21,7 +21,6 @@ from core.db.sintomas import (
     obtener_sintomas_existentes
 )
 from core.db.consulta import obtener_emociones_ya_registradas
-
 from core.contexto import user_sessions
 
 # Función auxiliar para normalizar texto
