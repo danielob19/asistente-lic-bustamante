@@ -158,12 +158,16 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
         "me siento como con una presión constante",
         "como si estuviera por pasar algo malo",
         "tengo un mal presentimiento",
-        "presiento que algo malo va a pasar",
+        "parece que algo va a pasar",
         "tengo la sensación de que algo grave se acerca"
     ]
     
-    # Generar prompt clínico con fallback si se detectan frases problemáticas
+    # Generar prompt clínico con PARCHE si se detectan frases problemáticas
     if any(frase in mensaje_usuario for frase in frases_criticas):
+        frase_detectada = next((frase for frase in frases_criticas if frase in mensaje_usuario), None)
+        print(f"🛑 Frase crítica detectada: '{frase_detectada}'")
+        print("⚠️ Se utilizará prompt_parche para evitar errores de interpretación clínica.")
+    
         prompt = (
             f"Mensaje recibido: '{mensaje_usuario}'.\n"
             "Redactá una respuesta clínica breve, sobria y profesional.\n"
@@ -172,11 +176,12 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             f"Interacción número: {contador}."
         )
     
+    # Si no hay frase crítica, usar lógica de prompt normal
     elif session["emociones_corte_aplicado"]:
         prompt = (
-            f"El usuario ha alcanzado el máximo de interacciones clínicas permitidas.\n"
-            "Redactá una última respuesta breve, profesional indicando que no podés continuar conversando por este medio y que sería conveniente derivar la consulta directamente al Lic. Bustamante.\n"
-            "No brindés más observaciones clínicas ni sugerencias. No repitas saludos ni agradecimientos."
+            "El usuario ha alcanzado el máximo de interacciones clínicas permitidas.\n"
+            "Redactá una última respuesta breve, profesional indicando que no se podés continuar conversando por este medio y que sería conveniente derivar la consulta directamente al Lic. Bustamante.\n"
+            "No brindes más observaciones clínicas ni sugerencias. No repitas saludos ni agradecimientos."
         )
     
     elif session["emociones_sugerencia_realizada"]:
@@ -202,6 +207,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             "- No uses lenguaje institucional ni brindes información administrativa.\n"
             f"- IMPORTANTE: estás en la interacción {contador}."
         )
+
 
     
     # Activar flags de sugerencia o corte clínico si se supera umbral
