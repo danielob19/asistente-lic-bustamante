@@ -49,13 +49,27 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     sintomas_existentes = {normalizar_texto(s) for s in obtener_sintomas_existentes()}
     emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
 
+    # Inicializar contadores y flags de sesión si aún no existen
+    session.setdefault("emociones_detectadas", [])
+    session.setdefault("emociones_totales_detectadas", 0)
+    session.setdefault("emociones_sugerencia_realizada", False)
+    session.setdefault("emociones_corte_aplicado", False)
+    
     emociones_nuevas = []
-    for emocion in emociones_detectadas:
-        emocion_normalizada = normalizar_texto(emocion)
-        if emocion_normalizada not in {normalizar_texto(e) for e in session["emociones_detectadas"]}:
-            if emocion_normalizada not in sintomas_existentes:
-                emociones_nuevas.append(emocion_normalizada)
-                registrar_sintoma(emocion_normalizada)
+    emociones_detectadas_normalizadas = [normalizar_texto(e) for e in emociones_detectadas]
+    
+    for emocion in emociones_detectadas_normalizadas:
+        if emocion not in {normalizar_texto(e) for e in session["emociones_detectadas"]}:
+            emociones_nuevas.append(emocion)
+            if emocion not in sintomas_existentes:
+                registrar_sintoma(emocion)
+    
+    # Registrar emociones nuevas y acumular en sesión
+    for emocion in emociones_nuevas:
+        registrar_emocion(emocion, f"interacción {contador}", user_id)
+        session["emociones_detectadas"].append(emocion)
+        session["emociones_totales_detectadas"] += 1
+
 
     for emocion in emociones_nuevas:
         registrar_emocion(emocion, f"interacción {contador}", user_id)
