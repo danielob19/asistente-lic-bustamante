@@ -6,7 +6,6 @@ from core.utils.modulo_administrativo import procesar_administrativo
 from core.funciones_asistente import (
     normalizar_texto,
     evaluar_mensaje_openai,
-    clasificar_pregunta_administrativa,
     es_mensaje_saludo,
     eliminar_mensajes_repetidos,
 )
