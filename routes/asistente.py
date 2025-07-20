@@ -3,7 +3,6 @@ from fastapi.responses import JSONResponse
 from core.contexto import user_sessions
 from core.utils.modulo_clinico import procesar_clinico
 from core.utils.modulo_administrativo import procesar_administrativo
-from core.inferencia_psicologica import clasificar_intencion
 from core.funciones_asistente import (
     normalizar_texto,
     evaluar_mensaje_openai,
