@@ -47,7 +47,7 @@ async def asistente(request: Request):
         # Eliminar repeticiones exactas
         mensaje_usuario = eliminar_mensajes_repetidos(mensaje_usuario)
 
-        # Clasificar intención general
+        # Evaluar intención usando OpenAI
         resultado = evaluar_mensaje_openai(mensaje_usuario)
         intencion_general = resultado.get("intencion_general", "")
         temas_administrativos = resultado.get("temas_administrativos", [])
@@ -70,9 +70,8 @@ async def asistente(request: Request):
                 "contador": contador
             }
             respuesta = procesar_clinico(input_data)
-            user_sessions[user_id] = session  #  Para conservar los cambios hechos por el módulo
+            user_sessions[user_id] = session
             return JSONResponse(content=respuesta)
-
 
         # Si la intención es administrativa, pasamos al módulo administrativo
         elif intencion_general == "ADMINISTRATIVO" or temas_administrativos:
@@ -85,19 +84,15 @@ async def asistente(request: Request):
                 "contador": contador
             }
             respuesta = procesar_administrativo(input_data)
-            user_sessions[user_id] = session  #  Para conservar cambios de sesión
+            user_sessions[user_id] = session
             return JSONResponse(content=respuesta)
 
         # Si no se pudo determinar la intención
         else:
-            evaluacion = evaluar_mensaje_openai(mensaje_usuario)
             respuesta = (
                 "Ocurrió un error al procesar tu solicitud. Podés intentarlo nuevamente más tarde "
                 "o escribirle al Lic. Bustamante por WhatsApp: +54 911 3310-1186."
             )
-            if evaluacion:
-                respuesta = evaluacion
-
             session["ultimas_respuestas"].append(respuesta)
             user_sessions[user_id] = session
             return JSONResponse(content={"respuesta": respuesta})
@@ -109,6 +104,7 @@ async def asistente(request: Request):
             "por WhatsApp: +54 911 3310-1186."
         )
         return JSONResponse(content={"respuesta": respuesta})
+
 
 # CORS
 from fastapi.middleware.cors import CORSMiddleware
