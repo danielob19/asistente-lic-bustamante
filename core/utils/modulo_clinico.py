@@ -77,7 +77,11 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             "Podés contactar directamente al Lic. Bustamante escribiendo al WhatsApp +54 911 3310-1186."
         )
         registrar_respuesta_openai(registrar_interaccion(user_id, mensaje_usuario, mensaje_original), respuesta_sugerencia)
-        user_sessions[user_id] = session  # INSERTAR AQUÍ
+        try:
+            user_sessions[user_id] = session
+        except Exception as e:
+            print(f"🔴 Error al guardar en user_sessions para {user_id}: {e}")
+
         return {"respuesta": respuesta_sugerencia}
     
     # Lógica de corte definitivo tras 10 emociones detectadas
@@ -88,7 +92,11 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             "En este espacio no podemos continuar profundizando. Podés escribir al Lic. Bustamante al WhatsApp +54 911 3310-1186 para coordinar una consulta adecuada."
         )
         registrar_respuesta_openai(registrar_interaccion(user_id, mensaje_usuario, mensaje_original), respuesta_corte)
-        user_sessions[user_id] = session  # INSERTAR AQUÍ
+        try:
+            user_sessions[user_id] = session
+        except Exception as e:
+            print(f"🔴 Error al guardar en user_sessions para {user_id}: {e}")
+
         return {"respuesta": respuesta_corte}
     
 
@@ -231,11 +239,20 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
         )
         registrar_auditoria_respuesta(user_id, "respuesta vacía", respuesta_fallback, "Fallback por respuesta nula o inválida")
         registrar_respuesta_openai(interaccion_id, respuesta_fallback)
-        user_sessions[user_id] = session  # INSERTAR AQUÍ
+        try:
+            user_sessions[user_id] = session
+        except Exception as e:
+            print(f"🔴 Error al guardar en user_sessions para {user_id}: {e}")
+
         return {"respuesta": respuesta_fallback}
 
     registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
     registrar_respuesta_openai(interaccion_id, respuesta_original)
     
-    user_sessions[user_id] = session  # INSERTAR AQUÍ
+    try:
+        user_sessions[user_id] = session
+    except Exception as e:
+        print(f"🔴 Error al guardar en user_sessions para {user_id}: {e}")
+
+
     return {"respuesta": respuesta_original}
