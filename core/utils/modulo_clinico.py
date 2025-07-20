@@ -22,6 +22,7 @@ from core.db.sintomas import (
 )
 from core.db.consulta import obtener_emociones_ya_registradas
 from core.contexto import user_sessions
+from core.db.conexion import ejecutar_consulta  # Nueva dependencia
 
 # Función auxiliar para normalizar texto
 def normalizar_texto(texto: str) -> str:
@@ -30,20 +31,67 @@ def normalizar_texto(texto: str) -> str:
     texto = texto.translate(str.maketrans("", "", string.punctuation))
     return texto
 
+# NUEVO: Recuperar historial clínico si contador == 1
+def recuperar_historial_clinico(user_id, limite=5):
+    query = """
+    SELECT fecha, emociones, sintomas, tema, respuesta_openai, sugerencia, fase_evaluacion
+    FROM historial_clinico_usuario
+    WHERE user_id = %s AND eliminado = FALSE
+    ORDER BY fecha DESC
+    LIMIT %s
+    """
+    try:
+        resultados = ejecutar_consulta(query, (user_id, limite))
+        return resultados or []
+    except Exception as e:
+        print(f"🔴 Error al recuperar historial clínico: {e}")
+        return []
+
+def construir_resumen_historial(historial):
+    temas = [h[3] for h in historial if h[3]]
+    emociones = [e for h in historial if h[1] for e in h[1]]
+    resumen_temas = ", ".join(set(temas)) if temas else "diversos temas"
+    resumen_emociones = ", ".join(set(emociones)) if emociones else "varias emociones"
+    return f"temas como {resumen_temas} y emociones como {resumen_emociones}"
+
+def registrar_historial_clinico(user_id, emociones, sintomas, tema, respuesta_openai, sugerencia, fase_evaluacion, interaccion_id):
+    query = """
+    INSERT INTO historial_clinico_usuario (
+        user_id, emociones, sintomas, tema, respuesta_openai,
+        sugerencia, fase_evaluacion, interaccion_id
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """
+    valores = (
+        user_id,
+        emociones,
+        sintomas,
+        tema,
+        respuesta_openai,
+        sugerencia,
+        fase_evaluacion,
+        str(interaccion_id) if interaccion_id else None
+    )
+    try:
+        ejecutar_consulta(query, valores, commit=True)
+    except Exception as e:
+        print(f"🔴 Error al registrar historial clínico: {e}")
+
 def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
-    """
-    Procesa mensajes clínicos: detecta emociones, realiza inferencias con OpenAI,
-    registra resultados en PostgreSQL y devuelve una respuesta filtrada y profesional.
-
-    :param input_data: Diccionario con claves: mensaje_original, mensaje_usuario, user_id, session, contador
-    :return: Diccionario con respuesta final {"respuesta": ...}
-    """
-
     mensaje_original = input_data["mensaje_original"]
     mensaje_usuario = normalizar_texto(input_data["mensaje_usuario"])
     user_id = input_data["user_id"]
     session = input_data["session"]
     contador = input_data["contador"]
+
+    # REENGANCHE CLÍNICO SI CONTADOR == 1 Y HAY HISTORIAL
+    if contador == 1:
+        historial_prev = recuperar_historial_clinico(user_id)
+        if historial_prev:
+            resumen = construir_resumen_historial(historial_prev)
+            respuesta_historial = f"Bienvenido nuevamente. La última vez conversamos sobre {resumen}. ¿Querés que retomemos desde ahí?"
+            session["ultimas_respuestas"].append(respuesta_historial)
+            user_sessions[user_id] = session
+            return {"respuesta": respuesta_historial}
 
     sintomas_existentes = {normalizar_texto(s) for s in obtener_sintomas_existentes()}
     emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
@@ -76,9 +124,19 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             "Dado lo que venís mencionando, podría tratarse de un cuadro clínico que convendría abordar con mayor profundidad. "
             "Podés contactar directamente al Lic. Bustamante escribiendo al WhatsApp +54 911 3310-1186."
         )
-        registrar_respuesta_openai(registrar_interaccion(user_id, mensaje_usuario, mensaje_original), respuesta_sugerencia)
+        interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
+        registrar_respuesta_openai(interaccion_id, respuesta_sugerencia)
+        registrar_historial_clinico(
+            user_id=user_id,
+            emociones=session["emociones_detectadas"],
+            sintomas=[],
+            tema=None,
+            respuesta_openai=respuesta_sugerencia,
+            sugerencia="sugerencia realizada",
+            fase_evaluacion=f"interacción {contador}",
+            interaccion_id=interaccion_id
+        )
         user_sessions[user_id] = session
-
         return {"respuesta": respuesta_sugerencia}
     
     # Lógica de corte definitivo tras 10 emociones detectadas
@@ -88,11 +146,20 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
             "Gracias por compartir lo que estás atravesando. Por la cantidad de aspectos clínicos mencionados, sería importante conversarlo directamente con un profesional. "
             "En este espacio no podemos continuar profundizando. Podés escribir al Lic. Bustamante al WhatsApp +54 911 3310-1186 para coordinar una consulta adecuada."
         )
-        registrar_respuesta_openai(registrar_interaccion(user_id, mensaje_usuario, mensaje_original), respuesta_corte)
+        interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
+        registrar_respuesta_openai(interaccion_id, respuesta_corte)
+        registrar_historial_clinico(
+            user_id=user_id,
+            emociones=session["emociones_detectadas"],
+            sintomas=[],
+            tema=None,
+            respuesta_openai=respuesta_corte,
+            sugerencia="corte clínico",
+            fase_evaluacion=f"interacción {contador}",
+            interaccion_id=interaccion_id
+        )
         user_sessions[user_id] = session
-
         return {"respuesta": respuesta_corte}
-    
 
     for emocion in emociones_nuevas:
         prompt_cuadro = (
@@ -134,96 +201,20 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
         except Exception as e:
             print(f"❌ Error al obtener el cuadro clínico de OpenAI para '{emocion}': {e}")
 
-    if emociones_nuevas:
-        print(f"✅ Se registraron las siguientes emociones nuevas en palabras_clave: {emociones_nuevas}")
-    else:
-        print("✅ No hubo emociones nuevas para registrar en palabras_clave.")
-
-
-    emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
-    emociones_registradas_bd = {normalizar_texto(e) for e in emociones_registradas_bd}
-
-    # Registrar solo emociones nuevas no repetidas (evita duplicaciones)
-    emociones_para_registrar = [
-        e for e in session["emociones_detectadas"]
-        if normalizar_texto(e) not in emociones_registradas_bd
-    ]
-    
-    for emocion in emociones_para_registrar:
-        registrar_emocion(emocion, f"interacción {contador}", user_id)
-
-
     interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
 
-    # Lista de frases clínicas críticas que pueden generar errores si se procesan mal
-    frases_criticas = [
-        "me siento como con una presión constante",
-        "como si estuviera por pasar algo malo",
-        "tengo un mal presentimiento",
-        "parece que algo va a pasar",
-        "tengo la sensación de que algo grave se acerca"
-    ]
-    
-    # Generar prompt clínico con PARCHE si se detectan frases problemáticas
-    if any(frase in mensaje_usuario for frase in frases_criticas):
-        frase_detectada = next((frase for frase in frases_criticas if frase in mensaje_usuario), None)
-        print(f"🛑 Frase crítica detectada: '{frase_detectada}'")
-        print("⚠️ Se utilizará prompt_parche para evitar errores de interpretación clínica.")
-    
-        prompt = (
-            f"Mensaje recibido: '{mensaje_usuario}'.\n"
-            "Redactá una respuesta clínica breve, sobria y profesional.\n"
-            "No uses saludos. No hagas especulaciones amplias. Limitate a una observación objetiva inicial.\n"
-            "Estilo clínico, sobrio, sin motivaciones ni frases vacías. Evitá repetir el mensaje del usuario.\n"
-            f"Interacción número: {contador}."
-        )
-    
-    # Si no hay frase crítica, usar lógica de prompt normal
-    elif session["emociones_corte_aplicado"]:
-        prompt = (
-            "El usuario ha alcanzado el máximo de interacciones clínicas permitidas.\n"
-            "Redactá una última respuesta breve, profesional indicando que no se podés continuar conversando por este medio y que sería conveniente derivar la consulta directamente al Lic. Bustamante.\n"
-            "No brindes más observaciones clínicas ni sugerencias. No repitas saludos ni agradecimientos."
-        )
-    
-    elif session["emociones_sugerencia_realizada"]:
-        prompt = (
-            f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
-            "Redactá una respuesta clínica breve, sobria y profesional como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n"
-            "Directrices:\n"
-            "- Ya sugeriste consultar al profesional. No repitas esa sugerencia.\n"
-            "- Si se detecta más malestar, podés mencionar brevemente que se observa una ampliación del cuadro emocional.\n"
-            "- Estilo sobrio, sin lenguaje empático ni motivacional.\n"
-            f"- Interacción número: {contador}."
-        )
-    
-    else:
-        prompt = (
-            f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
-            "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n"
-            "Estilo y directrices obligatorias:\n"
-            "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
-            "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?' solo si es la interacción 1.\n"
-            "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'impresiona...', 'podría tratarse de...', etc.\n"
-            "- No uses frases motivacionales ni simulaciones empáticas (ej: 'te entiendo', 'todo va a estar bien', etc.).\n"
-            "- No uses lenguaje institucional ni brindes información administrativa.\n"
-            f"- IMPORTANTE: estás en la interacción {contador}."
-        )
+    prompt = (
+        f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
+        "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n"
+        "Estilo y directrices obligatorias:\n"
+        "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
+        "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?' solo si es la interacción 1.\n"
+        "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'impresiona...', 'podría tratarse de...', etc.\n"
+        "- No uses frases motivacionales ni simulaciones empáticas (ej: 'te entiendo', 'todo va a estar bien', etc.).\n"
+        "- No uses lenguaje institucional ni brindes información administrativa.\n"
+        f"- IMPORTANTE: estás en la interacción {contador}."
+    )
 
-
-    
-    # Activar flags de sugerencia o corte clínico si se supera umbral
-    if len(session["emociones_detectadas"]) >= 3 and not session["emociones_sugerencia_realizada"]:
-        session["emociones_sugerencia_realizada"] = True
-        print("⚠️ Se alcanzó el umbral de 3 emociones. Se activa 'emociones_sugerencia_realizada'.")
-    
-    if len(session["emociones_detectadas"]) >= 6 and not session["emociones_corte_aplicado"]:
-        session["emociones_corte_aplicado"] = True
-        print("⛔ Se alcanzó el umbral de 6 emociones. Se activa 'emociones_corte_aplicado'.")
-
-    print(f"📤 Prompt generado para OpenAI (interacción {contador}):\n{prompt}\n")
-
-    
     respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
 
     if not respuesta_original or not isinstance(respuesta_original, str) or len(respuesta_original.strip()) < 5:
@@ -234,13 +225,20 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
         registrar_auditoria_respuesta(user_id, "respuesta vacía", respuesta_fallback, "Fallback por respuesta nula o inválida")
         registrar_respuesta_openai(interaccion_id, respuesta_fallback)
         user_sessions[user_id] = session
-
         return {"respuesta": respuesta_fallback}
 
     registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
     registrar_respuesta_openai(interaccion_id, respuesta_original)
-    
+    registrar_historial_clinico(
+        user_id=user_id,
+        emociones=session["emociones_detectadas"],
+        sintomas=[],
+        tema=None,
+        respuesta_openai=respuesta_original,
+        sugerencia=None,
+        fase_evaluacion=f"interacción {contador}",
+        interaccion_id=interaccion_id
+    )
+
     user_sessions[user_id] = session
-
-
     return {"respuesta": respuesta_original}
