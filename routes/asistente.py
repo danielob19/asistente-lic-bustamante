@@ -87,6 +87,7 @@ async def asistente(request: Request):
                 "contador": contador
             }
             respuesta = procesar_administrativo(input_data)
+            user_sessions[user_id] = session  #  Para conservar cambios de sesión
             return JSONResponse(content=respuesta)
 
         # Si no se pudo determinar la intención
