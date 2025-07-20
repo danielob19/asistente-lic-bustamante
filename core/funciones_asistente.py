@@ -289,6 +289,37 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
 
     return False
 
+def evaluar_mensaje_openai(mensaje: str) -> str | None:
+    """
+    Evalúa un mensaje ambiguo o indeterminado mediante OpenAI para generar una respuesta tentativa.
+
+    Args:
+        mensaje (str): El texto del usuario.
+
+    Returns:
+        str | None: Una respuesta tentativa o None si no puede generarse.
+    """
+    try:
+        prompt = (
+            "Un usuario envió el siguiente mensaje que no tiene una intención clara. "
+            "Respondé de manera neutral, breve y con un tono empático, como si fueras un asistente virtual profesional. "
+            "No asumas información no incluida en el mensaje. Si no entendés, pedí aclaración. Mensaje:\n\n"
+            f"{mensaje}"
+        )
+
+        respuesta = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=100,
+            temperature=0.3
+        )
+
+        return respuesta.choices[0].message.get("content", "").strip()
+
+    except Exception as e:
+        print(f"❌ Error en evaluar_mensaje_openai: {e}")
+        return None
+
 
 def detectar_emociones_negativas(mensaje):
     if not mensaje or not isinstance(mensaje, str):
