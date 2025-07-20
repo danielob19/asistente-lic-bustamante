@@ -92,10 +92,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     
 
     for emocion in emociones_nuevas:
-        registrar_emocion(emocion, f"interacción {contador}", user_id)
-        session["emociones_detectadas"].append(emocion)
-
-    for emocion in emociones_nuevas:
         prompt_cuadro = (
             f"A partir de la siguiente emoción detectada: '{emocion}', asigná un único cuadro clínico o patrón emocional.\n\n"
             "Tu tarea es analizar el síntoma y determinar el estado clínico más adecuado, basándote en criterios diagnósticos de la psicología o la psiquiatría. "
