@@ -102,18 +102,14 @@ def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = N
         return None
 
 
-def registrar_respuesta_openai(interaccion_id: int, respuesta: str):
+def registrar_respuesta_openai(interaccion_id: int, respuesta: str, user_id: str = None, respuesta_original: str = None):
     try:
         print("\n===== DEPURACIÓN - REGISTRO DE RESPUESTA OPENAI =====")
         print(f"Intentando registrar respuesta para interacción ID={interaccion_id}")
 
-        if not interaccion_id:
-            print("❌ No se puede registrar respuesta: ID de interacción es None")
-            return
-
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
-
+        
         cursor.execute("""
             SELECT column_name FROM information_schema.columns 
             WHERE table_name = 'interacciones' AND column_name = 'respuesta';
@@ -130,15 +126,24 @@ def registrar_respuesta_openai(interaccion_id: int, respuesta: str):
             SET respuesta = %s 
             WHERE id = %s;
         """, (respuesta, interaccion_id))
-
+        
         conn.commit()
         conn.close()
-
+        
         print(f"✅ Respuesta registrada con éxito para interacción ID={interaccion_id}\n")
+
+        # 📝 Registro en auditoría si user_id y respuesta_original están disponibles
+        if user_id and respuesta_original:
+            registrar_auditoria_respuesta(
+                user_id=user_id,
+                interaccion_id=interaccion_id,
+                respuesta_original=respuesta_original,
+                respuesta_final=respuesta,
+                motivo_modificacion="Respuesta generada y registrada automáticamente"
+            )
 
     except Exception as e:
         print(f"❌ Error al registrar respuesta en la base de datos: {e}\n")
-
 
 
 def registrar_auditoria_input_original(user_id: str, mensaje_original: str, mensaje_purificado: str, clasificacion: str = None):
