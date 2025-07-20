@@ -70,6 +70,26 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
         session["emociones_detectadas"].append(emocion)
         session["emociones_totales_detectadas"] += 1
 
+    # Lógica de sugerencia clínica tras 3 emociones detectadas
+    if session["emociones_totales_detectadas"] >= 3 and not session["emociones_sugerencia_realizada"]:
+        session["emociones_sugerencia_realizada"] = True
+        respuesta_sugerencia = (
+            "Dado lo que venís mencionando, podría tratarse de un cuadro clínico que convendría abordar con mayor profundidad. "
+            "Podés contactar directamente al Lic. Bustamante escribiendo al WhatsApp +54 911 3310-1186."
+        )
+        registrar_respuesta_openai(registrar_interaccion(user_id, mensaje_usuario, mensaje_original), respuesta_sugerencia)
+        return {"respuesta": respuesta_sugerencia}
+    
+    # Lógica de corte definitivo tras 10 emociones detectadas
+    if session["emociones_totales_detectadas"] >= 10 and not session["emociones_corte_aplicado"]:
+        session["emociones_corte_aplicado"] = True
+        respuesta_corte = (
+            "Gracias por compartir lo que estás atravesando. Por la cantidad de aspectos clínicos mencionados, sería importante conversarlo directamente con un profesional. "
+            "En este espacio no podemos continuar profundizando. Podés escribir al Lic. Bustamante al WhatsApp +54 911 3310-1186 para coordinar una consulta adecuada."
+        )
+        registrar_respuesta_openai(registrar_interaccion(user_id, mensaje_usuario, mensaje_original), respuesta_corte)
+        return {"respuesta": respuesta_corte}
+    
 
     for emocion in emociones_nuevas:
         registrar_emocion(emocion, f"interacción {contador}", user_id)
