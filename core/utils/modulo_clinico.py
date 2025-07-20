@@ -211,5 +211,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
 
     registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
     registrar_respuesta_openai(interaccion_id, respuesta_original)
-
+    
+    user_sessions[user_id] = session  # INSERTAR AQUÍ
     return {"respuesta": respuesta_original}
