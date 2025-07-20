@@ -107,9 +107,13 @@ def registrar_respuesta_openai(interaccion_id: int, respuesta: str):
         print("\n===== DEPURACIÓN - REGISTRO DE RESPUESTA OPENAI =====")
         print(f"Intentando registrar respuesta para interacción ID={interaccion_id}")
 
+        if not interaccion_id:
+            print("❌ No se puede registrar respuesta: ID de interacción es None")
+            return
+
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
-        
+
         cursor.execute("""
             SELECT column_name FROM information_schema.columns 
             WHERE table_name = 'interacciones' AND column_name = 'respuesta';
@@ -126,14 +130,15 @@ def registrar_respuesta_openai(interaccion_id: int, respuesta: str):
             SET respuesta = %s 
             WHERE id = %s;
         """, (respuesta, interaccion_id))
-        
+
         conn.commit()
         conn.close()
-        
+
         print(f"✅ Respuesta registrada con éxito para interacción ID={interaccion_id}\n")
 
     except Exception as e:
         print(f"❌ Error al registrar respuesta en la base de datos: {e}\n")
+
 
 
 def registrar_auditoria_input_original(user_id: str, mensaje_original: str, mensaje_purificado: str, clasificacion: str = None):
