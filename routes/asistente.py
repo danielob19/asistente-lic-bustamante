@@ -49,7 +49,7 @@ async def asistente(request: Request):
         mensaje_usuario = eliminar_mensajes_repetidos(mensaje_usuario)
 
         # Clasificar intención general
-        resultado = clasificar_intencion(mensaje_usuario)
+        resultado = evaluar_mensaje_openai(mensaje_usuario)
         intencion_general = resultado.get("intencion_general", "")
         temas_administrativos = resultado.get("temas_administrativos", [])
         emociones_detectadas = resultado.get("emociones_detectadas", [])
