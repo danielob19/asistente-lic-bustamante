@@ -146,9 +146,15 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     emociones_registradas_bd = obtener_emociones_ya_registradas(user_id, contador)
     emociones_registradas_bd = {normalizar_texto(e) for e in emociones_registradas_bd}
 
-    for emocion in session["emociones_detectadas"]:
-        if normalizar_texto(emocion) not in emociones_registradas_bd:
-            registrar_emocion(emocion, f"interacción {contador}", user_id)
+    # Registrar solo emociones nuevas no repetidas (evita duplicaciones)
+    emociones_para_registrar = [
+        e for e in session["emociones_detectadas"]
+        if normalizar_texto(e) not in emociones_registradas_bd
+    ]
+    
+    for emocion in emociones_para_registrar:
+        registrar_emocion(emocion, f"interacción {contador}", user_id)
+
 
     interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
 
