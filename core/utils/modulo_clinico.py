@@ -30,6 +30,19 @@ def normalizar_texto(texto: str) -> str:
     texto = texto.translate(str.maketrans("", "", string.punctuation))
     return texto
 
+def tokenizar_emociones_compuestas(emociones: list[str]) -> list[str]:
+    """
+    Divide expresiones como 'triste y frustrado' en emociones individuales.
+    """
+    emociones_tokenizadas = []
+    for emocion in emociones:
+        partes = re.split(r"\by\b|,|\/|&", emocion)  # separa por 'y', ',', '/' o '&'
+        for parte in partes:
+            parte = normalizar_texto(parte.strip())
+            if parte:
+                emociones_tokenizadas.append(parte)
+    return emociones_tokenizadas
+
 def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     """
     Procesa mensajes clínicos: detecta emociones, realiza inferencias con OpenAI,
