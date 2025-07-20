@@ -152,18 +152,36 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
 
     interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
 
-    prompt = (
-        f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
-        "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n"
-        "Estilo y directrices obligatorias:\n"
-        "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
-        "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?' solo si es la interacción 1.\n"
-        "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'impresiona...', 'podría tratarse de...', etc.\n"
-        "- No uses frases motivacionales ni simulaciones empáticas (ej: 'te entiendo', 'todo va a estar bien', etc.).\n"
-        "- No uses lenguaje institucional ni brindes información administrativa.\n"
-        "- Si el mensaje no tiene contenido clínico, devolvé una frase neutra como: 'Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?'\n"
-        f"- IMPORTANTE: estás en la interacción {contador}.\n"
-    )
+    # 🧠 Generar prompt clínico personalizado según estado de sesión
+    if session["emociones_corte_aplicado"]:
+        prompt = (
+            f"El usuario ha alcanzado el máximo de interacciones clínicas permitidas.\n"
+            "Redactá una última respuesta breve, respetuosa y profesional indicando que no podés continuar conversando por este medio y que sería conveniente derivar la consulta directamente al Lic. Bustamante.\n"
+            "No brindes más observaciones clínicas ni sugerencias. No repitas saludos ni agradecimientos."
+        )
+    elif session["emociones_sugerencia_realizada"]:
+        prompt = (
+            f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
+            "Redactá una respuesta clínica breve, sobria y profesional como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n"
+            "Directrices:\n"
+            "- Ya sugeriste consultar al profesional. No repitas esa sugerencia.\n"
+            "- Si se detecta más malestar, podés mencionar brevemente que se observa una ampliación del cuadro emocional.\n"
+            "- Estilo sobrio, sin lenguaje empático ni motivacional.\n"
+            f"- Interacción número: {contador}."
+        )
+    else:
+        prompt = (
+            f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
+            "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n"
+            "Estilo y directrices obligatorias:\n"
+            "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
+            "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?' solo si es la interacción 1.\n"
+            "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'impresiona...', 'podría tratarse de...', etc.\n"
+            "- No uses frases motivacionales ni simulaciones empáticas (ej: 'te entiendo', 'todo va a estar bien', etc.).\n"
+            "- No uses lenguaje institucional ni brindes información administrativa.\n"
+            f"- IMPORTANTE: estás en la interacción {contador}."
+        )
+
 
     respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
 
