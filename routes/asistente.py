@@ -72,7 +72,9 @@ async def asistente(request: Request):
                 "contador": contador
             }
             respuesta = procesar_clinico(input_data)
+            user_sessions[user_id] = session  #  Para conservar los cambios hechos por el módulo
             return JSONResponse(content=respuesta)
+
 
         # Si la intención es administrativa, pasamos al módulo administrativo
         elif intencion_general == "ADMINISTRATIVO" or temas_administrativos:
