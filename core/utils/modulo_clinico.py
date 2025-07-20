@@ -69,6 +69,9 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
     
     emociones_nuevas = []
     emociones_detectadas_normalizadas = tokenizar_emociones_compuestas(emociones_detectadas)
+
+    # Log opcional para auditar la tokenización
+    print(f"🧩 Emociones tokenizadas: {emociones_detectadas} → {emociones_detectadas_normalizadas}")
     
     for emocion in emociones_detectadas_normalizadas:
         if emocion not in {normalizar_texto(e) for e in session["emociones_detectadas"]}:
