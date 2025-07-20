@@ -219,8 +219,9 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, str]:
         session["emociones_corte_aplicado"] = True
         print("⛔ Se alcanzó el umbral de 6 emociones. Se activa 'emociones_corte_aplicado'.")
 
-    
+    print(f"📤 Prompt generado para OpenAI (interacción {contador}):\n{prompt}\n")
 
+    
     respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
 
     if not respuesta_original or not isinstance(respuesta_original, str) or len(respuesta_original.strip()) < 5:
