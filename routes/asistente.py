@@ -93,8 +93,8 @@ async def asistente(request: Request):
             user_sessions[user_id] = session
             return JSONResponse(content=respuesta)
 
-        # Derivación a módulo clínico si hay emociones o se infiere intención clínica
-        if intencion_general in ["CLINICO", "CLINICO_CONTINUACION"] or emociones_detectadas:
+        # Si no hubo prioridad administrativa, pasamos a flujo clínico si hay emociones o intención clínica
+        elif intencion_general in ["CLINICO", "CLINICO_CONTINUACION"] or emociones_detectadas:
             input_data = {
                 "mensaje_usuario": mensaje_usuario,
                 "mensaje_original": mensaje_original,
@@ -105,6 +105,7 @@ async def asistente(request: Request):
             respuesta = procesar_clinico(input_data)
             user_sessions[user_id] = session
             return JSONResponse(content=respuesta)
+        
 
         # Si la intención es administrativa, pasamos al módulo administrativo
         elif intencion_general == "ADMINISTRATIVO" or temas_administrativos:
