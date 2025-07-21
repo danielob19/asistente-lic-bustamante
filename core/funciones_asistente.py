@@ -12,6 +12,31 @@ import unicodedata
 import string
 import json
 
+
+def detectar_emociones_negativas(mensaje: str):
+    if not mensaje or not isinstance(mensaje, str):
+        return []
+    prompt = (
+        "Analizá el siguiente mensaje desde una perspectiva clínica y detectá exclusivamente emociones negativas o estados afectivos vinculados a malestar psicológico.\n\n"
+        "Devolvé una lista separada por comas, sin explicaciones ni texto adicional.\n\n"
+        f"Mensaje: {mensaje}"
+    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=50,
+            temperature=0.0
+        )
+        emociones = response.choices[0].message.get("content", "").strip().lower()
+        emociones = emociones.replace("emociones negativas detectadas:", "").strip()
+        emociones = [e.strip() for e in emociones.split(",") if e.strip() and e != "ninguna"]
+        return emociones
+    except Exception as e:
+        print(f"❌ Error al detectar emociones negativas: {e}")
+        return []
+
+
 # ============================ NORMALIZACIÓN ============================
 def normalizar_texto(texto: str) -> str:
     if not isinstance(texto, str):
