@@ -106,22 +106,3 @@ async def asistente(request: Request):
             "por WhatsApp: +54 911 3310-1186."
         )
         return JSONResponse(content={"respuesta": respuesta})
-
-
-# CORS
-from fastapi.middleware.cors import CORSMiddleware
-
-origins = [
-    "https://licbustamante.com.ar",
-    "http://localhost",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000"
-]
-
-router.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
