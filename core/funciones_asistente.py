@@ -209,23 +209,18 @@ def inferir_estado_emocional_predominante(emociones: list[str]) -> str | None:
 
 # ============================ CLASIFICADOR DE INPUT SIMPLE ============================
 def clasificar_input_inicial_simple(mensaje: str) -> dict:
-    """
-    Clasifica mensajes iniciales simples (como saludos, agradecimientos o despedidas)
-    sin carga emocional ni contenido clínico relevante.
-
-    Devuelve un dict con tipo: saludo_simple, agradecimiento, despedida u otro.
-    """
     saludos = ["hola", "buenas", "buen día", "buenas tardes", "buenas noches", "holis", "saludos"]
     despedidas = ["chau", "adiós", "hasta luego", "nos vemos", "me voy", "me retiro"]
     agradecimientos = ["gracias", "muchas gracias", "mil gracias", "te agradezco", "gracias por tu ayuda"]
 
     mensaje = mensaje.lower().strip()
+    palabras = mensaje.split()
 
-    if any(palabra in mensaje for palabra in saludos):
+    if any(p in mensaje for p in saludos) and len(palabras) <= 3:
         return {"tipo": "saludo_simple"}
-    if any(palabra in mensaje for palabra in despedidas):
+    if any(p in mensaje for p in despedidas):
         return {"tipo": "despedida"}
-    if any(palabra in mensaje for palabra in agradecimientos):
+    if any(p in mensaje for p in agradecimientos):
         return {"tipo": "agradecimiento"}
 
     return {"tipo": "otro"}
