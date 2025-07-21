@@ -8,20 +8,27 @@ from fastapi.middleware.cors import CORSMiddleware
 # ✅ Inicialización de FastAPI
 app = FastAPI()
 
-# 📂 Importar y montar el router de /asistente
-from routes.asistente import router as asistente_router
-app.include_router(asistente_router)
+# 🌐 Configuración de CORS (aplicar solo a app, NO a router)
+origins = [
+    "https://licbustamante.com.ar",
+    "http://localhost",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+]
 
-# 🌐 Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 📌 Constantes utilizadas por el asistente
+# 📂 Importar y montar el router de /asistente
+from routes.asistente import router as asistente_router
+app.include_router(asistente_router)
+
+# 📌 Constantes utilizadas por el asistente (pueden migrarse a constantes.py si no se usan aquí directamente)
 CLINICO_CONTINUACION = "CLINICO_CONTINUACION"
 SALUDO = "SALUDO"
 CORTESIA = "CORTESIA"
@@ -29,7 +36,6 @@ ADMINISTRATIVO = "ADMINISTRATIVO"
 CLINICO = "CLINICO"
 CONSULTA_AGENDAR = "CONSULTA_AGENDAR"
 CONSULTA_MODALIDAD = "CONSULTA_MODALIDAD"
-
 
 # 🔗 URL de conexión PostgreSQL desde entorno
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -46,9 +52,6 @@ sintomas_cacheados = set()
 @app.on_event("startup")
 def startup_event():
     global sintomas_cacheados
-
-    # 🔁 Inicializa la base de datos si hay lógica adicional (dejar comentado si no aplica)
-    # init_db()
 
     # 🧠 Generar embeddings de FAQ si está disponible
     try:
@@ -82,7 +85,7 @@ def start_session_cleaner():
             current_time = time.time()
             inactivos = [
                 user_id for user_id, session in user_sessions.items()
-                if current_time - session["ultima_interaccion"] > SESSION_TIMEOUT
+                if current_time - session.get("ultima_interaccion", 0) > SESSION_TIMEOUT
             ]
             for user_id in inactivos:
                 del user_sessions[user_id]
