@@ -76,18 +76,19 @@ async def asistente(request: Request):
             return JSONResponse(content=respuesta)
 
         # Si la intención es administrativa, pasamos al módulo administrativo
+        # Si la intención es administrativa, pasamos al módulo administrativo
         elif intencion_general == "ADMINISTRATIVO" or temas_administrativos:
-            input_data = {
-                "mensaje_usuario": mensaje_usuario,
-                "mensaje_original": mensaje_original,
-                "user_id": user_id,
-                "session": session,
-                "temas_administrativos": temas_administrativos,
-                "contador": contador
-            }
-            respuesta = procesar_administrativo(input_data)
+            respuesta = procesar_administrativo(
+                mensaje_usuario=mensaje_usuario,
+                mensaje_original=mensaje_original,
+                user_id=user_id,
+                session=session,
+                temas_administrativos=temas_administrativos,
+                contador=contador
+            )
             user_sessions[user_id] = session
             return JSONResponse(content=respuesta)
+        
 
         # Si no se pudo determinar la intención
         else:
