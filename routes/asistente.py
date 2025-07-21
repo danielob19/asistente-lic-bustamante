@@ -22,6 +22,18 @@ async def asistente(request: Request):
         mensaje_original = data.get("mensaje", "").strip()
         mensaje_usuario = normalizar_texto(mensaje_original)
 
+        if not mensaje_original or len(mensaje_usuario.strip()) < 2:
+            respuesta = (
+                "No recibí un mensaje claro. Podés escribir una consulta o directamente contactar al Lic. Bustamante "
+                "por WhatsApp: +54 911 3310-1186."
+            )
+            session = user_sessions.get(user_id, {"contador_interacciones": 1, "ultimas_respuestas": []})
+            session["ultimas_respuestas"].append(respuesta)
+            session["contador_interacciones"] += 1
+            user_sessions[user_id] = session
+            return JSONResponse(content={"respuesta": respuesta})
+        
+
         if user_id not in user_sessions:
             session = {
                 "contador_interacciones": 1,
