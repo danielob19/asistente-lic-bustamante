@@ -16,6 +16,8 @@ CLINICO = "CLINICO"
 CONSULTA_AGENDAR = "CONSULTA_AGENDAR"
 CONSULTA_MODALIDAD = "CONSULTA_MODALIDAD"
 
+SALUDO_INICIAL = "¡Hola! ¿En qué puedo ayudarte?"
+
 # 🧠 Diccionario de sesiones (en memoria)
 user_sessions = {}
 
