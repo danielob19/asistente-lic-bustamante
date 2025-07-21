@@ -165,11 +165,9 @@ def evaluar_mensaje_openai(mensaje: str) -> dict:
 
         contenido = respuesta.choices[0].message.get("content", "").strip()
 
-        # Intentamos parsear a dict
         import json
         resultado = json.loads(contenido)
 
-        # Validación mínima
         return {
             "intencion_general": resultado.get("intencion_general", "").upper(),
             "temas_administrativos": resultado.get("temas_administrativos", []),
@@ -182,6 +180,7 @@ def evaluar_mensaje_openai(mensaje: str) -> dict:
             "temas_administrativos": [],
             "emociones_detectadas": []
         }
+
 
 # ============================ DETECCIÓN EMOCIONAL OPENAI ============================
 def detectar_emociones_negativas(mensaje: str):
