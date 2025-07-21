@@ -145,24 +145,43 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
     return any(re.search(p, mensaje) for p in patrones)
 
 # ============================ OPENAI ============================
-def evaluar_mensaje_openai(mensaje: str) -> str | None:
+def evaluar_mensaje_openai(mensaje: str) -> dict:
     try:
         prompt = (
-            "Un usuario envió el siguiente mensaje que no tiene una intención clara. "
-            "Respondé de manera neutral, breve y con un tono empático, como si fueras un asistente virtual profesional. "
-            "No asumas información no incluida en el mensaje. Si no entendés, pedí aclaración. Mensaje:\n\n"
-            f"{mensaje}"
+            "Clasificá el siguiente mensaje según los siguientes criterios:\n\n"
+            "- intencion_general: ADMINISTRATIVO, CLINICO, CLINICO_CONTINUACION o DESCONOCIDO\n"
+            "- temas_administrativos: una lista de temas administrativos si los hay (por ejemplo: honorarios, modalidad, contacto)\n"
+            "- emociones_detectadas: una lista de emociones negativas detectadas si las hay\n\n"
+            "Respondé exclusivamente en formato JSON con las tres claves mencionadas.\n"
+            f"Mensaje: \"{mensaje}\"\n"
         )
+
         respuesta = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=100,
-            temperature=0.3
+            temperature=0.2,
+            max_tokens=200
         )
-        return respuesta.choices[0].message.get("content", "").strip()
+
+        contenido = respuesta.choices[0].message.get("content", "").strip()
+
+        # Intentamos parsear a dict
+        import json
+        resultado = json.loads(contenido)
+
+        # Validación mínima
+        return {
+            "intencion_general": resultado.get("intencion_general", "").upper(),
+            "temas_administrativos": resultado.get("temas_administrativos", []),
+            "emociones_detectadas": resultado.get("emociones_detectadas", [])
+        }
     except Exception as e:
         print(f"❌ Error en evaluar_mensaje_openai: {e}")
-        return None
+        return {
+            "intencion_general": "",
+            "temas_administrativos": [],
+            "emociones_detectadas": []
+        }
 
 # ============================ DETECCIÓN EMOCIONAL OPENAI ============================
 def detectar_emociones_negativas(mensaje: str):
