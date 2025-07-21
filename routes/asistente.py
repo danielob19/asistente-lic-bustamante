@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from core.funciones_asistente import es_mensaje_vacio_o_irrelevante
+from core.funciones_asistente import detectar_emociones_negativas
 from core.contexto import user_sessions
 from core.utils.modulo_clinico import procesar_clinico
 from core.utils.modulo_administrativo import procesar_administrativo
