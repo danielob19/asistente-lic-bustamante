@@ -41,8 +41,6 @@ async def asistente(request: Request):
             session["contador_interacciones"] += 1
             user_sessions[user_id] = session
             return JSONResponse(content={"respuesta": respuesta})
-        
-                
 
         if user_id not in user_sessions:
             session = {
@@ -71,13 +69,9 @@ async def asistente(request: Request):
         # Eliminar repeticiones exactas
         mensaje_usuario = eliminar_mensajes_repetidos(mensaje_usuario)
 
-        # 🧩 CÓDIGO CORREGIDO — BLOQUE CRÍTICO
-        # Eliminar repeticiones exactas
-        mensaje_usuario = eliminar_mensajes_repetidos(mensaje_usuario)
-        
         # Evaluar intención usando OpenAI
         resultado = evaluar_mensaje_openai(mensaje_usuario)
-        
+
         # Validar que la respuesta de OpenAI sea un dict válido
         if not resultado or not isinstance(resultado, dict):
             respuesta = (
@@ -87,12 +81,12 @@ async def asistente(request: Request):
             session["ultimas_respuestas"].append(respuesta)
             user_sessions[user_id] = session
             return JSONResponse(content={"respuesta": respuesta})
-        
+
         # Extraer datos de la respuesta
         intencion_general = resultado.get("intencion_general", "")
         temas_administrativos = resultado.get("temas_administrativos", [])
         emociones_detectadas = resultado.get("emociones_detectadas", [])
-        
+
         # Registrar auditoría del input original
         registrar_auditoria_input_original(
             user_id=user_id,
@@ -100,7 +94,6 @@ async def asistente(request: Request):
             mensaje_purificado=mensaje_usuario,
             clasificacion=intencion_general
         )
-        
 
         # 🔍 Punto crítico #5: Conflicto clínico-administrativo
         if intencion_general in ["CLINICO", "CLINICO_CONTINUACION"] and temas_administrativos:
@@ -128,7 +121,6 @@ async def asistente(request: Request):
             respuesta = procesar_clinico(input_data)
             user_sessions[user_id] = session
             return JSONResponse(content=respuesta)
-        
 
         # 🔍 Validación de intención administrativa con emociones clínicas
         elif intencion_general == "ADMINISTRATIVO" or temas_administrativos:
@@ -153,11 +145,10 @@ async def asistente(request: Request):
                     "contador": contador
                 }
                 respuesta = procesar_administrativo(input_data)
-        
+
             user_sessions[user_id] = session
             return JSONResponse(content=respuesta)
 
-        
         # Si no se pudo determinar la intención
         else:
             respuesta = (
@@ -167,16 +158,16 @@ async def asistente(request: Request):
             session["ultimas_respuestas"].append(respuesta)
             user_sessions[user_id] = session
             return JSONResponse(content={"respuesta": respuesta})
-        
-        # 🛡️ Fallback si falla todo el endpoint (Error inesperado)
-        except Exception as e:
-            print(f"❌ Error inesperado en el endpoint /asistente: {e}")
-            respuesta = (
-                "Ocurrió un error inesperado. Podés volver a intentarlo más tarde o contactar al Lic. Bustamante "
-                "por WhatsApp: +54 911 3310-1186."
-            )
-            session = user_sessions.get(user_id, {"contador_interacciones": 1, "ultimas_respuestas": []})
-            session["ultimas_respuestas"].append(respuesta)
-            session["contador_interacciones"] += 1
-            user_sessions[user_id] = session
-            return JSONResponse(content={"respuesta": respuesta})
+
+    # 🛡️ Fallback si falla todo el endpoint (Error inesperado)
+    except Exception as e:
+        print(f"❌ Error inesperado en el endpoint /asistente: {e}")
+        respuesta = (
+            "Ocurrió un error inesperado. Podés volver a intentarlo más tarde o contactar al Lic. Bustamante "
+            "por WhatsApp: +54 911 3310-1186."
+        )
+        session = user_sessions.get(user_id, {"contador_interacciones": 1, "ultimas_respuestas": []})
+        session["ultimas_respuestas"].append(respuesta)
+        session["contador_interacciones"] += 1
+        user_sessions[user_id] = session
+        return JSONResponse(content={"respuesta": respuesta})
