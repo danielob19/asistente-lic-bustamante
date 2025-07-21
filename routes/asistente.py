@@ -6,7 +6,6 @@ from core.utils.modulo_administrativo import procesar_administrativo
 from core.funciones_asistente import (
     normalizar_texto,
     evaluar_mensaje_openai,
-    es_mensaje_saludo,
     eliminar_mensajes_repetidos,
 )
 from core.db.registro import registrar_auditoria_input_original
@@ -37,12 +36,14 @@ async def asistente(request: Request):
 
         contador = session["contador_interacciones"]
 
-        # Filtro de reinicio: si el mensaje es saludo y estamos cerca del inicio
-        if contador <= 2 and es_mensaje_saludo(mensaje_usuario):
-            respuesta = SALUDO_INICIAL
-            session["ultimas_respuestas"].append(respuesta)
-            user_sessions[user_id] = session
-            return JSONResponse(content={"respuesta": respuesta})
+        # Filtro de reinicio: si el mensaje es saludo sin carga emocional y estamos cerca del inicio
+        if contador <= 2:
+            resultado_saludo = clasificar_input_inicial(mensaje_usuario)
+            if resultado_saludo.get("tipo") == "saludo_simple":
+                respuesta = SALUDO_INICIAL
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session
+                return JSONResponse(content={"respuesta": respuesta})
 
         # Eliminar repeticiones exactas
         mensaje_usuario = eliminar_mensajes_repetidos(mensaje_usuario)
