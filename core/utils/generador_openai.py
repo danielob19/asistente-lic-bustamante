@@ -1,5 +1,3 @@
-# core/utils/generador_openai.py
-
 import openai
 import os
 
@@ -12,7 +10,7 @@ def generar_respuesta_con_openai(
     user_id: str = None,
     mensaje_usuario: str = None,
     mensaje_original: str = None
-) -> str:
+) -> str | None:
     try:
         respuesta = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -28,6 +26,5 @@ def generar_respuesta_con_openai(
 
         return contenido
     except Exception as e:
-        error_msg = f"[ERROR OPENAI] {str(e)}"
-        print(error_msg)
-        return error_msg
+        print(f"[ERROR OPENAI] {str(e)}")
+        return None
