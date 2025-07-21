@@ -79,6 +79,20 @@ async def asistente(request: Request):
             clasificacion=intencion_general
         )
 
+        # 🔍 Punto crítico #5: Conflicto clínico-administrativo
+        if intencion_general in ["CLINICO", "CLINICO_CONTINUACION"] and temas_administrativos:
+            # Si hay temas administrativos claros, priorizamos el módulo administrativo
+            respuesta = procesar_administrativo(
+                mensaje_usuario=mensaje_usuario,
+                mensaje_original=mensaje_original,
+                user_id=user_id,
+                session=session,
+                temas_administrativos=temas_administrativos,
+                contador=contador
+            )
+            user_sessions[user_id] = session
+            return JSONResponse(content=respuesta)
+
         # Derivación a módulo clínico si hay emociones o se infiere intención clínica
         if intencion_general in ["CLINICO", "CLINICO_CONTINUACION"] or emociones_detectadas:
             input_data = {
