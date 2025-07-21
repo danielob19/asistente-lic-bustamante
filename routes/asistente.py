@@ -120,19 +120,33 @@ async def asistente(request: Request):
             return JSONResponse(content=respuesta)
         
 
-        # Si la intención es administrativa, pasamos al módulo administrativo
+        # 🔍 Validación de intención administrativa con emociones clínicas
         elif intencion_general == "ADMINISTRATIVO" or temas_administrativos:
-            input_data = {
-                "mensaje_usuario": mensaje_usuario,
-                "mensaje_original": mensaje_original,
-                "user_id": user_id,
-                "session": session,
-                "temas_administrativos": temas_administrativos,
-                "contador": contador
-            }
-            respuesta = procesar_administrativo(input_data)
+            if emociones_detectadas:
+                # Derivamos al módulo clínico si hay emociones, aunque parezca administrativo
+                input_data = {
+                    "mensaje_usuario": mensaje_usuario,
+                    "mensaje_original": mensaje_original,
+                    "user_id": user_id,
+                    "session": session,
+                    "contador": contador
+                }
+                respuesta = procesar_clinico(input_data)
+            else:
+                # Flujo administrativo puro
+                input_data = {
+                    "mensaje_usuario": mensaje_usuario,
+                    "mensaje_original": mensaje_original,
+                    "user_id": user_id,
+                    "session": session,
+                    "temas_administrativos": temas_administrativos,
+                    "contador": contador
+                }
+                respuesta = procesar_administrativo(input_data)
+        
             user_sessions[user_id] = session
             return JSONResponse(content=respuesta)
+
         
         # Si no se pudo determinar la intención
         else:
