@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+from core.funciones_asistente import es_mensaje_vacio_o_irrelevante
 from core.contexto import user_sessions
 from core.utils.modulo_clinico import procesar_clinico
 from core.utils.modulo_administrativo import procesar_administrativo
@@ -22,17 +23,26 @@ async def asistente(request: Request):
         mensaje_original = data.get("mensaje", "").strip()
         mensaje_usuario = normalizar_texto(mensaje_original)
 
-        if not mensaje_original or len(mensaje_usuario.strip()) < 2:
+        # 🔍 Validación temprana de mensaje irrelevante
+        if es_mensaje_vacio_o_irrelevante(mensaje_usuario):
             respuesta = (
                 "No recibí un mensaje claro. Podés escribir una consulta o directamente contactar al Lic. Bustamante "
                 "por WhatsApp: +54 911 3310-1186."
             )
-            session = user_sessions.get(user_id, {"contador_interacciones": 1, "ultimas_respuestas": []})
+            session = user_sessions.get(user_id, {
+                "contador_interacciones": 1,
+                "ultimas_respuestas": [],
+                "emociones_detectadas": [],
+                "emociones_totales_detectadas": 0,
+                "emociones_sugerencia_realizada": False,
+                "emociones_corte_aplicado": False
+            })
             session["ultimas_respuestas"].append(respuesta)
             session["contador_interacciones"] += 1
             user_sessions[user_id] = session
             return JSONResponse(content={"respuesta": respuesta})
         
+                
 
         if user_id not in user_sessions:
             session = {
