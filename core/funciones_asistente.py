@@ -15,10 +15,13 @@ import string
 
 # ============================ NORMALIZACIÓN ============================
 def normalizar_texto(texto: str) -> str:
+    if not texto or not isinstance(texto, str):
+        return ""
     texto = texto.lower().strip()
     texto = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("utf-8")
     texto = texto.translate(str.maketrans("", "", string.punctuation))
     return texto
+
 
 # ============================ CLASIFICADOR ============================
 sintomas_cacheados = set()
