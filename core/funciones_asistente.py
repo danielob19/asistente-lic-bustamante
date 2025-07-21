@@ -264,3 +264,8 @@ def eliminar_mensajes_repetidos(mensaje: str) -> str:
 
     return reemplazos_exactos.get(mensaje, mensaje)
 
+def es_mensaje_vacio_o_irrelevante(mensaje: str) -> bool:
+    if not mensaje or len(mensaje.strip()) < 2:
+        return True
+    # Considerar irrelevante si contiene solo signos, espacios, o ruido común
+    return bool(re.fullmatch(r"[^\wáéíóúñ]+", mensaje.strip()))
