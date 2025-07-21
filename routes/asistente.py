@@ -51,9 +51,14 @@ async def asistente(request: Request):
 
         # Evaluar intención usando OpenAI
         resultado = evaluar_mensaje_openai(mensaje_usuario)
+        
+        if not resultado or not isinstance(resultado, dict):
+            raise ValueError("Error al evaluar la intención: respuesta inválida desde OpenAI")
+        
         intencion_general = resultado.get("intencion_general", "")
         temas_administrativos = resultado.get("temas_administrativos", [])
         emociones_detectadas = resultado.get("emociones_detectadas", [])
+        
 
         registrar_auditoria_input_original(
             user_id=user_id,
