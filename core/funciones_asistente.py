@@ -13,6 +13,7 @@ import string
 import json
 
 
+# ============================ DETECCIÓN DE EMOCIONES NEGATIVAS ============================
 def detectar_emociones_negativas(mensaje: str):
     if not mensaje or not isinstance(mensaje, str):
         return []
@@ -47,7 +48,8 @@ def normalizar_texto(texto: str) -> str:
     texto = re.sub(r"\s+", " ", texto)
     return texto
 
-# ============================ CLASIFICADOR ============================
+
+# ============================ CLASIFICADOR DE INPUT INICIAL ============================
 sintomas_cacheados = set()
 
 def clasificar_input_inicial(texto: str) -> str:
@@ -106,7 +108,23 @@ def clasificar_input_inicial(texto: str) -> str:
 
     return "OTRO"
 
-# ============================ EVALUACIÓN OPENAI ============================
+
+# ============================ CLASIFICADOR SIMPLE (SALUDO/DESPEDIDA) ============================
+def clasificar_input_inicial_simple(mensaje: str) -> dict:
+    mensaje = mensaje.lower().strip()
+    palabras = mensaje.split()
+
+    if any(p in mensaje for p in ["hola", "buenas", "buen dia"]) and len(palabras) <= 3:
+        return {"tipo": "saludo_simple"}
+    if any(p in mensaje for p in ["chau", "adios", "hasta luego"]):
+        return {"tipo": "despedida"}
+    if any(p in mensaje for p in ["gracias", "mil gracias"]):
+        return {"tipo": "agradecimiento"}
+
+    return {"tipo": "otro"}
+
+
+# ============================ EVALUACIÓN CON OPENAI ============================
 def evaluar_mensaje_openai(mensaje: str) -> dict:
     try:
         prompt = (
@@ -141,6 +159,7 @@ def evaluar_mensaje_openai(mensaje: str) -> dict:
             "emociones_detectadas": []
         }
 
+
 # ============================ FILTRO DE REPETIDOS ============================
 def eliminar_mensajes_repetidos(mensaje: str) -> str:
     if not isinstance(mensaje, str):
@@ -160,27 +179,15 @@ def eliminar_mensajes_repetidos(mensaje: str) -> str:
     }
     return reemplazos.get(mensaje, mensaje)
 
-# ============================ SALUDO SIMPLE ============================
-def clasificar_input_inicial_simple(mensaje: str) -> dict:
-    mensaje = mensaje.lower().strip()
-    palabras = mensaje.split()
 
-    if any(p in mensaje for p in ["hola", "buenas", "buen dia"]) and len(palabras) <= 3:
-        return {"tipo": "saludo_simple"}
-    if any(p in mensaje for p in ["chau", "adios", "hasta luego"]):
-        return {"tipo": "despedida"}
-    if any(p in mensaje for p in ["gracias", "mil gracias"]):
-        return {"tipo": "agradecimiento"}
-
-    return {"tipo": "otro"}
-
-# ============================ IRRELEVANTE ============================
+# ============================ FILTRO DE RUIDO ============================
 def es_mensaje_vacio_o_irrelevante(mensaje: str) -> bool:
     if not mensaje or len(mensaje.strip()) < 2:
         return True
     return bool(re.fullmatch(r"[^\wáéíóúñ]+", mensaje.strip()))
 
-# ============================ TEMA CLÍNICO ============================
+
+# ============================ TEMA CLÍNICO O EMOCIONAL ============================
 def es_tema_clinico_o_emocional(mensaje: str) -> bool:
     if not mensaje or not isinstance(mensaje, str):
         return False
@@ -198,4 +205,3 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
         r"no le encuentro sentido\s+(a la vida|a nada|a esto)"
     ]
     return any(p in mensaje for p in palabras) or any(re.search(p, mensaje) for p in patrones)
-
