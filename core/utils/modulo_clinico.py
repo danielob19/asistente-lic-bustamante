@@ -24,10 +24,13 @@ from core.db.consulta import obtener_emociones_ya_registradas
 from core.db.conexion import ejecutar_consulta  # Eliminado user_sessions
 
 def normalizar_texto(texto: str) -> str:
+    if not texto or not isinstance(texto, str):
+        texto = ""
     texto = texto.lower().strip()
     texto = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("utf-8")
     texto = texto.translate(str.maketrans("", "", string.punctuation))
     return texto
+
 
 def recuperar_historial_clinico(user_id, limite=5):
     query = """
