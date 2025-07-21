@@ -7,6 +7,7 @@ from core.funciones_asistente import (
     normalizar_texto,
     evaluar_mensaje_openai,
     eliminar_mensajes_repetidos,
+    clasificar_input_inicial_simple,
 )
 from core.db.registro import registrar_auditoria_input_original
 from core.constantes import SALUDO_INICIAL
@@ -38,7 +39,7 @@ async def asistente(request: Request):
 
         # Filtro de reinicio: si el mensaje es saludo sin carga emocional y estamos cerca del inicio
         if contador <= 2:
-            resultado_saludo = clasificar_input_inicial(mensaje_usuario)
+            resultado_saludo = clasificar_input_inicial_simple(mensaje_usuario)
             if resultado_saludo.get("tipo") == "saludo_simple":
                 respuesta = SALUDO_INICIAL
                 session["ultimas_respuestas"].append(respuesta)
