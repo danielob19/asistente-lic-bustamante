@@ -233,24 +233,28 @@ def clasificar_input_inicial_simple(mensaje: str) -> dict:
 # ============================ FILTRO DE MENSAJES REPETIDOS ============================
 def eliminar_mensajes_repetidos(mensaje: str) -> str:
     """
-    Si el usuario repite una frase exacta que ya dijo antes, se purifica para evitar loops.
-    Esto previene que se repita en la respuesta o reinicie el flujo innecesariamente.
+    Si el usuario repite una frase o inicia con saludos vacíos, se purifica para evitar loops.
     """
     if not isinstance(mensaje, str):
         return ""
+
     mensaje = mensaje.strip().lower()
-    reemplazos = {
-        "hola": "",
-        "hola, ¿cómo estás?": "",
-        "hola como estas": "",
+
+    saludos_iniciales = [
+        "hola", "hola,", "hola.", "hola!", "hola ¿cómo estás", "buenas", "buen día", "buenas tardes", "buenas noches"
+    ]
+
+    for saludo in saludos_iniciales:
+        if mensaje == saludo or mensaje.startswith(saludo):
+            return ""  # Elimina saludos simples o que abren la frase
+
+    reemplazos_exactos = {
         "ok": "",
         "ok gracias": "",
-        "muchas gracias": "",
         "gracias": "",
-        "¿hola?": "",
-        "¿estás ahí?": "",
-        "buenas": ""
+        "muchas gracias": "",
+        "estás ahí?": "",
     }
-    return reemplazos.get(mensaje, mensaje)
 
+    return reemplazos_exactos.get(mensaje, mensaje)
 
