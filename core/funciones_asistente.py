@@ -229,3 +229,28 @@ def clasificar_input_inicial_simple(mensaje: str) -> dict:
         return {"tipo": "agradecimiento"}
 
     return {"tipo": "otro"}
+
+# ============================ FILTRO DE MENSAJES REPETIDOS ============================
+def eliminar_mensajes_repetidos(mensaje: str) -> str:
+    """
+    Si el usuario repite una frase exacta que ya dijo antes, se purifica para evitar loops.
+    Esto previene que se repita en la respuesta o reinicie el flujo innecesariamente.
+    """
+    if not isinstance(mensaje, str):
+        return ""
+    mensaje = mensaje.strip().lower()
+    reemplazos = {
+        "hola": "",
+        "hola, ¿cómo estás?": "",
+        "hola como estas": "",
+        "ok": "",
+        "ok gracias": "",
+        "muchas gracias": "",
+        "gracias": "",
+        "¿hola?": "",
+        "¿estás ahí?": "",
+        "buenas": ""
+    }
+    return reemplazos.get(mensaje, mensaje)
+
+
