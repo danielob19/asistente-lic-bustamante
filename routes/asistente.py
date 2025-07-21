@@ -105,9 +105,16 @@ async def asistente(request: Request):
             return JSONResponse(content={"respuesta": respuesta})
 
     except Exception as e:
-        print(f"❌ Error inesperado en el endpoint /asistente: {e}")
-        respuesta = (
-            "Ocurrió un error inesperado. Podés volver a intentarlo más tarde o contactar al Lic. Bustamante "
-            "por WhatsApp: +54 911 3310-1186."
-        )
-        return JSONResponse(content={"respuesta": respuesta})
+    print(f"❌ Error inesperado en el endpoint /asistente: {e}")
+    respuesta = (
+        "Ocurrió un error inesperado. Podés volver a intentarlo más tarde o contactar al Lic. Bustamante "
+        "por WhatsApp: +54 911 3310-1186."
+    )
+    # Intentar preservar sesión si existe
+    session = user_sessions.get(user_id, {"contador_interacciones": 1, "ultimas_respuestas": []})
+    session["ultimas_respuestas"].append(respuesta)
+    session["contador_interacciones"] += 1
+    user_sessions[user_id] = session
+    return JSONResponse(content={"respuesta": respuesta})
+
+
