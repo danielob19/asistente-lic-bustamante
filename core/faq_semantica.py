@@ -20,7 +20,7 @@ faq_respuestas = [
         )
     },
     {
-        "pregunta": "¿Cuánto dura la sesión?",
+        "pregunta": "cuanto dura la sesion, la duracion de la sesion, tiempo de sesion", 
         "respuesta": (
             "Las sesiones con el Lic. Daniel O. Bustamante tienen una duración aproximada de 50 minutos y se realizan por videoconsulta.\n\n"
             "La frecuencia puede variar según cada caso, pero generalmente se recomienda un encuentro semanal para favorecer el proceso terapéutico.\n\n"
