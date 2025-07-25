@@ -28,6 +28,12 @@ RESPUESTAS = {
         "El Lic. Bustamante es psicólogo especializado en psicología clínica. "
         "Realiza tratamientos psicológicos individuales y también terapia de pareja, siempre en modalidad online."
     ),
+
+    "duración": (
+        "Cada sesión tiene una duración aproximada de 50 minutos. "
+        "Podés consultar cualquier detalle adicional escribiéndole al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+    ),
+
     "contacto": obtener_mensaje_contacto(),
     "modalidad": (
         "El Lic. Bustamante trabaja exclusivamente en modalidad online, mediante videollamadas. "
