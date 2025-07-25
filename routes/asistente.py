@@ -461,6 +461,15 @@ async def asistente(input_data: UserInput):
             if hay_contexto_clinico_anterior(user_id):
                 tipo_input = CLINICO_CONTINUACION
 
+        # 🔁 Reinicio condicional del contador por inactividad mayor a 60 segundos
+        if "ultima_interaccion" in session:
+            tiempo_inactivo = time.time() - session["ultima_interaccion"]
+            if tiempo_inactivo > 60:
+                session["contador_interacciones"] = 0
+                session["emociones_detectadas"] = []
+                session["intenciones_clinicas_acumuladas"] = []
+        
+
         # Actualiza la sesión del usuario
         session["ultima_interaccion"] = time.time()
         session["contador_interacciones"] += 1  # ✅ Incrementar contador aquí
