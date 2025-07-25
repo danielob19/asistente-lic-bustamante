@@ -13,7 +13,7 @@ intenciones_faq = [
             "¿Está en mi cartilla?",
             "¿Atiende por OSDE?",
             "¿Cubre mi plan de salud?",
-            "¿atiende por obra social?"
+            "atiende por obra social"
             "¿La consulta entra por prepaga?",
         ],
         "respuesta": (
