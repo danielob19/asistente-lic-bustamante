@@ -1,6 +1,26 @@
 import openai
 import numpy as np
 from numpy.linalg import norm
+import re
+import unicodedata
+
+def limpiar_texto(texto: str) -> str:
+    texto = texto.lower()
+    texto = unicodedata.normalize('NFKD', texto)
+    texto = re.sub(r'[^\w\s]', '', texto)  # elimina signos como ¿?,.,!
+    texto = re.sub(r'\s+', ' ', texto)  # colapsa espacios múltiples
+    return texto.strip()
+
+def es_sobre_obra_social(mensaje: str) -> bool:
+    mensaje = limpiar_texto(mensaje)
+    keywords = [
+        "obra social", "obras sociales", "prepaga", "prepagas",
+        "ioma", "osde", "galeno", "swiss medical", "luis pasteur",
+        "medicus", "omint", "aca", "sancor", "prevención",
+        "plan de salud", "plan salud", "cobertura médica"
+    ]
+    return any(kw in mensaje for kw in keywords)
+
 
 faq_respuestas = [
     {
