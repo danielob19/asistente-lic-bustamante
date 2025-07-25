@@ -39,8 +39,12 @@ def generar_embeddings_faq():
     for i, embedding in enumerate(response["data"]):
         faq_respuestas[i]["embedding"] = np.array(embedding["embedding"])
 
+
 def es_sobre_obra_social(mensaje: str) -> bool:
     mensaje = mensaje.lower().strip()
+
+    # Limpiar signos de puntuación comunes que interfieren
+    mensaje = re.sub(r'[¿?!"“”"\'.,;:-]', '', mensaje)
 
     keywords = [
         "obra social", "obras sociales", "prepaga", "prepagas",
@@ -50,6 +54,7 @@ def es_sobre_obra_social(mensaje: str) -> bool:
     ]
 
     return any(kw in mensaje for kw in keywords)
+
 
 
 def buscar_respuesta_semantica(mensaje: str, umbral=0.88) -> str | None:
