@@ -47,6 +47,7 @@ def clasificar_tema_administrativo(mensaje: str) -> str:
         "- tratamientos\n"
         "- contacto\n"
         "- modalidad\n"
+        "- duración\n"
         "- otro\n\n"
         "Devolvé solo el nombre de la categoría más adecuada, sin explicaciones ni frases adicionales.\n\n"
         f"Mensaje: {mensaje}"
