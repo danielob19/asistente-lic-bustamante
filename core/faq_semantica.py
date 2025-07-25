@@ -1,4 +1,3 @@
-import re
 import openai
 import numpy as np
 from numpy.linalg import norm
@@ -28,6 +27,13 @@ faq_respuestas = [
             "Podés contactarlo por WhatsApp al +54 911 3310-1186 si querés coordinar una sesión."
         )
     },
+    {
+        "pregunta": "Trabaja con obras sociales",
+        "respuesta": (
+            "El Lic. Daniel O. Bustamante no trabaja con obras sociales ni prepagas. Atiende únicamente de manera particular.\n\n"
+            "Si deseás iniciar un proceso terapéutico, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
+        )
+    }
 ]
 
 def generar_embeddings_faq():
@@ -39,35 +45,8 @@ def generar_embeddings_faq():
     for i, embedding in enumerate(response["data"]):
         faq_respuestas[i]["embedding"] = np.array(embedding["embedding"])
 
-
-def es_sobre_obra_social(mensaje: str) -> bool:
-    mensaje = mensaje.lower().strip()
-
-    # Limpiar signos de puntuación comunes que interfieren
-    mensaje = re.sub(r'[¿?!"“”"\'.,;:-]', '', mensaje)
-
-    keywords = [
-        "obra social", "obras sociales", "prepaga", "prepagas",
-        "ioma", "osde", "galeno", "swiss medical", "luis pasteur",
-        "medicus", "omint", "aca", "sancor", "prevención",
-        "plan de salud", "plan salud", "cobertura médica"
-    ]
-
-    return any(kw in mensaje for kw in keywords)
-
-
-
 def buscar_respuesta_semantica(mensaje: str, umbral=0.88) -> str | None:
     try:
-        # Intercepción directa basada en intención
-        if es_sobre_obra_social(mensaje):
-            return (
-                "El Lic. Daniel O. Bustamante no trabaja con obras sociales ni prepagas. "
-                "Atiende únicamente de manera particular. "
-                "Si deseás iniciar un proceso terapéutico, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
-            )
-
-        # Resto del análisis por embeddings
         embedding_usuario = openai.Embedding.create(
             model="text-embedding-ada-002",
             input=mensaje
@@ -88,7 +67,6 @@ def buscar_respuesta_semantica(mensaje: str, umbral=0.88) -> str | None:
     except Exception as e:
         print(f"❌ Error en detección semántica: {e}")
         return None
-
 
 def buscar_respuesta_semantica_con_score(mensaje: str, umbral=0.88):
     try:
