@@ -802,21 +802,6 @@ async def asistente(input_data: UserInput):
             session["ultimas_respuestas"].append(respuesta)
             user_sessions[user_id] = session
             return {"respuesta": respuesta}
-                        
-        # 🔍 Buscar coincidencia semántica en preguntas frecuentes
-        resultado_semantico = buscar_respuesta_semantica_con_score(mensaje_usuario)
-        if resultado_semantico:
-            pregunta_faq, respuesta_semantica, similitud = resultado_semantico
-        
-            # Registrar respuesta en la interacción ya creada
-            registrar_respuesta_openai(interaccion_id, respuesta_semantica)
-        
-            # Registrar similitud en la tabla correspondiente
-            registrar_log_similitud(user_id, mensaje_usuario, pregunta_faq, similitud)
-        
-            session["ultimas_respuestas"].append(respuesta_semantica)
-            user_sessions[user_id] = session
-            return {"respuesta": respuesta_semantica}
 
         # 🔍 DEPURACIÓN: Mostrar estado actual de la sesión
         print("\n===== DEPURACIÓN - SESIÓN DEL USUARIO =====")
