@@ -82,6 +82,24 @@ def procesar_administrativo(mensaje_usuario: str, session: dict, user_id: str) -
         session["contador_interacciones"] += 1
         return {"respuesta": respuesta}
 
+        # 🔍 MANEJO ESPECIAL: consulta sobre obras sociales o prepagas
+        patrones_os = [
+            r'\bobra[s]?\s*social(es)?\b',
+            r'\bpre[p]?agas?\b',
+            r'\bioma\b', r'\bosde\b', r'\bgaleno\b',
+            r'\bswiss\s*medical\b', r'\bluis\s*pasteur\b',
+            r'\bomint\b', r'\bmedicus\b', r'\baca\b',
+            r'\bsancor\b', r'\bprevencion\b',
+            r'\bplan\s*(de)?\s*salud\b', r'\bplan\b.*\bsalud\b',
+            r'\bcobertura\s*(medica)?\b'
+        ]
+        if any(re.search(p, mensaje_normalizado) for p in patrones_os):
+            respuesta = RESPUESTAS.get("obras sociales")
+            session["ultimas_respuestas"].append(respuesta)
+            session["contador_interacciones"] += 1
+            return {"respuesta": respuesta}
+
+
     # 🔍 CLASIFICACIÓN por OpenAI
     categoria = clasificar_tema_administrativo(mensaje_normalizado)
     respuesta = RESPUESTAS.get(categoria)
