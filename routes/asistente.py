@@ -18,7 +18,7 @@ from core.utils_contacto import (
     es_consulta_contacto,
     obtener_mensaje_contacto
 )
-from core.faq_semantica import buscar_respuesta_semantica_con_score
+
 from core.db.registro import (
     registrar_emocion,
     registrar_interaccion,
