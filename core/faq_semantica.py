@@ -47,13 +47,6 @@ faq_respuestas = [
             "Podés contactarlo por WhatsApp al +54 911 3310-1186 si querés coordinar una sesión."
         )
     },
-    {
-        "pregunta": "obras sociales, obra social, prepaga, prepagas, ioma, osde, galeno, swiss medical, luis pasteur, medicus, omint, aca, sancor, prevención, plan de salud, plan salud, cobertura médica",
-        "respuesta": (
-            "El Lic. Daniel O. Bustamante no trabaja con obras sociales ni prepagas. Atiende únicamente de manera particular.\n\n"
-            "Si deseás iniciar un proceso terapéutico, podés escribirle directamente por WhatsApp al +54 911 3310-1186."
-        )
-    }
 ]
 
 def generar_embeddings_faq():
