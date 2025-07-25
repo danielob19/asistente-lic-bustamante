@@ -108,9 +108,10 @@ async def asistente(input_data: UserInput):
             "emociones_detectadas": [],
             "ultimas_respuestas": [],
             "input_sospechoso": False,
-            "interacciones_previas": []
+            "interacciones_previas": [],
+            "intenciones_clinicas_acumuladas": []  # 🆕 Campo agregado para acumulación clínica
         })
-        
+    
         # 🛡️ Validación anticipada para evitar errores de tipo NoneType
         if mensaje_original is None or not isinstance(mensaje_original, str):
             raise HTTPException(status_code=400, detail="El mensaje recibido no es válido.")
