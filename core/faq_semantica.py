@@ -41,17 +41,15 @@ def generar_embeddings_faq():
 
 def es_sobre_obra_social(mensaje: str) -> bool:
     mensaje = mensaje.lower().strip()
-    patrones = [
-        r'\bobra[s]?\s*social(es)?\b',
-        r'\bpre[p]?agas?\b',
-        r'\bioma\b', r'\bosde\b', r'\bgaleno\b',
-        r'\bswiss\s*medical\b', r'\bluis\s*pasteur\b',
-        r'\bomint\b', r'\bmedicus\b', r'\baca\b',
-        r'\bsancor\b', r'\bprevención\b',
-        r'\bplan\s*(de)?\s*salud\b', r'\bplan\b.*\bsalud\b',
-        r'\bcobertura\s*(m[eé]dica)?\b'
+
+    keywords = [
+        "obra social", "obras sociales", "prepaga", "prepagas",
+        "ioma", "osde", "galeno", "swiss medical", "luis pasteur",
+        "medicus", "omint", "aca", "sancor", "prevención",
+        "plan de salud", "plan salud", "cobertura médica"
     ]
-    return any(re.search(p, mensaje) for p in patrones)
+
+    return any(kw in mensaje for kw in keywords)
 
 
 def buscar_respuesta_semantica(mensaje: str, umbral=0.88) -> str | None:
