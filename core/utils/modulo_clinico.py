@@ -23,7 +23,12 @@ from core.db.sintomas import (
     registrar_sintoma,
     obtener_sintomas_existentes
 )
-from core.db.consulta import obtener_emociones_ya_registrada
+
+from core.db.consulta import (
+    obtener_emociones_ya_registradas,
+    obtener_historial_emocional_usuario
+)
+
 from core.db.conexion import ejecutar_consulta  # Eliminado user_sessions
 
 def normalizar_texto(texto: str) -> str:
