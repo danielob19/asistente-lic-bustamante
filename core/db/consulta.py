@@ -120,3 +120,16 @@ def contiene_expresion_administrativa(texto: str) -> bool:
     frases_administrativas = ["arancel", "valor", "costo", "duración", "modalidad", "turno", "día y horario", "sesión", "forma de pago", "atención"]
     texto = texto.lower()
     return any(frase in texto for frase in frases_administrativas)
+
+from core.db.conexion import ejecutar_consulta
+
+def obtener_historial_clinico_usuario(user_id: str):
+    query = """
+        SELECT id, user_id, fecha, emociones, sintomas, tema,
+               respuesta_openai, sugerencia, fase_evaluacion,
+               interaccion_id, fuente, eliminado
+        FROM historial_clinico_usuario
+        WHERE user_id = %s AND eliminado = false
+        ORDER BY fecha DESC
+    """
+    return ejecutar_consulta(query, (user_id,))
