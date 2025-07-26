@@ -4,7 +4,6 @@ import time
 import unicodedata
 import string
 from typing import Dict, Any
-from db import registrar_emocion_clinica, obtener_historial_emocional_usuario
 
 
 from core.utils.clinico_contexto import hay_contexto_clinico_anterior
