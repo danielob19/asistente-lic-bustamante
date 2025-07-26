@@ -143,28 +143,26 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         session["emociones_detectadas"].append(emocion)
         session["emociones_totales_detectadas"] += 1
 
-    if session["emociones_totales_detectadas"] >= 3 and not session["emociones_sugerencia_realizada"]:
-        session["emociones_sugerencia_realizada"] = True
-        respuesta_sugerencia = (
-            "Dado lo que venís mencionando, podría tratarse de un cuadro clínico que convendría abordar con mayor profundidad. "
-            "Podés contactar directamente al Lic. Bustamante escribiendo al WhatsApp +54 911 3310-1186."
-        )
+    # Siempre registrar historial clínico desde la primera emoción detectada
+    respuesta_clinica = (
+        "Gracias por compartir lo que estás atravesando. Si lo deseás, podés contactar al Lic. Bustamante por WhatsApp: +54 911 3310-1186."
+    )
+    interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
+    registrar_respuesta_openai(interaccion_id, respuesta_clinica)
     
-        interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
-        registrar_respuesta_openai(interaccion_id, respuesta_sugerencia)
+    registrar_historial_clinico(
+        user_id=user_id,
+        emociones=session["emociones_detectadas"],
+        sintomas=[],
+        tema=None,
+        respuesta_openai=respuesta_clinica,
+        sugerencia="registro inmediato",
+        fase_evaluacion=f"interacción {contador}",
+        interaccion_id=interaccion_id
+    )
     
-        registrar_historial_clinico(
-            user_id=user_id,
-            emociones=session["emociones_detectadas"],
-            sintomas=list(sintomas_existentes),
-            tema=mensaje_usuario,
-            respuesta_openai=respuesta_sugerencia,
-            sugerencia="sugerencia realizada",
-            fase_evaluacion=f"interacción {contador}",
-            interaccion_id=interaccion_id
-        )
-    
-        return {"respuesta": respuesta_sugerencia, "session": session}
+    return {"respuesta": respuesta_clinica, "session": session}
+
 
     if session["emociones_totales_detectadas"] >= 10 and not session["emociones_corte_aplicado"]:
         session["emociones_corte_aplicado"] = True
