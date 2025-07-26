@@ -127,9 +127,9 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     emociones_detectadas_normalizadas = [normalizar_texto(e) for e in emociones_detectadas]
 
     for emocion in emociones_nuevas:
-    registrar_emocion(emocion, f"interacción {contador}", user_id)
-    session["emociones_detectadas"].append(emocion)
-    session["emociones_totales_detectadas"] += 1
+        registrar_emocion(emocion, f"interacción {contador}", user_id)
+        session["emociones_detectadas"].append(emocion)
+        session["emociones_totales_detectadas"] += 1
 
     # Registro clínico persistente
     try:
