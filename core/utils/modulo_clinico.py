@@ -138,11 +138,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         print(f"🛑 Error al registrar emoción clínica en historial: {e}")
 
 
-    for emocion in emociones_nuevas:
-        registrar_emocion(emocion, f"interacción {contador}", user_id)
-        session["emociones_detectadas"].append(emocion)
-        session["emociones_totales_detectadas"] += 1
-
 #    if session["emociones_totales_detectadas"] >= 3 and not session["emociones_sugerencia_realizada"]:
 #        session["emociones_sugerencia_realizada"] = True
 #        respuesta_sugerencia = (
