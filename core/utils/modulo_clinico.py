@@ -130,16 +130,35 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         if emocion not in {normalizar_texto(e) for e in session["emociones_detectadas"]}:
             emociones_nuevas.append(emocion)
 
+    # Registrar emociones nuevas
     for emocion in emociones_nuevas:
         registrar_emocion(emocion, f"interacción {contador}", user_id)
         session["emociones_detectadas"].append(emocion)
         session["emociones_totales_detectadas"] += 1
-
-    # Registro clínico persistente
-    try:
-        registrar_emocion_clinica(user_id, emocion, origen="detección")
-    except Exception as e:
-        print(f"🛑 Error al registrar emoción clínica en historial: {e}")
+    
+        try:
+            registrar_emocion_clinica(user_id, emocion, origen="detección")
+        except Exception as e:
+            print(f"🛑 Error al registrar emoción clínica: {e}")
+    
+    # Registrar historial clínico SIEMPRE que haya emociones detectadas
+    if session["emociones_detectadas"]:
+        respuesta_clinica = (
+            "Gracias por compartir lo que estás atravesando. Si lo deseás, podés contactar al Lic. Bustamante por WhatsApp: +54 911 3310-1186."
+        )
+        interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
+        registrar_respuesta_openai(interaccion_id, respuesta_clinica)
+        registrar_historial_clinico(
+            user_id=user_id,
+            emociones=session["emociones_detectadas"],
+            sintomas=[],
+            tema=None,
+            respuesta_openai=respuesta_clinica,
+            sugerencia="registro inmediato",
+            fase_evaluacion=f"interacción {contador}",
+            interaccion_id=interaccion_id
+        )
+        return {"respuesta": respuesta_clinica, "session": session}
 
 
 #    if session["emociones_totales_detectadas"] >= 3 and not session["emociones_sugerencia_realizada"]:
