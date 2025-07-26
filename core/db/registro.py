@@ -3,7 +3,6 @@ from datetime import datetime
 from core.constantes import DATABASE_URL
 
 from core.db.conexion import ejecutar_consulta  # Asegúrate de tener este import arriba
-from datetime import datetime
 
 def registrar_emocion_clinica(user_id: str, emocion: str, origen: str = "detec"):
     """
