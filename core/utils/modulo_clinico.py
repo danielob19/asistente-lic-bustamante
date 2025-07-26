@@ -5,7 +5,6 @@ import unicodedata
 import string
 from typing import Dict, Any
 
-
 from core.utils.clinico_contexto import hay_contexto_clinico_anterior
 from core.utils_contacto import obtener_mensaje_contacto
 from core.funciones_asistente import detectar_emociones_negativas
@@ -15,13 +14,16 @@ from core.db.registro import (
     registrar_respuesta_openai,
     registrar_auditoria_respuesta,
     registrar_interaccion,
-    registrar_emocion
+    registrar_emocion,
+    registrar_emocion_clinica,
+    registrar_historial_clinico
 )
+
 from core.db.sintomas import (
     registrar_sintoma,
     obtener_sintomas_existentes
 )
-from core.db.consulta import obtener_emociones_ya_registradas
+from core.db.consulta import obtener_emociones_ya_registrada
 from core.db.conexion import ejecutar_consulta  # Eliminado user_sessions
 
 def normalizar_texto(texto: str) -> str:
