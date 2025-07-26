@@ -2,6 +2,36 @@ import psycopg2
 from datetime import datetime
 from core.constantes import DATABASE_URL
 
+from core.db.conexion import ejecutar_consulta  # Asegúrate de tener este import arriba
+from datetime import datetime
+
+def registrar_emocion_clinica(user_id: str, emocion: str, origen: str = "detec"):
+    """
+    Registra una emoción clínicamente relevante (como angustia, ansiedad, etc.) en la tabla historial_clinico_usuario.
+    """
+    consulta = """
+        INSERT INTO historial_clinico_usuario (user_id, emocion, origen, fecha_registro)
+        VALUES (%s, %s, %s, %s)
+    """
+    valores = (user_id, emocion, origen, datetime.now())
+    try:
+        ejecutar_consulta(consulta, valores)
+    except Exception as e:
+        print(f"Error al registrar emoción clínica: {e}")
+
+def registrar_historial_clinico(user_id: str, clasificacion: str, motivo: str = "Seguimiento automatizado"):
+    """
+    Registra un evento de seguimiento clínico del usuario con la clasificación generada por el modelo.
+    """
+    consulta = """
+        INSERT INTO historial_clinico_usuario (user_id, emocion, origen, fecha_registro)
+        VALUES (%s, %s, %s, %s)
+    """
+    valores = (user_id, clasificacion, motivo, datetime.now())
+    try:
+        ejecutar_consulta(consulta, valores)
+    except Exception as e:
+        print(f"Error al registrar historial clínico: {e}")
 
 def registrar_emocion(emocion: str, contexto: str, user_id: str = None):
     try:
