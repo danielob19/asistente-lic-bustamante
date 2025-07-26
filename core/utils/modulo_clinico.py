@@ -126,11 +126,17 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     emociones_nuevas = []
     emociones_detectadas_normalizadas = [normalizar_texto(e) for e in emociones_detectadas]
 
-    for emocion in emociones_detectadas_normalizadas:
-        if emocion not in {normalizar_texto(e) for e in session["emociones_detectadas"]}:
-            emociones_nuevas.append(emocion)
-            if emocion not in sintomas_existentes:
-                registrar_sintoma(emocion)
+    for emocion in emociones_nuevas:
+    registrar_emocion(emocion, f"interacción {contador}", user_id)
+    session["emociones_detectadas"].append(emocion)
+    session["emociones_totales_detectadas"] += 1
+
+    # Registro clínico persistente
+    try:
+        registrar_emocion_clinica(user_id, emocion, origen="detección")
+    except Exception as e:
+        print(f"🛑 Error al registrar emoción clínica en historial: {e}")
+
 
     for emocion in emociones_nuevas:
         registrar_emocion(emocion, f"interacción {contador}", user_id)
