@@ -4,6 +4,8 @@ import time
 import unicodedata
 import string
 from typing import Dict, Any
+from db import registrar_emocion_clinica, obtener_historial_emocional_usuario
+
 
 from core.utils.clinico_contexto import hay_contexto_clinico_anterior
 from core.utils_contacto import obtener_mensaje_contacto
@@ -76,6 +78,22 @@ def registrar_historial_clinico(user_id, emociones, sintomas, tema, respuesta_op
     except Exception as e:
         print(f"🔴 Error al registrar historial clínico: {e}")
 
+# Diccionario de emociones clínicas observables
+emociones_clinicas = {
+    "angustia": ["angustiado", "angustia"],
+    "ansiedad": ["ansioso", "ansiedad", "nervioso", "preocupado"],
+    "estrés": ["estresado", "estrés"],
+    "tristeza": ["triste", "deprimido", "bajoneado", "vacío"],
+}
+
+def detectar_emocion(texto: str) -> str | None:
+    texto = texto.lower()
+    for emocion, variantes in emociones_clinicas.items():
+        for variante in variantes:
+            if re.search(rf"\b{re.escape(variante)}\b", texto):
+                return emocion
+    return None
+
 def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     mensaje_original = input_data["mensaje_original"]
     mensaje_usuario = normalizar_texto(input_data["mensaje_usuario"])
@@ -98,16 +116,16 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     session.setdefault("emociones_totales_detectadas", 0)
     session.setdefault("emociones_sugerencia_realizada", False)
     session.setdefault("emociones_corte_aplicado", False)
-    
+
     emociones_nuevas = []
     emociones_detectadas_normalizadas = [normalizar_texto(e) for e in emociones_detectadas]
-    
+
     for emocion in emociones_detectadas_normalizadas:
         if emocion not in {normalizar_texto(e) for e in session["emociones_detectadas"]}:
             emociones_nuevas.append(emocion)
             if emocion not in sintomas_existentes:
                 registrar_sintoma(emocion)
-    
+
     for emocion in emociones_nuevas:
         registrar_emocion(emocion, f"interacción {contador}", user_id)
         session["emociones_detectadas"].append(emocion)
@@ -132,7 +150,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             interaccion_id=interaccion_id
         )
         return {"respuesta": respuesta_sugerencia, "session": session}
-    
+
     if session["emociones_totales_detectadas"] >= 10 and not session["emociones_corte_aplicado"]:
         session["emociones_corte_aplicado"] = True
         respuesta_corte = (
