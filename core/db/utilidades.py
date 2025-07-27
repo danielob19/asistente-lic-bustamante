@@ -2,6 +2,7 @@
 
 import psycopg2
 from core.db.config import DATABASE_URL
+from core.db.config import conn
 
 def gestionar_combinacion_emocional(emocion1, emocion2):
     """
@@ -102,3 +103,19 @@ def init_db():
 
     except Exception as e:
         print(f"Error al inicializar la base de datos: {e}")
+
+def ejecutar_consulta(query, valores=None, commit=False):
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query, valores)
+        if commit:
+            conn.commit()
+        try:
+            return cursor.fetchall()
+        except psycopg2.ProgrammingError:
+            return None
+    except Exception as e:
+        print(f"🔴 Error en ejecutar_consulta: {e}")
+        raise
+    finally:
+        cursor.close()
