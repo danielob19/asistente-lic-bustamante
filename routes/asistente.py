@@ -167,24 +167,24 @@ async def asistente(input_data: UserInput):
             ])
             # ✅ Registrar todas las emociones detectadas en historial clínico (versión completa y persistente)
             if emociones_detectadas_bifurcacion:
-            try:
-                registrar_historial_clinico(
-                    user_id=user_id,                                   # ID del usuario actual
-                    emociones=emociones_detectadas_bifurcacion,        # Lista de emociones detectadas
-                    sintomas=[],                                        # No hay síntomas detectados en esta bifurcación
-                    tema="Administrativa con carga emocional",          # Tema descriptivo general
-                    respuesta_openai="",                                # Todavía no se generó respuesta
-                    sugerencia="",                                      # Sin sugerencias en esta etapa
-                    fase_evaluacion="bifurcacion_emocional",            # Fase en la que se detectó emoción
-                    interaccion_id=uuid4(),                             # UUID único para esta interacción
-                    fecha=datetime.now(),                               # Fecha y hora actual
-                    fuente="web",                                       # Origen de la interacción
-                    eliminado=False                                     # La entrada es válida (no eliminada)
-                )
-            except Exception as e:
-                print(f"🔴 Error al registrar historial clínico desde bifurcación administrativa: {e}")
-        
-            tipo_input = CLINICO  # ⚠️ Fuerza el tratamiento clínico del mensaje aunque el tema sea administrativo
+                try:
+                    registrar_historial_clinico(
+                        user_id=user_id,                                   # ID del usuario actual
+                        emociones=emociones_detectadas_bifurcacion,        # Lista de emociones detectadas
+                        sintomas=[],                                        # No hay síntomas detectados en esta bifurcación
+                        tema="Administrativa con carga emocional",          # Tema descriptivo general
+                        respuesta_openai="",                                # Todavía no se generó respuesta
+                        sugerencia="",                                      # Sin sugerencias en esta etapa
+                        fase_evaluacion="bifurcacion_emocional",            # Fase en la que se detectó emoción
+                        interaccion_id=uuid4(),                             # UUID único para esta interacción
+                        fecha=datetime.now(),                               # Fecha y hora actual
+                        fuente="web",                                       # Origen de la interacción
+                        eliminado=False                                     # La entrada es válida (no eliminada)
+                    )
+                except Exception as e:
+                    print(f"🔴 Error al registrar historial clínico desde bifurcación administrativa: {e}")
+            
+                tipo_input = CLINICO  # ⚠️ Fuerza el tratamiento clínico del mensaje aunque el tema sea administrativo
 
         
         # 🧠 Si se detecta intención clínica y emociones claras, continuar por el flujo clínico habitual (sin intervención)
