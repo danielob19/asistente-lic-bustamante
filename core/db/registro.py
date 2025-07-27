@@ -18,7 +18,7 @@ def registrar_emocion_clinica(user_id: str, emocion: str, origen: str = "detec")
     except Exception as e:
         print(f"Error al registrar emoción clínica: {e}")
 
-def registrar_historial_clinico(user_id: str, clasificacion: str, motivo: str = "Seguimiento automatizado"):
+def registrar_historial_clinico_simple(user_id: str, clasificacion: str, motivo: str = "Seguimiento automatizado"):
     """
     Registra un evento de seguimiento clínico del usuario con la clasificación generada por el modelo.
     """
