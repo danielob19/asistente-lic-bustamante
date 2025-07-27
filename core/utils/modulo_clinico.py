@@ -15,9 +15,10 @@ from core.db.registro import (
     registrar_auditoria_respuesta,
     registrar_interaccion,
     registrar_emocion,
-    registrar_emocion_clinica,
-    registrar_historial_clinico
+    registrar_emocion_clinica
 )
+
+from core.db.historial import registrar_historial_clinico
 
 from core.db.sintomas import (
     registrar_sintoma,
