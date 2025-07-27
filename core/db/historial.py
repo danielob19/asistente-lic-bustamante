@@ -1,3 +1,6 @@
+from core.db.utilidades import ejecutar_consulta
+
+
 def registrar_historial_clinico(user_id, emociones, sintomas, tema, respuesta_openai, sugerencia, fase_evaluacion, interaccion_id):
     query = """
     INSERT INTO historial_clinico_usuario (
