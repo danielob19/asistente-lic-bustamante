@@ -161,6 +161,12 @@ async def asistente(input_data: UserInput):
                 emocion for emocion in emociones_detectadas_bifurcacion
                 if emocion not in session["emociones_detectadas"]
             ])
+            # ✅ Registrar todas las emociones detectadas (nuevas o no) en historial clínico
+            if emociones_detectadas_bifurcacion:
+                try:
+                    registrar_historial_clinico(user_id, emociones_detectadas_bifurcacion)
+                except Exception as e:
+                    print(f"⚠️ Error al registrar historial clínico desde bifurcación administrativa: {e}")
             tipo_input = CLINICO  # ⚠️ Fuerza el tratamiento clínico del mensaje
 
         
