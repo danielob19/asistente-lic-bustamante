@@ -19,6 +19,8 @@ from core.utils_contacto import (
     obtener_mensaje_contacto
 )
 
+from core.db.historial import registrar_historial_clinico
+
 from core.db.registro import (
     registrar_emocion,
     registrar_interaccion,
@@ -29,6 +31,7 @@ from core.db.registro import (
     registrar_auditoria_respuesta,
     registrar_inferencia,
 )
+
 from core.db.sintomas import (
     registrar_sintoma,
     actualizar_sintomas_sin_estado_emocional,
