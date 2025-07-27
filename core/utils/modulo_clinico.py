@@ -136,22 +136,23 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         session["emociones_detectadas"].append(emocion)
         session["emociones_totales_detectadas"] += 1
 
-        if contador == 1 and emociones_nuevas:
+        # Evaluar si es la primera interacción clínica del usuario
+        if session.get("emociones_totales_detectadas", 0) == 1:
             try:
                 registrar_historial_clinico(
                     user_id=user_id,
-                    emociones=session["emociones_detectadas"],
+                    emociones=session.get("emociones_detectadas", []),
                     sintomas=[],
                     tema=None,
                     respuesta_openai="Inicio de registro clínico.",
                     sugerencia=None,
-                    fase_evaluacion=f"interacción {contador}",
+                    fase_evaluacion="interacción inicial",
                     interaccion_id=None,
                     fuente="detección"
                 )
+                print("🧠 Historial clínico inicial registrado con éxito.")
             except Exception as e:
-                print(f"⚠️ Error al registrar primera emoción en historial clínico: {e}")
-
+                print(f"⚠️ Error al registrar historial clínico inicial: {e}")
     
         try:
             registrar_emocion_clinica(user_id, emocion, origen="detección")
