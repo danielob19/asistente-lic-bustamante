@@ -1026,6 +1026,23 @@ async def asistente(input_data: UserInput):
                 "Por razones de seguridad, la respuesta generada fue descartada por contener elementos técnicos no permitidos. "
                 "Podés intentar formular tu consulta de otra manera o escribir directamente al WhatsApp del Lic. Bustamante: +54 911 3310-1186."
             )
+            try:
+                registrar_historial_clinico(
+                    user_id=user_id,
+                    emociones=emociones_detectadas if 'emociones_detectadas' in locals() else [],
+                    sintomas=[],
+                    tema="Clínica - Respuesta peligrosa descartada",
+                    respuesta_openai=respuesta_ai,
+                    sugerencia="",
+                    fase_evaluacion="respuesta_peligrosa",
+                    interaccion_id=uuid4(),
+                    fecha=datetime.now(),
+                    fuente="web",
+                    eliminado=False
+                )
+            except Exception as e:
+                print(f"🔴 Error al registrar historial clínico desde respuesta peligrosa: {e}")
+                
             registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, "Respuesta descartada por contener elementos peligrosos")
             session["ultimas_respuestas"].append(respuesta_ai)
             user_sessions[user_id] = session
