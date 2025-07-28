@@ -997,6 +997,23 @@ async def asistente(input_data: UserInput):
                         "Gracias por tu mensaje. Si querés, podés contarme un poco más sobre lo que estás sintiendo "
                         "para poder continuar con el análisis clínico correspondiente."
                     )
+                    try:
+                        registrar_historial_clinico(
+                            user_id=user_id,
+                            emociones=emociones_detectadas if 'emociones_detectadas' in locals() else [],
+                            sintomas=[],
+                            tema="Clínica - Derivación implícita",
+                            respuesta_openai=respuesta_ai,
+                            sugerencia="",
+                            fase_evaluacion="respuesta_derivacion_implicita",
+                            interaccion_id=uuid4(),
+                            fecha=datetime.now(),
+                            fuente="web",
+                            eliminado=False
+                        )
+                    except Exception as e:
+                        print(f"🔴 Error al registrar historial clínico desde derivación implícita: {e}")
+
                     registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, motivo)
                     break
                 session["ultimas_respuestas"].append(respuesta_ai)
