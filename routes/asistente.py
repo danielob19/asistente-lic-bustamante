@@ -799,18 +799,6 @@ async def asistente(input_data: UserInput):
                     "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'se advierte...', 'impresiona...', 'podría tratarse de...', etc.\n"
                 )
         
-                if tipo_input == CLINICO:
-    
-                prompt += (
-                    "- Evitá la frase 'Pareciera tratarse de...'.\n"
-                    "- No uses agradecimientos en ninguna interacción (ni al inicio ni al final).\n"
-                    "- No uses frases motivacionales ni simulaciones empáticas (ej: 'te entiendo', 'estás en buenas manos', etc.).\n"
-                    "- No uses lenguaje institucional ni expresiones como 'nuestro equipo', 'desde este espacio', etc.\n"
-                    "- No brindes datos de contacto, precios ni derivaciones, salvo que sea interacción 5, 9 o a partir de la 10.\n"
-                    "- Solo si el mensaje es claramente clínico, generá una respuesta analítica breve y profesional.\n"
-                    "- Si no tiene contenido clínico o emocional, devolvé una frase neutra como: 'Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?'\n"
-                    f"- IMPORTANTE: estás en la interacción {contador}.\n"
-                )
         
                 respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
         
