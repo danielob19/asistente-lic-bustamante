@@ -1054,6 +1054,23 @@ async def asistente(input_data: UserInput):
             respuesta_ai = (
                 "Lo siento, hubo un inconveniente al generar una respuesta automática. Podés escribirle al Lic. Bustamante al WhatsApp +54 911 3310-1186."
             )
+            try:
+                registrar_historial_clinico(
+                    user_id=user_id,
+                    emociones=emociones_detectadas if 'emociones_detectadas' in locals() else [],
+                    sintomas=[],
+                    tema="Clínica - Respuesta vacía",
+                    respuesta_openai=respuesta_ai,
+                    sugerencia="",
+                    fase_evaluacion="respuesta_vacia",
+                    interaccion_id=uuid4(),
+                    fecha=datetime.now(),
+                    fuente="web",
+                    eliminado=False
+                )
+            except Exception as e:
+                print(f"🔴 Error al registrar historial clínico desde respuesta vacía: {e}")
+
             registrar_auditoria_respuesta(user_id, "Error al generar respuesta", respuesta_ai, "Error: OpenAI devolvió respuesta vacía")
             session["ultimas_respuestas"].append(respuesta_ai)
             user_sessions[user_id] = session
