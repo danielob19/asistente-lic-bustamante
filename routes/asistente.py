@@ -785,20 +785,36 @@ async def asistente(input_data: UserInput):
         
             # ✅ Si es clínico o hay contexto clínico previo, generar respuesta profesional
             if tipo_input in [CLINICO, CLINICO_CONTINUACION] or hay_contexto_clinico_anterior(user_id) or es_tema_clinico_o_emocional(mensaje_usuario):
-        
+                
+                # Consultar historial clínico reciente
+                historial = obtener_ultimo_historial_emocional(user_id)
+                
+                mensaje_historial = ""
+                if historial and historial.emociones and historial.fecha:
+                    emociones_previas = ", ".join(historial.emociones)
+                    dias_transcurridos = (datetime.now() - historial.fecha).days
+                    tiempo_mencion = f"Hace {dias_transcurridos} días" if dias_transcurridos > 0 else "Recientemente"
+                
+                    mensaje_historial = (
+                        f"{tiempo_mencion} consultaste por emociones como: {emociones_previas}. "
+                        "¿Notás algún cambio o seguís sintiéndote de forma similar?\n"
+                    )
+                
                 saludo_inicio = ""
-                # Solo agregar saludo si es el primer mensaje real de toda la conversación Y aún no se saludó antes
                 if contador == 1 and not session["mensajes"] and not ya_saludo:
                     saludo_inicio = "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?'.\n"
-        
+                
                 prompt = (
-                    f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
+                    f"Mensaje recibido del usuario: \"{mensaje_usuario}\".\n"
+                    f"{mensaje_historial}"
                     "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n"
                     "Estilo y directrices obligatorias:\n"
                     "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
                     f"{saludo_inicio}"
-                    "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'se advierte...', 'impresiona...', 'podría tratarse de...', etc.\n"
+                    "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'se advierte...', 'impresiona...', 'podría tratarse de...'\n"
                 )
+                
+
         
         
                 respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
