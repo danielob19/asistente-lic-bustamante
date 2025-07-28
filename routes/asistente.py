@@ -9,6 +9,7 @@ from core.utils_seguridad import (
     es_input_malicioso
 )
 
+from core.funciones_asistente import obtener_ultimo_historial_emocional
 from core.funciones_asistente import (
     clasificar_input_inicial,
     es_tema_clinico_o_emocional
