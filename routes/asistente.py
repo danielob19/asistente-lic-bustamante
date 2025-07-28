@@ -65,6 +65,7 @@ from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica
 from core.utils.clinico_contexto import hay_contexto_clinico_anterior
 
 from core.estilos_post10 import seleccionar_estilo_clinico_variable
+from core.db.historial import registrar_historial_clinico
 
 from core.contexto import user_sessions
 from core.constantes import CLINICO_CONTINUACION, CLINICO, SALUDO, CORTESIA, ADMINISTRATIVO, CONSULTA_AGENDAR, CONSULTA_MODALIDAD
@@ -194,7 +195,25 @@ async def asistente(input_data: UserInput):
                 if emocion not in session["emociones_detectadas"]
             ])
             print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
-
+            
+            # 🩺 REGISTRO CLÍNICO AUTOMÁTICO 🧠
+            try:
+                registrar_historial_clinico(
+                    user_id=user_id,
+                    emociones=emociones_detectadas_bifurcacion,
+                    sintomas=[],
+                    tema="emociones detectadas en bifurcación",
+                    respuesta_openei="",  # Se puede completar más adelante
+                    sugerencia="",
+                    fase_evaluacion="bifurcacion_emocional",
+                    interaccion_id=str(uuid4()),
+                    fecha=datetime.now(),
+                    fuente="web",
+                    eliminado=False
+                )
+            except Exception as e:
+                print(f"❌ Error al registrar automáticamente en historial clínico: {e}")
+            
         
         # 🧠 Si se detecta intención MIXTA, invitar al usuario a decidir por dónde continuar
         if intencion_general == "MIXTA":
