@@ -211,9 +211,10 @@ async def asistente(input_data: UserInput):
                     fuente="web",
                     eliminado=False
                 )
+                print(f"✅ Registro clínico automático exitoso. Usuario: {user_id}, emociones: {emociones_detectadas_bifurcacion}")
             except Exception as e:
                 print(f"❌ Error al registrar automáticamente en historial clínico: {e}")
-            
+                        
         
         # 🧠 Si se detecta intención MIXTA, invitar al usuario a decidir por dónde continuar
         if intencion_general == "MIXTA":
