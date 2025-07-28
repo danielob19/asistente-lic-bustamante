@@ -203,7 +203,7 @@ async def asistente(input_data: UserInput):
                     emociones=emociones_detectadas_bifurcacion,
                     sintomas=[],
                     tema="emociones detectadas en bifurcación",
-                    respuesta_openei="",  # Se puede completar más adelante
+                    respuesta_openai="",  # Se puede completar más adelante
                     sugerencia="",
                     fase_evaluacion="bifurcacion_emocional",
                     interaccion_id=str(uuid4()),
