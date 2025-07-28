@@ -1217,6 +1217,23 @@ async def asistente(input_data: UserInput):
                     "Gracias por tu mensaje. En este espacio se brinda orientación clínica general. "
                     "¿Querés contarme un poco más sobre lo que estás sintiendo para poder ayudarte mejor?"
                 )
+                try:
+                    registrar_historial_clinico(
+                        user_id=user_id,
+                        emociones=emociones_detectadas if 'emociones_detectadas' in locals() else [],
+                        sintomas=[],
+                        tema="Clínica - Tema desviado",
+                        respuesta_openai=respuesta_ai,
+                        sugerencia="",
+                        fase_evaluacion="respuesta_tematica_desviada",
+                        interaccion_id=uuid4(),
+                        fecha=datetime.now(),
+                        fuente="web",
+                        eliminado=False
+                    )
+                except Exception as e:
+                    print(f"⚠️ Error al registrar historial clínico desde respuesta temática desviada: {e}")
+                    
                 motivo = "Frase ambigua de sugerencia de contacto detectada en interacción temprana"
 
 
