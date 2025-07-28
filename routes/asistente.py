@@ -1086,6 +1086,23 @@ async def asistente(input_data: UserInput):
                 "Gracias por tu consulta. El Lic. Daniel O. Bustamante estará encantado de ayudarte. "
                 "Podés escribirle directamente al WhatsApp +54 911 3310-1186 para obtener más información."
             )
+            try:
+                registrar_historial_clinico(
+                    user_id=user_id,
+                    emociones=emociones_detectadas if 'emociones_detectadas' in locals() else [],
+                    sintomas=[],
+                    tema="Clínica - Lenguaje institucional",
+                    respuesta_openai=respuesta_ai,
+                    sugerencia="",
+                    fase_evaluacion="respuesta_institucional",
+                    interaccion_id=uuid4(),
+                    fecha=datetime.now(),
+                    fuente="web",
+                    eliminado=False
+                )
+            except Exception as e:
+                print(f"⚠️ Error al registrar historial clínico desde respuesta institucional: {e}")
+                
             session["ultimas_respuestas"].append(respuesta_ai)
             user_sessions[user_id] = session
             return {"respuesta": respuesta_ai}
