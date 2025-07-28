@@ -205,3 +205,20 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
         r"no le encuentro sentido\s+(a la vida|a nada|a esto)"
     ]
     return any(p in mensaje for p in palabras) or any(re.search(p, mensaje) for p in patrones)
+
+# ============================ CONSULTAS A BD ============================
+def obtener_ultimo_historial_emocional(user_id):
+    from db.database import SessionLocal
+    from modelos.models import HistorialClinicoUsuario
+
+    session = SessionLocal()
+    try:
+        return (
+            session.query(HistorialClinicoUsuario)
+            .filter_by(user_id=user_id)
+            .order_by(HistorialClinicoUsuario.fecha.desc())
+            .first()
+        )
+    finally:
+        session.close()
+
