@@ -800,8 +800,7 @@ async def asistente(input_data: UserInput):
                 )
         
                 if tipo_input == CLINICO:
-                    prompt += "- En la interacción 1 podés usar la frase 'Se observa una vivencia de falta de sentido...' solo si hay señales claras de desorientación o vacío existencial.\n"
-        
+    
                 prompt += (
                     "- Evitá la frase 'Pareciera tratarse de...'.\n"
                     "- No uses agradecimientos en ninguna interacción (ni al inicio ni al final).\n"
@@ -958,7 +957,6 @@ async def asistente(input_data: UserInput):
             "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?' solo si es la interacción 1.\n"
             "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'se advierte...', 'impresiona...', 'podría tratarse de...', 'da la sensación de ser...', 'normalmente se trata de un...', etc.\n"
             "- Evitá la frase 'Pareciera tratarse de...' en todas las interacciones, excepto en la 5 y 9.\n"
-            "- En la interacción 1 usá la frase 'Se observa una vivencia de falta de sentido...'\n"
             "- No uses agradecimientos en ninguna interacción (ni al inicio ni al final).\n"
             "- No uses frases motivacionales ni simulaciones empáticas (ej: 'te entiendo', 'estás en buenas manos', etc.).\n"
             "- No uses lenguaje institucional ni expresiones como 'nuestro equipo', 'desde este espacio', etc.\n"
