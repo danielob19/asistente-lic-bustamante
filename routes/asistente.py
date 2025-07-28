@@ -1148,6 +1148,23 @@ async def asistente(input_data: UserInput):
                 + obtener_mensaje_contacto() +
                 " y te brindará toda la información necesaria."
             )
+            try:
+                registrar_historial_clinico(
+                    user_id=user_id,
+                    emociones=emociones_detectadas if 'emociones_detectadas' in locals() else [],
+                    sintomas=[],
+                    tema="Clínica - Tema desviado",
+                    respuesta_openai=respuesta_ai,
+                    sugerencia="",
+                    fase_evaluacion="respuesta_tematica_desviada",
+                    interaccion_id=uuid4(),
+                    fecha=datetime.now(),
+                    fuente="web",
+                    eliminado=False
+                )
+            except Exception as e:
+                print(f"⚠️ Error al registrar historial clínico desde respuesta temática desviada: {e}")
+                
 
         # 🔍 Filtro para eliminar encabezados como “Estimado/a usuario/a”
         if respuesta_original.lower().startswith("estimado") or "estimado/a" in respuesta_original.lower():
