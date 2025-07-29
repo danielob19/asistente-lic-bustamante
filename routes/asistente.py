@@ -1,8 +1,3 @@
-from core.memoria_usuario import construir_prompt_con_memoria
-from core.gpt_client import generar_respuesta_gpt
-from core.emociones import detectar_emocion_gpt
-from core.registro_historial import registrar_historial_clinico
-
 from core.utils.modulo_clinico import procesar_clinico  # (solo si no fue importado aún)
 from core.utils.modulo_administrativo import procesar_administrativo
 from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, reformular_estilo_narrativo
@@ -94,15 +89,6 @@ def respuesta_default_fuera_de_contexto() -> str:
         "Este canal está diseñado para ofrecer orientación psicológica. "
         "Si hay algún malestar emocional o inquietud personal que desees compartir, podés describirlo con tus palabras."
     )
-
-def responder_asistente(user_id, mensaje_usuario, interaccion_id):
-    mensajes = construir_prompt_con_memoria(user_id, mensaje_usuario)
-    respuesta = generar_respuesta_gpt(mensajes)
-    emocion = detectar_emocion_gpt(mensaje_usuario)
-
-    registrar_historial_clinico(user_id, emocion, respuesta, interaccion_id)
-
-    return {"respuesta": respuesta}
     
 
 @router.post("/asistente")
