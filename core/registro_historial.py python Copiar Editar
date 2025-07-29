@@ -1,0 +1,24 @@
+from datetime import datetime
+from db.database import SessionLocal
+from db.models import HistorialClinicoUsuario
+
+def registrar_historial_clinico(user_id, emociones, respuesta_openai, interaccion_id):
+    session = SessionLocal()
+    try:
+        nuevo = HistorialClinicoUsuario(
+            user_id=user_id,
+            fecha=datetime.utcnow(),
+            emociones=[emociones] if emociones else [],
+            sintomas=[],
+            tema="respuesta generada por GPT",
+            respuesta_openai=respuesta_openai,
+            sugerencia=None,
+            fase_evaluacion="memoria_con_gpt",
+            interaccion_id=interaccion_id,
+            fuente="web",
+            eliminado=False
+        )
+        session.add(nuevo)
+        session.commit()
+    finally:
+        session.close()
