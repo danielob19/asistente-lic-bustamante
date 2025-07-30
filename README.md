@@ -79,4 +79,8 @@ El asistente está organizado en capas:
 ```bash
 curl -X GET https://<tu-app>.onrender.com/
 
-<img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/2158f3f8-a67d-4c2d-866c-215ad3a77792" />
+## Arquitectura Visual
+
+A continuación se presenta el diagrama de la arquitectura del Asistente Lic. Bustamante:
+
+![Arquitectura del Asistente](A_flowchart_illustrates_the_architecture_of_a_syst.png)
