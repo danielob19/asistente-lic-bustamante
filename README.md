@@ -78,13 +78,3 @@ El asistente está organizado en capas:
 ### Probar ruta inicial
 ```bash
 curl -X GET https://<tu-app>.onrender.com/
-
-## Arquitectura Visual
-
-A continuación se presenta el diagrama de la arquitectura del Asistente Lic. Bustamante:
-
-![Arquitectura del Asistente](f811db77-ae34-42da-9cd0-6cd79aa17cb5.png)
-
-
-
-
