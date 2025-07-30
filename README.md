@@ -1,65 +1,82 @@
 # Asistente Lic. Bustamante
 
-¡Bienvenido al Asistente Lic. Bustamante! Este proyecto es un asistente profesional diseñado para interactuar con usuarios mediante el modelo de OpenAI, analizar síntomas y registrar datos en Google Sheets.
+¡Bienvenido al **Asistente Lic. Bustamante**!  
+Este proyecto es un asistente profesional diseñado para interactuar con usuarios mediante el modelo de **OpenAI**, analizar síntomas y entregar respuestas breves y profesionales.
 
 ## Descripción del Proyecto
 
 El asistente:
 - Responde profesionalmente a las consultas del usuario.
-- Limita las respuestas a un máximo de 70 palabras.
-- Registra las interacciones en una hoja de cálculo de Google Sheets.
-- Sugiere al usuario contactar al Lic. Daniel O. Bustamante si lo considera oportuno.
+- Limita las respuestas a un máximo de **70 palabras**.
+- Puede sugerir al usuario contactar al **Lic. Daniel O. Bustamante** si lo considera oportuno.
 
 ---
 
 ## Requisitos Previos
 
 1. **Claves y Configuración Necesarias**:
-   - Una clave API válida de OpenAI.
-   - Un archivo de credenciales JSON para Google Sheets (por ejemplo, `asistente-441318-e6835310ec59.json`).
-   - Asegúrate de tener acceso a Google Sheets y de compartir el archivo con el correo asociado al archivo JSON.
+   - Una **clave API válida de OpenAI**.
+   - Variables de entorno configuradas para el proyecto.
 
 ---
 
 ## Archivos Principales
 
 ### `app.py`
-Contiene el código principal de la aplicación Flask:
-- Endpoint `GET /`: Prueba básica.
-- Endpoint `POST /asistente`: Genera respuestas y registra datos en Google Sheets.
+Contiene el código principal de la aplicación **Flask**:
+- **`GET /`**: Ruta de prueba básica.
+- **`POST /asistente`**: Procesa mensajes, interactúa con el motor de IA y devuelve una respuesta al usuario.
 
 ### `requirements.txt`
-Incluye las dependencias necesarias:
-- Flask
-- Flask-CORS
-- OpenAI
-- Gspread
-- Oauth2client
-- Gunicorn
+Dependencias necesarias para ejecutar el proyecto:
+- **Flask** y **Flask-CORS** – Servidor web y control de acceso.
+- **OpenAI** – Interacción con el modelo de IA.
+- **Python-dotenv** – Gestión de variables de entorno.
+- **Requests**, **SQLAlchemy** – Utilidades de red y base de datos.
+
+---
+
+## Arquitectura del Proyecto
+
+El asistente está organizado en capas:
+
+- **Rutas (`routes/`)** → Controladores HTTP (por ejemplo, `asistente.py`).
+- **Core (`core/`)**:
+  - **`funciones_asistente.py`** – Lógica principal de respuesta.
+  - **`funciones_clinicas.py`** – Procesamiento clínico.
+  - **`inferencia_psicodinamica.py`** – Interpretación avanzada.
+  - **`resumen_clinico.py`** – Generación de resúmenes.
+  - **`utils_contacto.py`** – Recomendaciones de contacto.
+  - **`utils_seguridad.py`** – Filtrado y seguridad.
+- **Base de conocimiento (`base_de_conocimiento.json`)** → Datos predefinidos para respuestas.
+- **Palabras clave (`palabras_clave_adaptada.csv`)** → Identificación rápida de temas relevantes.
 
 ---
 
 ## Despliegue
 
-### Pasos para Desplegar en Render
-
-1. **Configura la Aplicación en Render**:
+### Pasos para desplegar en Render
+1. **Configura la aplicación**:
    - Fuente: Conecta tu repositorio de GitHub.
-   - Build Command: `pip install -r requirements.txt`.
-   - Start Command: `gunicorn app:app`.
-
-2. **Configura Variables de Entorno**:
-   - Agrega `OPENAI_API_KEY` con tu clave de OpenAI.
-
-3. **Despliega la Aplicación**:
-   - Render iniciará el proceso de construcción y desplegará la aplicación.
-   - La URL pública estará disponible al finalizar el despliegue.
+   - Comando de instalación:  
+     ```bash
+     pip install -r requirements.txt
+     ```
+   - Comando de inicio:  
+     ```bash
+     gunicorn app:app
+     ```
+2. **Configura variables de entorno**:
+   - `OPENAI_API_KEY` → Tu clave de OpenAI.
+3. **Despliega la aplicación**:
+   - Render construirá y pondrá en línea tu asistente.
 
 ---
 
 ## Pruebas
 
-### Endpoint `GET /`
-Prueba la ruta de inicio:
+### Probar ruta inicial
 ```bash
 curl -X GET https://<tu-app>.onrender.com/
+
+<img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/2158f3f8-a67d-4c2d-866c-215ad3a77792" />
