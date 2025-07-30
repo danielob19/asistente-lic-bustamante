@@ -83,4 +83,7 @@ curl -X GET https://<tu-app>.onrender.com/
 
 A continuación se presenta el diagrama de la arquitectura del Asistente Lic. Bustamante:
 
-![Arquitectura del Asistente](A_flowchart_illustrates_the_architecture_of_a_syst.png)
+A_flowchart_illustrates_the_architecture_of_a_syst.png
+
+
+
