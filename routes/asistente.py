@@ -171,18 +171,19 @@ async def asistente(input_data: UserInput):
             if emociones_detectadas_bifurcacion:
                 try:
                     registrar_historial_clinico(
-                        user_id=user_id,                                   # ID del usuario actual
-                        emociones=emociones_detectadas_bifurcacion,        # Lista de emociones detectadas
-                        sintomas=[],                                        # No hay síntomas detectados en esta bifurcación
-                        tema="Administrativa con carga emocional",          # Tema descriptivo general
-                        respuesta_openai="",                                # Todavía no se generó respuesta
-                        sugerencia="",                                      # Sin sugerencias en esta etapa
-                        fase_evaluacion="bifurcacion_emocional",            # Fase en la que se detectó emoción
-                        interaccion_id=uuid4(),                             # UUID único para esta interacción
-                        fecha=datetime.now(),                               # Fecha y hora actual
-                        fuente="web",                                       # Origen de la interacción
-                        eliminado=False                                     # La entrada es válida (no eliminada)
+                        user_id=user_id,
+                        emociones=emociones_detectadas_bifurcacion,
+                        sintomas=[],
+                        tema="Administrativo con carga emocional",
+                        respuesta_openai="",
+                        sugerencia="",
+                        fase_evaluacion="bifurcacion_emocional",
+                        interaccion_id=str(uuid4()),
+                        fecha=datetime.now(),   # ✅ nuevo
+                        fuente="web",           # ✅ nuevo
+                        eliminado=False         # ✅ nuevo
                     )
+
                 except Exception as e:
                     print(f"🔴 Error al registrar historial clínico desde bifurcación administrativa: {e}")
             
