@@ -217,14 +217,15 @@ async def asistente(input_data: UserInput):
                     emociones=emociones_detectadas_bifurcacion,
                     sintomas=[],
                     tema="emociones detectadas en bifurcación",
-                    respuesta_openai="",  # Se puede completar más adelante
-                    sugerencia="",
+                    respuesta_openai="-",  # o lo que uses por defecto
+                    sugerencia="-",
                     fase_evaluacion="bifurcacion_emocional",
                     interaccion_id=str(uuid4()),
-                    fecha=datetime.now(),
-                    fuente="web",
-                    eliminado=False
+                    fecha=datetime.now(),   # ✅ nuevo
+                    fuente="web",           # ✅ nuevo
+                    eliminado=False         # ✅ nuevo
                 )
+
                 print(f"✅ Registro clínico automático exitoso. Usuario: {user_id}, emociones: {emociones_detectadas_bifurcacion}")
             except Exception as e:
                 print(f"❌ Error al registrar automáticamente en historial clínico: {e}")
