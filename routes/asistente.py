@@ -199,7 +199,14 @@ async def asistente(input_data: UserInput):
             print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
         
             # Llamar directamente al flujo clínico progresivo para generar respuesta
-            return procesar_clinico(mensaje_usuario)
+            return procesar_clinico({
+                "mensaje_original": mensaje_usuario,
+                "mensaje_usuario": mensaje_usuario,
+                "user_id": user_id,
+                "session": session,
+                "contador": session.get("contador_interacciones", 0)
+            })
+
 
             
             # 🩺 REGISTRO CLÍNICO AUTOMÁTICO 🧠
