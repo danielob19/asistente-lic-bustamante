@@ -203,7 +203,8 @@ async def asistente(input_data: UserInput):
                 "mensaje_original": mensaje_usuario,
                 "mensaje_usuario": mensaje_usuario,
                 "user_id": user_id,
-                "session": session
+                "session": session,
+                "contador": session.get("contador_interacciones", 0)
             })
 
             
