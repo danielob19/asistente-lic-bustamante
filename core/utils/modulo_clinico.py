@@ -261,19 +261,26 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
 
     interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
 
-    prompt = (
-        f"Mensaje recibido del usuario: '{mensaje_usuario}'.\n"
-        "Redactá una respuesta breve, profesional y clínica como si fueras el asistente virtual del Lic. Daniel O. Bustamante, psicólogo.\n"
-        "Estilo y directrices obligatorias:\n"
-        "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
-        "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?' solo si es la interacción 1.\n"
-        "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'impresiona...', 'podría tratarse de...', etc.\n"
-        "- No uses frases motivacionales ni simulaciones empáticas (ej: 'te entiendo', 'todo va a estar bien', etc.).\n"
-        "- No uses lenguaje institucional ni brindes información administrativa.\n"
-        f"- IMPORTANTE: estás en la interacción {contador}."
-    )
-
-    respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
+    if session["emociones_totales_detectadas"] == 1:
+        emocion = session["emociones_detectadas"][0]
+        respuesta_original = (
+            f"Por lo que mencionás, podría percibirse {emocion}. "
+            "¿Podrías contarme un poco más sobre cómo lo estás sintiendo?"
+        )
+    
+    elif session["emociones_totales_detectadas"] >= 2:
+        emociones_list = ", ".join(session["emociones_detectadas"])
+        respuesta_original = (
+            f"Por lo que mencionás, podría tratarse de un cuadro vinculado a {emociones_list}. "
+            "Me interesa saber si notás que esto te afecta en tu vida diaria."
+        )
+    
+    else:
+        respuesta_original = (
+            "Gracias por compartir lo que estás atravesando. "
+            "Si lo deseás, podés contarme más para que pueda orientarte mejor."
+        )
+    
 
     if not respuesta_original or not isinstance(respuesta_original, str) or len(respuesta_original.strip()) < 5:
         respuesta_fallback = (
