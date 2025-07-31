@@ -189,13 +189,18 @@ async def asistente(input_data: UserInput):
                 tipo_input = CLINICO  # ⚠️ Fuerza el tratamiento clínico del mensaje aunque el tema sea administrativo
 
         
-        # 🧠 Si se detecta intención clínica y emociones claras, continuar por el flujo clínico habitual (sin intervención)
+        # Si se detecta intención CLÍNICA y emociones claras, pasar siempre por el flujo clínico progresivo
         if intencion_general == "CLINICA" and emociones_detectadas_bifurcacion:
+            # Guardar emociones detectadas en la sesión, evitando duplicados
             session["emociones_detectadas"].extend([
                 emocion for emocion in emociones_detectadas_bifurcacion
                 if emocion not in session["emociones_detectadas"]
             ])
             print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
+        
+            # Llamar directamente al flujo clínico progresivo para generar respuesta
+            return procesar_clinico(mensaje_usuario, session, user_id)
+
             
             # 🩺 REGISTRO CLÍNICO AUTOMÁTICO 🧠
             try:
