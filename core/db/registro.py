@@ -4,19 +4,31 @@ from core.constantes import DATABASE_URL
 
 from core.db.conexion import ejecutar_consulta  # Asegúrate de tener este import arriba
 
-def registrar_emocion_clinica(user_id: str, emocion: str, origen: str = "detec"):
+def registrar_emocion_clinica(user_id: str, emocion: str, origen: str = "detección"):
     """
-    Registra una emoción clínicamente relevante (como angustia, ansiedad, etc.) en la tabla historial_clinico_usuario.
+    Registra una emoción clínicamente relevante (como angustia, ansiedad, etc.)
+    en la tabla historial_clinico_usuario.
     """
-    consulta = """
-        INSERT INTO historial_clinico_usuario (user_id, emocion, origen, fecha_registro)
-        VALUES (%s, %s, %s, %s)
-    """
-    valores = (user_id, emocion, origen, datetime.now())
+
     try:
+        consulta = """
+        INSERT INTO historial_clinico_usuario (user_id, emociones, origen, fecha)
+        VALUES (%s, %s, %s, %s)
+        """
+        # Convertimos la emoción en lista para el campo text[]
+        valores = (
+            user_id,
+            [emocion],  # importante: lista para text[]
+            origen,
+            datetime.now()
+        )
+
         ejecutar_consulta(consulta, valores)
+        print(f"🧠 Emoción clínica registrada: {emocion}")
+
     except Exception as e:
-        print(f"Error al registrar emoción clínica: {e}")
+        print(f"❌ Error al registrar emoción clínica: {e}")
+
 
 def registrar_historial_clinico_simple(user_id: str, clasificacion: str, motivo: str = "Seguimiento automatizado"):
     """
