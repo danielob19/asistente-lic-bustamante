@@ -127,7 +127,10 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                     sugerencia=None,
                     fase_evaluacion="interacción inicial",
                     interaccion_id=None,
-                    fuente="detección"
+                    fuente="detección",
+                    fecha=datetime.now(),
+                    fuente="web",
+                    eliminado=False
                 )
                 print("🧠 Historial clínico inicial registrado con éxito.")
             except Exception as e:
@@ -153,7 +156,10 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             respuesta_openai=respuesta_clinica,
             sugerencia="registro inmediato",
             fase_evaluacion=f"interacción {contador}",
-            interaccion_id=interaccion_id
+            interaccion_id=interaccion_id,
+            fecha=datetime.now(),
+            fuente="web",
+            eliminado=False
         )
         return {"respuesta": respuesta_clinica, "session": session}
 
@@ -194,7 +200,10 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         respuesta_openai=respuesta_clinica,
         sugerencia="registro inmediato",
         fase_evaluacion=f"interacción {contador}",
-        interaccion_id=interaccion_id
+        interaccion_id=interaccion_id,
+        fecha=datetime.now(),
+        fuente="web",
+        eliminado=False
     )
     
     return {"respuesta": respuesta_clinica, "session": session}
@@ -301,7 +310,10 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         respuesta_openai=respuesta_original,
         sugerencia=None,
         fase_evaluacion=f"interacción {contador}",
-        interaccion_id=interaccion_id
+        interaccion_id=interaccion_id,
+        fecha=datetime.now(),
+        fuente="web",
+        eliminado=False
     )
 
     return {"respuesta": respuesta_original, "session": session}
