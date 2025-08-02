@@ -188,26 +188,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     return {"respuesta": respuesta_clinica, "session": session}
 
 
- #   if session["emociones_totales_detectadas"] >= 10 and not session["emociones_corte_aplicado"]:
- #       session["emociones_corte_aplicado"] = True
- #       respuesta_corte = (
- #           "Gracias por compartir lo que estás atravesando. Por la cantidad de aspectos clínicos mencionados, sería importante conversarlo directamente con un profesional. "
- #           "En este espacio no podemos continuar profundizando. Podés escribir al Lic. Bustamante al WhatsApp +54 911 3310-1186 para coordinar una consulta adecuada."
- #       )
- #       interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
- #       registrar_respuesta_openai(interaccion_id, respuesta_corte)
- #       registrar_historial_clinico(
- #           user_id=user_id,
- #           emociones=session["emociones_detectadas"],
- #           sintomas=[],
- #           tema=None,
- #           respuesta_openai=respuesta_corte,
- #           sugerencia="corte clínico",
- #           fase_evaluacion=f"interacción {contador}",
- #           interaccion_id=interaccion_id
- #       )
- #       return {"respuesta": respuesta_corte, "session": session}
-
     for emocion in emociones_nuevas:
         prompt_cuadro = (
             f"A partir de la siguiente emoción detectada: '{emocion}', asigná un único cuadro clínico o patrón emocional.\n\n"
