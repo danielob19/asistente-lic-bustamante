@@ -127,7 +127,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                     sugerencia=None,
                     fase_evaluacion="interacción inicial",
                     interaccion_id=None,
-                    fuente="detección",
                     fecha=datetime.now(),
                     fuente="web",
                     eliminado=False
