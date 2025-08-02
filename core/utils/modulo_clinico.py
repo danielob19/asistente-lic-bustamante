@@ -4,6 +4,7 @@ import time
 import unicodedata
 import string
 from typing import Dict, Any
+from datetime import datetime
 
 from core.utils.clinico_contexto import hay_contexto_clinico_anterior
 from core.utils_contacto import obtener_mensaje_contacto
