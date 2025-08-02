@@ -33,16 +33,25 @@ def registrar_emocion_clinica(user_id: str, emocion: str, origen: str = "detecci
 def registrar_historial_clinico_simple(user_id: str, clasificacion: str, motivo: str = "Seguimiento automatizado"):
     """
     Registra un evento de seguimiento clínico del usuario con la clasificación generada por el modelo.
+    Compatible con la estructura actual de historial_clinico_usuario (emociones = text[]).
     """
     consulta = """
-        INSERT INTO historial_clinico_usuario (user_id, emocion, origen, fecha_registro)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO historial_clinico_usuario (user_id, emociones, tema, fuente, fecha, eliminado)
+        VALUES (%s, %s, %s, %s, %s, %s)
     """
-    valores = (user_id, clasificacion, motivo, datetime.now())
+    valores = (
+        user_id,
+        [clasificacion],              # Guardar como lista para text[]
+        motivo,                       # Usamos motivo como tema
+        "seguimiento",                # Fuente
+        datetime.now(),               # Fecha
+        False                         # Eliminado
+    )
     try:
         ejecutar_consulta(consulta, valores)
     except Exception as e:
-        print(f"Error al registrar historial clínico: {e}")
+        print(f"❌ Error al registrar historial clínico: {e}")
+
 
 def registrar_emocion(emocion: str, contexto: str, user_id: str = None):
     try:
