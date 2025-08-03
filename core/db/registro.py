@@ -64,6 +64,7 @@ def registrar_historial_clinico_simple(user_id: str, clasificacion: str, motivo:
 
 
 
+
 def registrar_emocion(emocion: str, contexto: str, user_id: str = None):
     try:
         print("\n======= 📌 REGISTRO DE EMOCIÓN DETECTADA =======")
