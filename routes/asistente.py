@@ -160,7 +160,9 @@ async def asistente(input_data: UserInput):
         if mensaje_recordatorio:
             mensaje_original = f"{mensaje_recordatorio} {mensaje_original}"
         
-        # Ahora continúa todo el flujo normal del asistente con mensaje_original  
+        # Ahora continúa todo el flujo normal del asistente con mensaje_original
+          
+
               
         
         # ✅ Inicializar sesión del usuario lo antes posible para evitar errores
