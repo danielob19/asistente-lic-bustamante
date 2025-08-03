@@ -106,12 +106,14 @@ async def asistente(input_data: UserInput):
         # En este comentario se asume que todo fue migrado exactamente igual.
         # ...
 
-        # ==================== Revisar memoria persistente (sin límite de tiempo) ====================
+        # ===================== Revisar memoria persistente (sin límite de tiempo) =====================
         memoria = verificar_memoria_persistente(user_id)
+        
+        mensaje_recordatorio = None
         
         if memoria:
             print(f"🧠 Memoria persistente encontrada para usuario {user_id}")
-            print(f"📌 Últimas emociones detectadas: {memoria.emociones}")
+            print(f"🎯 Últimas emociones detectadas: {memoria.emociones}")
             print(f"📅 Última interacción registrada: {memoria.fecha}")
         
             # Calcular tiempo transcurrido desde la última interacción
@@ -131,24 +133,28 @@ async def asistente(input_data: UserInput):
             if not partes_tiempo:
                 partes_tiempo.append("hoy")
         
-            tiempo_texto = "hace aproximadamente " + " y ".join(partes_tiempo)
+            tiempo_texto = " y ".join(partes_tiempo)
         
-            # Preparar emociones para mostrar (si existen)
-            emociones_texto = ""
+            # Texto de emociones previas
             if memoria.emociones:
-                emociones_texto = ', '.join(memoria.emociones)
+                emociones_texto = ", ".join(memoria.emociones)
             else:
                 emociones_texto = "emociones previas registradas"
         
-            # Construir respuesta del asistente
-            respuesta_memoria = {
-                "respuesta": f"{tiempo_texto} me comentaste que estabas atravesando: {emociones_texto}. "
-                             f"¿Cómo has estado desde entonces?",
-                "session": session
-            }
+            # Crear recordatorio que se inyectará como contexto inicial
+            mensaje_recordatorio = (
+                f"Hace aproximadamente {tiempo_texto} me comentaste que estabas atravesando: {emociones_texto}. "
+                f"¿Cómo has estado desde entonces?"
+            )
         
-            return respuesta_memoria
+        # ===================== Procesar flujo normal del asistente =====================
+        # Si hay recordatorio, lo añadimos al mensaje original del usuario
+        mensaje_original = input_data.mensaje
+        if mensaje_recordatorio:
+            mensaje_original = f"{mensaje_recordatorio} {mensaje_original}"
         
+        # Ahora continúa todo el flujo normal del asistente con mensaje_original
+      
         
         user_id = input_data.user_id
         mensaje_original = input_data.mensaje
