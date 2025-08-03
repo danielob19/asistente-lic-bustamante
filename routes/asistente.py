@@ -72,7 +72,6 @@ from core.db.historial import registrar_historial_clinico
 from core.contexto import user_sessions
 from core.constantes import CLINICO_CONTINUACION, CLINICO, SALUDO, CORTESIA, ADMINISTRATIVO, CONSULTA_AGENDAR, CONSULTA_MODALIDAD
 
-from uuid import uuid4
 from datetime import datetime
 
 import openai
