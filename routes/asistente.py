@@ -106,6 +106,9 @@ async def asistente(input_data: UserInput):
         # En este comentario se asume que todo fue migrado exactamente igual.
         # ...
 
+        user_id = input_data.user_id
+        mensaje_original = input_data.mensaje
+
         # ================= Revisar memoria persistente (sin límite de tiempo) =================
         memoria = verificar_memoria_persistente(user_id)
         
@@ -157,9 +160,6 @@ async def asistente(input_data: UserInput):
         # Ahora continúa todo el flujo normal del asistente con mensaje_original
         
               
-        
-        user_id = input_data.user_id
-        mensaje_original = input_data.mensaje
         
         # ✅ Inicializar sesión del usuario lo antes posible para evitar errores
         session = user_sessions.get(user_id, {
