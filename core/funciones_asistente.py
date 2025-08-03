@@ -207,32 +207,79 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
     return any(p in mensaje for p in palabras) or any(re.search(p, mensaje) for p in patrones)
 
 # ============================ CONSULTAS A BD ============================
+
 def obtener_ultimo_historial_emocional(user_id):
     from db.conexion import SessionLocal
     from modelos.models import HistorialClinicoUsuario
 
     session = SessionLocal()
     try:
-        return (
+        # Último registro (para fecha)
+        ultimo = (
             session.query(HistorialClinicoUsuario)
             .filter_by(user_id=user_id)
             .order_by(HistorialClinicoUsuario.fecha.desc())
             .first()
         )
+
+        # Todos los registros para acumular malestares previos
+        todos = (
+            session.query(HistorialClinicoUsuario)
+            .filter_by(user_id=user_id)
+            .order_by(HistorialClinicoUsuario.fecha.asc())
+            .all()
+        )
+
+        if not ultimo:
+            return None
+
+        # Unir todas las emociones registradas (únicas, sin duplicados)
+        malestares_acumulados = []
+        for reg in todos:
+            if reg.emociones:
+                malestares_acumulados.extend(reg.emociones)
+
+        # Eliminar duplicados y mantener orden
+        malestares_acumulados = list(dict.fromkeys(malestares_acumulados))
+
+        # Adjuntar en el objeto último
+        ultimo.malestares_acumulados = malestares_acumulados
+
+        return ultimo
     finally:
         session.close()
 
 
-def verificar_memoria_persistente(user_id, dias=30):
+def verificar_memoria_persistente(user_id):
     """
-    Usa obtener_ultimo_historial_emocional para ver si el último registro
-    del usuario es reciente y puede usarse como memoria persistente.
+    Obtiene el último historial emocional del usuario, acumula todos los malestares previos
+    y calcula el tiempo transcurrido desde la última interacción.
+    No hay límite de tiempo para considerar memoria persistente.
     """
+    from datetime import datetime
+
     ultimo = obtener_ultimo_historial_emocional(user_id)
     if not ultimo:
         return None
 
-    if ultimo.fecha and ultimo.fecha >= datetime.now() - timedelta(days=dias):
-        return ultimo
-    return None
+    # Calcular tiempo transcurrido
+    fecha_ultima = ultimo.fecha
+    ahora = datetime.now()
+    diferencia = ahora - fecha_ultima
+
+    # Calcular años, meses y días aproximados
+    dias = diferencia.days
+    anios = dias // 365
+    meses = (dias % 365) // 30
+    dias_restantes = (dias % 365) % 30
+
+    ultimo.tiempo_transcurrido = {
+        "años": anios,
+        "meses": meses,
+        "dias": dias_restantes
+    }
+
+    return ultimo
+
+
 
