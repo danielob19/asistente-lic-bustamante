@@ -106,6 +106,14 @@ async def asistente(input_data: UserInput):
         # En este comentario se asume que todo fue migrado exactamente igual.
         # ...
 
+        # 1️⃣ Revisar memoria persistente
+        memoria = verificar_memoria_persistente(user_id, dias=30)
+        if memoria:
+            print(f"🧠 Memoria persistente encontrada para {user_id} → {memoria.emociones}")
+            # Si querés, podés saltar detección de emociones y usar memoria directamente
+            # return {"respuesta": f"Veo que en tu última interacción estabas {memoria.emociones}...",
+            #         "session": session}
+
         
         user_id = input_data.user_id
         mensaje_original = input_data.mensaje
