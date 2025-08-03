@@ -106,15 +106,13 @@ async def asistente(input_data: UserInput):
         # En este comentario se asume que todo fue migrado exactamente igual.
         # ...
 
-        # ==============================
-        # Revisar memoria persistente (sin límite de tiempo)
-        # ==============================
+        # ==================== Revisar memoria persistente (sin límite de tiempo) ====================
         memoria = verificar_memoria_persistente(user_id)
         
         if memoria:
             print(f"🧠 Memoria persistente encontrada para usuario {user_id}")
-            print(f"   Últimas emociones detectadas: {memoria.emociones}")
-            print(f"   Última interacción registrada: {memoria.fecha}")
+            print(f"📌 Últimas emociones detectadas: {memoria.emociones}")
+            print(f"📅 Última interacción registrada: {memoria.fecha}")
         
             # Calcular tiempo transcurrido desde la última interacción
             fecha_ultima = memoria.fecha
@@ -124,23 +122,33 @@ async def asistente(input_data: UserInput):
             meses = dias // 30
             dias_restantes = dias % 30
         
-            # Construir mensaje natural sobre el tiempo transcurrido
+            # Construir texto del tiempo transcurrido
+            partes_tiempo = []
             if meses > 0:
-                tiempo_texto = f"hace aproximadamente {meses} mes{'es' if meses > 1 else ''} y {dias_restantes} día{'s' if dias_restantes != 1 else ''}"
+                partes_tiempo.append(f"{meses} mes{'es' if meses != 1 else ''}")
+            if dias_restantes > 0:
+                partes_tiempo.append(f"{dias_restantes} día{'s' if dias_restantes != 1 else ''}")
+            if not partes_tiempo:
+                partes_tiempo.append("hoy")
+        
+            tiempo_texto = "hace aproximadamente " + " y ".join(partes_tiempo)
+        
+            # Preparar emociones para mostrar (si existen)
+            emociones_texto = ""
+            if memoria.emociones:
+                emociones_texto = ', '.join(memoria.emociones)
             else:
-                tiempo_texto = f"hace {dias} día{'s' if dias != 1 else ''}"
+                emociones_texto = "emociones previas registradas"
         
-            # Construir la respuesta del asistente
-            respuesta_memoria = (
-                f"{tiempo_texto} me comentaste que estabas atravesando: {', '.join(memoria.emociones)}. "
-                f"¿Cómo has estado desde entonces?"
-            )
-        
-            return {
-                "respuesta": respuesta_memoria,
+            # Construir respuesta del asistente
+            respuesta_memoria = {
+                "respuesta": f"{tiempo_texto} me comentaste que estabas atravesando: {emociones_texto}. "
+                             f"¿Cómo has estado desde entonces?",
                 "session": session
             }
-
+        
+            return respuesta_memoria
+        
         
         user_id = input_data.user_id
         mensaje_original = input_data.mensaje
