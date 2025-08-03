@@ -254,16 +254,24 @@ def obtener_ultimo_historial_emocional(user_id):
     }
 
 
-def verificar_memoria_persistente(user_id):
+def verificar_memoria_persistente(user_id, mensaje_actual=None, dias_maximos=7):
     """
-    Obtiene el último historial emocional del usuario,
-    acumula todos los malestares previos y calcula
-    el tiempo transcurrido desde la última interacción.
-    No hay límite de tiempo para considerar memoria persistente.
+    Obtiene el último historial emocional del usuario si corresponde.
+    Aplica filtros:
+    - Ignora saludos o mensajes administrativos.
+    - Ignora si han pasado más de `dias_maximos` días desde la última emoción negativa.
     """
+    # Normalizar mensaje para análisis
+    if mensaje_actual:
+        msg = normalizar_texto(mensaje_actual)
+        saludos_admin = [
+            "hola", "buen dia", "buenos dias", "buenas tardes", "buenas noches",
+            "gracias", "ok", "perfecto", "listo", "todo bien", "muchas gracias"
+        ]
+        if msg in saludos_admin:
+            return None
 
-    from datetime import datetime
-
+    # Obtener último historial clínico
     ultimo = obtener_ultimo_historial_emocional(user_id)
     if not ultimo:
         return None
@@ -272,6 +280,9 @@ def verificar_memoria_persistente(user_id):
     fecha_ultima = ultimo["fecha"]
     ahora = datetime.now()
     diferencia = ahora - fecha_ultima
+
+    if diferencia.days > dias_maximos:
+        return None  # Demasiado tiempo → no usar memoria
 
     # Calcular años, meses y días aproximados
     dias = diferencia.days
