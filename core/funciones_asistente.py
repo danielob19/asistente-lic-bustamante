@@ -208,7 +208,7 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
 
 # ============================ CONSULTAS A BD ============================
 def obtener_ultimo_historial_emocional(user_id):
-    from db.database import SessionLocal
+    from core.db.database import SessionLocal
     from modelos.models import HistorialClinicoUsuario
 
     session = SessionLocal()
