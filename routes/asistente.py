@@ -109,61 +109,50 @@ async def asistente(input_data: UserInput):
         user_id = input_data.user_id
         mensaje_original = input_data.mensaje
 
-        # ====================== Revisar memoria persistente (sin límite de tiempo) ======================
+        # ================= Revisar memoria persistente (sin límite de tiempo) =================
         memoria = verificar_memoria_persistente(user_id)
         
         mensaje_recordatorio = None
         
-        if memoria and hasattr(memoria, "tiempo_transcurrido") and hasattr(memoria, "malestares_acumulados"):
-            try:
-                print(f"🧠 Memoria persistente encontrada para usuario {user_id}")
-                print(f"🧠 Malestares acumulados detectados: {memoria.malestares_acumulados}")
-                print(f"📅 Última interacción registrada: {memoria.fecha}")
+        if memoria:
+            print(f"🧠 Memoria persistente encontrada para usuario {user_id}")
+            print(f"📋 Malestares acumulados detectados: {memoria['malestares_acumulados']}")
+            print(f"🕒 Última interacción registrada: {memoria['fecha']}")
         
-                # Construir texto del tiempo transcurrido
-                partes_tiempo = []
-                if memoria.tiempo_transcurrido.get('años', 0) > 0:
-                    partes_tiempo.append(
-                        f"{memoria.tiempo_transcurrido['años']} año{'s' if memoria.tiempo_transcurrido['años'] != 1 else ''}"
-                    )
-                if memoria.tiempo_transcurrido.get('meses', 0) > 0:
-                    partes_tiempo.append(
-                        f"{memoria.tiempo_transcurrido['meses']} mes{'es' if memoria.tiempo_transcurrido['meses'] != 1 else ''}"
-                    )
-                if memoria.tiempo_transcurrido.get('días', 0) > 0:
-                    partes_tiempo.append(
-                        f"{memoria.tiempo_transcurrido['días']} día{'s' if memoria.tiempo_transcurrido['días'] != 1 else ''}"
-                    )
-                if not partes_tiempo:
-                    partes_tiempo.append("hoy")
+            # Construir texto del tiempo transcurrido
+            partes_tiempo = []
+            if memoria["tiempo_transcurrido"]["años"] > 0:
+                partes_tiempo.append(f"{memoria['tiempo_transcurrido']['años']} año{'s' if memoria['tiempo_transcurrido']['años'] != 1 else ''}")
+            if memoria["tiempo_transcurrido"]["meses"] > 0:
+                partes_tiempo.append(f"{memoria['tiempo_transcurrido']['meses']} mes{'es' if memoria['tiempo_transcurrido']['meses'] != 1 else ''}")
+            if memoria["tiempo_transcurrido"]["dias"] > 0:
+                partes_tiempo.append(f"{memoria['tiempo_transcurrido']['dias']} día{'s' if memoria['tiempo_transcurrido']['dias'] != 1 else ''}")
+            if not partes_tiempo:
+                partes_tiempo.append("hoy")
         
-                tiempo_texto = " y ".join(partes_tiempo)
+            tiempo_texto = " y ".join(partes_tiempo)
         
-                # Texto de malestares previos
-                if memoria.malestares_acumulados:
-                    malestares_texto = ", ".join(memoria.malestares_acumulados)
-                else:
-                    malestares_texto = "malestares previos registrados"
+            # Texto de malestares previos
+            if memoria["malestares_acumulados"]:
+                malestares_texto = ", ".join(memoria["malestares_acumulados"])
+            else:
+                malestares_texto = "malestares previos registrados"
         
-                # Crear recordatorio en tono argentino
-                mensaje_recordatorio = (
-                    f"Hace aproximadamente {tiempo_texto} me contaste que estabas atravesando: {malestares_texto}. "
-                    f"¿Cómo te sentiste desde entonces? Si querés, podés contarme si aparecieron nuevos malestares "
-                    f"o si necesitás ayuda con algo distinto."
-                )
+            # Crear recordatorio en tono argentino
+            mensaje_recordatorio = (
+                f"Hace aproximadamente {tiempo_texto} me contaste que estabas atravesando: {malestares_texto}. "
+                f"¿Cómo te sentiste desde entonces? Si querés, podés contarme si aparecieron nuevos malestares "
+                f"o si necesitás ayuda con algo distinto."
+            )
         
-            except Exception as e:
-                print(f"⚠️ Error procesando memoria persistente: {e}")
-        
-        # ====================== Procesar flujo normal del asistente ======================
+        # ================= Procesar flujo normal del asistente =================
         mensaje_original = input_data.mensaje
         if mensaje_recordatorio:
             mensaje_original = f"{mensaje_recordatorio} {mensaje_original}"
         
-        # Ahora continúa todo el flujo normal del asistente con mensaje_original
-          
+        # Ahora continúa el flujo normal del asistente usando mensaje_original
 
-              
+                  
         
         # ✅ Inicializar sesión del usuario lo antes posible para evitar errores
         session = user_sessions.get(user_id, {
