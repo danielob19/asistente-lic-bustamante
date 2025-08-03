@@ -30,27 +30,38 @@ def registrar_emocion_clinica(user_id: str, emocion: str, origen: str = "detecci
         print(f"❌ Error al registrar emoción clínica: {e}")
 
 
-def registrar_historial_clinico_simple(user_id: str, clasificacion: str, motivo: str = "Seguimiento automatizado"):
+def registrar_historial_clinico_simple(user_id: str, clasificacion: str, motivo: str = "Seguimiento automatizado", interaccion_id=None):
     """
     Registra un evento de seguimiento clínico del usuario con la clasificación generada por el modelo.
     Compatible con la estructura actual de historial_clinico_usuario (emociones = text[]).
     """
+
+    # Intentar convertir interaccion_id a entero
+    try:
+        interaccion_id_int = int(interaccion_id)
+    except (ValueError, TypeError):
+        interaccion_id_int = None  # Si no es válido, lo dejamos como NULL
+
     consulta = """
-        INSERT INTO historial_clinico_usuario (user_id, emociones, tema, fuente, fecha, eliminado)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO historial_clinico_usuario (user_id, interaccion_id, emociones, tema, fuente, fecha, eliminado)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
+
     valores = (
         user_id,
-        [clasificacion],              # Guardar como lista para text[]
-        motivo,                       # Usamos motivo como tema
-        "seguimiento",                # Fuente
-        datetime.now(),               # Fecha
-        False                         # Eliminado
+        interaccion_id_int,
+        [clasificacion],  # Guardar como lista para text[]
+        motivo,           # Usamos motivo como tema
+        "seguimiento",    # Fuente
+        datetime.now(),   # Fecha
+        False             # Eliminado
     )
+
     try:
         ejecutar_consulta(consulta, valores)
     except Exception as e:
         print(f"❌ Error al registrar historial clínico: {e}")
+
 
 
 def registrar_emocion(emocion: str, contexto: str, user_id: str = None):
