@@ -106,13 +106,40 @@ async def asistente(input_data: UserInput):
         # En este comentario se asume que todo fue migrado exactamente igual.
         # ...
 
-        # 1️⃣ Revisar memoria persistente
-        memoria = verificar_memoria_persistente(user_id, dias=30)
+        # ==============================
+        # Revisar memoria persistente (sin límite de tiempo)
+        # ==============================
+        memoria = verificar_memoria_persistente(user_id)
+        
         if memoria:
-            print(f"🧠 Memoria persistente encontrada para {user_id} → {memoria.emociones}")
-            # Si querés, podés saltar detección de emociones y usar memoria directamente
-            # return {"respuesta": f"Veo que en tu última interacción estabas {memoria.emociones}...",
-            #         "session": session}
+            print(f"🧠 Memoria persistente encontrada para usuario {user_id}")
+            print(f"   Últimas emociones detectadas: {memoria.emociones}")
+            print(f"   Última interacción registrada: {memoria.fecha}")
+        
+            # Calcular tiempo transcurrido desde la última interacción
+            fecha_ultima = memoria.fecha
+            ahora = datetime.now()
+            diferencia = ahora - fecha_ultima
+            dias = diferencia.days
+            meses = dias // 30
+            dias_restantes = dias % 30
+        
+            # Construir mensaje natural sobre el tiempo transcurrido
+            if meses > 0:
+                tiempo_texto = f"hace aproximadamente {meses} mes{'es' if meses > 1 else ''} y {dias_restantes} día{'s' if dias_restantes != 1 else ''}"
+            else:
+                tiempo_texto = f"hace {dias} día{'s' if dias != 1 else ''}"
+        
+            # Construir la respuesta del asistente
+            respuesta_memoria = (
+                f"{tiempo_texto} me comentaste que estabas atravesando: {', '.join(memoria.emociones)}. "
+                f"¿Cómo has estado desde entonces?"
+            )
+        
+            return {
+                "respuesta": respuesta_memoria,
+                "session": session
+            }
 
         
         user_id = input_data.user_id
