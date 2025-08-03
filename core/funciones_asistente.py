@@ -11,7 +11,7 @@ import re
 import unicodedata
 import string
 import json
-
+from datetime import datetime, timedelta
 
 # ============================ DETECCIÓN DE EMOCIONES NEGATIVAS ============================
 def detectar_emociones_negativas(mensaje: str):
@@ -221,4 +221,18 @@ def obtener_ultimo_historial_emocional(user_id):
         )
     finally:
         session.close()
+
+
+def verificar_memoria_persistente(user_id, dias=30):
+    """
+    Usa obtener_ultimo_historial_emocional para ver si el último registro
+    del usuario es reciente y puede usarse como memoria persistente.
+    """
+    ultimo = obtener_ultimo_historial_emocional(user_id)
+    if not ultimo:
+        return None
+
+    if ultimo.fecha and ultimo.fecha >= datetime.now() - timedelta(days=dias):
+        return ultimo
+    return None
 
