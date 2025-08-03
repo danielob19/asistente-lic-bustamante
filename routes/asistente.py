@@ -1210,7 +1210,7 @@ async def asistente(input_data: UserInput):
                     respuesta_openai=respuesta_ai,
                     sugerencia="",
                     fase_evaluacion="respuesta_empatica_simulada",
-                    interaccion_id=uuid4(),
+                    interaccion_id=int(time.time()),
                     fecha=datetime.now(),
                     fuente="web",
                     eliminado=False
