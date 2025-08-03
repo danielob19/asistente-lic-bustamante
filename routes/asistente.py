@@ -264,7 +264,7 @@ async def asistente(input_data: UserInput):
                     respuesta_openai="-",  # o lo que uses por defecto
                     sugerencia="-",
                     fase_evaluacion="bifurcacion_emocional",
-                    interaccion_id=str(uuid4()),
+                    interaccion_id=int(time.time()),
                     fecha=datetime.now(),   # ✅ nuevo
                     fuente="web",           # ✅ nuevo
                     eliminado=False         # ✅ nuevo
