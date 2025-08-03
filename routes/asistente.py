@@ -230,6 +230,10 @@ async def asistente(input_data: UserInput):
                 if emocion not in session["emociones_detectadas"]
             ])
             print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
+
+            # ⬇️ Aquí insertarías el recordatorio desde memoria persistente
+            if "mensaje_recordatorio_memoria" in session:
+                mensaje_usuario = f"{session['mensaje_recordatorio_memoria']} {mensaje_usuario}"
         
             # Llamar directamente al flujo clínico progresivo para generar respuesta
             return procesar_clinico({
