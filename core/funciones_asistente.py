@@ -206,56 +206,62 @@ def es_tema_clinico_o_emocional(mensaje: str) -> bool:
     ]
     return any(p in mensaje for p in palabras) or any(re.search(p, mensaje) for p in patrones)
 
+
 # ============================ CONSULTAS A BD ============================
 
+from core.db.conexion import ejecutar_consulta
+
 def obtener_ultimo_historial_emocional(user_id):
-    from core.db.conexion import SessionLocal
-    from modelos.models import HistorialClinicoUsuario
+    """
+    Devuelve el último registro clínico del usuario y acumula
+    todos los malestares/emociones previas en orden cronológico único.
+    """
 
-    session = SessionLocal()
-    try:
-        # Último registro (para fecha)
-        ultimo = (
-            session.query(HistorialClinicoUsuario)
-            .filter_by(user_id=user_id)
-            .order_by(HistorialClinicoUsuario.fecha.desc())
-            .first()
-        )
+    # Último registro (para fecha y emociones actuales)
+    ultimo = ejecutar_consulta("""
+        SELECT *
+        FROM historial_clinico_usuario
+        WHERE user_id = %s
+        ORDER BY fecha DESC
+        LIMIT 1
+    """, (user_id,))
 
-        # Todos los registros para acumular malestares previos
-        todos = (
-            session.query(HistorialClinicoUsuario)
-            .filter_by(user_id=user_id)
-            .order_by(HistorialClinicoUsuario.fecha.asc())
-            .all()
-        )
+    # Todos los registros (para acumular malestares previos)
+    todos = ejecutar_consulta("""
+        SELECT emociones
+        FROM historial_clinico_usuario
+        WHERE user_id = %s
+        ORDER BY fecha ASC
+    """, (user_id,))
 
-        if not ultimo:
-            return None
+    if not ultimo:
+        return None
 
-        # Unir todas las emociones registradas (únicas, sin duplicados)
-        malestares_acumulados = []
-        for reg in todos:
-            if reg.emociones:
-                malestares_acumulados.extend(reg.emociones)
+    # Unir todas las emociones registradas (únicas, sin duplicados)
+    malestares_acumulados = []
+    for reg in todos:
+        if reg.get("emociones"):
+            malestares_acumulados.extend(reg["emociones"])
 
-        # Eliminar duplicados y mantener orden
-        malestares_acumulados = list(dict.fromkeys(malestares_acumulados))
+    # Eliminar duplicados y mantener el orden de aparición
+    malestares_acumulados = list(dict.fromkeys(malestares_acumulados))
 
-        # Adjuntar en el objeto último
-        ultimo.malestares_acumulados = malestares_acumulados
-
-        return ultimo
-    finally:
-        session.close()
+    # Convertir resultado en un objeto/dict similar al que devolvía SQLAlchemy
+    return {
+        "fecha": ultimo[0]["fecha"],
+        "emociones": ultimo[0]["emociones"],
+        "malestares_acumulados": malestares_acumulados
+    }
 
 
 def verificar_memoria_persistente(user_id):
     """
-    Obtiene el último historial emocional del usuario, acumula todos los malestares previos
-    y calcula el tiempo transcurrido desde la última interacción.
+    Obtiene el último historial emocional del usuario,
+    acumula todos los malestares previos y calcula
+    el tiempo transcurrido desde la última interacción.
     No hay límite de tiempo para considerar memoria persistente.
     """
+
     from datetime import datetime
 
     ultimo = obtener_ultimo_historial_emocional(user_id)
@@ -263,7 +269,7 @@ def verificar_memoria_persistente(user_id):
         return None
 
     # Calcular tiempo transcurrido
-    fecha_ultima = ultimo.fecha
+    fecha_ultima = ultimo["fecha"]
     ahora = datetime.now()
     diferencia = ahora - fecha_ultima
 
@@ -273,13 +279,10 @@ def verificar_memoria_persistente(user_id):
     meses = (dias % 365) // 30
     dias_restantes = (dias % 365) % 30
 
-    ultimo.tiempo_transcurrido = {
+    ultimo["tiempo_transcurrido"] = {
         "años": anios,
         "meses": meses,
         "dias": dias_restantes
     }
 
     return ultimo
-
-
-
