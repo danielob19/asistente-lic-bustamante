@@ -241,9 +241,13 @@ async def asistente(input_data: UserInput):
                 session["mensaje_recordatorio_memoria"] = mensaje_recordatorio
                 session["memoria_usada_en_esta_sesion"] = True
 
-
-
-
+            # 2️⃣ Inyectar recordatorio solo si corresponde
+            if (
+                "mensaje_recordatorio_memoria" in session
+                and tipo_input == CLINICO
+                and session.get("contador_emociones_detectadas", 0) >= 2
+            ):
+                mensaje_usuario = f"{session['mensaje_recordatorio_memoria']} {mensaje_usuario}"
 
             
         
