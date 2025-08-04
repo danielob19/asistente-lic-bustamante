@@ -202,9 +202,53 @@ async def asistente(input_data: UserInput):
             ])
             print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
 
+
+
+            
+
+            # 🔹 Verificar memoria persistente aquí (solo en contexto clínico)
+            memoria = verificar_memoria_persistente(user_id)
+            if memoria and not session.get("memoria_usada_en_esta_sesion"):
+            
+                print(f"🧠 Memoria persistente encontrada para usuario {user_id}")
+                print(f"📋 Malestares acumulados detectados: {memoria['malestares_acumulados']}")
+                print(f"🕒 Última interacción registrada: {memoria['fecha']}")
+            
+                # Construir texto del tiempo transcurrido
+                partes_tiempo = []
+                if memoria["tiempo_transcurrido"]["años"] > 0:
+                    partes_tiempo.append(f"{memoria['tiempo_transcurrido']['años']} año{'s' if memoria['tiempo_transcurrido']['años'] != 1 else ''}")
+                if memoria["tiempo_transcurrido"]["meses"] > 0:
+                    partes_tiempo.append(f"{memoria['tiempo_transcurrido']['meses']} mes{'es' if memoria['tiempo_transcurrido']['meses'] != 1 else ''}")
+                if memoria["tiempo_transcurrido"]["dias"] > 0:
+                    partes_tiempo.append(f"{memoria['tiempo_transcurrido']['dias']} día{'s' if memoria['tiempo_transcurrido']['dias'] != 1 else ''}")
+                if not partes_tiempo:
+                    partes_tiempo.append("hoy")
+            
+                tiempo_texto = " y ".join(partes_tiempo)
+            
+                # Texto de malestares previos
+                malestares_texto = ", ".join(memoria["malestares_acumulados"]) if memoria["malestares_acumulados"] else "malestares previos registrados"
+            
+                # Crear recordatorio
+                mensaje_recordatorio = (
+                    f"Hace aproximadamente {tiempo_texto} me contaste que estabas atravesando: {malestares_texto}. "
+                    "¿Cómo te sentiste desde entonces? Si querés, podés contarme si aparecieron nuevos malestares "
+                    "o si necesitás ayuda con algo distinto."
+                )
+            
+                # Guardar en la sesión para inyectarlo luego en el mensaje_usuario
+                session["mensaje_recordatorio_memoria"] = mensaje_recordatorio
+                session["memoria_usada_en_esta_sesion"] = True
+
+
             # ⬇️ Aquí insertarías el recordatorio desde memoria persistente
             if "mensaje_recordatorio_memoria" in session:
                 mensaje_usuario = f"{session['mensaje_recordatorio_memoria']} {mensaje_usuario}"
+
+
+
+            
         
             # Llamar directamente al flujo clínico progresivo para generar respuesta
             return procesar_clinico({
