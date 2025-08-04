@@ -127,12 +127,6 @@ async def asistente(input_data: UserInput):
             raise HTTPException(status_code=400, detail="El mensaje recibido no es válido.")
 
         
-
-        # ================= Revisar memoria persistente (sin límite de tiempo) =================
-        memoria = verificar_memoria_persistente(user_id)
-        
-
-
         
         mensaje_original = mensaje_original.strip()
         mensaje_usuario = unicodedata.normalize('NFKD', mensaje_original).encode('ASCII', 'ignore').decode('utf-8').lower()
