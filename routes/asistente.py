@@ -195,15 +195,6 @@ async def asistente(input_data: UserInput):
         
         # Si se detecta intención CLÍNICA y emociones claras, pasar siempre por el flujo clínico progresivo
         if intencion_general == "CLINICA" and emociones_detectadas_bifurcacion:
-            # Guardar emociones detectadas en la sesión, evitando duplicados
-            session["emociones_detectadas"].extend([
-                emocion for emocion in emociones_detectadas_bifurcacion
-                if emocion not in session["emociones_detectadas"]
-            ])
-            print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
-
-
-
             
 
             # 🔹 Verificar memoria persistente aquí (solo en contexto clínico)
@@ -240,7 +231,8 @@ async def asistente(input_data: UserInput):
                 # Guardar en la sesión para inyectarlo luego en el mensaje_usuario
                 session["mensaje_recordatorio_memoria"] = mensaje_recordatorio
                 session["memoria_usada_en_esta_sesion"] = True
-                
+
+            
 
             # 🔹 Inyectar recordatorio de memoria persistente solo si aplica
             # Evita usar `tipo_input` antes de que esté definido
@@ -252,6 +244,13 @@ async def asistente(input_data: UserInput):
                 # Inserta el recordatorio al inicio del mensaje del usuario
                 mensaje_usuario = f"{session['mensaje_recordatorio_memoria']} {mensaje_usuario}"
 
+            
+            # Guardar emociones detectadas en la sesión, evitando duplicados
+            session["emociones_detectadas"].extend([
+                emocion for emocion in emociones_detectadas_bifurcacion
+                if emocion not in session["emociones_detectadas"]
+            ])
+            print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
 
             
         
