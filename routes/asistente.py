@@ -242,9 +242,6 @@ async def asistente(input_data: UserInput):
                 session["memoria_usada_en_esta_sesion"] = True
 
 
-            # ⬇️ Aquí insertarías el recordatorio desde memoria persistente
-            if "mensaje_recordatorio_memoria" in session:
-                mensaje_usuario = f"{session['mensaje_recordatorio_memoria']} {mensaje_usuario}"
 
 
 
@@ -1364,6 +1361,19 @@ async def asistente(input_data: UserInput):
             return {"respuesta": respuesta}
         
         return {"respuesta": respuesta_ai}
+
+        
+        
+        # 📌 Inyectar recordatorio solo en ciertos casos
+        if (
+            "mensaje_recordatorio_memoria" in session
+            and tipo_input == CLINICO  # Solo si es flujo clínico
+            and session.get("contador_emociones_detectadas", 0) >= 2  # Por ejemplo, segunda emoción
+        ):
+            respuesta_final = f"{session['mensaje_recordatorio_memoria']} {respuesta_final}"
+
+
+    
 
     except Exception as e:
         print(f"❌ Error inesperado en el endpoint /asistente: {e}")
