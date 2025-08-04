@@ -231,15 +231,12 @@ async def asistente(input_data: UserInput):
                 # Guardar en la sesión para inyectarlo luego en el mensaje_usuario
                 session["mensaje_recordatorio_memoria"] = mensaje_recordatorio
                 session["memoria_usada_en_esta_sesion"] = True
-
-            
-
+        
             # 🔹 Inyectar recordatorio de memoria persistente solo si aplica
-            # Evita usar `tipo_input` antes de que esté definido
             if (
                 "mensaje_recordatorio_memoria" in session
-                and session.get("intencion_general") == "CLINICA"  # Verifica intención clínica guardada
-                and session.get("contador_emociones_detectadas", 0) >= 2  # Ejemplo: segunda emoción o más
+                and session.get("intencion_general") == "CLINICA"
+                and len(session.get("emociones_detectadas", [])) >= 2  # ✅ Usar largo de la lista en vez de contador
             ):
                 # Inserta el recordatorio al inicio del mensaje del usuario
                 mensaje_usuario = f"{session['mensaje_recordatorio_memoria']} {mensaje_usuario}"
