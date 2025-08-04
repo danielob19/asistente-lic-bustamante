@@ -195,16 +195,14 @@ async def asistente(input_data: UserInput):
         
         # Si se detecta intención CLÍNICA y emociones claras, pasar siempre por el flujo clínico progresivo
         if intencion_general == "CLINICA" and emociones_detectadas_bifurcacion:
-            
-
+        
             # 🔹 Verificar memoria persistente aquí (solo en contexto clínico)
             memoria = verificar_memoria_persistente(user_id)
             if memoria and not session.get("memoria_usada_en_esta_sesion"):
-            
                 print(f"🧠 Memoria persistente encontrada para usuario {user_id}")
                 print(f"📋 Malestares acumulados detectados: {memoria['malestares_acumulados']}")
                 print(f"🕒 Última interacción registrada: {memoria['fecha']}")
-            
+        
                 # Construir texto del tiempo transcurrido
                 partes_tiempo = []
                 if memoria["tiempo_transcurrido"]["años"] > 0:
@@ -215,39 +213,39 @@ async def asistente(input_data: UserInput):
                     partes_tiempo.append(f"{memoria['tiempo_transcurrido']['dias']} día{'s' if memoria['tiempo_transcurrido']['dias'] != 1 else ''}")
                 if not partes_tiempo:
                     partes_tiempo.append("hoy")
-            
+        
                 tiempo_texto = " y ".join(partes_tiempo)
-            
+        
                 # Texto de malestares previos
                 malestares_texto = ", ".join(memoria["malestares_acumulados"]) if memoria["malestares_acumulados"] else "malestares previos registrados"
-            
+        
                 # Crear recordatorio
                 mensaje_recordatorio = (
                     f"Hace aproximadamente {tiempo_texto} me contaste que estabas atravesando: {malestares_texto}. "
                     "¿Cómo te sentiste desde entonces? Si querés, podés contarme si aparecieron nuevos malestares "
                     "o si necesitás ayuda con algo distinto."
                 )
-            
+        
                 # Guardar en la sesión para inyectarlo luego en el mensaje_usuario
                 session["mensaje_recordatorio_memoria"] = mensaje_recordatorio
                 session["memoria_usada_en_esta_sesion"] = True
         
-            # 🔹 Inyectar recordatorio de memoria persistente solo si aplica
-            if (
-                "mensaje_recordatorio_memoria" in session
-                and session.get("intencion_general") == "CLINICA"
-                and len(session.get("emociones_detectadas", [])) >= 2  # ✅ Usar largo de la lista en vez de contador
-            ):
-                # Inserta el recordatorio al inicio del mensaje del usuario
-                mensaje_usuario = f"{session['mensaje_recordatorio_memoria']} {mensaje_usuario}"
-
-            
-            # Guardar emociones detectadas en la sesión, evitando duplicados
+            # 🔹 Guardar emociones detectadas en la sesión primero, evitando duplicados
             session["emociones_detectadas"].extend([
                 emocion for emocion in emociones_detectadas_bifurcacion
                 if emocion not in session["emociones_detectadas"]
             ])
             print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
+        
+            # 🔹 Inyectar recordatorio de memoria persistente solo si aplica
+            if (
+                "mensaje_recordatorio_memoria" in session
+                and session.get("intencion_general") == "CLINICA"  # Verifica intención clínica guardada
+                and len(session.get("emociones_detectadas", [])) >= 2  # Segunda emoción o más
+            ):
+                # Inserta el recordatorio al inicio del mensaje del usuario
+                mensaje_usuario = f"{session['mensaje_recordatorio_memoria']} {mensaje_usuario}"
+
 
             
         
