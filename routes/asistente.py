@@ -126,35 +126,12 @@ async def asistente(input_data: UserInput):
         if mensaje_original is None or not isinstance(mensaje_original, str):
             raise HTTPException(status_code=400, detail="El mensaje recibido no es válido.")
 
+        
+
         # ================= Revisar memoria persistente (sin límite de tiempo) =================
         memoria = verificar_memoria_persistente(user_id)
         
-        if memoria and not hay_contexto_clinico_anterior(user_id):
-            # Solo mostrar si no hay ya contexto clínico en la sesión
-            print(f"🧠 Memoria persistente encontrada para usuario {user_id}")
-            print(f"📋 Malestares acumulados detectados: {memoria['malestares_acumulados']}")
-            print(f"🕒 Última interacción registrada: {memoria['fecha']}")
-        
-            partes_tiempo = []
-            if memoria["tiempo_transcurrido"]["años"] > 0:
-                partes_tiempo.append(f"{memoria['tiempo_transcurrido']['años']} año{'s' if memoria['tiempo_transcurrido']['años'] != 1 else ''}")
-            if memoria["tiempo_transcurrido"]["meses"] > 0:
-                partes_tiempo.append(f"{memoria['tiempo_transcurrido']['meses']} mes{'es' if memoria['tiempo_transcurrido']['meses'] != 1 else ''}")
-            if memoria["tiempo_transcurrido"]["dias"] > 0:
-                partes_tiempo.append(f"{memoria['tiempo_transcurrido']['dias']} día{'s' if memoria['tiempo_transcurrido']['dias'] != 1 else ''}")
-            if not partes_tiempo:
-                partes_tiempo.append("hoy")
-        
-            tiempo_texto = " y ".join(partes_tiempo)
-        
-            malestares_texto = ", ".join(memoria["malestares_acumulados"]) if memoria["malestares_acumulados"] else "malestares previos registrados"
-        
-            # Guardar recordatorio para integrarlo en la respuesta clínica más adelante
-            session["mensaje_recordatorio_memoria"] = (
-                f"Hace aproximadamente {tiempo_texto} me contaste que estabas atravesando: {malestares_texto}. "
-                "¿Cómo te sentiste desde entonces? Si querés, podés contarme si aparecieron nuevos malestares "
-                "o si necesitás ayuda con algo distinto."
-            )
+
 
         
         mensaje_original = mensaje_original.strip()
