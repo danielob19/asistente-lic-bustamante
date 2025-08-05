@@ -695,7 +695,8 @@ async def asistente(input_data: UserInput):
             clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
         
             # Generar resumen clínico basado en mensajes y emociones
-            resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador)
+            resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador, user_sessions)
+
         
             # Generar hipótesis psicodinámica tentativa
             from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica
