@@ -58,11 +58,23 @@ def recuperar_historial_clinico(user_id, limite=5):
         return []
 
 def construir_resumen_historial(historial):
-    temas = [h[3] for h in historial if h[3]]
-    emociones = [e for h in historial if h[1] for e in h[1]]
-    resumen_temas = ", ".join(set(temas)) if temas else "diversos temas"
-    resumen_emociones = ", ".join(set(emociones)) if emociones else "varias emociones"
-    return f"temas como {resumen_temas} y emociones como {resumen_emociones}"
+    """
+    Construye un resumen seguro del historial clínico evitando KeyError.
+    Soporta listas, tuplas y diccionarios.
+    """
+    temas = []
+    for h in historial:
+        # Si es lista o tupla y tiene al menos 4 elementos
+        if isinstance(h, (list, tuple)) and len(h) > 3:
+            if h[3]:
+                temas.append(h[3])
+        # Si es diccionario y contiene la clave 'tema'
+        elif isinstance(h, dict) and "tema" in h:
+            if h["tema"]:
+                temas.append(h["tema"])
+
+    return temas
+
 
 # Diccionario de emociones clínicas observables
 emociones_clinicas = {
