@@ -250,19 +250,21 @@ async def asistente(input_data: UserInput):
 
         
         # ============================================================
-        # 📌 Manejo de memoria persistente y recordatorio clínico optimizado
+        # 📌 Manejo de memoria persistente y recordatorio clínico refinado
         # ============================================================
         if intencion_general == "CLINICA" and emociones_detectadas_bifurcacion:
         
-            # 🔹 Verificar memoria persistente aquí (solo en contexto clínico)
+            # Verificar memoria persistente (solo para clínica)
             memoria = verificar_memoria_persistente(user_id)
+        
+            # Solo mostrar recordatorio si hay datos y aún no se mostró en esta conversación
             if memoria and not session.get("memoria_usada_en_esta_sesion"):
         
                 print(f"🧠 Memoria persistente encontrada para usuario {user_id}")
                 print(f"📋 Malestares acumulados detectados: {memoria['malestares_acumulados']}")
                 print(f"🕒 Última interacción registrada: {memoria['fecha']}")
         
-                # ====== 1️⃣ Calcular tiempo transcurrido de forma natural ======
+                # ===== 1️⃣ Calcular tiempo transcurrido de forma natural =====
                 dias_transcurridos = (datetime.now() - memoria["fecha"]).days
                 if dias_transcurridos == 0:
                     tiempo_texto = "hace unas horas"
@@ -280,38 +282,38 @@ async def asistente(input_data: UserInput):
                     años = dias_transcurridos // 365
                     tiempo_texto = f"hace {años} año{'s' if años > 1 else ''}"
         
-                # ====== 2️⃣ Seleccionar solo los malestares más relevantes ======
+                # ===== 2️⃣ Limitar cantidad de malestares =====
                 malestares_previos = memoria["malestares_acumulados"]
                 if len(malestares_previos) > 5:
                     malestares_texto = ", ".join(malestares_previos[:5]) + "… entre otros"
                 else:
                     malestares_texto = ", ".join(malestares_previos)
         
-                # ====== 3️⃣ Construir el mensaje recordatorio ======
+                # ===== 3️⃣ Crear mensaje recordatorio =====
                 mensaje_recordatorio = (
                     f"{tiempo_texto} me comentaste que estabas atravesando: {malestares_texto}. "
                     "¿Cómo te sentiste desde entonces? ¿Hubo mejoría o seguís igual?"
                 )
         
-                # Guardar en sesión para inyectarlo luego en el saludo o mensaje inicial
+                # Guardar para mostrar una sola vez
                 session["mensaje_recordatorio_memoria"] = mensaje_recordatorio
                 session["memoria_usada_en_esta_sesion"] = True
                 user_sessions[user_id] = session
         
-            # 🔹 Inyectar recordatorio solo si aplica
+            # Inyectar recordatorio solo si existe y aún no se usó en esta respuesta
             if "mensaje_recordatorio_memoria" in session:
-                mensaje_usuario = f"{session['mensaje_recordatorio_memoria']} {mensaje_usuario}"
-                del session["mensaje_recordatorio_memoria"]
+                mensaje_usuario = f"{session.pop('mensaje_recordatorio_memoria')} {mensaje_usuario}"
                 user_sessions[user_id] = session
         
-            # 📌 Guardar emociones detectadas evitando duplicados
+            # Guardar emociones detectadas evitando duplicados
+            session.setdefault("emociones_detectadas", [])
             session["emociones_detectadas"].extend([
                 emocion for emocion in emociones_detectadas_bifurcacion
                 if emocion not in session["emociones_detectadas"]
             ])
             print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
         
-            # ✅ Procesar clínicamente sin cortar el flujo
+            # Procesar clínicamente sin cortar el flujo
             respuesta_clinica = procesar_clinico({
                 "mensaje_original": mensaje_usuario,
                 "mensaje_usuario": mensaje_usuario,
@@ -322,6 +324,7 @@ async def asistente(input_data: UserInput):
         
             session["ultima_respuesta_clinica"] = respuesta_clinica
             user_sessions[user_id] = session
+
 
 
 
