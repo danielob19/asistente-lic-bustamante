@@ -58,62 +58,52 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
 
 
 
-def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador):
+def generar_resumen_interaccion_5(session, user_id, interaccion_id, contador, user_sessions):
     print("🧩 Generando resumen clínico en interacción 5")
+
     emociones_previas = session.get("emociones_detectadas", [])
-    mensajes_previos = session["mensajes"]
+    mensajes_previos = session.get("mensajes", [])
     nuevas_emociones = []
 
-    for mensaje in mensajes_previos:
-        nuevas = detectar_emociones_negativas(mensaje) or []
-        for emocion in nuevas:
-            emocion = re.sub(r'[^\w\sáéíóúüñ]+$', '', emocion.lower().strip())
-            if emocion not in emociones_previas:
-                nuevas_emociones.append(emocion)
+    # Detectar nuevas emociones en los mensajes previos
+    nuevas = detectar_emociones_negativas(mensajes_previos) or []
+    for emocion in nuevas:
+        emocion = re.sub(r"[^\w\sáéíóúüñ]+$", "", emocion.lower().strip())
+        if emocion not in emociones_previas:
+            nuevas_emociones.append(emocion)
 
     if nuevas_emociones:
         session["emociones_detectadas"].extend(nuevas_emociones)
         for emocion in nuevas_emociones:
             registrar_emocion(emocion, f"interacción {contador}", user_id)
 
-    estado_global = clasificar_estado_mental(mensajes_previos)
+    estado_global = clasificar_estado_mental(session["emociones_detectadas"])
     if estado_global != "estado emocional no definido":
         print(f"📊 Estado global sintetizado: {estado_global}")
         registrar_inferencia(user_id, contador, "estado_mental", estado_global)
 
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
-        conn.close()
-    except Exception as e:
-        print(f"⚠️ Error al conectar a la base para inferencia en interacción 5: {e}")
-        emocion_inferida = None
-
-    if emocion_inferida and emocion_inferida not in session["emociones_detectadas"]:
-        session["emocion_inferida_5"] = emocion_inferida
-
+    resumen = ""
     if session["emociones_detectadas"]:
         emociones_literal = ", ".join(session["emociones_detectadas"])
         resumen = (
-            f"Por lo que mencionaste hasta ahora, se identifican las siguientes emociones: {emociones_literal}. "
-            f"{random.choice(['Se observa', 'Impresiona', 'Podría tratarse de', 'Da la sensación de ser'])} un estado emocional predominantemente {estado_global}. "
+            f"En base a lo que mencionaste hasta ahora, se observan al menos las siguientes emociones: {emociones_literal}, "
+            f"lo que podría indicar un estado emocional predominantemente {estado_global}."
         )
     else:
         resumen = (
-            f"Por lo que mencionaste hasta ahora, se observa un malestar anímico que daría la impresión de corresponder "
-            f"a un estado emocional predominantemente {estado_global}. "
+            "Por lo que mencionaste hasta ahora, no se detectan emociones claras, aunque podría haber un estado emocional relevante."
         )
 
-    if emocion_inferida:
-        resumen += (
-            f" Además, se infiere la presencia de cierta {emocion_inferida}, ya que suele asociarse a combinaciones emocionales como las que presentaste."
-        )
-
+    # Guardar resumen en la sesión
     session["resumen_generado"] = True
+    session.setdefault("ultimas_respuestas", []).append(resumen)
     registrar_respuesta_openai(interaccion_id, resumen)
-    session["ultimas_respuestas"].append(resumen)
+
+    # ✅ Guardar cambios en la sesión global
     user_sessions[user_id] = session
+
     return resumen
+
 
 
 
