@@ -250,7 +250,7 @@ async def asistente(input_data: UserInput):
 
         
         # ============================================================
-        # 📌 Manejo de memoria persistente y recordatorio clínico
+        # 📌 Manejo de memoria persistente y recordatorio clínico optimizado
         # ============================================================
         if intencion_general == "CLINICA" and emociones_detectadas_bifurcacion:
         
@@ -262,64 +262,56 @@ async def asistente(input_data: UserInput):
                 print(f"📋 Malestares acumulados detectados: {memoria['malestares_acumulados']}")
                 print(f"🕒 Última interacción registrada: {memoria['fecha']}")
         
-                # Construir texto del tiempo transcurrido
-                partes_tiempo = []
-                if memoria["tiempo_transcurrido"]["años"] > 0:
-                    partes_tiempo.append(
-                        f"{memoria['tiempo_transcurrido']['años']} año{'s' if memoria['tiempo_transcurrido']['años'] != 1 else ''}"
-                    )
-                if memoria["tiempo_transcurrido"]["meses"] > 0:
-                    partes_tiempo.append(
-                        f"{memoria['tiempo_transcurrido']['meses']} mes{'es' if memoria['tiempo_transcurrido']['meses'] != 1 else ''}"
-                    )
-                if memoria["tiempo_transcurrido"]["dias"] > 0:
-                    partes_tiempo.append(
-                        f"{memoria['tiempo_transcurrido']['dias']} día{'s' if memoria['tiempo_transcurrido']['dias'] != 1 else ''}"
-                    )
-                if not partes_tiempo:
-                    partes_tiempo.append("hoy")
+                # ====== 1️⃣ Calcular tiempo transcurrido de forma natural ======
+                dias_transcurridos = (datetime.now() - memoria["fecha"]).days
+                if dias_transcurridos == 0:
+                    tiempo_texto = "hace unas horas"
+                elif dias_transcurridos == 1:
+                    tiempo_texto = "ayer"
+                elif dias_transcurridos < 7:
+                    tiempo_texto = f"hace {dias_transcurridos} días"
+                elif dias_transcurridos < 30:
+                    semanas = dias_transcurridos // 7
+                    tiempo_texto = f"hace {semanas} semana{'s' if semanas > 1 else ''}"
+                elif dias_transcurridos < 365:
+                    meses = dias_transcurridos // 30
+                    tiempo_texto = f"hace {meses} mes{'es' if meses > 1 else ''}"
+                else:
+                    años = dias_transcurridos // 365
+                    tiempo_texto = f"hace {años} año{'s' if años > 1 else ''}"
         
-                tiempo_texto = " y ".join(partes_tiempo)
+                # ====== 2️⃣ Seleccionar solo los malestares más relevantes ======
+                malestares_previos = memoria["malestares_acumulados"]
+                if len(malestares_previos) > 5:
+                    malestares_texto = ", ".join(malestares_previos[:5]) + "… entre otros"
+                else:
+                    malestares_texto = ", ".join(malestares_previos)
         
-                # Texto de malestares previos
-                malestares_texto = (
-                    ", ".join(memoria["malestares_acumulados"])
-                    if memoria["malestares_acumulados"]
-                    else "malestares previos registrados"
-                )
-        
-                # Crear recordatorio
+                # ====== 3️⃣ Construir el mensaje recordatorio ======
                 mensaje_recordatorio = (
-                    f"Hace aproximadamente {tiempo_texto} me contaste que estabas atravesando: {malestares_texto}. "
-                    "¿Cómo te sentiste desde entonces? Si querés, podés contarme si aparecieron nuevos malestares "
-                    "o si necesitás ayuda con algo distinto."
+                    f"{tiempo_texto} me comentaste que estabas atravesando: {malestares_texto}. "
+                    "¿Cómo te sentiste desde entonces? ¿Hubo mejoría o seguís igual?"
                 )
         
-                # Guardar en sesión para inyectarlo luego
+                # Guardar en sesión para inyectarlo luego en el saludo o mensaje inicial
                 session["mensaje_recordatorio_memoria"] = mensaje_recordatorio
                 session["memoria_usada_en_esta_sesion"] = True
-        
-                # Guardar de inmediato para que no se pierda
                 user_sessions[user_id] = session
         
-            # 🔹 Inyectar recordatorio de memoria persistente solo si aplica
+            # 🔹 Inyectar recordatorio solo si aplica
             if "mensaje_recordatorio_memoria" in session:
                 mensaje_usuario = f"{session['mensaje_recordatorio_memoria']} {mensaje_usuario}"
-        
-                # Eliminarlo para que no se repita en la sesión
                 del session["mensaje_recordatorio_memoria"]
                 user_sessions[user_id] = session
         
-            # ============================================================
-            # 📌 Guardar emociones detectadas en la sesión, evitando duplicados
-            # ============================================================
+            # 📌 Guardar emociones detectadas evitando duplicados
             session["emociones_detectadas"].extend([
                 emocion for emocion in emociones_detectadas_bifurcacion
                 if emocion not in session["emociones_detectadas"]
             ])
             print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
         
-            # ✅ Procesar clínicamente PERO sin cortar el flujo
+            # ✅ Procesar clínicamente sin cortar el flujo
             respuesta_clinica = procesar_clinico({
                 "mensaje_original": mensaje_usuario,
                 "mensaje_usuario": mensaje_usuario,
@@ -328,9 +320,9 @@ async def asistente(input_data: UserInput):
                 "contador": session.get("contador_interacciones", 0)
             })
         
-            # Guardar para que pueda usarse más abajo si se requiere
             session["ultima_respuesta_clinica"] = respuesta_clinica
             user_sessions[user_id] = session
+
 
 
 
