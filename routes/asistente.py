@@ -193,6 +193,8 @@ async def asistente(input_data: UserInput):
                 tipo_input = CLINICO  # ⚠️ Fuerza el tratamiento clínico del mensaje aunque el tema sea administrativo
 
         
+
+        
         # ============================================================
         # 📌 Manejo de memoria persistente y recordatorio clínico
         # ============================================================
@@ -262,16 +264,20 @@ async def asistente(input_data: UserInput):
                 if emocion not in session["emociones_detectadas"]
             ])
             print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
-
         
-            # 3️⃣ Llamar directamente al flujo clínico progresivo y evitar que el código siga por bifurcaciones mixtas
-            return procesar_clinico({
+            # ✅ Procesar clínicamente PERO sin cortar el flujo
+            respuesta_clinica = procesar_clinico({
                 "mensaje_original": mensaje_usuario,
                 "mensaje_usuario": mensaje_usuario,
                 "user_id": user_id,
                 "session": session,
                 "contador": session.get("contador_interacciones", 0)
             })
+        
+            # Guardar para que pueda usarse más abajo si se requiere
+            session["ultima_respuesta_clinica"] = respuesta_clinica
+            user_sessions[user_id] = session
+
 
 
 
