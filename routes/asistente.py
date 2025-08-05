@@ -196,6 +196,59 @@ async def asistente(input_data: UserInput):
         
 
         
+
+        # ============================================================
+        # 📌 Saludo inteligente y reconocimiento de usuario recurrente
+        # ============================================================
+        if intencion_general == "CLINICA":
+            try:
+                memoria = verificar_memoria_persistente(user_id)
+        
+                if memoria and memoria.get("malestares_acumulados"):
+        
+                    # Calcular tiempo transcurrido exacto
+                    partes_tiempo = []
+                    if memoria["tiempo_transcurrido"]["años"] > 0:
+                        partes_tiempo.append(
+                            f"{memoria['tiempo_transcurrido']['años']} año{'s' if memoria['tiempo_transcurrido']['años'] != 1 else ''}"
+                        )
+                    if memoria["tiempo_transcurrido"]["meses"] > 0:
+                        partes_tiempo.append(
+                            f"{memoria['tiempo_transcurrido']['meses']} mes{'es' if memoria['tiempo_transcurrido']['meses'] != 1 else ''}"
+                        )
+                    if memoria["tiempo_transcurrido"]["dias"] > 0:
+                        partes_tiempo.append(
+                            f"{memoria['tiempo_transcurrido']['dias']} día{'s' if memoria['tiempo_transcurrido']['dias'] != 1 else ''}"
+                        )
+                    if not partes_tiempo:
+                        partes_tiempo.append("hoy")
+        
+                    tiempo_texto = " y ".join(partes_tiempo)
+        
+                    # Malestares previos registrados
+                    malestares_previos = ", ".join(memoria["malestares_acumulados"])
+        
+                    # Detectar si es la primera vez que responde en esta sesión
+                    if not session.get("saludo_recurrente_usado"):
+                        saludo_recurrente = (
+                            f"Hola, ¿qué tal? Hace {tiempo_texto} me comentaste que estabas atravesando: {malestares_previos}. "
+                            f"¿Cómo te sentiste desde entonces? ¿Hubo mejoría o seguís igual?"
+                        )
+        
+                        # Inyectar saludo antes del mensaje del usuario
+                        mensaje_usuario = f"{saludo_recurrente} {mensaje_usuario}"
+        
+                        # Evitar repetir en esta sesión
+                        session["saludo_recurrente_usado"] = True
+                        user_sessions[user_id] = session
+        
+            except Exception as e:
+                print(f"⚠️ Error en saludo inteligente recurrente: {e}")
+
+
+        
+
+        
         # ============================================================
         # 📌 Manejo de memoria persistente y recordatorio clínico
         # ============================================================
