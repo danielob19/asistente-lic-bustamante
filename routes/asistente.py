@@ -193,17 +193,12 @@ async def asistente(input_data: UserInput):
                 tipo_input = CLINICO  # ⚠️ Fuerza el tratamiento clínico del mensaje aunque el tema sea administrativo
 
         
-        # Si se detecta intención CLÍNICA y emociones claras, pasar siempre por el flujo clínico progresivo
+        # ============================================================
+        # 📌 Manejo de memoria persistente y recordatorio clínico
+        # ============================================================
         if intencion_general == "CLINICA" and emociones_detectadas_bifurcacion:
         
-            # 1️⃣ Guardar emociones detectadas en la sesión, evitando duplicados
-            session["emociones_detectadas"].extend([
-                emocion for emocion in emociones_detectadas_bifurcacion
-                if emocion not in session["emociones_detectadas"]
-            ])
-            print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
-        
-            # 2️⃣ Verificar memoria persistente aquí (solo en contexto clínico)
+            # 🔹 Verificar memoria persistente aquí (solo en contexto clínico)
             memoria = verificar_memoria_persistente(user_id)
             if memoria and not session.get("memoria_usada_en_esta_sesion"):
         
@@ -214,18 +209,28 @@ async def asistente(input_data: UserInput):
                 # Construir texto del tiempo transcurrido
                 partes_tiempo = []
                 if memoria["tiempo_transcurrido"]["años"] > 0:
-                    partes_tiempo.append(f"{memoria['tiempo_transcurrido']['años']} año{'s' if memoria['tiempo_transcurrido']['años'] != 1 else ''}")
+                    partes_tiempo.append(
+                        f"{memoria['tiempo_transcurrido']['años']} año{'s' if memoria['tiempo_transcurrido']['años'] != 1 else ''}"
+                    )
                 if memoria["tiempo_transcurrido"]["meses"] > 0:
-                    partes_tiempo.append(f"{memoria['tiempo_transcurrido']['meses']} mes{'es' if memoria['tiempo_transcurrido']['meses'] != 1 else ''}")
+                    partes_tiempo.append(
+                        f"{memoria['tiempo_transcurrido']['meses']} mes{'es' if memoria['tiempo_transcurrido']['meses'] != 1 else ''}"
+                    )
                 if memoria["tiempo_transcurrido"]["dias"] > 0:
-                    partes_tiempo.append(f"{memoria['tiempo_transcurrido']['dias']} día{'s' if memoria['tiempo_transcurrido']['dias'] != 1 else ''}")
+                    partes_tiempo.append(
+                        f"{memoria['tiempo_transcurrido']['dias']} día{'s' if memoria['tiempo_transcurrido']['dias'] != 1 else ''}"
+                    )
                 if not partes_tiempo:
                     partes_tiempo.append("hoy")
         
                 tiempo_texto = " y ".join(partes_tiempo)
         
                 # Texto de malestares previos
-                malestares_texto = ", ".join(memoria["malestares_acumulados"]) if memoria["malestares_acumulados"] else "malestares previos registrados"
+                malestares_texto = (
+                    ", ".join(memoria["malestares_acumulados"])
+                    if memoria["malestares_acumulados"]
+                    else "malestares previos registrados"
+                )
         
                 # Crear recordatorio
                 mensaje_recordatorio = (
@@ -234,9 +239,30 @@ async def asistente(input_data: UserInput):
                     "o si necesitás ayuda con algo distinto."
                 )
         
-                # Inyectar el recordatorio directamente en el mensaje actual
-                mensaje_usuario = f"{mensaje_recordatorio} {mensaje_usuario}"
+                # Guardar en sesión para inyectarlo luego
+                session["mensaje_recordatorio_memoria"] = mensaje_recordatorio
                 session["memoria_usada_en_esta_sesion"] = True
+        
+                # Guardar de inmediato para que no se pierda
+                user_sessions[user_id] = session
+        
+            # 🔹 Inyectar recordatorio de memoria persistente solo si aplica
+            if "mensaje_recordatorio_memoria" in session:
+                mensaje_usuario = f"{session['mensaje_recordatorio_memoria']} {mensaje_usuario}"
+        
+                # Eliminarlo para que no se repita en la sesión
+                del session["mensaje_recordatorio_memoria"]
+                user_sessions[user_id] = session
+        
+            # ============================================================
+            # 📌 Guardar emociones detectadas en la sesión, evitando duplicados
+            # ============================================================
+            session["emociones_detectadas"].extend([
+                emocion for emocion in emociones_detectadas_bifurcacion
+                if emocion not in session["emociones_detectadas"]
+            ])
+            print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
+
         
             # 3️⃣ Llamar directamente al flujo clínico progresivo y evitar que el código siga por bifurcaciones mixtas
             return procesar_clinico({
