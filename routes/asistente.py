@@ -79,6 +79,7 @@ import re
 import time
 import random
 import unicodedata
+import traceback
 
 router = APIRouter()
 
@@ -1389,11 +1390,14 @@ async def asistente(input_data: UserInput):
 
     
 
+
     except Exception as e:
-        print(f"❌ Error inesperado en el endpoint /asistente: {e}")
+        print(f"❌ Error inesperado en el endpoint /asistente: {repr(e)}")
+        traceback.print_exc()
         return {
             "respuesta": (
                 "Ocurrió un error al procesar tu solicitud. Podés intentarlo nuevamente más tarde "
                 "o escribirle al Lic. Bustamante por WhatsApp: +54 911 3310-1186."
             )
         }
+
