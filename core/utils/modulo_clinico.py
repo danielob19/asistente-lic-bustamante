@@ -309,39 +309,38 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 
+
+
 # ==============================================================
 # 📌 Obtener todas las emociones históricas de un usuario
 # ==============================================================
-from sqlalchemy import text
-from core.db import db_session  # Ajusta el import a tu proyecto
+from core.db import ejecutar_consulta  # Usa tu helper actual de DB
 
 def obtener_emociones_usuario(user_id):
     """
     Devuelve una lista de emociones históricas para el usuario desde la DB.
     """
     try:
-        with db_session() as db:
-            query = text("""
-                SELECT emocion
-                FROM emociones_detectadas
-                WHERE user_id = :user_id
-            """)
-            result = db.execute(query, {"user_id": user_id}).fetchall()
-            return [row[0] for row in result] if result else []
+        query = """
+            SELECT emocion
+            FROM emociones_detectadas
+            WHERE user_id = %s
+        """
+        result = ejecutar_consulta(query, (user_id,), fetchall=True)
+        return [row[0] for row in result] if result else []
     except Exception as e:
         print(f"⚠️ Error en obtener_emociones_usuario: {e}")
         return []
 
 
 # ==============================================================
-# 📌 Clasificar cuadro clínico probable (usando IA)
+# 📌 Clasificar cuadro clínico probable (usando IA o mapeo básico)
 # ==============================================================
 def clasificar_cuadro_clinico(emocion):
     """
     Clasifica la emoción detectada en un cuadro clínico probable.
     Puede usarse IA o un simple mapeo como base.
     """
-    # Mapeo básico (puede mejorarse con OpenAI)
     clasificacion_map = {
         "ansiedad": "Posible cuadro de ansiedad generalizada",
         "tristeza": "Posible episodio depresivo",
@@ -351,7 +350,8 @@ def clasificar_cuadro_clinico(emocion):
         "deprimido": "Posible episodio depresivo mayor",
         "soledad": "Posible aislamiento emocional"
     }
-    return clasificacion_map.get(emocion.lower(), "Patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante")
+    return clasificacion_map.get(emocion.lower(), 
+        "Patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante")
 
 
 # ==============================================================
