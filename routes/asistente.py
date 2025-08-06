@@ -318,9 +318,9 @@ async def asistente(input_data: UserInput):
 
             
 
-            # ================================================================
+            # ==============================================================
             # 📌 Registro de emociones nuevas + disparador de coincidencia clínica
-            # ================================================================
+            # ==============================================================
             if intencion_general == "CLINICA":
             
                 # 1️⃣ Obtener emociones históricas de la DB
@@ -330,26 +330,26 @@ async def asistente(input_data: UserInput):
                 # 2️⃣ Unir y eliminar duplicados
                 todas_emociones = list(set(emociones_historicas + emociones_actuales))
             
-                # 3️⃣ Registrar nuevas emociones en DB con clasificación por OpenAI
+                # 3️⃣ Registrar nuevas emociones en DB con clasificación (usando OpenAI)
                 for emocion in emociones_actuales:
                     if emocion not in emociones_historicas:
-                        clasificacion = clasificar_cuadro_clinico(emocion)  # OpenAI devuelve el cuadro probable
                         guardar_emocion_en_db(
                             user_id,
                             emocion,
-                            clasificacion
+                            clasificar_cuadro_clinico(emocion)  # Nueva función en modulo_clinico con OpenAI
                         )
             
                 # 4️⃣ Disparador de coincidencia clínica en interacción 5 o 9 (solo si no se mostró antes)
                 contador_interacciones = session.get("contador_interacciones", 0)
                 if contador_interacciones in [5, 9] and not session.get("coincidencia_clinica_usada"):
                     if todas_emociones:
-                        malestar_predominante = determinar_malestar_predominante(todas_emociones)  # Usa histórico + actuales
+                        malestar_predominante = determinar_malestar_predominante(todas_emociones) or \
+                                                "Patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante"
+            
                         mensaje_predominante = (
                             f"Por lo que me has comentado hasta ahora, "
                             f"el malestar predominante parece ser: **{malestar_predominante}**. "
-                            f"Si querés, el Lic. Bustamante puede ayudarte a profundizar y analizar sus posibles causas. "
-                            f"Podés escribirle directamente a su WhatsApp: +54 911 3310-1186."
+                            f"¿Querés profundizar o analizar sus causas con el Lic. Bustamante?"
                         )
             
                         # Inyectar antes del mensaje actual
@@ -366,6 +366,7 @@ async def asistente(input_data: UserInput):
                         session["emociones_detectadas"].append(emocion)
             
                 print(f"🧠 Emociones registradas/actualizadas en sesión: {emociones_actuales}")
+
 
 
 
