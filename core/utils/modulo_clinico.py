@@ -304,3 +304,68 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     )
 
     return {"respuesta": respuesta_original, "session": session}
+
+
+
+
+
+# ==============================================================
+# 📌 Obtener todas las emociones históricas de un usuario
+# ==============================================================
+from sqlalchemy import text
+from core.db import db_session  # Ajusta el import a tu proyecto
+
+def obtener_emociones_usuario(user_id):
+    """
+    Devuelve una lista de emociones históricas para el usuario desde la DB.
+    """
+    try:
+        with db_session() as db:
+            query = text("""
+                SELECT emocion
+                FROM emociones_detectadas
+                WHERE user_id = :user_id
+            """)
+            result = db.execute(query, {"user_id": user_id}).fetchall()
+            return [row[0] for row in result] if result else []
+    except Exception as e:
+        print(f"⚠️ Error en obtener_emociones_usuario: {e}")
+        return []
+
+
+# ==============================================================
+# 📌 Clasificar cuadro clínico probable (usando IA)
+# ==============================================================
+def clasificar_cuadro_clinico(emocion):
+    """
+    Clasifica la emoción detectada en un cuadro clínico probable.
+    Puede usarse IA o un simple mapeo como base.
+    """
+    # Mapeo básico (puede mejorarse con OpenAI)
+    clasificacion_map = {
+        "ansiedad": "Posible cuadro de ansiedad generalizada",
+        "tristeza": "Posible episodio depresivo",
+        "miedo": "Posible cuadro de angustia",
+        "insomnio": "Posible trastorno del sueño",
+        "estres": "Posible cuadro de estrés crónico",
+        "deprimido": "Posible episodio depresivo mayor",
+        "soledad": "Posible aislamiento emocional"
+    }
+    return clasificacion_map.get(emocion.lower(), "Patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante")
+
+
+# ==============================================================
+# 📌 Determinar malestar predominante
+# ==============================================================
+def determinar_malestar_predominante(emociones):
+    """
+    Determina el malestar más frecuente en la lista de emociones.
+    """
+    from collections import Counter
+    if not emociones:
+        return None
+    conteo = Counter(emociones)
+    return conteo.most_common(1)[0][0]
+
+
+
