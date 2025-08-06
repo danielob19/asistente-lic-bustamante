@@ -4,6 +4,14 @@ from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, refor
 from fastapi import APIRouter, HTTPException
 from core.modelos.base import UserInput
 
+
+from core.utils.modulo_clinico import (
+    obtener_emociones_usuario,
+    clasificar_cuadro_clinico,
+    determinar_malestar_predominante
+)
+
+
 from core.utils_seguridad import (
     contiene_elementos_peligrosos,
     es_input_malicioso
