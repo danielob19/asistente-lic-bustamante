@@ -317,18 +317,17 @@ async def asistente(input_data: UserInput):
             
 
             # ============================================================
-            # 📌 Detección de malestar predominante desde PostgreSQL + usuario
+            # 📌 Detección y registro de malestar predominante (DB + sesión)
             # ============================================================
             if intencion_general == "CLINICA":
-            
                 # 1️⃣ Obtener emociones históricas de la DB
-                emociones_historicas = obtener_emociones_usuario(user_id)  # Nueva función en modulo_clinico
+                emociones_historicas = obtener_emociones_usuario(user_id) or []
                 emociones_actuales = emociones_detectadas_bifurcacion or []
             
                 # 2️⃣ Unir y eliminar duplicados
                 todas_emociones = list(set(emociones_historicas + emociones_actuales))
             
-                # 3️⃣ Guardar nuevas emociones con clasificación
+                # 3️⃣ Registrar nuevas emociones en DB con clasificación
                 for emocion in emociones_actuales:
                     if emocion not in emociones_historicas:
                         guardar_emocion_en_db(
@@ -337,24 +336,32 @@ async def asistente(input_data: UserInput):
                             clasificar_cuadro_clinico(emocion)  # Nueva función en modulo_clinico
                         )
             
-                # 4️⃣ Mostrar malestar predominante en interacción 5 y 9
-                if session.get("contador_interacciones") in [5, 9]:
+                # 4️⃣ Mostrar malestar predominante en interacción 5 o 9 (solo si no se mostró antes)
+                contador_interacciones = session.get("contador_interacciones", 0)
+                if contador_interacciones in [5, 9] and not session.get("coincidencia_clinica_usada"):
                     if todas_emociones:
-                        malestar_predominante = determinar_malestar_predominante(todas_emociones)
+                        malestar_predominante = determinar_malestar_predominante(todas_emociones)  # Nueva función
                         mensaje_predominante = (
                             f"Por lo que me has comentado hasta ahora, "
                             f"el malestar predominante parece ser: **{malestar_predominante}**. "
                             f"¿Querés que te cuente un poco más sobre este estado?"
                         )
+            
                         # Inyectar antes del mensaje actual
                         mensaje_usuario = f"{mensaje_predominante} {mensaje_usuario}"
             
-                # 📌 Guardar emociones detectadas en sesión evitando duplicados
-                session["emociones_detectadas"].extend([
-                    emocion for emocion in emociones_actuales
-                    if emocion not in session["emociones_detectadas"]
-                ])
-                print(f"💾 Emociones agregadas desde bifurcación: {emociones_actuales}")
+                        # Marcar como usado para que no se repita
+                        session["coincidencia_clinica_usada"] = True
+                        user_sessions[user_id] = session
+            
+                # 5️⃣ Guardar emociones detectadas en la sesión (sin duplicar)
+                session.setdefault("emociones_detectadas", [])
+                for emocion in emociones_actuales:
+                    if emocion not in session["emociones_detectadas"]:
+                        session["emociones_detectadas"].append(emocion)
+            
+                print(f"🧠 Emociones agregadas: {emociones_actuales}")
+
 
 
             
