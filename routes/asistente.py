@@ -326,54 +326,73 @@ async def asistente(input_data: UserInput):
 
             
 
-            # ==============================================================
-            # 📌 Registro de emociones nuevas + disparador de coincidencia clínica
-            # ==============================================================
+            
+
+            # =====================================================================
+            # 📌 Registro de emociones nuevas + disparador y manejo de respuesta clínica
+            # =====================================================================
             if intencion_general == "CLINICA":
             
-                # 1️⃣ Obtener emociones históricas de la DB
-                emociones_historicas = obtener_emociones_usuario(user_id) or []
-                emociones_actuales = emociones_detectadas_bifurcacion or []
+                # 1️⃣ Manejo de respuesta del usuario a la pregunta de coincidencia clínica
+                if session.get("esperando_respuesta_clinica"):
+                    respuesta_usuario = mensaje_usuario.strip().lower()
             
-                # 2️⃣ Unir y eliminar duplicados
-                todas_emociones = list(set(emociones_historicas + emociones_actuales))
-            
-                # 3️⃣ Registrar nuevas emociones en DB con clasificación (usando OpenAI)
-                for emocion in emociones_actuales:
-                    if emocion not in emociones_historicas:
-                        guardar_emocion_en_db(
-                            user_id,
-                            emocion,
-                            clasificar_cuadro_clinico(emocion)  # Nueva función en modulo_clinico con OpenAI
+                    if respuesta_usuario in ["sí", "si", "claro", "por supuesto"]:
+                        mensaje_usuario = (
+                            "El Lic. Daniel O. Bustamante trabaja exclusivamente en modalidad online "
+                            "a través de videollamadas. Para coordinar una consulta podés escribirle "
+                            "al WhatsApp +54 911 3310-1186."
                         )
+                        session.pop("esperando_respuesta_clinica", None)  # Ya respondió
             
-                # 4️⃣ Disparador de coincidencia clínica en interacción 5 o 9 (solo si no se mostró antes)
-                contador_interacciones = session.get("contador_interacciones", 0)
-                if contador_interacciones in [5, 9] and not session.get("coincidencia_clinica_usada"):
-                    if todas_emociones:
-                        malestar_predominante = determinar_malestar_predominante(todas_emociones) or \
-                                                "Patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante"
+                    elif respuesta_usuario in ["no", "no gracias", "prefiero que no"]:
+                        session.pop("esperando_respuesta_clinica", None)  # Ya respondió
             
-                        mensaje_predominante = (
-                            f"Por lo que me has comentado hasta ahora, "
-                            f"el malestar predominante parece ser: **{malestar_predominante}**. "
-                            f"¿Querés profundizar o analizar sus causas con el Lic. Bustamante?"
-                        )
+                else:
+                    # 2️⃣ Obtener emociones históricas desde la DB
+                    emociones_historicas = obtener_emociones_usuario(user_id) or []
+                    emociones_actuales = emociones_detectadas_bifurcacion or []
             
-                        # Inyectar antes del mensaje actual
-                        mensaje_usuario = f"{mensaje_predominante} {mensaje_usuario}"
+                    # 3️⃣ Registrar nuevas emociones en DB con clasificación generada por OpenAI
+                    for emocion in emociones_actuales:
+                        if emocion not in emociones_historicas:
+                            guardar_emocion_en_db(
+                                user_id,
+                                emocion,
+                                clasificar_cuadro_clinico(emocion)  # IA asigna clasificación
+                            )
             
-                        # Guardar en sesión para no repetir
-                        session["coincidencia_clinica_usada"] = True
-                        user_sessions[user_id] = session
+                    # 4️⃣ Unir todas las emociones para determinar predominante
+                    todas_emociones = list(set(emociones_historicas + emociones_actuales))
             
-                # 5️⃣ Guardar emociones detectadas en la sesión (sin duplicar)
-                session.setdefault("emociones_detectadas", [])
-                for emocion in emociones_actuales:
-                    if emocion not in session["emociones_detectadas"]:
-                        session["emociones_detectadas"].append(emocion)
+                    # 5️⃣ Disparador solo en interacción 5 o 9 si no se usó antes
+                    contador_interacciones = session.get("contador_interacciones", 0)
+                    if contador_interacciones in [5, 9] and not session.get("coincidencia_clinica_usada"):
+                        if todas_emociones:
+                            malestar_predominante = determinar_malestar_predominante(todas_emociones)
+                            mensaje_predominante = (
+                                f"Por lo que me has comentado hasta ahora, el patrón emocional que "
+                                f"requiere evaluación profesional por el Lic. Daniel O. Bustamante "
+                                f"parece ser: **{malestar_predominante}**. "
+                                f"¿Querés profundizar o analizar sus causas con el Lic. Daniel O. Bustamante?"
+                            )
             
-                print(f"🧠 Emociones registradas/actualizadas en sesión: {emociones_actuales}")
+                            # Inyectar antes del mensaje actual
+                            mensaje_usuario = f"{mensaje_predominante} {mensaje_usuario}"
+            
+                            # Marcar para escuchar respuesta
+                            session["esperando_respuesta_clinica"] = True
+                            session["coincidencia_clinica_usada"] = True
+                            user_sessions[user_id] = session
+            
+                    # 6️⃣ Guardar emociones detectadas en sesión (sin duplicar)
+                    session.setdefault("emociones_detectadas", [])
+                    for emocion in emociones_actuales:
+                        if emocion not in session["emociones_detectadas"]:
+                            session["emociones_detectadas"].append(emocion)
+            
+                    print(f"🧠 Emociones registradas/actualizadas en sesión: {emociones_actuales}")
+
 
 
 
