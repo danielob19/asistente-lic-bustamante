@@ -314,7 +314,8 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
 # ==============================================================
 # 📌 Obtener todas las emociones históricas de un usuario
 # ==============================================================
-from core.db import ejecutar_consulta  # Usa tu helper actual de DB
+from core.db.conexion import ejecutar_consulta
+from sqlalchemy import text  # si quieres seguir usando SQL parametrizado
 
 def obtener_emociones_usuario(user_id):
     """
@@ -326,20 +327,37 @@ def obtener_emociones_usuario(user_id):
             FROM emociones_detectadas
             WHERE user_id = %s
         """
-        result = ejecutar_consulta(query, (user_id,), fetchall=True)
-        return [row[0] for row in result] if result else []
+        resultados = ejecutar_consulta(query, (user_id,))
+        return [row["emocion"] for row in resultados] if resultados else []
     except Exception as e:
         print(f"⚠️ Error en obtener_emociones_usuario: {e}")
         return []
 
 
 # ==============================================================
-# 📌 Clasificar cuadro clínico probable (usando IA o mapeo básico)
+# 📌 Guardar nueva emoción en DB
+# ==============================================================
+def guardar_emocion_en_db(user_id, emocion, clasificacion):
+    """
+    Inserta una emoción detectada y su clasificación en la DB.
+    """
+    try:
+        query = """
+            INSERT INTO emociones_detectadas (user_id, emocion, clasificacion, fecha)
+            VALUES (%s, %s, %s, NOW())
+        """
+        ejecutar_consulta(query, (user_id, emocion, clasificacion), commit=True)
+        print(f"💾 Emoción '{emocion}' registrada para el usuario {user_id}")
+    except Exception as e:
+        print(f"⚠️ Error al guardar emoción en DB: {e}")
+
+
+# ==============================================================
+# 📌 Clasificar cuadro clínico probable (puede usarse IA)
 # ==============================================================
 def clasificar_cuadro_clinico(emocion):
     """
     Clasifica la emoción detectada en un cuadro clínico probable.
-    Puede usarse IA o un simple mapeo como base.
     """
     clasificacion_map = {
         "ansiedad": "Posible cuadro de ansiedad generalizada",
@@ -350,8 +368,10 @@ def clasificar_cuadro_clinico(emocion):
         "deprimido": "Posible episodio depresivo mayor",
         "soledad": "Posible aislamiento emocional"
     }
-    return clasificacion_map.get(emocion.lower(), 
-        "Patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante")
+    return clasificacion_map.get(
+        emocion.lower(),
+        "Patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante"
+    )
 
 
 # ==============================================================
