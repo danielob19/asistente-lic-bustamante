@@ -122,36 +122,52 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         if emocion not in {normalizar_texto(e) for e in session["emociones_detectadas"]}:
             emociones_nuevas.append(emocion)
 
-    # Registrar emociones nuevas
+    # ==============================================================
+    # 📌 Clasificación de emociones nuevas con OpenAI
+    # ==============================================================
+    
     for emocion in emociones_nuevas:
-        registrar_emocion(emocion, f"interacción {contador}", user_id)
-        session["emociones_detectadas"].append(emocion)
-        session["emociones_totales_detectadas"] += 1
-
-        # Evaluar si es la primera interacción clínica del usuario
-        if session.get("emociones_totales_detectadas", 0) == 1:
-            try:
-                registrar_historial_clinico(
-                    user_id=user_id,
-                    emociones=session.get("emociones_detectadas", []),
-                    sintomas=[],
-                    tema=None,
-                    respuesta_openai="Inicio de registro clínico.",
-                    sugerencia=None,
-                    fase_evaluacion="interacción inicial",
-                    interaccion_id=None,
-                    fecha=datetime.now(),
-                    fuente="web",
-                    eliminado=False
-                )
-                print("🧠 Historial clínico inicial registrado con éxito.")
-            except Exception as e:
-                print(f"⚠️ Error al registrar historial clínico inicial: {e}")
+        prompt_cuadro = (
+            f"A partir de la siguiente emoción detectada: '{emocion}', asigná un único cuadro clínico o patrón emocional.\n\n"
+            "Tu tarea es analizar el síntoma y determinar el estado clínico más adecuado, basándote en criterios diagnósticos de la psicología o la psiquiatría. "
+            "No respondas con explicaciones, sólo con el nombre del cuadro clínico más pertinente.\n"
+            "Si la emoción no corresponde a ningún cuadro clínico definido, indicá únicamente: 'Patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante'.\n\n"
+            "Ejemplos válidos de cuadros clínicos:\n"
+            "- Trastorno de ansiedad\n"
+            "- Depresión mayor\n"
+            "- Estrés postraumático\n"
+            "- Trastorno de pánico\n"
+            "- Baja autoestima\n"
+            "- Estado confusional\n"
+            "- Desgaste emocional\n"
+            "- Trastorno de impulsividad\n"
+            "- Insomnio crónico\n"
+            "- Desorientación emocional\n"
+            "- Sentimientos de aislamiento\n"
+            "- Patrón emocional detectado\n\n"
+            "Devolvé únicamente el nombre del cuadro clínico, sin explicaciones, ejemplos ni texto adicional."
+        )
     
         try:
-            registrar_emocion_clinica(user_id, emocion, origen="detección")
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt_cuadro}],
+                max_tokens=50,
+                temperature=0.0
+            )
+    
+            cuadro_asignado = response.choices[0].message['content'].strip()
+    
+            # ✅ Si OpenAI no asigna nada, usar la frase profesional por defecto
+            if not cuadro_asignado:
+                cuadro_asignado = "Patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante"
+    
+            registrar_sintoma(emocion, cuadro_asignado)
+            print(f"🧠 OpenAI asignó el cuadro clínico: {cuadro_asignado} para la emoción '{emocion}'.")
+    
         except Exception as e:
-            print(f"🛑 Error al registrar emoción clínica: {e}")
+            print(f"❌ Error al obtener el cuadro clínico de OpenAI para '{emocion}': {e}")
+
     
     # Registrar historial clínico SIEMPRE que haya emociones detectadas
     if session["emociones_detectadas"]:
