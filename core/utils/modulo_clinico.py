@@ -33,6 +33,8 @@ from core.db.consulta import (
 
 from core.db.conexion import ejecutar_consulta  # Eliminado user_sessions
 
+
+
 def armar_prompt_openai(historial_emociones, nuevas_emociones, ultima_interaccion, nombre_usuario=None):
     resumen = ""
     if historial_emociones:
@@ -60,6 +62,25 @@ def armar_prompt_openai(historial_emociones, nuevas_emociones, ultima_interaccio
         "{'emociones_predominantes': [], 'cuadro_clinico': '', 'mensaje_usuario': ''}"
     )
     return prompt
+
+
+
+
+def armar_respuesta_usuario(respuesta_ia_json, emociones_actuales, nombre_usuario=None):
+    texto_intro = ""
+    if emociones_actuales:
+        texto_intro = (
+            f"Gracias por compartir lo que sentís. Hasta ahora mencionaste: {', '.join(emociones_actuales)}.\n"
+        )
+    mensaje_usuario = respuesta_ia_json.get("mensaje_usuario", "").strip()
+    recomendacion = (
+        "\nRecordá que este espacio no reemplaza la consulta con un profesional. "
+        "Si lo deseás, podés escribirle al Lic. Daniel O. Bustamante para un acompañamiento más personalizado."
+    )
+    respuesta_final = f"{texto_intro}{mensaje_usuario}{recomendacion}"
+    return respuesta_final
+
+
 
 
 def normalizar_texto(texto: str) -> str:
