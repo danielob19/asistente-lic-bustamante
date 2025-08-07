@@ -78,7 +78,15 @@ from core.estilos_post10 import seleccionar_estilo_clinico_variable
 from core.db.historial import registrar_historial_clinico
 
 from core.contexto import user_sessions
-from core.constantes import CLINICO_CONTINUACION, CLINICO, SALUDO, CORTESIA, ADMINISTRATIVO, CONSULTA_AGENDAR, CONSULTA_MODALIDAD
+from core.constantes import (
+    CLINICO_CONTINUACION,
+    CLINICO,
+    SALUDO,
+    CORTESIA,
+    ADMINISTRATIVO,
+    CONSULTA_AGENDAR,
+    CONSULTA_MODALIDAD,
+)
 
 from datetime import datetime
 
