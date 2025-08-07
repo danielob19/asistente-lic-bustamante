@@ -33,6 +33,35 @@ from core.db.consulta import (
 
 from core.db.conexion import ejecutar_consulta  # Eliminado user_sessions
 
+def armar_prompt_openai(historial_emociones, nuevas_emociones, ultima_interaccion, nombre_usuario=None):
+    resumen = ""
+    if historial_emociones:
+        resumen += (
+            f"El usuario {nombre_usuario or ''} ha consultado previamente por: "
+            f"{', '.join(historial_emociones)}.\n"
+        )
+    if nuevas_emociones:
+        resumen += (
+            f"En esta interacción expresa: {', '.join(nuevas_emociones)}.\n"
+        )
+    if ultima_interaccion:
+        resumen += f"Último comentario relevante del usuario: '{ultima_interaccion}'.\n"
+
+    prompt = (
+        "Sos un asistente clínico digital que acompaña a personas en situaciones emocionales delicadas. "
+        "Analizá el siguiente contexto emocional, detectá patrones relevantes y sugerí con empatía posibles líneas de abordaje clínico, "
+        "sin emitir diagnósticos tajantes ni frases genéricas.\n\n"
+        f"{resumen}\n"
+        "1. ¿Qué emociones/síntomas son predominantes en este usuario?\n"
+        "2. ¿Cuál podría ser el cuadro o estado anímico principal? (Describilo con cautela, nunca de forma definitiva)\n"
+        "3. Sugerí, de forma amable y profesional, si corresponde derivar al Lic. Daniel O. Bustamante, sin forzar la consulta.\n"
+        "4. Sugerí en una línea, de modo orientativo y no definitivo, qué cuadro clínico podría estar predominando según la información, usando lenguaje comprensible para el usuario.\n"
+        "Por favor, devolvé la respuesta en el siguiente formato JSON:\n"
+        "{'emociones_predominantes': [], 'cuadro_clinico': '', 'mensaje_usuario': ''}"
+    )
+    return prompt
+
+
 def normalizar_texto(texto: str) -> str:
     if not texto or not isinstance(texto, str):
         texto = ""
