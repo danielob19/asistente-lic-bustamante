@@ -55,13 +55,7 @@ from core.funciones_asistente import verificar_memoria_persistente
 from core.db.consulta import obtener_emociones_ya_registradas
 from core.utils.palabras_irrelevantes import palabras_irrelevantes
 from respuestas_clinicas import RESPUESTAS_CLINICAS
-from cerebro_simulado import (
-    predecir_evento_futuro,
-    inferir_patron_interactivo,
-    evaluar_coherencia_mensaje,
-    clasificar_estado_mental,
-    inferir_intencion_usuario
-)
+
 
 from core.resumen_clinico import (
     generar_resumen_clinico_y_estado,
