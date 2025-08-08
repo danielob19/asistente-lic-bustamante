@@ -787,7 +787,9 @@ async def asistente(input_data: UserInput):
                     if emocion not in session["emociones_detectadas"]:
                         session["emociones_detectadas"].append(emocion)
         
-            clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
+            resultado = _inferir_por_db_o_openai(user_id, mensaje_usuario, session)
+            clasificacion_mental = resultado.get("cuadro_clinico_probable") or generar_resumen_emociones(session["emociones_detectadas"])
+
         
             if session["emociones_detectadas"]:
                 resumen_clinico = generar_resumen_interaccion_5(session, user_id, interaccion_id, contador, user_sessions)
@@ -855,8 +857,9 @@ async def asistente(input_data: UserInput):
                         emociones_nuevas.append(emocion)
                         session["emociones_detectadas"].append(emocion)
         
-            # Clasificación mental basada en emociones acumuladas
-            clasificacion_mental = clasificar_estado_mental(session["emociones_detectadas"])
+            resultado = _inferir_por_db_o_openai(user_id, mensaje_usuario, session)
+            clasificacion_mental = resultado.get("cuadro_clinico_probable") or generar_resumen_emociones(session["emociones_detectadas"])
+
         
             # Generar resumen clínico basado en mensajes y emociones
             resumen_clinico = generar_resumen_interaccion_9(session, user_id, interaccion_id, contador, user_sessions)
