@@ -133,3 +133,42 @@ def estandarizar_emocion_detectada(emocion: str) -> str:
     emocion = re.sub(r"[.,;:!¡¿?]+$", "", emocion)
     return emocion
 
+def _inferir_por_db_o_openai(user_id: str, texto: str, session: dict):
+    conn = get_connection()
+    try:
+        sintomas = detectar_sintomas_db(conn, texto)
+        rank = inferir_cuadros(conn, sintomas)
+        tiene_evid, cuadro_top, aporta = decidir(rank, umbral_coincidencias=2)
+
+        if tiene_evid:
+            # voz clínica breve + pregunta de profundización
+            msg = (
+                f"Por lo que mencionás ({', '.join(aporta)}), "
+                f"podría tratarse de {cuadro_top.lower()}. "
+                "¿Notás también preocupaciones intensas, temores o evitación de ciertas situaciones?"
+            )
+            return {"fuente": "db", "cuadro_probable": cuadro_top, "mensaje": msg, "sintomas": [s['nombre'] for s in sintomas]}
+
+        if sintomas:
+            unico = sorted(set(s["nombre"] for s in sintomas))
+            msg = (
+                f"Mencionaste {', '.join(unico)}. "
+                "Para ubicarlo mejor, contame otro síntoma frecuente (p. ej., mareos, sensación de irrealidad, sudoración, temblores)."
+            )
+            return {"fuente": "db_necesita_mas", "cuadro_probable": None, "mensaje": msg, "sintomas": unico}
+
+        # fallback OpenAI si la DB no matchea nada
+        prompt = (
+            "Actuá como psicólogo humano y orientativo (no diagnóstico). "
+            "Dado el mensaje del usuario, inferí un cuadro probable si hay base; si falta evidencia, pedí 1 síntoma adicional. "
+            f"Usuario: {texto}"
+        )
+        ia = generar_respuesta_con_openai(prompt)
+        return {"fuente": "openai", "cuadro_probable": None, "mensaje": ia, "sintomas": []}
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
+
+
