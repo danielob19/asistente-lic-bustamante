@@ -6,6 +6,9 @@ from core.utils_contacto import es_consulta_contacto
 from core.funciones_asistente import detectar_emociones_negativas
 from core.utils.generador_openai import generar_respuesta_con_openai
 import re
+from core.db.conexion import get_connection
+from core.utils.motor_fallback import detectar_sintomas_db, inferir_cuadros, decidir
+
 
 # core/funciones_clinicas.py
 
@@ -133,42 +136,104 @@ def estandarizar_emocion_detectada(emocion: str) -> str:
     emocion = re.sub(r"[.,;:!¡¿?]+$", "", emocion)
     return emocion
 
-def _inferir_por_db_o_openai(user_id: str, texto: str, session: dict):
+
+
+def generar_resumen_emociones(emociones: list[str]) -> str:
+    if not emociones:
+        return ""
+    unicas = list(dict.fromkeys(
+        e.strip().lower() for e in emociones
+        if isinstance(e, str) and e.strip()
+    ))
+    if not unicas:
+        return ""
+    return "Se observan como predominantes: " + ", ".join(unicas)
+
+
+
+def _inferir_por_db_o_openai(user_id: str, texto: str, session: dict) -> dict:
+    """
+    Retorna un dict con:
+      - fuente: "db" | "db_necesita_mas" | "openai"
+      - cuadro_clinico_probable: str | None
+      - mensaje: str  (texto breve listo para mostrar si lo necesitás)
+      - sintomas: list[str]  (opcional: síntomas que aportaron)
+    """
     conn = get_connection()
     try:
-        sintomas = detectar_sintomas_db(conn, texto)
-        rank = inferir_cuadros(conn, sintomas)
-        tiene_evid, cuadro_top, aporta = decidir(rank, umbral_coincidencias=2)
+        # 1) Intento por DB
+        try:
+            sintomas = detectar_sintomas_db(conn, texto)            # list[dict] o list[str] según tu motor
+            rank = inferir_cuadros(conn, sintomas)                  # dict{cuadro: score}
+            tiene_evid, cuadro_top, aporta = decidir(rank, umbral_coincidencias=2)
 
-        if tiene_evid:
-            # voz clínica breve + pregunta de profundización
-            msg = (
-                f"Por lo que mencionás ({', '.join(aporta)}), "
-                f"podría tratarse de {cuadro_top.lower()}. "
-                "¿Notás también preocupaciones intensas, temores o evitación de ciertas situaciones?"
+            if tiene_evid and cuadro_top:
+                msg = (
+                    f"Por lo que mencionás ({', '.join(aporta)}), "
+                    f"podría tratarse de {cuadro_top.lower()}."
+                )
+                # ↩️ clave alineada con asistente.py
+                return {
+                    "fuente": "db",
+                    "cuadro_clinico_probable": cuadro_top,
+                    "mensaje": msg,
+                    "sintomas": [s["nombre"] if isinstance(s, dict) and "nombre" in s else str(s) for s in sintomas]
+                }
+
+            # Hay señales pero no alcanza evidencia
+            if sintomas:
+                unico = sorted(set(
+                    s["nombre"] if isinstance(s, dict) and "nombre" in s else str(s) for s in sintomas
+                ))
+                msg = (
+                    f"Mencionaste {', '.join(unico)}. "
+                    "Para ubicarlo mejor, contame otro síntoma frecuente (p. ej., mareos, sensación de irrealidad, sudoración, temblores)."
+                )
+                return {
+                    "fuente": "db_necesita_mas",
+                    "cuadro_clinico_probable": None,
+                    "mensaje": msg,
+                    "sintomas": unico
+                }
+        except Exception as e:
+            print(f"[Clinico][DB] Falló inferencia por DB: {e}")
+
+        # 2) Fallback a OpenAI
+        try:
+            prompt = (
+                "Actuá como psicólogo clínico (orientativo, no diagnóstico). "
+                "Si hay base, proponé un posible cuadro en 3-8 palabras; "
+                "si falta evidencia, pedí un solo síntoma adicional (sin listas).\n\n"
+                f"Usuario: {texto}"
             )
-            return {"fuente": "db", "cuadro_probable": cuadro_top, "mensaje": msg, "sintomas": [s['nombre'] for s in sintomas]}
-
-        if sintomas:
-            unico = sorted(set(s["nombre"] for s in sintomas))
-            msg = (
-                f"Mencionaste {', '.join(unico)}. "
-                "Para ubicarlo mejor, contame otro síntoma frecuente (p. ej., mareos, sensación de irrealidad, sudoración, temblores)."
+            ia = generar_respuesta_con_openai(
+                prompt,
+                session.get("contador_interacciones", 0),
+                user_id,
+                texto,
+                texto
             )
-            return {"fuente": "db_necesita_mas", "cuadro_probable": None, "mensaje": msg, "sintomas": unico}
+            # No forzamos etiqueta; el asistente usa .get('cuadro_clinico_probable')
+            return {
+                "fuente": "openai",
+                "cuadro_clinico_probable": None,
+                "mensaje": ia.strip(),
+                "sintomas": []
+            }
+        except Exception as e:
+            print(f"[Clinico][OpenAI] Falló inferencia: {e}")
 
-        # fallback OpenAI si la DB no matchea nada
-        prompt = (
-            "Actuá como psicólogo humano y orientativo (no diagnóstico). "
-            "Dado el mensaje del usuario, inferí un cuadro probable si hay base; si falta evidencia, pedí 1 síntoma adicional. "
-            f"Usuario: {texto}"
-        )
-        ia = generar_respuesta_con_openai(prompt)
-        return {"fuente": "openai", "cuadro_probable": None, "mensaje": ia, "sintomas": []}
+        # 3) Último recurso: resumen por emociones acumuladas en sesión
+        resumen = generar_resumen_emociones(session.get("emociones_detectadas", []))
+        texto_out = resumen or "Contame un poco más para poder precisar mejor lo que te está pasando."
+        return {
+            "fuente": "openai",
+            "cuadro_clinico_probable": None,
+            "mensaje": texto_out,
+            "sintomas": []
+        }
     finally:
         try:
             conn.close()
-        except:
+        except Exception:
             pass
-
-
