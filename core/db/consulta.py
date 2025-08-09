@@ -31,37 +31,59 @@ def obtener_emociones_ya_registradas(user_id: str, interaccion_id: Optional[int]
         return []
 
 
+
 def obtener_sintomas_existentes():
     """
-    Devuelve un conjunto con todos los síntomas registrados, en minúsculas.
-    Ideal para evitar duplicados o comparar de forma insensible a mayúsculas.
+    Devuelve un conjunto con todos los síntomas registrados (lowercase),
+    tomados de historial_clinico_usuario.sintomas.
     """
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute("SELECT LOWER(sintoma) FROM palabras_clave")
-        sintomas = {row[0] for row in cursor.fetchall()}
-        conn.close()
-        return sintomas
+        import psycopg2
+        from core.constantes import DATABASE_URL
+
+        with psycopg2.connect(DATABASE_URL) as conn, conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT DISTINCT LOWER(s) AS sintoma
+                FROM historial_clinico_usuario
+                CROSS JOIN LATERAL UNNEST(sintomas) AS s
+                WHERE s IS NOT NULL AND s <> ''
+                """
+            )
+            return {row[0] for row in cursor.fetchall() if row and row[0]}
     except Exception as e:
         print(f"❌ Error al obtener síntomas existentes: {e}")
         return set()
 
 
+
+
 def obtener_sintomas_con_estado_emocional():
     """
-    Devuelve una lista de tuplas (sintoma, estado_emocional) desde la base de datos.
+    Devuelve una lista de tuplas (sintoma, cuadro_clinico_probable) a partir
+    de historial_clinico_usuario. Si el cuadro es NULL, devuelve None.
     """
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute("SELECT LOWER(sintoma), estado_emocional FROM palabras_clave")
-        resultados = cursor.fetchall()
-        conn.close()
-        return resultados
+        import psycopg2
+        from core.constantes import DATABASE_URL
+
+        with psycopg2.connect(DATABASE_URL) as conn, conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT DISTINCT LOWER(s) AS sintoma,
+                                LOWER(cuadro_clinico_probable) AS cuadro
+                FROM historial_clinico_usuario
+                CROSS JOIN LATERAL UNNEST(sintomas) AS s
+                WHERE s IS NOT NULL AND s <> ''
+                """
+            )
+            resultados = cursor.fetchall()
+            # resultados: List[Tuple[str, Optional[str]]]
+            return [(row[0], row[1]) for row in resultados]
     except Exception as e:
         print(f"❌ Error al obtener síntomas con estado emocional: {e}")
         return []
+
 
 
 def obtener_combinaciones_no_registradas(dias=7):
