@@ -54,31 +54,22 @@ def obtener_sintomas_existentes() -> set[str]:
 
 
 
-def obtener_sintomas_con_estado_emocional():
-    """
-    Devuelve una lista de tuplas (sintoma, cuadro_clinico_probable) a partir
-    de historial_clinico_usuario. Si el cuadro es NULL, devuelve None.
-    """
+def obtener_sintomas_con_estado_emocional() -> list[tuple[str, str]]:
+    # Derivación mínima desde historial (sin clasificar):
     try:
-        import psycopg2
-        from core.constantes import DATABASE_URL
-
-        with psycopg2.connect(DATABASE_URL) as conn, conn.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT DISTINCT LOWER(s) AS sintoma,
-                                LOWER(cuadro_clinico_probable) AS cuadro
+        with psycopg2.connect(DATABASE_URL) as conn, conn.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT LOWER(unnest(emociones)) AS sintoma
                 FROM historial_clinico_usuario
-                CROSS JOIN LATERAL UNNEST(sintomas) AS s
-                WHERE s IS NOT NULL AND s <> ''
-                """
-            )
-            resultados = cursor.fetchall()
-            # resultados: List[Tuple[str, Optional[str]]]
-            return [(row[0], row[1]) for row in resultados]
+                WHERE emociones IS NOT NULL
+            """)
+            sintomas = [row[0] for row in cur.fetchall() if row and row[0]]
+            # No hay “estado_emocional” en esta tabla: devolvemos etiqueta genérica
+            return [(s, "patrón emocional detectado") for s in sintomas]
     except Exception as e:
-        print(f"❌ Error al obtener síntomas con estado emocional: {e}")
+        print(f"ℹ️ No se pudo derivar sintomas/estado desde historial: {e}")
         return []
+
 
 
 
