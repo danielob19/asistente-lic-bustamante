@@ -1457,11 +1457,13 @@ async def asistente(input_data: UserInput):
                     interaccion_id=int(time.time()),
                     fecha=datetime.now(),
                     fuente="web",
-                    eliminado=False
+                    origen="filtro_tematica",   # etiqueta de trazabilidad (opcional)
+                    eliminado=False,
                 )
             except Exception as e:
                 print(f"⚠️ Error al registrar historial clínico desde respuesta temática desviada: {e}")
-                
+            
+                            
 
         # 🔍 Filtro para eliminar encabezados como “Estimado/a usuario/a”
         if respuesta_original.lower().startswith("estimado") or "estimado/a" in respuesta_original.lower():
