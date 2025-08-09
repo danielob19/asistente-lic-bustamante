@@ -1492,10 +1492,12 @@ async def asistente(input_data: UserInput):
                     interaccion_id=int(time.time()),
                     fecha=datetime.now(),
                     fuente="web",
-                    eliminado=False
+                    origen="filtro_precios",   # etiqueta de contexto
+                    eliminado=False,
                 )
             except Exception as e:
                 print(f"⚠️ Error al registrar historial clínico desde respuesta temática desviada: {e}")
+
                 
             # 🧾 Auditoría: log si OpenAI intentó responder con precios
             print("⚠️ Se interceptó una respuesta con posible contenido de precios y fue reemplazada para evitar brindar esa información.")
