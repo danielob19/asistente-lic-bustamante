@@ -1296,10 +1296,12 @@ async def asistente(input_data: UserInput):
                             interaccion_id=int(time.time()),
                             fecha=datetime.now(),
                             fuente="web",
-                            eliminado=False
+                            origen="asistente",        # <-- nuevo/estandarizado
+                            eliminado=False,
                         )
                     except Exception as e:
-                        print(f"🔴 Error al registrar historial clínico desde derivación implícita: {e}")
+                        print(f"⚠️ Error al registrar historial clínico desde derivación implícita: {e}")
+
 
                     registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, motivo)
                     break
