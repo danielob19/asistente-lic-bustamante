@@ -1,5 +1,6 @@
 import os
 import psycopg2
+from core.constantes import DATABASE_URL
 import threading
 import time
 from fastapi import FastAPI
@@ -63,17 +64,26 @@ def startup_event():
     # 🧹 Inicia limpieza de sesiones
     start_session_cleaner()
 
-    # 💾 Cargar cache de síntomas desde la base
+    
+    # 🗂️ Cargar cache de síntomas desde la base (desde historial_clinico_usuario)
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
-        cursor.execute("SELECT LOWER(sintoma) FROM palabras_clave")
+        cursor.execute("""
+            SELECT DISTINCT LOWER(unnest(emociones)) AS sintoma
+            FROM historial_clinico_usuario
+            WHERE emociones IS NOT NULL
+        """)
         sintomas = cursor.fetchall()
-        sintomas_cacheados = {s[0].strip() for s in sintomas if s[0]}
         conn.close()
-        print(f"✅ Cache inicial de síntomas cargado: {len(sintomas_cacheados)} ítems.")
+
+        sintomas_cacheados = {s[0].strip() for s in sintomas if s and s[0]}
+        print(f"✅ Cache inicial de síntomas cargado desde historial: {len(sintomas_cacheados)} ítems.")
     except Exception as e:
-        print(f"⚠️ Error al inicializar cache de síntomas: {e}")
+        print(f"⚠️ Error al inicializar cache de síntomas (historial): {e}")
+        sintomas_cacheados = set()
+
+
 
 # 🧽 Limpiador de sesiones inactivas
 def start_session_cleaner():
@@ -93,3 +103,4 @@ def start_session_cleaner():
 
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
+
