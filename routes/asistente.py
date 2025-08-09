@@ -97,6 +97,14 @@ import random
 import unicodedata
 import traceback
 
+
+
+def clasificar_cuadro_clinico_openai(emocion: str) -> str:
+    # Placeholder conservador para no frenar el flujo
+    return "patrón emocional detectado"
+
+
+
 router = APIRouter()
 
 LIMITE_INTERACCIONES = 20  # 🔒 Límite máximo de interacciones permitidas por usuario
