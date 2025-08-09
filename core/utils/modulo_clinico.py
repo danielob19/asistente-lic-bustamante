@@ -19,7 +19,7 @@ from core.db.registro import (
     registrar_emocion_clinica
 )
 
-from core.db.historial import registrar_historial_clinico
+from core.db.registro import registrar_historial_clinico
 
 from core.db.sintomas import (
     registrar_sintoma,
