@@ -1353,14 +1353,16 @@ async def asistente(input_data: UserInput):
                     tema="Clínica - Respuesta vacía",
                     respuesta_openai=respuesta_ai,
                     sugerencia="",
-                    fase_evaluacion="respuesta_vacia",
+                    fase_evaluacion="respuesta_vacía",
                     interaccion_id=int(time.time()),
                     fecha=datetime.now(),
                     fuente="web",
-                    eliminado=False
+                    origen="asistente",        # <-- nuevo estándar
+                    eliminado=False,
                 )
             except Exception as e:
-                print(f"🔴 Error al registrar historial clínico desde respuesta vacía: {e}")
+                print(f"⚠️ Error al registrar historial clínico desde respuesta vacía: {e}")
+
 
             registrar_auditoria_respuesta(user_id, "Error al generar respuesta", respuesta_ai, "Error: OpenAI devolvió respuesta vacía")
             session["ultimas_respuestas"].append(respuesta_ai)
