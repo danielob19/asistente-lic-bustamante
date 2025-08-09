@@ -32,28 +32,24 @@ def obtener_emociones_ya_registradas(user_id: str, interaccion_id: Optional[int]
 
 
 
-def obtener_sintomas_existentes():
+
+def obtener_sintomas_existentes() -> set[str]:
     """
-    Devuelve un conjunto con todos los síntomas registrados (lowercase),
-    tomados de historial_clinico_usuario.sintomas.
+    Retorna un set de 'síntomas/emociones' conocidos a partir de historial_clinico_usuario.
+    Ya no usa la tabla palabras_clave.
     """
     try:
-        import psycopg2
-        from core.constantes import DATABASE_URL
-
-        with psycopg2.connect(DATABASE_URL) as conn, conn.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT DISTINCT LOWER(s) AS sintoma
+        with psycopg2.connect(DATABASE_URL) as conn, conn.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT LOWER(unnest(emociones))
                 FROM historial_clinico_usuario
-                CROSS JOIN LATERAL UNNEST(sintomas) AS s
-                WHERE s IS NOT NULL AND s <> ''
-                """
-            )
-            return {row[0] for row in cursor.fetchall() if row and row[0]}
+                WHERE emociones IS NOT NULL
+            """)
+            return {row[0] for row in cur.fetchall() if row and row[0]}
     except Exception as e:
-        print(f"❌ Error al obtener síntomas existentes: {e}")
+        print(f"ℹ️ Cache de síntomas deshabilitada (usa historial_clinico_usuario): {e}")
         return set()
+
 
 
 
