@@ -127,13 +127,10 @@ def generar_resumen_interaccion_9(session, user_id, interaccion_id, contador):
         print(f"📊 Estado global sintetizado: {estado_global}")
         registrar_inferencia(user_id, contador, "estado_mental", estado_global)
 
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"], conn)
-        conn.close()
-    except Exception as e:
-        print(f"⚠️ Error en inferencia conexión BD: {e}")
-        emocion_inferida = None
+    
+
+    emocion_inferida = inferir_emocion_no_dicha(session["emociones_detectadas"])
+
 
     if emocion_inferida and emocion_inferida not in session["emociones_detectadas"]:
         session["emociones_detectadas"].append(emocion_inferida)
