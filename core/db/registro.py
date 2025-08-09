@@ -1,8 +1,8 @@
-import psycopg2
 from datetime import datetime
-from core.constantes import DATABASE_URL
-
-from core.db.conexion import ejecutar_consulta  # Asegúrate de tener este import arriba
+from typing import List, Optional
+import psycopg2
+from core.db.conexion import ejecutar_consulta   # tu helper central
+from core.constantes import DATABASE_URL         # si tu helper no usa pool global
 
 def registrar_emocion_clinica(user_id: str, emocion: str, origen: str = "detección"):
     """
