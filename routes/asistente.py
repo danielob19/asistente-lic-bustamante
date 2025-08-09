@@ -48,7 +48,6 @@ from core.db.registro import (
 
 from core.db.sintomas import (
     registrar_sintoma,
-    actualizar_sintomas_sin_estado_emocional,
     obtener_sintomas_existentes,
     obtener_sintomas_con_estado_emocional,
     obtener_coincidencias_sintomas_y_registrar,
