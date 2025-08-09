@@ -1391,11 +1391,13 @@ async def asistente(input_data: UserInput):
                     interaccion_id=int(time.time()),
                     fecha=datetime.now(),
                     fuente="web",
-                    eliminado=False
+                    origen="asistente",          # o "filtro_institucional" si preferís ser más específico
+                    eliminado=False,
                 )
             except Exception as e:
                 print(f"⚠️ Error al registrar historial clínico desde respuesta institucional: {e}")
-                
+            
+                            
             session["ultimas_respuestas"].append(respuesta_ai)
             user_sessions[user_id] = session
             return {"respuesta": respuesta_ai}
