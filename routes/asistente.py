@@ -1530,10 +1530,12 @@ async def asistente(input_data: UserInput):
                         interaccion_id=int(time.time()),
                         fecha=datetime.now(),
                         fuente="web",
-                        eliminado=False
+                        origen="filtro_contacto_temprano",  # <<< etiqueta de trazabilidad
+                        eliminado=False,
                     )
                 except Exception as e:
                     print(f"⚠️ Error al registrar historial clínico desde respuesta temática desviada: {e}")
+
                     
                 motivo = "Frase ambigua de sugerencia de contacto detectada en interacción temprana"
 
