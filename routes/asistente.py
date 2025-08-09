@@ -199,10 +199,13 @@ async def asistente(input_data: UserInput):
                         sugerencia="",
                         fase_evaluacion="bifurcacion_emocional",
                         interaccion_id=int(time.time()),
-                        fecha=datetime.now(),   # ✅ nuevo
-                        fuente="web",           # ✅ nuevo
-                        eliminado=False         # ✅ nuevo
+                        fecha=datetime.now(),
+                        fuente="web",
+                        origen="asistente",            # << añadido para consistencia
+                        cuadro_clinico_probable=None,   # << opcional; lo podés completar si más adelante tenés una clasificación
+                        eliminado=False
                     )
+
 
                 except Exception as e:
                     print(f"🔴 Error al registrar historial clínico desde bifurcación administrativa: {e}")
