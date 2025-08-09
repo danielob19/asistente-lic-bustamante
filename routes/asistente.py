@@ -1423,15 +1423,17 @@ async def asistente(input_data: UserInput):
                     tema="Clínica - Lenguaje empático simulado",
                     respuesta_openai=respuesta_ai,
                     sugerencia="",
-                    fase_evaluacion="respuesta_empatica_simulada",
+                    fase_evaluacion="respuesta_empática_simulada",
                     interaccion_id=int(time.time()),
                     fecha=datetime.now(),
                     fuente="web",
-                    eliminado=False
+                    origen="asistente",          # o "filtro_empatico" si querés más detalle
+                    eliminado=False,
                 )
             except Exception as e:
                 print(f"⚠️ Error al registrar historial clínico desde respuesta empática simulada: {e}")
-                
+            
+                            
             motivo = "Frase empática simulada detectada y reemplazada"
 
         
