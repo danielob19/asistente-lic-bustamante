@@ -33,7 +33,7 @@ from core.utils_contacto import (
 
 from core.db.conexion import ejecutar_consulta
 
-from core.db.historial import registrar_historial_clinico
+from core.db.registro import registrar_historial_clinico
 
 from core.db.registro import (
     registrar_emocion,
