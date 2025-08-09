@@ -68,7 +68,6 @@ from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica
 from core.utils.clinico_contexto import hay_contexto_clinico_anterior
 
 from core.estilos_post10 import seleccionar_estilo_clinico_variable
-from core.db.historial import registrar_historial_clinico
 
 from core.contexto import user_sessions
 from core.constantes import (
