@@ -46,12 +46,6 @@ from core.db.registro import (
     registrar_inferencia,
 )
 
-from core.db.sintomas import (
-    registrar_sintoma,
-    obtener_sintomas_existentes,
-    obtener_sintomas_con_estado_emocional,
-    obtener_coincidencias_sintomas_y_registrar,
-)
 
 from core.funciones_clinicas import analizar_texto
 from core.funciones_clinicas import _inferir_por_db_o_openai
