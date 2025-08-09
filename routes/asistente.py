@@ -457,26 +457,27 @@ async def asistente(input_data: UserInput):
 
 
             
-            # 🩺 REGISTRO CLÍNICO AUTOMÁTICO 🧠
+            # 🧾 REGISTRO CLÍNICO AUTOMÁTICO
             try:
                 registrar_historial_clinico(
                     user_id=user_id,
                     emociones=emociones_detectadas_bifurcacion,
                     sintomas=[],
                     tema="emociones detectadas en bifurcación",
-                    respuesta_openai="-",  # o lo que uses por defecto
+                    respuesta_openai="-",          # lo que uses por defecto
                     sugerencia="-",
                     fase_evaluacion="bifurcacion_emocional",
                     interaccion_id=int(time.time()),
-                    fecha=datetime.now(),   # ✅ nuevo
-                    fuente="web",           # ✅ nuevo
-                    eliminado=False         # ✅ nuevo
+                    fecha=datetime.now(),
+                    fuente="web",
+                    origen="asistente",            # <-- explícito con la firma nueva
+                    eliminado=False,
                 )
-
                 print(f"✅ Registro clínico automático exitoso. Usuario: {user_id}, emociones: {emociones_detectadas_bifurcacion}")
             except Exception as e:
-                print(f"❌ Error al registrar automáticamente en historial clínico: {e}")
-                        
+                print(f"⚠️ Error al registrar automáticamente en historial clínico: {e}")
+            
+                                    
         
         # 🧠 Si se detecta intención MIXTA, invitar al usuario a decidir por dónde continuar
         if intencion_general == "MIXTA":
