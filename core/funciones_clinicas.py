@@ -1,9 +1,6 @@
 from collections import Counter
 from core.db.sintomas import obtener_sintomas_con_estado_emocional, registrar_sintoma
-from core.db.registro import registrar_emocion
 from core.utils.palabras_irrelevantes import palabras_irrelevantes
-from core.utils_contacto import es_consulta_contacto
-from core.funciones_asistente import detectar_emociones_negativas
 from core.utils.generador_openai import generar_respuesta_con_openai
 import re
 from core.db.conexion import get_connection
