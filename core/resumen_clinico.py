@@ -27,10 +27,13 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
         user_sessions[session["user_id"]] = session
         return respuesta
 
+
+    
     coincidencias_sintomas = []
     cuadro_predominante = None
 
 
+    
     emociones_literal = " - ".join(emociones_unificadas[:3])
 
     respuesta = (
