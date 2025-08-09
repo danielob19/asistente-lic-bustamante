@@ -30,10 +30,18 @@ def registrar_emocion_clinica(user_id: str, emocion: str, origen: str = "detecci
         print(f"❌ Error al registrar emoción clínica: {e}")
 
 
-def registrar_historial_clinico_simple(user_id: str, clasificacion: str, motivo: str = "Seguimiento automatizado", interaccion_id=None):
+
+
+def registrar_historial_clinico(
+    user_id: str,
+    clasificacion: str,
+    motivo: str = "Seguimiento automatizado",
+    interaccion_id: int = None,
+    cuadro_clinico_probable: str = None
+):
     """
     Registra un evento de seguimiento clínico del usuario con la clasificación generada por el modelo.
-    Compatible con la estructura actual de historial_clinico_usuario (emociones = text[]).
+    Compatible con la estructura actual de historial_clinico_usuario.
     """
 
     # Intentar convertir interaccion_id a entero
@@ -43,8 +51,9 @@ def registrar_historial_clinico_simple(user_id: str, clasificacion: str, motivo:
         interaccion_id_int = None  # Si no es válido, lo dejamos como NULL
 
     consulta = """
-        INSERT INTO historial_clinico_usuario (user_id, interaccion_id, emociones, tema, fuente, fecha, eliminado)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO historial_clinico_usuario
+        (user_id, interaccion_id, emociones, tema, fuente, fecha, eliminado, cuadro_clinico_probable)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """
 
     valores = (
@@ -54,13 +63,15 @@ def registrar_historial_clinico_simple(user_id: str, clasificacion: str, motivo:
         motivo,           # Usamos motivo como tema
         "seguimiento",    # Fuente
         datetime.now(),   # Fecha
-        False             # Eliminado
+        False,            # Eliminado
+        cuadro_clinico_probable  # Nuevo campo
     )
 
     try:
         ejecutar_consulta(consulta, valores)
     except Exception as e:
         print(f"❌ Error al registrar historial clínico: {e}")
+
 
 
 
