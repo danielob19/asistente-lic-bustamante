@@ -27,12 +27,9 @@ def generar_resumen_clinico_y_estado(session: dict, contador: int) -> str:
         user_sessions[session["user_id"]] = session
         return respuesta
 
-    coincidencias_sintomas = obtener_coincidencias_sintomas_y_registrar(emociones_unificadas)
-    cuadro_predominante = (
-        Counter(coincidencias_sintomas).most_common(1)[0][0]
-        if len(coincidencias_sintomas) >= 2
-        else "No se pudo establecer con certeza un estado emocional predominante."
-    )
+    coincidencias_sintomas = []
+    cuadro_predominante = None
+
 
     emociones_literal = " - ".join(emociones_unificadas[:3])
 
