@@ -31,6 +31,8 @@ from core.utils_contacto import (
     obtener_mensaje_contacto
 )
 
+from core.db.conexion import ejecutar_consulta
+
 from core.db.historial import registrar_historial_clinico
 
 from core.db.registro import (
