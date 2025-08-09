@@ -16,8 +16,10 @@ from core.db.registro import (
     registrar_auditoria_respuesta,
     registrar_interaccion,
     registrar_emocion,
-    registrar_emocion_clinica
+    registrar_emocion_clinica,
+    registrar_historial_clinico,   # <- importante
 )
+
 
 from core.db.registro import registrar_historial_clinico
 
