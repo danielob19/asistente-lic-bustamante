@@ -5,7 +5,6 @@ from fastapi import APIRouter, HTTPException
 from core.modelos.base import UserInput
 
 from core.utils.motor_fallback import detectar_sintomas_db, inferir_cuadros, decidir
-from core.db.conexion import get_connection
 from core.utils.generador_openai import generar_respuesta_con_openai  # ya lo usás
 
 
