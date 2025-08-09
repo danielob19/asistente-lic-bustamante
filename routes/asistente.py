@@ -1327,10 +1327,12 @@ async def asistente(input_data: UserInput):
                     interaccion_id=int(time.time()),
                     fecha=datetime.now(),
                     fuente="web",
-                    eliminado=False
+                    origen="asistente",        # <-- estandarizado
+                    eliminado=False,
                 )
             except Exception as e:
-                print(f"🔴 Error al registrar historial clínico desde respuesta peligrosa: {e}")
+                print(f"⚠️ Error al registrar historial clínico desde respuesta peligrosa: {e}")
+
                 
             registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, "Respuesta descartada por contener elementos peligrosos")
             session["ultimas_respuestas"].append(respuesta_ai)
