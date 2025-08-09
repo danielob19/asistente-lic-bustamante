@@ -228,7 +228,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         registrar_respuesta_openai(interaccion_id, respuesta_clinica)
         registrar_historial_clinico(
             user_id=user_id,
-            emociones=session["emociones_detectadas"],
+            emociones=session.get("emociones_detectadas", []),
             sintomas=[],
             tema=None,
             respuesta_openai=respuesta_clinica,
@@ -237,8 +237,10 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             interaccion_id=interaccion_id,
             fecha=datetime.now(),
             fuente="web",
-            eliminado=False
+            origen="modulo_clinico",         # << estándar
+            eliminado=False,
         )
+
         return {"respuesta": respuesta_clinica, "session": session}
 
 
@@ -251,7 +253,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     
     registrar_historial_clinico(
         user_id=user_id,
-        emociones=session["emociones_detectadas"],
+        emociones=session.get("emociones_detectadas", []),
         sintomas=[],
         tema=None,
         respuesta_openai=respuesta_clinica,
@@ -260,8 +262,10 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         interaccion_id=interaccion_id,
         fecha=datetime.now(),
         fuente="web",
-        eliminado=False
+        origen="modulo_clinico",
+        eliminado=False,
     )
+
     
     return {"respuesta": respuesta_clinica, "session": session}
 
@@ -341,7 +345,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     registrar_respuesta_openai(interaccion_id, respuesta_original)
     registrar_historial_clinico(
         user_id=user_id,
-        emociones=session["emociones_detectadas"],
+        emociones=session.get("emociones_detectadas", []),
         sintomas=[],
         tema=None,
         respuesta_openai=respuesta_original,
@@ -350,8 +354,11 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         interaccion_id=interaccion_id,
         fecha=datetime.now(),
         fuente="web",
-        eliminado=False
+        origen="modulo_clinico",
+        eliminado=False,
     )
+
+
 
     return {"respuesta": respuesta_original, "session": session}
 
