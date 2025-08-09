@@ -2,11 +2,9 @@ from collections import Counter
 import re
 import random
 import openai  # ✅ Necesario para funciones que usan ChatCompletion
-import psycopg2
 
 from core.db.sintomas import obtener_coincidencias_sintomas_y_registrar
 from core.db.registro import registrar_respuesta_openai, registrar_emocion, registrar_inferencia
-from core.constantes import DATABASE_URL
 from cerebro_simulado import predecir_evento_futuro, clasificar_estado_mental
 from core.funciones_asistente import detectar_emociones_negativas
 from core.utils.clinico_contexto import inferir_emocion_no_dicha
