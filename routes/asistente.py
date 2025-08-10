@@ -343,67 +343,45 @@ async def asistente(input_data: UserInput):
             # 📌 Registro de emociones nuevas + disparador de coincidencia clínica
             # ================================================================
             if intencion_general == "CLINICA":
-                # 1️⃣ Obtener emociones históricas desde la DB
-                emociones_historicas = []
+                # 1️⃣ Obtener emociones históricas desde la DB (solo historial_clinico_usuario)
+                #    -> evitamos por completo la tabla 'emociones_detectadas'
                 try:
-                    query_hist = """
-                        SELECT DISTINCT emocion
-                        FROM emociones_detectadas
-                        WHERE user_id = %s
-                    """
-                    resultados_hist = ejecutar_consulta(query_hist, (user_id,))
-                    if resultados_hist:
-                        emociones_historicas = [r["emocion"] for r in resultados_hist]
+                    historicas = obtener_emociones_ya_registradas(user_id)  # set[str], desde historial_clinico_usuario
                 except Exception as e:
-                    print(f"⚠️ Error obteniendo emociones históricas: {e}")
+                    print(f"⚠️ Error obteniendo emociones históricas (historial_clinico_usuario): {e}")
+                    historicas = set()
             
-                emociones_actuales = emociones_detectadas_bifurcacion or []
+                emociones_actuales = (emociones_detectadas_bifurcacion or [])
+                emociones_actuales = [e.strip().lower() for e in emociones_actuales if isinstance(e, str) and e.strip()]
             
-                # 2️⃣ Registrar emociones nuevas que no estén en la DB
-                for emocion in emociones_actuales:
-                    if emocion not in emociones_historicas:
-                        try:
-                            clasificacion = clasificar_cuadro_clinico_openai(emocion)  # OpenAI clasifica
-                            query_insert = """
-                                INSERT INTO emociones_detectadas (user_id, emocion, clasificacion)
-                                VALUES (%s, %s, %s)
-                            """
-                            ejecutar_consulta(query_insert, (user_id, emocion, clasificacion))
-                            print(f"✅ Emoción registrada: {emocion} → {clasificacion}")
-                        except Exception as e:
-                            print(f"⚠️ Error registrando emoción '{emocion}': {e}")
+                # 2️⃣ Registrar emociones nuevas que no estén en el historial (solo a nivel de sesión)
+                #    -> no se inserta nada en tablas viejas; se deja listo para persistir en 'registrar_historial_clinico'
+                nuevas_solo_sesion = [e for e in emociones_actuales if e not in historicas]
+                if nuevas_solo_sesion:
+                    session.setdefault("nuevas_emociones", [])
+                    for e in nuevas_solo_sesion:
+                        if e not in session["nuevas_emociones"]:
+                            session["nuevas_emociones"].append(e)
             
-                # 3️⃣ Disparador en interacción 5 o 9
+                # 3️⃣ Disparador en interacción 5 o 9 (sin tabla 'emociones_detectadas')
                 contador_interacciones = session.get("contador_interacciones", 0)
-                if contador_interacciones in [5, 9] and not session.get("coincidencia_clinica_usada"):
+                if contador_interacciones in (5, 9) and not session.get("coincidencia_clinica_usada"):
                     try:
-                        query_predom = """
-                            SELECT emocion, COUNT(*) as frecuencia
-                            FROM emociones_detectadas
-                            WHERE user_id = %s
-                            GROUP BY emocion
-                            ORDER BY frecuencia DESC
-                            LIMIT 1
-                        """
-                        resultados_predom = ejecutar_consulta(query_predom, (user_id,))
-                        if resultados_predom:
-                            emocion_predominante = resultados_predom[0]["emocion"]
-            
+                        emocion_predominante = _emocion_predominante(user_id, session)
+                        if emocion_predominante:
                             mensaje_predominante = (
-                                f"Por lo que me has comentado hasta ahora, "
-                                f"el patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante "
+                                "Por lo que me has comentado hasta ahora, "
+                                "el patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante "
                                 f"parece estar relacionado con: **{emocion_predominante}**. "
-                                f"¿Querés profundizar o analizar sus causas con el Lic. Bustamante?"
+                                "¿Querés profundizar o analizar sus causas con el Lic. Bustamante?"
                             )
-            
                             # Inyectar antes del mensaje actual
                             mensaje_usuario = f"{mensaje_predominante} {mensaje_usuario}"
-            
                             # Evitar repetir en esta sesión
                             session["coincidencia_clinica_usada"] = True
                             user_sessions[user_id] = session
                     except Exception as e:
-                        print(f"⚠️ Error en disparador de coincidencia clínica: {e}")
+                        print(f"⚠️ Error en disparador de coincidencia clínica (5/9): {e}")
             
                 # 4️⃣ Guardar en sesión sin duplicar
                 session.setdefault("emociones_detectadas", [])
@@ -412,6 +390,7 @@ async def asistente(input_data: UserInput):
                         session["emociones_detectadas"].append(emocion)
             
                 print(f"🧠 Emociones registradas/actualizadas en sesión: {emociones_actuales}")
+
 
 
 
