@@ -73,8 +73,8 @@ def obtener_sintomas_con_estado_emocional() -> list[tuple[str, str]]:
 
 def obtener_combinaciones_no_registradas(dias=7):
     """
-    Devuelve una lista de combinaciones emocionales detectadas por el bot
-    pero que aún no tienen frase registrada. Filtra por los últimos 'dias'.
+    Devuelve una lista de combinaciones emocionales registradas
+    en historial_clinico_usuario en los últimos 'dias'.
     """
     try:
         conn = psycopg2.connect(DATABASE_URL)
@@ -83,24 +83,26 @@ def obtener_combinaciones_no_registradas(dias=7):
         fecha_limite = datetime.now() - timedelta(days=dias)
 
         consulta = """
-            SELECT emocion_1, emocion_2, fecha 
-            FROM combinaciones_no_registradas
+            SELECT DISTINCT emociones, fecha
+            FROM historial_clinico_usuario
             WHERE fecha >= %s
+              AND array_length(emociones, 1) > 1
             ORDER BY fecha DESC;
         """
         cursor.execute(consulta, (fecha_limite,))
         combinaciones = cursor.fetchall()
         conn.close()
 
-        print(f"\n📋 Combinaciones emocionales no registradas (últimos {dias} días):")
-        for emocion_1, emocion_2, fecha in combinaciones:
-            print(f" - {emocion_1} + {emocion_2} → {fecha.strftime('%Y-%m-%d %H:%M')}")
+        print(f"\n📋 Combinaciones emocionales registradas (últimos {dias} días):")
+        for emociones, fecha in combinaciones:
+            print(f" - {', '.join(emociones)} @ {fecha.strftime('%Y-%m-%d %H:%M')}")
 
         return combinaciones
 
     except Exception as e:
-        print(f"❌ Error al obtener combinaciones no registradas: {e}")
+        print(f"❌ Error al obtener combinaciones emocionales: {e}")
         return []
+
 
 def es_saludo(texto: str) -> bool:
     """
