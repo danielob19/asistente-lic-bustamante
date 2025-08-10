@@ -2,53 +2,51 @@ import psycopg2
 from datetime import datetime, timedelta
 from core.constantes import DATABASE_URL
 from typing import Optional
-
-def obtener_emociones_ya_registradas(user_id: str, interaccion_id: Optional[int] = None):
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor()
-
-        if interaccion_id is not None:
-            cur.execute("""
-                SELECT emocion FROM emociones_detectadas
-                WHERE user_id = %s AND contexto = %s
-            """, (user_id, f"interacción {interaccion_id}"))
-        else:
-            cur.execute("""
-                SELECT emocion FROM emociones_detectadas
-                WHERE user_id = %s
-            """, (user_id,))
-
-        resultados = cur.fetchall()
-        emociones = [r[0].lower().strip() for r in resultados]
-
-        cur.close()
-        conn.close()
-        return emociones
-
-    except Exception as e:
-        print(f"❌ Error al obtener emociones ya registradas en la BD: {e}")
-        return []
+from .conexion import ejecutar_consulta
 
 
-
-
-def obtener_sintomas_existentes() -> set[str]:
+def obtener_emociones_ya_registradas(user_id: str) -> set[str]:
     """
-    Retorna un set de 'síntomas/emociones' conocidos a partir de historial_clinico_usuario.
-    Ya no usa la tabla palabras_clave.
+    Devuelve el set de emociones ya registradas en historial_clinico_usuario, combinando
+    'emociones' y 'nuevas_emociones_detectadas'.
     """
-    try:
-        with psycopg2.connect(DATABASE_URL) as conn, conn.cursor() as cur:
-            cur.execute("""
-                SELECT DISTINCT LOWER(unnest(emociones))
-                FROM historial_clinico_usuario
-                WHERE emociones IS NOT NULL
-            """)
-            return {row[0] for row in cur.fetchall() if row and row[0]}
-    except Exception as e:
-        print(f"ℹ️ Cache de síntomas deshabilitada (usa historial_clinico_usuario): {e}")
-        return set()
+    sql = """
+        SELECT COALESCE(emociones, '{}') AS emociones,
+               COALESCE(nuevas_emociones_detectadas, '{}') AS nuevas
+        FROM historial_clinico_usuario
+        WHERE user_id = %s
+    """
+    filas = ejecutar_consulta(sql, (user_id,))
+    res = set()
+    for f in filas or []:
+        for e in f.get("emociones", []) or []:
+            res.add(e)
+        for e in f.get("nuevas", []) or []:
+            res.add(e)
+    return res
+
+
+def obtener_sintomas_existentes(user_id: str | None = None) -> set[str]:
+    """
+    Si alguna parte del código pregunta 'sintomas existentes', los tomamos de la misma tabla.
+    """
+    params = ()
+    where = ""
+    if user_id:
+        where = "WHERE user_id = %s"
+        params = (user_id,)
+
+    sql = f"""
+        SELECT COALESCE(sintomas, '{{}}') AS sintomas
+        FROM historial_clinico_usuario
+        {where}
+    """
+    filas = ejecutar_consulta(sql, params)
+    res = set()
+    for f in filas or []:
+        for s in f.get("sintomas", []) or []:
+            res.add(s)
+    return res
 
 
 
