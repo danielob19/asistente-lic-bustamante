@@ -33,8 +33,12 @@ from core.utils_contacto import (
 
 from core.db.conexion import ejecutar_consulta
 
-from core.db.registro import registrar_historial_clinico
+# --- Helper para disparador 5/9 sin usar la tabla 'emociones_detectadas' ---
+from collections import Counter
+from typing import Optional
+from core.db.conexion import ejecutar_consulta
 
+from core.db.registro import registrar_historial_clinico
 from core.db.registro import (
     registrar_emocion,
     registrar_interaccion,
@@ -106,7 +110,32 @@ def respuesta_default_fuera_de_contexto() -> str:
         "Este canal está diseñado para ofrecer orientación psicológica. "
         "Si hay algún malestar emocional o inquietud personal que desees compartir, podés describirlo con tus palabras."
     )
-    
+
+# --- Helper para disparador 5/9 sin usar la tabla 'emociones_detectadas' ---
+def _emocion_predominante(user_id: str, session: dict) -> Optional[str]:
+    """
+    Devuelve la emoción predominante considerando primero la sesión
+    y, si no hay datos en sesión, usando historial_clinico_usuario.
+    """
+    # 1) Primero, lo que ya acumulaste en sesión
+    lista = session.get("emociones_detectadas") or []
+    if lista:
+        c = Counter(lista)
+        return c.most_common(1)[0][0]
+
+    # 2) Refuerzo desde la tabla unificada 'historial_clinico_usuario'
+    sql = """
+        SELECT e AS emocion, COUNT(*) AS freq
+        FROM historial_clinico_usuario h,
+             unnest(COALESCE(h.emociones, '{}')) AS e
+        WHERE h.user_id = %s AND COALESCE(h.eliminado, false) = false
+        GROUP BY e
+        ORDER BY freq DESC
+        LIMIT 1
+    """
+    filas = ejecutar_consulta(sql, (user_id,))
+    return filas[0]["emocion"] if filas else None
+
 
 @router.post("/asistente")
 async def asistente(input_data: UserInput):
