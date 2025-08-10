@@ -1357,7 +1357,7 @@ async def asistente(input_data: UserInput):
                     interaccion_id=int(time.time()),
                     fecha=datetime.now(),
                     fuente="web",
-                    origen="asistente",        # <-- nuevo estándar
+                    origen="respuesta_vacia",        # <-- nuevo estándar
                     eliminado=False,
                 )
             except Exception as e:
