@@ -148,67 +148,30 @@ def registrar_historial_clinico(
 
 
 
-
-
-def registrar_emocion(emocion: str, contexto: str, user_id: str = None):
+def registrar_emocion(user_id: str, emocion: str, *, interaccion_id: int | str | None = None):
+    """
+    En lugar de insertar en 'emociones_detectadas', agregamos un renglón en
+    'historial_clinico_usuario' con la emoción detectada.
+    """
     try:
-        print("\n======= 📌 REGISTRO DE EMOCIÓN DETECTADA =======")
-        print(f"🧠 Emoción detectada: {emocion}")
-        print(f"🧾 Contexto asociado: {contexto}")
-        print(f"👤 Usuario: {user_id if user_id else 'No especificado'}")
-
-        with psycopg2.connect(DATABASE_URL) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    SELECT column_name FROM information_schema.columns 
-                    WHERE table_name = 'emociones_detectadas' AND column_name = 'user_id';
-                """)
-                tiene_user_id = bool(cursor.fetchone())
-
-                if tiene_user_id and user_id:
-                    cursor.execute(
-                        "SELECT contexto FROM emociones_detectadas WHERE emocion = %s AND user_id = %s;",
-                        (emocion.strip().lower(), user_id)
-                    )
-                else:
-                    cursor.execute(
-                        "SELECT contexto FROM emociones_detectadas WHERE emocion = %s;",
-                        (emocion.strip().lower(),)
-                    )
-
-                resultado = cursor.fetchone()
-
-                if resultado:
-                    nuevo_contexto = f"{resultado[0]}; {contexto.strip()}"
-                    if tiene_user_id and user_id:
-                        cursor.execute(
-                            "UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s AND user_id = %s;",
-                            (nuevo_contexto, emocion.strip().lower(), user_id)
-                        )
-                    else:
-                        cursor.execute(
-                            "UPDATE emociones_detectadas SET contexto = %s WHERE emocion = %s;",
-                            (nuevo_contexto, emocion.strip().lower())
-                        )
-                    print("🔄 Emoción existente. Contexto actualizado.")
-                else:
-                    if tiene_user_id and user_id:
-                        cursor.execute(
-                            "INSERT INTO emociones_detectadas (emocion, contexto, user_id) VALUES (%s, %s, %s);",
-                            (emocion.strip().lower(), contexto.strip(), user_id)
-                        )
-                    else:
-                        cursor.execute(
-                            "INSERT INTO emociones_detectadas (emocion, contexto) VALUES (%s, %s);",
-                            (emocion.strip().lower(), contexto.strip())
-                        )
-                    print("🆕 Nueva emoción registrada exitosamente.")
-
-                conn.commit()
-        print("===============================================\n")
-
+        return registrar_historial_clinico(
+            user_id=user_id,
+            emociones=[emocion],
+            sintomas=[],
+            tema="patrón emocional detectado",
+            sugerencia=None,
+            fase_evaluacion="deteccion_emocion",
+            fuente="detector",
+            interaccion_id=interaccion_id,
+            origen="detector_emociones",
+            cuadro_clinico_probable=None,
+            nuevas_emociones_detectadas=[emocion],
+            eliminado=False,
+        )
     except Exception as e:
-        print(f"❌ Error al registrar emoción '{emocion}': {e}")
+        print(f"[✖] Error al registrar_emocion en historial_clinico_usuario: {e}")
+        return False
+
 
 
 def registrar_interaccion(user_id: str, consulta: str, mensaje_original: str = None):
