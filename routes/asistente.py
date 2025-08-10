@@ -470,7 +470,7 @@ async def asistente(input_data: UserInput):
                     interaccion_id=int(time.time()),
                     fecha=datetime.now(),
                     fuente="web",
-                    origen="asistente",            # <-- explícito con la firma nueva
+                    origen="registro_automatico",            # <-- explícito con la firma nueva
                     eliminado=False,
                 )
                 print(f"✅ Registro clínico automático exitoso. Usuario: {user_id}, emociones: {emociones_detectadas_bifurcacion}")
