@@ -201,7 +201,7 @@ async def asistente(input_data: UserInput):
                         interaccion_id=int(time.time()),
                         fecha=datetime.now(),
                         fuente="web",
-                        origen="asistente",            # << añadido para consistencia
+                        origen="bifurcacion_admin",            # << añadido para consistencia
                         cuadro_clinico_probable=None,   # << opcional; lo podés completar si más adelante tenés una clasificación
                         eliminado=False
                     )
