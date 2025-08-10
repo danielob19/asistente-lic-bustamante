@@ -1457,7 +1457,7 @@ async def asistente(input_data: UserInput):
                     interaccion_id=int(time.time()),
                     fecha=datetime.now(),
                     fuente="web",
-                    origen="filtro_tematica",   # etiqueta de trazabilidad (opcional)
+                    origen="filtro_tematica_desviada",   # etiqueta de trazabilidad (opcional)
                     eliminado=False,
                 )
             except Exception as e:
