@@ -1427,7 +1427,7 @@ async def asistente(input_data: UserInput):
                     interaccion_id=int(time.time()),
                     fecha=datetime.now(),
                     fuente="web",
-                    origen="asistente",          # o "filtro_empatico" si querés más detalle
+                    origen="filtro_empatia_simulada",          # o "filtro_empatico" si querés más detalle
                     eliminado=False,
                 )
             except Exception as e:
