@@ -438,7 +438,7 @@ async def asistente(input_data: UserInput):
                 interaccion_id=session.get("contador_interacciones", 0),
                 fecha=datetime.now(),
                 fuente=resultado["fuente"],
-                origen="asistente",  # <-- nuevo para consistencia
+                origen="inferencia_hibrida",  # <-- nuevo para consistencia
                 cuadro_clinico_probable=resultado.get("cuadro_probable"),
                 nuevas_emociones_detectadas=session.get("nuevas_emociones", []),
                 eliminado=False
