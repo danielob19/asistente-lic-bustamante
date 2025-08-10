@@ -1,9 +1,10 @@
 # core/utils/motor_fallback.py
 # Motor clínico determinístico para fallback/local inference (sin OpenAI).
-# Usa tablas: sintomas(id, nombre, variantes[]), cuadros(id, nombre), cuadro_sintoma(cuadro_id, sintoma_id, peso)
+# Ahora todo se basa en la tabla historial_clinico_usuario.
 
 import re
 from typing import List, Dict, Tuple
+import psycopg2
 
 def _norm(t: str) -> str:
     t = t.lower().strip()
@@ -11,46 +12,65 @@ def _norm(t: str) -> str:
     t = re.sub(r"\s+", " ", t)
     return t
 
-def detectar_sintomas_db(conn, texto: str) -> List[Dict]:
+def detectar_sintomas_db(conn, user_id: str, texto: str) -> List[Dict]:
     """
-    Devuelve [{'sintoma_id':..., 'nombre':..., 'match':...}, ...]
-    Matchea por inclusión simple contra sintomas.variantes (TEXT[]).
+    Devuelve [{'nombre':..., 'match':...}, ...]
+    Matchea por inclusión simple contra historial_clinico_usuario.sintomas (TEXT[]).
     """
     cur = conn.cursor()
-    cur.execute("SELECT id, nombre, variantes FROM sintomas;")
+    # Normalizamos el texto de entrada
     tnorm = _norm(texto)
+
     hallados = []
-    for sid, nombre, variantes in cur.fetchall():
-        for v in (variantes or []):
-            vn = _norm(v)
-            if vn and vn in tnorm:
-                hallados.append({"sintoma_id": sid, "nombre": nombre, "match": v})
-                break
+    # Obtenemos todos los síntomas previos para el usuario
+    cur.execute("""
+        SELECT DISTINCT unnest(sintomas)
+        FROM historial_clinico_usuario
+        WHERE user_id = %s AND array_length(sintomas, 1) > 0;
+    """, (user_id,))
+    
+    for (sintoma,) in cur.fetchall():
+        if not sintoma:
+            continue
+        snorm = _norm(sintoma)
+        if snorm and snorm in tnorm:
+            hallados.append({"nombre": sintoma, "match": sintoma})
+    
     cur.close()
     return hallados
 
-def inferir_cuadros(conn, sintomas_detectados: List[Dict]) -> List[Tuple[str, float, List[str]]]:
+def inferir_cuadros(conn, user_id: str) -> List[Tuple[str, float, List[str]]]:
     """
-    Suma pesos por cuadro. Devuelve [(cuadro, score, [sintomas_aporte]), ...] desc.
+    Usa historial_clinico_usuario.cuadro_clinico_probable para inferir cuadros.
+    Devuelve [(cuadro, score, [sintomas])].
+    Nota: El 'score' aquí es ficticio (1.0) ya que no hay ponderación.
     """
-    if not sintomas_detectados:
-        return []
-    ids = [s["sintoma_id"] for s in sintomas_detectados]
     cur = conn.cursor()
     cur.execute("""
-        SELECT c.nombre, s.nombre, cs.peso
-        FROM cuadro_sintoma cs
-        JOIN cuadros c ON c.id = cs.cuadro_id
-        JOIN sintomas s ON s.id = cs.sintoma_id
-        WHERE cs.sintoma_id = ANY(%s);
-    """, (ids,))
-    scores, detalles = {}, {}
-    for cuadro, sintoma_nombre, peso in cur.fetchall():
-        scores[cuadro] = scores.get(cuadro, 0.0) + float(peso or 1.0)
-        detalles.setdefault(cuadro, []).append(sintoma_nombre)
+        SELECT cuadro_clinico_probable, sintomas
+        FROM historial_clinico_usuario
+        WHERE user_id = %s AND cuadro_clinico_probable IS NOT NULL
+        ORDER BY fecha DESC
+        LIMIT 10;
+    """, (user_id,))
+    
+    cuadros_map = {}
+    for cuadro, sintomas in cur.fetchall():
+        if not cuadro:
+            continue
+        cuadros_map.setdefault(cuadro, {"score": 0.0, "sintomas": set()})
+        cuadros_map[cuadro]["score"] += 1.0
+        if sintomas:
+            cuadros_map[cuadro]["sintomas"].update(sintomas)
+
     cur.close()
-    ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    return [(c, sc, detalles.get(c, [])) for c, sc in ranked]
+    # Convertir a lista ordenada por score
+    ranked = sorted(
+        [(c, data["score"], list(data["sintomas"])) for c, data in cuadros_map.items()],
+        key=lambda x: x[1],
+        reverse=True
+    )
+    return ranked
 
 def decidir(db_rank: List[Tuple[str, float, List[str]]], umbral_coincidencias:int=2):
     """
