@@ -36,7 +36,6 @@ from core.db.conexion import ejecutar_consulta
 # --- Helper para disparador 5/9 sin usar la tabla 'emociones_detectadas' ---
 from collections import Counter
 from typing import Optional
-from core.db.conexion import ejecutar_consulta
 
 from core.db.registro import registrar_historial_clinico
 from core.db.registro import (
