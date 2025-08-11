@@ -138,57 +138,6 @@ def _emocion_predominante(user_id: str, session: dict) -> Optional[str]:
 
 
 
-
-
-
-
-
-# --- Normalización uniforme (no toca flujo administrativo) ---
-def _norm_simple(s: str) -> str:
-    return unicodedata.normalize('NFKD', s or "").encode('ASCII', 'ignore').decode('utf-8').lower().strip()
-
-user_id = input_data.user_id
-mensaje_original = input_data.mensaje
-
-# 🛡️ Validación
-if mensaje_original is None or not isinstance(mensaje_original, str):
-    raise HTTPException(status_code=400, detail="El mensaje recibido no es válido.")
-
-# Normalizo una sola vez
-mensaje_usuario = _norm_simple(mensaje_original)
-
-# 🧼 Saludos simples (normalizados)
-SALUDOS_SIMPLES_RAW = {
-    "hola", "buenas", "buenas tardes", "buenas noches", "buen día", "holis",
-    "¿hola?", "hola?", "estas ahi?", "hey", "hello", "hi", "holaa", "probando", "hola que tal", "hola que tal?"
-}
-SALUDOS_SIMPLES = {_norm_simple(s) for s in SALUDOS_SIMPLES_RAW}
-
-if mensaje_usuario in SALUDOS_SIMPLES:
-    tipo_input = CORTESIA
-    respuesta = "Hola, ¿en qué puedo ayudarte?"
-    session = user_sessions.get(user_id, {
-        "contador_interacciones": 0,
-        "ultima_interaccion": time.time(),
-        "mensajes": [],
-        "emociones_detectadas": [],
-        "ultimas_respuestas": [],
-        "input_sospechoso": False,
-        "interacciones_previas": [],
-        "intenciones_clinicas_acumuladas": []
-    })
-    session["ultimas_respuestas"].append(respuesta)
-    user_sessions[user_id] = session
-    registrar_respuesta_openai(None, respuesta)
-    return {"respuesta": respuesta}
-
-
-
-
-
-
-
-
 @router.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
