@@ -67,7 +67,6 @@ from core.resumen_clinico import (
     generar_resumen_interaccion_10
 )
 
-from core.utils.generador_openai import generar_respuesta_con_openai
 from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica
 from core.utils.clinico_contexto import hay_contexto_clinico_anterior
 
