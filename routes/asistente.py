@@ -789,7 +789,8 @@ async def asistente(input_data: UserInput):
                         session["emociones_detectadas"].append(emocion)
         
             resultado = _inferir_por_db_o_openai(user_id, mensaje_usuario, session)
-            clasificacion_mental = resultado.get("cuadro_clinico_probable") or generar_resumen_emociones(session["emociones_detectadas"])
+            clasificacion_mental = resultado.get("cuadro_clinico_probable")
+
 
         
             if session["emociones_detectadas"]:
