@@ -392,8 +392,11 @@ async def asistente(input_data: UserInput):
                             session["nuevas_emociones"].append(e)
             
                 # 3️⃣ Disparador en interacción 5 o 9 (sin tabla 'emociones_detectadas')
+                #    Guard-flag: solo disparar si el contador YA fue incrementado en esta vuelta
                 contador_interacciones = session.get("contador_interacciones", 0)
-                if contador_interacciones in (5, 9) and not session.get("coincidencia_clinica_usada"):
+                ready_5_9 = session.get("_ready_5_9", False)  # ← lo setea a True el bloque de incremento (punto 6)
+            
+                if ready_5_9 and contador_interacciones in (5, 9) and not session.get("coincidencia_clinica_usada"):
                     try:
                         emocion_predominante = _emocion_predominante(user_id, session)
                         if emocion_predominante:
@@ -410,6 +413,10 @@ async def asistente(input_data: UserInput):
                             user_sessions[user_id] = session
                     except Exception as e:
                         print(f"⚠️ Error en disparador de coincidencia clínica (5/9): {e}")
+                    finally:
+                        # Consumir el guard-flag para no volver a disparar en esta vuelta
+                        session["_ready_5_9"] = False
+                        user_sessions[user_id] = session
             
                 # 4️⃣ Guardar en sesión sin duplicar
                 session.setdefault("emociones_detectadas", [])
@@ -418,6 +425,7 @@ async def asistente(input_data: UserInput):
                         session["emociones_detectadas"].append(emocion)
             
                 print(f"🧠 Emociones registradas/actualizadas en sesión: {emociones_actuales}")
+
 
 
 
