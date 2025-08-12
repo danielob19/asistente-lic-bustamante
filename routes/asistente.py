@@ -360,7 +360,16 @@ async def asistente(input_data: UserInput):
             ])
             print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
 
-            
+
+
+
+            # Actualiza la sesión del usuario
+            session["ultima_interaccion"] = time.time()
+            session["contador_interacciones"] += 1  # ✅ Incrementar contador aquí
+            session["_ready_5_9"] = True  # 🔐 Activar guard-flag para permitir disparador en 5/9
+            contador = session["contador_interacciones"]
+            session["mensajes"].append(mensaje_usuario)
+            user_sessions[user_id] = session
 
 
             
