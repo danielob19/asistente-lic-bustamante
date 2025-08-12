@@ -442,27 +442,57 @@ async def asistente(input_data: UserInput):
                 #    Guard-flag: solo disparar si el contador YA fue incrementado en esta vuelta
                 contador_interacciones = session.get("contador_interacciones", 0)
                 ready_5_9 = session.get("_ready_5_9", False)  # ← lo setea a True el bloque de incremento (punto 6)
+
+
+                
             
                 # 🚀 Detección de coincidencias clínicas en cualquier momento
                 try:
                     cuadro, coincidencias = obtener_cuadro_por_emociones(user_id, session)
-                    
-                    # Si hay al menos 2 coincidencias y aún no avisamos en esta sesión
+                
+                    # Si hay ≥2 coincidencias y aún no avisamos en esta sesión -> responder con RESUMEN + CUADRO
                     if cuadro and coincidencias >= 2 and not session.get("coincidencia_clinica_usada"):
-                        mensaje_predominante = (
-                            f"Por lo que me has comentado hasta ahora, "
-                            f"el patrón emocional detectado podría corresponderse con: **{cuadro}** "
-                            f"(basado en {coincidencias} coincidencias). "
-                            "¿Querés que lo analicemos más a fondo?"
+                        # Generar un resumen breve (usamos el generador ya existente, orientado a estado)
+                        resumen_breve = generar_resumen_clinico_y_estado(session, session.get("contador_interacciones", 0))
+                
+                        respuesta_match = (
+                            f"{resumen_breve} "
+                            f"En base a lo conversado, **cuadro clínico probable: {cuadro}** "
+                            f"(sustentado en {coincidencias} coincidencias emocionales). "
+                            "¿Te parece si revisamos juntos cómo se viene manifestando en tu día a día?"
                         )
-                        # Inyectar antes del mensaje actual
-                        mensaje_usuario = f"{mensaje_predominante} {mensaje_usuario}"
+                
+                        # Registrar en historial (cuadro probable + emociones actuales + nuevas_emociones si existieran)
+                        try:
+                            registrar_historial_clinico(
+                                user_id=user_id,
+                                emociones=session.get('emociones_detectadas', []),
+                                sintomas=[],
+                                tema="clinica_match_2_coincidencias",
+                                respuesta_openai=respuesta_match,
+                                sugerencia=None,
+                                fase_evaluacion="match_2_emociones",
+                                interaccion_id=session.get("contador_interacciones", 0),
+                                fecha=datetime.now(),
+                                fuente="db+openai",
+                                origen="match_2_coincidencias",
+                                cuadro_clinico_probable=cuadro,
+                                nuevas_emociones_detectadas=session.get("nuevas_emociones", []),
+                                eliminado=False
+                            )
+                        except Exception as e:
+                            print(f"⚠️ Registro historial en match_2_coincidencias falló: {e}")
+                
+                        # Marcar flag de sesión y DEVOLVER respuesta directa
                         session["coincidencia_clinica_usada"] = True
                         user_sessions[user_id] = session
-                
+                        return {"respuesta": respuesta_match}
                 except Exception as e:
                     print(f"⚠️ Error en detección de coincidencias clínicas: {e}")
 
+
+
+                
             
                 # 4️⃣ Guardar en sesión sin duplicar
                 session.setdefault("emociones_detectadas", [])
