@@ -405,27 +405,26 @@ async def asistente(input_data: UserInput):
                 contador_interacciones = session.get("contador_interacciones", 0)
                 ready_5_9 = session.get("_ready_5_9", False)  # ← lo setea a True el bloque de incremento (punto 6)
             
-                if ready_5_9 and contador_interacciones in (5, 9) and not session.get("coincidencia_clinica_usada"):
-                    try:
-                        emocion_predominante = _emocion_predominante(user_id, session)
-                        if emocion_predominante:
-                            mensaje_predominante = (
-                                "Por lo que me has comentado hasta ahora, "
-                                "el patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante "
-                                f"parece estar relacionado con: **{emocion_predominante}**. "
-                                "¿Querés profundizar o analizar sus causas con el Lic. Bustamante?"
-                            )
-                            # Inyectar antes del mensaje actual
-                            mensaje_usuario = f"{mensaje_predominante} {mensaje_usuario}"
-                            # Evitar repetir en esta sesión
-                            session["coincidencia_clinica_usada"] = True
-                            user_sessions[user_id] = session
-                    except Exception as e:
-                        print(f"⚠️ Error en disparador de coincidencia clínica (5/9): {e}")
-                    finally:
-                        # Consumir el guard-flag para no volver a disparar en esta vuelta
-                        session["_ready_5_9"] = False
+                # 🚀 Detección de coincidencias clínicas en cualquier momento
+                try:
+                    cuadro, coincidencias = obtener_cuadro_por_emociones(user_id, session)
+                    
+                    # Si hay al menos 2 coincidencias y aún no avisamos en esta sesión
+                    if cuadro and coincidencias >= 2 and not session.get("coincidencia_clinica_usada"):
+                        mensaje_predominante = (
+                            f"Por lo que me has comentado hasta ahora, "
+                            f"el patrón emocional detectado podría corresponderse con: **{cuadro}** "
+                            f"(basado en {coincidencias} coincidencias). "
+                            "¿Querés que lo analicemos más a fondo?"
+                        )
+                        # Inyectar antes del mensaje actual
+                        mensaje_usuario = f"{mensaje_predominante} {mensaje_usuario}"
+                        session["coincidencia_clinica_usada"] = True
                         user_sessions[user_id] = session
+                
+                except Exception as e:
+                    print(f"⚠️ Error en detección de coincidencias clínicas: {e}")
+
             
                 # 4️⃣ Guardar en sesión sin duplicar
                 session.setdefault("emociones_detectadas", [])
