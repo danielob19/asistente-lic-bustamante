@@ -466,31 +466,6 @@ async def asistente(input_data: UserInput):
             return {"respuesta": resultado["mensaje"]}
             
 
-
-
-
-
-
-            
-            # 🧾 REGISTRO CLÍNICO AUTOMÁTICO
-            try:
-                registrar_historial_clinico(
-                    user_id=user_id,
-                    emociones=emociones_detectadas_bifurcacion,
-                    sintomas=[],
-                    tema="emociones detectadas en bifurcación",
-                    respuesta_openai="-",          # lo que uses por defecto
-                    sugerencia="-",
-                    fase_evaluacion="bifurcacion_emocional",
-                    interaccion_id=int(time.time()),
-                    fecha=datetime.now(),
-                    fuente="web",
-                    origen="registro_automatico",            # <-- explícito con la firma nueva
-                    eliminado=False,
-                )
-                print(f"✅ Registro clínico automático exitoso. Usuario: {user_id}, emociones: {emociones_detectadas_bifurcacion}")
-            except Exception as e:
-                print(f"⚠️ Error al registrar automáticamente en historial clínico: {e}")
             
                                     
         
