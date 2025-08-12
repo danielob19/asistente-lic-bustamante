@@ -767,12 +767,6 @@ async def asistente(input_data: UserInput):
                 session["intenciones_clinicas_acumuladas"] = []
         
 
-        # Actualiza la sesión del usuario
-        session["ultima_interaccion"] = time.time()
-        session["contador_interacciones"] += 1  # ✅ Incrementar contador aquí
-        contador = session["contador_interacciones"]
-        session["mensajes"].append(mensaje_usuario)
-
 
 
         # ====================== INTERACCIÓN 5 – Resumen clínico preliminar e inferencia ======================
