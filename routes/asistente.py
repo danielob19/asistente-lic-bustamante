@@ -135,6 +135,44 @@ def _emocion_predominante(user_id: str, session: dict) -> Optional[str]:
     return filas[0]["emocion"] if filas else None
 
 
+# --- Coincidencias de cuadro por emociones (sesión + historial) ---
+def obtener_cuadro_por_emociones(user_id: str, session: dict):
+    """
+    Devuelve (cuadro_probable, coincidencias) calculando el cuadro más frecuente
+    a partir de las emociones de la sesión + las ya registradas en historial_clinico_usuario.
+    No usa tablas viejas; sólo 'historial_clinico_usuario'.
+    """
+    try:
+        # Emociones vigentes en la sesión
+        sesion = session.get("emociones_detectadas", []) or []
+
+        # Emociones históricas desde DB unificada
+        historicas = obtener_emociones_ya_registradas(user_id)  # set[str]
+        todas = [e.strip().lower() for e in (list(historicas) + list(sesion)) if isinstance(e, str) and e.strip()]
+        if not todas:
+            return (None, 0)
+
+        # Mapear emociones -> cuadro con heurística existente
+        # 1) Intentar con la función clínica si está disponible
+        try:
+            from core.utils.modulo_clinico import clasificar_cuadro_clinico
+            cuadros = [clasificar_cuadro_clinico(e) for e in todas]
+        except Exception:
+            # 2) Fallback interno conservador
+            cuadros = [clasificar_cuadro_clinico_openai(e) for e in todas]
+
+        # Contar el cuadro más frecuente
+        c = Counter([c for c in cuadros if isinstance(c, str) and c.strip()])
+        if not c:
+            return (None, 0)
+
+        cuadro_top, freq = c.most_common(1)[0]
+        return (cuadro_top, int(freq))
+    except Exception as e:
+        print(f"⚠️ obtener_cuadro_por_emociones() falló: {e}")
+        return (None, 0)
+
+
 
 @router.post("/asistente")
 async def asistente(input_data: UserInput):
