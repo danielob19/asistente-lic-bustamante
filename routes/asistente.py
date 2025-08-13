@@ -71,7 +71,7 @@ from core.utils.clinico_contexto import hay_contexto_clinico_anterior
 
 from core.estilos_post10 import seleccionar_estilo_clinico_variable
 
-from core.contexto import user_sessions
+
 from core.constantes import (
     CLINICO_CONTINUACION,
     CLINICO,
@@ -91,6 +91,14 @@ import random
 import unicodedata
 import traceback
 
+
+
+# -- Sesiones en memoria (fallback seguro) --
+try:
+    from core.contexto import user_sessions
+except Exception:
+    # Si el import falla en el entorno de despliegue, usamos un dict local
+    user_sessions = {}
 
 
 def clasificar_cuadro_clinico_openai(emocion: str) -> str:
