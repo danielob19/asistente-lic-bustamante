@@ -444,16 +444,25 @@ async def asistente(input_data: UserInput):
                 ready_5_9 = session.get("_ready_5_9", False)  # ← lo setea a True el bloque de incremento (punto 6)
 
 
+
+                
                 
             
-                # 🚀 Detección de coincidencias clínicas en cualquier momento
+                # 📌 Detección de coincidencias clínicas en cualquier momento (SOLO antes de la 10)
+                # Requiere: from datetime import datetime
                 try:
+                    contador = session.get("contador_interacciones", 0)
                     cuadro, coincidencias = obtener_cuadro_por_emociones(user_id, session)
                 
-                    # Si hay ≥2 coincidencias y aún no avisamos en esta sesión -> responder con RESUMEN + CUADRO
-                    if cuadro and coincidencias >= 2 and not session.get("coincidencia_clinica_usada"):
-                        # Generar un resumen breve (usamos el generador ya existente, orientado a estado)
-                        resumen_breve = generar_resumen_clinico_y_estado(session, session.get("contador_interacciones", 0))
+                    # Dispara resumen + cuadro probable si hay ≥2 coincidencias, no usado antes y estamos antes de la 10
+                    if (
+                        cuadro
+                        and coincidencias >= 2
+                        and not session.get("coincidencia_clinica_usada")
+                        and contador < 10
+                    ):
+                        # Generar un resumen breve (usa tu generador existente)
+                        resumen_breve = generar_resumen_clinico_y_estado(session, contador)
                 
                         respuesta_match = (
                             f"{resumen_breve} "
@@ -466,19 +475,19 @@ async def asistente(input_data: UserInput):
                         try:
                             registrar_historial_clinico(
                                 user_id=user_id,
-                                emociones=session.get('emociones_detectadas', []),
-                                sintomas=[],
+                                emociones=session.get("emociones_detectadas", []),
+                                sintomas=[],  # Importante: lista, no entero
                                 tema="clinica_match_2_coincidencias",
                                 respuesta_openai=respuesta_match,
                                 sugerencia=None,
                                 fase_evaluacion="match_2_emociones",
-                                interaccion_id=session.get("contador_interacciones", 0),
+                                interaccion_id=contador,
                                 fecha=datetime.now(),
-                                fuente="db+openai",
+                                fuente="dbopenai",
                                 origen="match_2_coincidencias",
                                 cuadro_clinico_probable=cuadro,
                                 nuevas_emociones_detectadas=session.get("nuevas_emociones", []),
-                                eliminado=False
+                                eliminado=False,
                             )
                         except Exception as e:
                             print(f"⚠️ Registro historial en match_2_coincidencias falló: {e}")
@@ -487,8 +496,12 @@ async def asistente(input_data: UserInput):
                         session["coincidencia_clinica_usada"] = True
                         user_sessions[user_id] = session
                         return {"respuesta": respuesta_match}
+                
                 except Exception as e:
                     print(f"⚠️ Error en detección de coincidencias clínicas: {e}")
+
+
+                
 
 
 
