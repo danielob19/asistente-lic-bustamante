@@ -511,6 +511,7 @@ async def asistente(input_data: UserInput):
                 
                 except Exception as e:
                     print(f"⚠️ Error en detección de coincidencias clínicas: {e}")
+                
 
 
                 
