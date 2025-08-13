@@ -212,6 +212,10 @@ async def asistente(input_data: UserInput):
             "interacciones_previas": [],
             "intenciones_clinicas_acumuladas": []  # 🆕 Campo agregado para acumulación clínica
         })
+
+        # Asegurar que 'contador' exista en todos los caminos de ejecución
+        contador = session.get("contador_interacciones", 0)
+        
     
         # 🛡️ Validación anticipada para evitar errores de tipo NoneType
         if mensaje_original is None or not isinstance(mensaje_original, str):
