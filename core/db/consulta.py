@@ -7,23 +7,31 @@ from .conexion import ejecutar_consulta
 
 def obtener_emociones_ya_registradas(user_id: str) -> set[str]:
     """
-    Devuelve el set de emociones ya registradas en historial_clinico_usuario, combinando
-    'emociones' y 'nuevas_emociones_detectadas'.
+    Devuelve el conjunto de emociones registradas para el usuario `user_id`,
+    combinando `emociones` ∪ `nuevas_emociones_detectadas` desde
+    public.historial_clinico_usuario (solo registros no eliminados).
     """
     sql = """
-        SELECT COALESCE(emociones, '{}') AS emociones,
-               COALESCE(nuevas_emociones_detectadas, '{}') AS nuevas
-        FROM historial_clinico_usuario
+        SELECT
+            COALESCE(emociones, ARRAY[]::text[])                   AS emociones,
+            COALESCE(nuevas_emociones_detectadas, ARRAY[]::text[]) AS nuevas
+        FROM public.historial_clinico_usuario
         WHERE user_id = %s
+          AND eliminado = false
     """
-    filas = ejecutar_consulta(sql, (user_id,))
-    res = set()
-    for f in filas or []:
-        for e in f.get("emociones", []) or []:
-            res.add(e)
-        for e in f.get("nuevas", []) or []:
-            res.add(e)
+    filas = ejecutar_consulta(sql, (user_id,)) or []
+    res: set[str] = set()
+    for fila in filas:
+        emos = (fila[0] if isinstance(fila, (list, tuple)) else fila.get("emociones")) or []
+        news = (fila[1] if isinstance(fila, (list, tuple)) else fila.get("nuevas")) or []
+        for e in emos:
+            if e and isinstance(e, str):
+                res.add(e.strip().lower())
+        for e in news:
+            if e and isinstance(e, str):
+                res.add(e.strip().lower())
     return res
+
 
 
 def obtener_sintomas_existentes(user_id: str | None = None) -> set[str]:
