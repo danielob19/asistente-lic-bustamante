@@ -33,9 +33,11 @@ from core.db.sintomas import (
 )
 
 from core.db.consulta import (
-    obtener_emociones_ya_registradas,
-    obtener_historial_clinico_usuario
+    obtener_historial_usuario,
+    obtener_ultimo_registro_usuario,
+    estadistica_global_emocion_a_cuadro,
 )
+
 
 from core.db.conexion import ejecutar_consulta  # Eliminado user_sessions
 
