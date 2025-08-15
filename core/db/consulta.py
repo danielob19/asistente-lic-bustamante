@@ -132,13 +132,66 @@ def contiene_expresion_administrativa(texto: str) -> bool:
 
 from core.db.conexion import ejecutar_consulta
 
-def obtener_historial_clinico_usuario(user_id: str):
+
+
+# ===== Helpers agregados para memoria persistente y estadísticas globales =====
+
+def obtener_historial_usuario(user_id: str, limite: int = 100):
     query = """
-        SELECT id, user_id, fecha, emociones, sintomas, tema,
-               respuesta_openai, sugerencia, fase_evaluacion,
-               interaccion_id, fuente, eliminado
-        FROM historial_clinico_usuario
-        WHERE user_id = %s AND eliminado = false
+        SELECT
+            id,
+            user_id,
+            fecha,
+            emociones,
+            nuevas_emociones_detectadas,
+            cuadro_clinico_probable,
+            interaccion_id
+        FROM public.historial_clinico_usuario
+        WHERE user_id = %s
+          AND eliminado = false
         ORDER BY fecha DESC
+        LIMIT %s
     """
-    return ejecutar_consulta(query, (user_id,))
+    return ejecutar_consulta(query, (user_id, limite)) or []
+
+
+def obtener_ultimo_registro_usuario(user_id: str):
+    query = """
+        SELECT
+            id,
+            user_id,
+            fecha,
+            emociones,
+            nuevas_emociones_detectadas,
+            cuadro_clinico_probable,
+            interaccion_id
+        FROM public.historial_clinico_usuario
+        WHERE user_id = %s
+          AND eliminado = false
+        ORDER BY fecha DESC
+        LIMIT 1
+    """
+    res = ejecutar_consulta(query, (user_id,))
+    return res[0] if res else None
+
+
+def estadistica_global_emocion_a_cuadro():
+    """
+    Devuelve filas (emocion TEXT, cuadro TEXT, c BIGINT) a partir de la memoria.
+    Se usa solo como estadística/memoria; las etiquetas las define OpenAI.
+    """
+    query = """
+        SELECT
+            LOWER(e) AS emocion,
+            LOWER(COALESCE(cuadro_clinico_probable, '')) AS cuadro,
+            COUNT(*) AS c
+        FROM public.historial_clinico_usuario
+        CROSS JOIN LATERAL UNNEST(COALESCE(emociones, ARRAY[]::text[])) AS e
+        WHERE eliminado = false
+          AND COALESCE(cuadro_clinico_probable, '') <> ''
+        GROUP BY 1, 2
+        HAVING COUNT(*) >= 1
+        ORDER BY c DESC
+    """
+    return ejecutar_consulta(query, ())
+
