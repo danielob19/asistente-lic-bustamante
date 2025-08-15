@@ -104,7 +104,7 @@ def normalizar_texto(texto: str) -> str:
 def recuperar_historial_clinico(user_id, limite=5):
     query = """
     SELECT fecha, emociones, sintomas, tema, respuesta_openai, sugerencia, fase_evaluacion
-    FROM historial_clinico_usuario
+    FROM public.historial_clinico_usuario           -- ← con esquema
     WHERE user_id = %s AND eliminado = FALSE
     ORDER BY fecha DESC
     LIMIT %s
