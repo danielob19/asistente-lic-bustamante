@@ -188,24 +188,59 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             return []
         return [re.sub(r"\s+", " ", x.strip().lower()) for x in xs if isinstance(x, str) and x.strip()]
 
-    def _ask_openai_emociones_y_cuadro(texto_usuario: str):
+    def _ask_openai_emociones_y_cuadro(texto_usuario: str) -> tuple[list[str], str]:
+        """
+        Usa exclusivamente OpenAI para detectar:
+          - emociones (lista de strings, minúsculas, sin duplicados, máx. 6)
+          - cuadro_probable (string, minúsculas). Si no hay, cadena vacía.
+        Devuelve (emociones, cuadro).
+        """
+        import json, re
+    
         prompt = (
-            "Analizá el siguiente mensaje clínico de un usuario. "
-            "Respondé en JSON con dos claves: "
-            "{\"emociones\": [..], \"cuadro_probable\": \"...\"}. "
-            "Reglas: solo emociones negativas/relevantes; si no hay, emociones=[] y cuadro_probable=\"\".\n\n"
+            "Analizá el siguiente mensaje del usuario y devolvé EXCLUSIVAMENTE un JSON válido con este formato exacto:\n"
+            "{\n"
+            '  "emociones": ["..."],\n'
+            '  "cuadro_probable": "..." \n'
+            "}\n"
+            "Instrucciones estrictas:\n"
+            "- Solo JSON: sin explicaciones, sin texto antes/después, sin Markdown, sin etiquetas.\n"
+            "- \"emociones\": array de 0 a 6 términos en minúsculas, sin duplicados, únicamente emociones NEGATIVAS o clínicamente relevantes mencionadas (p. ej.: ansiedad, angustia, tristeza, estrés, irritabilidad, insomnio, apatía, culpa, miedo).\n"
+            "- \"cuadro_probable\": síntesis breve y prudente en minúsculas (p. ej.: \"ansiedad generalizada\", \"estrés sostenido\"). Si no surge, usar \"\".\n"
+            "- Si no hay contenido clínico, responder exactamente: {\"emociones\": [], \"cuadro_probable\": \"\"}.\n\n"
             f"TEXTO: {texto_usuario}"
         )
+    
         out = generar_respuesta_con_openai(prompt) or '{"emociones": [], "cuadro_probable": ""}'
+        out = (out or "").strip()
+    
+        # Limpieza por si el modelo rodea con ```json ... ```
+        if out.startswith("```"):
+            out = re.sub(r"^```(?:json)?\s*|\s*```$", "", out, flags=re.IGNORECASE)
+    
+        # Si hay texto alrededor, intentamos quedarnos solo con el primer bloque {...}
+        m = re.search(r"\{.*\}", out, flags=re.DOTALL)
+        if m:
+            out = m.group(0)
+    
         try:
             data = json.loads(out)
-            emociones = _limpiar_lista_str(data.get("emociones", []))
+            emociones = data.get("emociones", []) or []
             cuadro = (data.get("cuadro_probable") or "").strip().lower()
+    
+            # Normalizar + deduplicar + recortar a 6
+            def _dedup_norm(xs: list[str]) -> list[str]:
+                norm = _limpiar_lista_str(xs)
+                return list(dict.fromkeys(norm))[:6]
+    
+            emociones = _dedup_norm(emociones)
             return emociones, cuadro
         except Exception:
-            # fallback robusto: separar por comas / saltos
-            emos = [x.strip() for x in re.split(r"[,\n]", out) if x.strip()]
-            return _limpiar_lista_str(emos), ""
+            # Fallback: si no vino JSON válido, tomamos tokens por comas/saltos
+            items = [s.strip().lower() for s in re.split(r"[,\n;]", out) if s.strip()]
+            items = list(dict.fromkeys(_limpiar_lista_str(items)))[:6]
+            return items, ""
+
 
     def _coincidencias_sesion_historial_global(user_id: str, emociones_sesion, cuadro_openai: str):
         """
