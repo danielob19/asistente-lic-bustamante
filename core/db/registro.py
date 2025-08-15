@@ -360,3 +360,59 @@ def registrar_inferencia(user_id: str, interaccion_id: int, tipo: str, valor: st
 
     except Exception as e:
         print(f"❌ Error al registrar inferencia: {e}")
+
+
+
+def registrar_novedad_openai(
+    user_id: str,
+    emociones: list[str] | None,
+    nuevas_emociones_detectadas: list[str] | None,
+    cuadro_clinico_probable: str | None,
+    interaccion_id: int | None,
+    fuente: str = "openai"
+) -> bool:
+    """
+    Inserta un registro en public.historial_clinico_usuario con los campos provistos.
+    - Normaliza: lower/strip para strings.
+    - Deduplica: conserva orden de aparición.
+    - Si `cuadro_clinico_probable` queda vacío tras normalizar, se guarda NULL.
+    """
+    try:
+        def _norm_list(xs):
+            if not xs:
+                return []
+            norm = [ (x or "").strip().lower() for x in xs
+                     if isinstance(x, str) and (x or "").strip() ]
+            # deduplicar conservando el orden
+            return list(dict.fromkeys(norm).keys())
+
+        emociones_norm = _norm_list(emociones)
+        nuevas_norm   = _norm_list(nuevas_emociones_detectadas)
+        cuadro_norm   = (cuadro_clinico_probable or "").strip().lower() or None
+
+        consulta = """
+            INSERT INTO public.historial_clinico_usuario
+                (user_id, fecha, emociones, nuevas_emociones_detectadas, cuadro_clinico_probable,
+                 interaccion_id, fuente, eliminado)
+            VALUES (%s, NOW(), %s, %s, %s, %s, %s, false)
+        """
+        ejecutar_consulta(
+            consulta,
+            (
+                user_id,
+                emociones_norm,
+                nuevas_norm,
+                cuadro_norm,
+                interaccion_id,
+                fuente
+            ),
+            commit=True
+        )
+        return True
+    except Exception as e:
+        print(f"❌ Error registrar_novedad_openai: {e}")
+        return False
+
+
+
+
