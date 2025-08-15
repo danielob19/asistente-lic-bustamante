@@ -280,22 +280,24 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     # 3) Disparador por coincidencias (<10 y aún no notificado)
     texto_out = ""
     if contador < 10 and cuadro_openai and not session.get("disparo_notificado", False):
-        # Contar coincidencias priorizando el cuadro devuelto por OpenAI
-        # (usa la estadística global de la misma tabla como memoria)
+        # Unimos emociones de sesión + previas de la sesión para el cómputo (sin duplicar)
         emociones_union = list(set(_limpiar_lista_str(session.get("emociones_detectadas", [])) + _limpiar_lista_str(emociones_openai)))
         votos, detalles, objetivo = _coincidencias_sesion_historial_global(
             user_id=user_id,
             emociones_sesion=emociones_union,
             cuadro_openai=cuadro_openai
         )
-
+    
         if votos >= 2:
-            resumen_breve = ""
+            partes = []
             if emociones_openai:
-                resumen_breve += f"En esta interacción se identifican: {', '.join(emociones_openai)}. "
-            texto_out = f"{resumen_breve}Cuadro clínico probable: **{objetivo}**."
-
-            # Registrar explícitamente el suceso de disparo (además del registro previo de novedades)
+                partes.append(f"Lo que traés hoy se suma a lo previo y se observa {', '.join(emociones_openai)}.")
+            partes.append(f"Cuadro clínico probable: {objetivo}.")
+            partes.append("¿Podés ubicar cuándo se intensifica más (trabajo, noche, antes de dormir)? ¿Cambios en sueño, concentración o tensión corporal?")
+    
+            texto_out = " ".join(partes)
+    
+            # Registrar explícitamente el suceso del disparador (además de la novedad ya registrada)
             registrar_novedad_openai(
                 user_id=user_id,
                 emociones=session.get("emociones_detectadas", []),
@@ -304,10 +306,10 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                 interaccion_id=contador,
                 fuente="openai_disparo"
             )
-
-            # Bandera de sesión para no repetir el disparo
+    
             session["disparo_notificado"] = True
             session["disparo_cuadro"] = objetivo
+
 
     # 4) Recordatorio al reconectar (si vuelve luego de un tiempo y trae contenido clínico)
     ultimo = obtener_ultimo_registro_usuario(user_id)
@@ -353,21 +355,35 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             pass
 
-    # --- 5) Respuesta base si no hubo disparador ---
+    
+    # 5) Si no hubo disparador armado, respuesta clínica breve, humana y profesional
     if not texto_out:
-        base = []
-        if emociones_openai:
-            base.append(f"Se observan: {', '.join(emociones_openai)}.")
-        if cuadro_openai:
-            base.append(f"Cuadro clínico probable: {cuadro_openai}.")
-        if not base:
-            base.append("No aparecen elementos clínicos relevantes en este mensaje.")
-        texto_out = " ".join(base)
-
-    if recordatorio:
-        texto_out = f"{texto_out}\n\n{recordatorio}"
-
-    return {"respuesta": texto_out, "session": session}
+        if emociones_openai or cuadro_openai:
+            partes = []
+    
+            # Apertura breve y focalizada
+            if emociones_openai:
+                partes.append(
+                    f"Por lo que describís, se observa {', '.join(emociones_openai)}."
+                )
+            elif cuadro_openai:
+                partes.append("Por lo que describís, aparecen indicios clínicos relevantes.")
+    
+            # Preguntas guía (orientadas al recorte clínico)
+            partes.append(
+                "¿En qué momentos se intensifica más: durante el trabajo, al final del día o al intentar dormir?"
+            )
+            partes.append(
+                "¿Cómo vienen el sueño y la concentración? ¿Notaste tensión corporal (cuello/mandíbula), irritabilidad o fatiga reciente?"
+            )
+    
+            # Cierre con hipótesis prudente
+            if cuadro_openai:
+                partes.append(f"Cuadro clínico probable: {cuadro_openai}.")
+    
+            texto_out = " ".join(partes)
+        else:
+            texto_out = "En este mensaje no aparecen elementos clínicos relevantes."
 
 
 
