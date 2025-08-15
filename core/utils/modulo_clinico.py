@@ -288,32 +288,50 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             texto_out = f\"{resumen_breve}Cuadro clínico probable: **{objetivo}**.\"
             session["disparo_notificado"] = True  # no repetir en la sesión
 
-    # --- 4) Recordatorio al reingresar (≥60s) ---
-    ultimo = obtener_ultimo_registro_usuario(user_id)
-    recordatorio = ""
-    if ultimo:
-        fecha_ult = ultimo[2]  # fecha
-        try:
-            from datetime import datetime as _dt
-            if isinstance(fecha_ult, str):
-                fecha_ult_dt = _dt.fromisoformat(fecha_ult.replace("Z", ""))
-            else:
-                fecha_ult_dt = fecha_ult
-            delta = ahora - fecha_ult_dt
-            seg = int(delta.total_seconds())
-            horas = max(0, seg // 3600)
-            if seg >= 60 and (emociones_openai or cuadro_openai):  # producción: 60s
-                emos_previas = _limpiar_lista_str(ultimo[3] or [])  # emociones
-                cuadro_prev = (ultimo[5] or "").strip().lower()     # cuadro
-                if emos_previas or cuadro_prev:
-                    prev = ""
-                    if emos_previas:
-                        prev += f"Previo se registraron: {', '.join(emos_previas)}. "
-                    if cuadro_prev:
-                        prev += f"Se había estimado como probable: {cuadro_prev}. "
-                    recordatorio = f\"{prev}Pasaron ~{horas}h desde la última conversación. ¿Aparecieron emociones nuevas?\"
-        except Exception:
-            pass
+        # 4) Recordatorio al reconectar (si vuelve luego de un tiempo y trae contenido clínico)
+        ultimo = obtener_ultimo_registro_usuario(user_id)
+        recordatorio = ""
+        if ultimo:
+            fecha_ult = ultimo[2]
+            try:
+                if isinstance(fecha_ult, str):
+                    # intento parseo básico ISO
+                    fecha_ult_dt = datetime.fromisoformat(fecha_ult.replace("Z", ""))
+                else:
+                    fecha_ult_dt = fecha_ult
+    
+                delta = ahora - fecha_ult_dt
+                seg = int(delta.total_seconds())
+    
+                if seg >= REINGRESO_SEGUNDOS and (emociones_openai or cuadro_openai):
+                    emos_previas = _limpiar_lista_str(ultimo[3] or [])  # emociones
+                    cuadro_prev = (ultimo[5] or "").strip().lower()     # cuadro
+    
+                    if emos_previas or cuadro_prev:
+                        prev = ""
+                        if emos_previas:
+                            prev += f"Previo se registraron: {', '.join(emos_previas)}. "
+                        if cuadro_prev:
+                            prev += f"Se había estimado como probable: {cuadro_prev}. "
+    
+                        # Formato amigable del tiempo transcurrido
+                        if seg < 3600:
+                            mins = max(1, seg // 60)
+                            trans = f"~{mins}m"
+                        elif seg < 86400:
+                            horas = seg // 3600
+                            trans = f"~{horas}h"
+                        else:
+                            dias = seg // 86400
+                            trans = f"~{dias}d"
+    
+                        recordatorio = (
+                            f"{prev}Pasaron {trans} desde la última conversación. "
+                            f"¿Aparecieron emociones nuevas?"
+                        )
+            except Exception:
+                pass
+
 
     # --- 5) Respuesta base si no hubo disparador ---
     if not texto_out:
