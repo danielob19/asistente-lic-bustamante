@@ -5,12 +5,16 @@ import unicodedata
 import string
 from typing import Dict, Any
 from datetime import datetime
+from datetime import datetime, timedelta  # ← añadimos timedelta para cálculos de reingreso
+
 
 from core.utils.clinico_contexto import hay_contexto_clinico_anterior
 from core.utils_contacto import obtener_mensaje_contacto
 from core.funciones_asistente import detectar_emociones_negativas
 from core.utils.generador_openai import generar_respuesta_con_openai
 from core.constantes import CLINICO, CLINICO_CONTINUACION
+
+
 from core.db.registro import (
     registrar_respuesta_openai,
     registrar_auditoria_respuesta,
@@ -35,7 +39,8 @@ from core.db.consulta import (
 
 from core.db.conexion import ejecutar_consulta  # Eliminado user_sessions
 
-
+# Producción: considerar reingreso a partir de 60 segundos
+REINGRESO_SEGUNDOS = 60
 
 def armar_prompt_openai(historial_emociones, nuevas_emociones, ultima_interaccion, nombre_usuario=None):
     resumen = ""
