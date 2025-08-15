@@ -277,16 +277,39 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     session["emociones_detectadas"] = list(emos_prev.union(emociones_openai))
     session["ultima_fecha"] = ahora.isoformat()
 
-    # --- 3) Disparador por coincidencias (<10 y no notificado) ---
-    texto_out = ""
-    if contador < 10 and not session.get("disparo_notificado", False) and cuadro_openai:
-        votos, detalles, objetivo = _coincidencias_sesion_historial_global(user_id, emociones_openai, cuadro_openai)
-        if votos >= 2:
-            resumen_breve = ""
-            if emociones_openai:
-                resumen_breve += f"En esta interacción se identifican: {', '.join(emociones_openai)}. "
-            texto_out = f\"{resumen_breve}Cuadro clínico probable: **{objetivo}**.\"
-            session["disparo_notificado"] = True  # no repetir en la sesión
+        # 3) Disparador por coincidencias (<10 y aún no notificado)
+        texto_out = ""
+        if contador < 10 and cuadro_openai and not session.get("disparo_notificado", False):
+            # Contar coincidencias priorizando el cuadro devuelto por OpenAI
+            # (usa la estadística global de la misma tabla como memoria)
+            emociones_union = list(set(_limpiar_lista_str(session.get("emociones_detectadas", [])) + _limpiar_lista_str(emociones_openai)))
+            votos, detalles, objetivo = _coincidencias_sesion_historial_global(
+                user_id=user_id,
+                emociones_sesion=emociones_union,
+                cuadro_openai=cuadro_openai
+            )
+    
+            if votos >= 2:
+                resumen_breve = ""
+                if emociones_openai:
+                    resumen_breve += f"En esta interacción se identifican: {', '.join(emociones_openai)}. "
+    
+                texto_out = f"{resumen_breve}Cuadro clínico probable: **{objetivo}**."
+    
+                # Registrar explícitamente el suceso de disparo (además del registro previo de novedades)
+                registrar_novedad_openai(
+                    user_id=user_id,
+                    emociones=session.get("emociones_detectadas", []),
+                    nuevas_emociones_detectadas=[],
+                    cuadro_clinico_probable=objetivo,
+                    interaccion_id=contador,
+                    fuente="openai_disparo"
+                )
+    
+                # Bandera de sesión para no repetir el disparo
+                session["disparo_notificado"] = True
+                session["disparo_cuadro"] = objetivo
+
 
         # 4) Recordatorio al reconectar (si vuelve luego de un tiempo y trae contenido clínico)
         ultimo = obtener_ultimo_registro_usuario(user_id)
