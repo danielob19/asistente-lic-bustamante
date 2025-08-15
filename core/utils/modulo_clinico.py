@@ -277,84 +277,81 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     session["emociones_detectadas"] = list(emos_prev.union(emociones_openai))
     session["ultima_fecha"] = ahora.isoformat()
 
-        # 3) Disparador por coincidencias (<10 y aún no notificado)
-        texto_out = ""
-        if contador < 10 and cuadro_openai and not session.get("disparo_notificado", False):
-            # Contar coincidencias priorizando el cuadro devuelto por OpenAI
-            # (usa la estadística global de la misma tabla como memoria)
-            emociones_union = list(set(_limpiar_lista_str(session.get("emociones_detectadas", [])) + _limpiar_lista_str(emociones_openai)))
-            votos, detalles, objetivo = _coincidencias_sesion_historial_global(
+    # 3) Disparador por coincidencias (<10 y aún no notificado)
+    texto_out = ""
+    if contador < 10 and cuadro_openai and not session.get("disparo_notificado", False):
+        # Contar coincidencias priorizando el cuadro devuelto por OpenAI
+        # (usa la estadística global de la misma tabla como memoria)
+        emociones_union = list(set(_limpiar_lista_str(session.get("emociones_detectadas", [])) + _limpiar_lista_str(emociones_openai)))
+        votos, detalles, objetivo = _coincidencias_sesion_historial_global(
+            user_id=user_id,
+            emociones_sesion=emociones_union,
+            cuadro_openai=cuadro_openai
+        )
+
+        if votos >= 2:
+            resumen_breve = ""
+            if emociones_openai:
+                resumen_breve += f"En esta interacción se identifican: {', '.join(emociones_openai)}. "
+            texto_out = f"{resumen_breve}Cuadro clínico probable: **{objetivo}**."
+
+            # Registrar explícitamente el suceso de disparo (además del registro previo de novedades)
+            registrar_novedad_openai(
                 user_id=user_id,
-                emociones_sesion=emociones_union,
-                cuadro_openai=cuadro_openai
+                emociones=session.get("emociones_detectadas", []),
+                nuevas_emociones_detectadas=[],
+                cuadro_clinico_probable=objetivo,
+                interaccion_id=contador,
+                fuente="openai_disparo"
             )
-    
-            if votos >= 2:
-                resumen_breve = ""
-                if emociones_openai:
-                    resumen_breve += f"En esta interacción se identifican: {', '.join(emociones_openai)}. "
-    
-                texto_out = f"{resumen_breve}Cuadro clínico probable: **{objetivo}**."
-    
-                # Registrar explícitamente el suceso de disparo (además del registro previo de novedades)
-                registrar_novedad_openai(
-                    user_id=user_id,
-                    emociones=session.get("emociones_detectadas", []),
-                    nuevas_emociones_detectadas=[],
-                    cuadro_clinico_probable=objetivo,
-                    interaccion_id=contador,
-                    fuente="openai_disparo"
-                )
-    
-                # Bandera de sesión para no repetir el disparo
-                session["disparo_notificado"] = True
-                session["disparo_cuadro"] = objetivo
 
+            # Bandera de sesión para no repetir el disparo
+            session["disparo_notificado"] = True
+            session["disparo_cuadro"] = objetivo
 
-        # 4) Recordatorio al reconectar (si vuelve luego de un tiempo y trae contenido clínico)
-        ultimo = obtener_ultimo_registro_usuario(user_id)
-        recordatorio = ""
-        if ultimo:
-            fecha_ult = ultimo[2]
-            try:
-                if isinstance(fecha_ult, str):
-                    # intento parseo básico ISO
-                    fecha_ult_dt = datetime.fromisoformat(fecha_ult.replace("Z", ""))
-                else:
-                    fecha_ult_dt = fecha_ult
-    
-                delta = ahora - fecha_ult_dt
-                seg = int(delta.total_seconds())
-    
-                if seg >= REINGRESO_SEGUNDOS and (emociones_openai or cuadro_openai):
-                    emos_previas = _limpiar_lista_str(ultimo[3] or [])  # emociones
-                    cuadro_prev = (ultimo[5] or "").strip().lower()     # cuadro
-    
-                    if emos_previas or cuadro_prev:
-                        prev = ""
-                        if emos_previas:
-                            prev += f"Previo se registraron: {', '.join(emos_previas)}. "
-                        if cuadro_prev:
-                            prev += f"Se había estimado como probable: {cuadro_prev}. "
-    
-                        # Formato amigable del tiempo transcurrido
-                        if seg < 3600:
-                            mins = max(1, seg // 60)
-                            trans = f"~{mins}m"
-                        elif seg < 86400:
-                            horas = seg // 3600
-                            trans = f"~{horas}h"
-                        else:
-                            dias = seg // 86400
-                            trans = f"~{dias}d"
-    
-                        recordatorio = (
-                            f"{prev}Pasaron {trans} desde la última conversación. "
-                            f"¿Aparecieron emociones nuevas?"
-                        )
-            except Exception:
-                pass
+    # 4) Recordatorio al reconectar (si vuelve luego de un tiempo y trae contenido clínico)
+    ultimo = obtener_ultimo_registro_usuario(user_id)
+    recordatorio = ""
+    if ultimo:
+        fecha_ult = ultimo[2]
+        try:
+            if isinstance(fecha_ult, str):
+                # intento parseo básico ISO
+                fecha_ult_dt = datetime.fromisoformat(fecha_ult.replace("Z", ""))
+            else:
+                fecha_ult_dt = fecha_ult
 
+            delta = ahora - fecha_ult_dt
+            seg = int(delta.total_seconds())
+
+            if seg >= REINGRESO_SEGUNDOS and (emociones_openai or cuadro_openai):
+                emos_previas = _limpiar_lista_str(ultimo[3] or [])  # emociones
+                cuadro_prev = (ultimo[5] or "").strip().lower()     # cuadro
+
+                if emos_previas or cuadro_prev:
+                    prev = ""
+                    if emos_previas:
+                        prev += f"Previo se registraron: {', '.join(emos_previas)}. "
+                    if cuadro_prev:
+                        prev += f"Se había estimado como probable: {cuadro_prev}. "
+
+                    # Formato amigable del tiempo transcurrido
+                    if seg < 3600:
+                        mins = max(1, seg // 60)
+                        trans = f"~{mins}m"
+                    elif seg < 86400:
+                        horas = seg // 3600
+                        trans = f"~{horas}h"
+                    else:
+                        dias = seg // 86400
+                        trans = f"~{dias}d"
+
+                    recordatorio = (
+                        f"{prev}Pasaron {trans} desde la última conversación. "
+                        f"¿Aparecieron emociones nuevas?"
+                    )
+        except Exception:
+            pass
 
     # --- 5) Respuesta base si no hubo disparador ---
     if not texto_out:
@@ -371,11 +368,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         texto_out = f"{texto_out}\n\n{recordatorio}"
 
     return {"respuesta": texto_out, "session": session}
-
-
-
-
-
 
 
 
