@@ -149,225 +149,188 @@ def detectar_emocion(texto: str) -> str | None:
                 return emocion
     return None
 
+
+
+
+
+
+
 def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Flujo clínico alineado a directiva:
+      - OpenAI detecta emociones y cuadro probable en cada mensaje clínico.
+      - Registrar novedades (emociones nuevas / cuadro) en public.historial_clinico_usuario.
+      - Disparador (<10): si hay ≥2 coincidencias (sesión + historial + global) hacia el mismo cuadro → responder con
+        resumen breve + 'Cuadro clínico probable', y no repetir en la sesión.
+      - Reingreso producción: recordar emociones/cuadro previos si pasaron ≥60s y preguntar por emociones nuevas.
+    """
+    import json, re
+    from datetime import datetime
+    # Imports internos para evitar cambiar otros bloques
+    from core.db.consulta import (
+        obtener_historial_usuario,
+        obtener_ultimo_registro_usuario,
+        estadistica_global_emocion_a_cuadro,
+    )
+    from core.db.registro import registrar_novedad_openai
+    from core.utils.generador_openai import generar_respuesta_con_openai
+
+    # --- Extraer inputs ---
     mensaje_original = input_data["mensaje_original"]
-    mensaje_usuario = normalizar_texto(input_data["mensaje_usuario"])
+    mensaje_usuario = input_data["mensaje_usuario"]
     user_id = input_data["user_id"]
     session = input_data["session"]
-    contador = input_data["contador"]
+    contador = int(input_data["contador"])
 
-    if contador == 1:
-        historial_prev = recuperar_historial_clinico(user_id)
-        if historial_prev:
-            resumen = construir_resumen_historial(historial_prev)
-            respuesta_historial = f"Bienvenido nuevamente. La última vez conversamos sobre {resumen}. ¿Querés que retomemos desde ahí?"
-            session["ultimas_respuestas"].append(respuesta_historial)
-            return {"respuesta": respuesta_historial, "session": session}
+    # --- Utilidades locales ---
+    def _limpiar_lista_str(xs):
+        if not xs:
+            return []
+        return [re.sub(r"\s+", " ", x.strip().lower()) for x in xs if isinstance(x, str) and x.strip()]
 
-    sintomas_existentes = {normalizar_texto(s) for s in obtener_sintomas_existentes()}
-    emociones_detectadas = detectar_emociones_negativas(mensaje_usuario) or []
+    def _ask_openai_emociones_y_cuadro(texto_usuario: str):
+        prompt = (
+            "Analizá el siguiente mensaje clínico de un usuario. "
+            "Respondé en JSON con dos claves: "
+            "{\"emociones\": [..], \"cuadro_probable\": \"...\"}. "
+            "Reglas: solo emociones negativas/relevantes; si no hay, emociones=[] y cuadro_probable=\"\".\n\n"
+            f"TEXTO: {texto_usuario}"
+        )
+        out = generar_respuesta_con_openai(prompt) or '{"emociones": [], "cuadro_probable": ""}'
+        try:
+            data = json.loads(out)
+            emociones = _limpiar_lista_str(data.get("emociones", []))
+            cuadro = (data.get("cuadro_probable") or "").strip().lower()
+            return emociones, cuadro
+        except Exception:
+            # fallback robusto: separar por comas / saltos
+            emos = [x.strip() for x in re.split(r"[,\n]", out) if x.strip()]
+            return _limpiar_lista_str(emos), ""
 
+    def _coincidencias_sesion_historial_global(user_id: str, emociones_sesion, cuadro_openai: str):
+        """
+        Cuenta coincidencias hacia el mismo cuadro combinando:
+          - emociones de la sesión (nuevas)
+          - emociones ya registradas en el historial del usuario
+          - estadística global emoción→cuadro (solo memoria; no crea etiquetas)
+        Devuelve (votos, detalles, cuadro_objetivo).
+        """
+        emociones_sesion = set(_limpiar_lista_str(emociones_sesion))
+        # Historial propio
+        hist = obtener_historial_usuario(user_id, limite=200)
+        emos_hist = set()
+        for r in hist:
+            # r = (id, user_id, fecha, emociones, nuevas_emociones_detectadas, cuadro_clinico_probable, interaccion_id)
+            for e in (r[3] or []):
+                emos_hist.add((e or "").strip().lower())
+
+        # Estadística global: emoción -> {cuadros}
+        glob = estadistica_global_emocion_a_cuadro() or []
+        map_emo_to_cuadro = {}
+        for emocion, cuadro, c in glob:
+            if not emocion or not cuadro:
+                continue
+            map_emo_to_cuadro.setdefault(emocion, set()).add(cuadro)
+
+        objetivo = (cuadro_openai or "").strip().lower()
+        votos = 0
+        detalles = {"sesion": [], "historial": []}
+
+        # Sesión
+        for e in emociones_sesion:
+            if objetivo and e in map_emo_to_cuadro and objetivo in map_emo_to_cuadro[e]:
+                votos += 1
+                detalles["sesion"].append(e)
+
+        # Historial del usuario
+        for e in emos_hist:
+            if objetivo and e in map_emo_to_cuadro and objetivo in map_emo_to_cuadro[e]:
+                votos += 1
+                detalles["historial"].append(e)
+
+        return votos, detalles, objetivo
+
+    # --- Estado de sesión ---
+    ahora = datetime.now()
     session.setdefault("emociones_detectadas", [])
-    session.setdefault("emociones_totales_detectadas", 0)
-    session.setdefault("emociones_sugerencia_realizada", False)
-    session.setdefault("emociones_corte_aplicado", False)
+    session.setdefault("disparo_notificado", False)
+    session.setdefault("ultima_fecha", ahora.isoformat())
 
-    emociones_nuevas = []
-    emociones_detectadas_normalizadas = [normalizar_texto(e) for e in emociones_detectadas]
+    # --- 1) Detectar con OpenAI ---
+    emociones_openai, cuadro_openai = _ask_openai_emociones_y_cuadro(mensaje_usuario)
 
-    for emocion in emociones_detectadas_normalizadas:
-        if emocion not in {normalizar_texto(e) for e in session["emociones_detectadas"]}:
-            emociones_nuevas.append(emocion)
+    # --- 2) Registrar novedades (memoria persistente única) ---
+    emos_prev = set(_limpiar_lista_str(session.get("emociones_detectadas", [])))
+    nuevas_emos = [e for e in emociones_openai if e not in emos_prev]
 
-    # ==============================================================
-    # 📌 Clasificación de emociones nuevas con OpenAI
-    # ==============================================================
-    
-    for emocion in emociones_nuevas:
-        prompt_cuadro = (
-            f"A partir de la siguiente emoción detectada: '{emocion}', asigná un único cuadro clínico o patrón emocional.\n\n"
-            "Tu tarea es analizar el síntoma y determinar el estado clínico más adecuado, basándote en criterios diagnósticos de la psicología o la psiquiatría. "
-            "No respondas con explicaciones, sólo con el nombre del cuadro clínico más pertinente.\n"
-            "Si la emoción no corresponde a ningún cuadro clínico definido, indicá únicamente: 'Patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante'.\n\n"
-            "Ejemplos válidos de cuadros clínicos:\n"
-            "- Trastorno de ansiedad\n"
-            "- Depresión mayor\n"
-            "- Estrés postraumático\n"
-            "- Trastorno de pánico\n"
-            "- Baja autoestima\n"
-            "- Estado confusional\n"
-            "- Desgaste emocional\n"
-            "- Trastorno de impulsividad\n"
-            "- Insomnio crónico\n"
-            "- Desorientación emocional\n"
-            "- Sentimientos de aislamiento\n"
-            "- Patrón emocional detectado\n\n"
-            "Devolvé únicamente el nombre del cuadro clínico, sin explicaciones, ejemplos ni texto adicional."
-        )
-    
-        try:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt_cuadro}],
-                max_tokens=50,
-                temperature=0.0
-            )
-    
-            cuadro_asignado = response.choices[0].message['content'].strip()
-    
-            # ✅ Si OpenAI no asigna nada, usar la frase profesional por defecto
-            if not cuadro_asignado:
-                cuadro_asignado = "Patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante"
-    
-            registrar_sintoma(emocion, cuadro_asignado)
-            print(f"🧠 OpenAI asignó el cuadro clínico: {cuadro_asignado} para la emoción '{emocion}'.")
-    
-        except Exception as e:
-            print(f"❌ Error al obtener el cuadro clínico de OpenAI para '{emocion}': {e}")
-
-    
-    # Registrar historial clínico SIEMPRE que haya emociones detectadas
-    if session["emociones_detectadas"]:
-        respuesta_clinica = (
-            "Gracias por compartir lo que estás atravesando. Si lo deseás, podés contactar al Lic. Bustamante por WhatsApp: +54 911 3310-1186."
-        )
-        interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
-        registrar_respuesta_openai(interaccion_id, respuesta_clinica)
-        registrar_historial_clinico(
+    if emociones_openai or cuadro_openai:
+        registrar_novedad_openai(
             user_id=user_id,
-            emociones=session.get("emociones_detectadas", []),
-            sintomas=[],
-            tema=None,
-            respuesta_openai=respuesta_clinica,
-            sugerencia="registro inmediato",
-            fase_evaluacion=f"interacción {contador}",
-            interaccion_id=interaccion_id,
-            fecha=datetime.now(),
-            fuente="web",
-            origen="modulo_clinico",         # << estándar
-            eliminado=False,
+            emociones=emociones_openai,
+            nuevas_emociones_detectadas=nuevas_emos,
+            cuadro_clinico_probable=cuadro_openai or None,
+            interaccion_id=contador,
+            fuente="openai",
         )
 
-        return {"respuesta": respuesta_clinica, "session": session}
+    # Actualizar sesión
+    session["emociones_detectadas"] = list(emos_prev.union(emociones_openai))
+    session["ultima_fecha"] = ahora.isoformat()
 
+    # --- 3) Disparador por coincidencias (<10 y no notificado) ---
+    texto_out = ""
+    if contador < 10 and not session.get("disparo_notificado", False) and cuadro_openai:
+        votos, detalles, objetivo = _coincidencias_sesion_historial_global(user_id, emociones_openai, cuadro_openai)
+        if votos >= 2:
+            resumen_breve = ""
+            if emociones_openai:
+                resumen_breve += f"En esta interacción se identifican: {', '.join(emociones_openai)}. "
+            texto_out = f\"{resumen_breve}Cuadro clínico probable: **{objetivo}**.\"
+            session["disparo_notificado"] = True  # no repetir en la sesión
 
-    # Siempre registrar historial clínico desde la primera emoción detectada
-    respuesta_clinica = (
-        "Gracias por compartir lo que estás atravesando. Si lo deseás, podés contactar al Lic. Bustamante por WhatsApp: +54 911 3310-1186."
-    )
-    interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
-    registrar_respuesta_openai(interaccion_id, respuesta_clinica)
-    
-    registrar_historial_clinico(
-        user_id=user_id,
-        emociones=session.get("emociones_detectadas", []),
-        sintomas=[],
-        tema=None,
-        respuesta_openai=respuesta_clinica,
-        sugerencia="registro inmediato",
-        fase_evaluacion=f"interacción {contador}",
-        interaccion_id=interaccion_id,
-        fecha=datetime.now(),
-        fuente="web",
-        origen="modulo_clinico",
-        eliminado=False,
-    )
-
-    
-    return {"respuesta": respuesta_clinica, "session": session}
-
-
-    for emocion in emociones_nuevas:
-        prompt_cuadro = (
-            f"A partir de la siguiente emoción detectada: '{emocion}', asigná un único cuadro clínico o patrón emocional.\n\n"
-            "Tu tarea es analizar el síntoma y determinar el estado clínico más adecuado, basándote en criterios diagnósticos de la psicología o la psiquiatría. "
-            "No respondas con explicaciones, sólo con el nombre del cuadro clínico más pertinente.\n\n"
-            "Si la emoción no corresponde a ningún cuadro clínico definido, indicá únicamente: 'Patrón emocional detectado'.\n\n"
-            "Ejemplos válidos de cuadros clínicos:\n"
-            "- Trastorno de ansiedad\n"
-            "- Depresión mayor\n"
-            "- Estrés postraumático\n"
-            "- Trastorno de pánico\n"
-            "- Baja autoestima\n"
-            "- Estado confusional\n"
-            "- Desgaste emocional\n"
-            "- Trastorno de impulsividad\n"
-            "- Insomnio crónico\n"
-            "- Desorientación emocional\n"
-            "- Sentimientos de aislamiento\n"
-            "- Patrón emocional detectado\n\n"
-            "Devolvé únicamente el nombre del cuadro clínico, sin explicaciones, ejemplos ni texto adicional."
-        )
-
+    # --- 4) Recordatorio al reingresar (≥60s) ---
+    ultimo = obtener_ultimo_registro_usuario(user_id)
+    recordatorio = ""
+    if ultimo:
+        fecha_ult = ultimo[2]  # fecha
         try:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt_cuadro}],
-                max_tokens=50,
-                temperature=0.0
-            )
-            cuadro_asignado = response.choices[0].message['content'].strip()
-            if not cuadro_asignado:
-                cuadro_asignado = "Patrón emocional detectado"
+            from datetime import datetime as _dt
+            if isinstance(fecha_ult, str):
+                fecha_ult_dt = _dt.fromisoformat(fecha_ult.replace("Z", ""))
+            else:
+                fecha_ult_dt = fecha_ult
+            delta = ahora - fecha_ult_dt
+            seg = int(delta.total_seconds())
+            horas = max(0, seg // 3600)
+            if seg >= 60 and (emociones_openai or cuadro_openai):  # producción: 60s
+                emos_previas = _limpiar_lista_str(ultimo[3] or [])  # emociones
+                cuadro_prev = (ultimo[5] or "").strip().lower()     # cuadro
+                if emos_previas or cuadro_prev:
+                    prev = ""
+                    if emos_previas:
+                        prev += f"Previo se registraron: {', '.join(emos_previas)}. "
+                    if cuadro_prev:
+                        prev += f"Se había estimado como probable: {cuadro_prev}. "
+                    recordatorio = f\"{prev}Pasaron ~{horas}h desde la última conversación. ¿Aparecieron emociones nuevas?\"
+        except Exception:
+            pass
 
-            registrar_sintoma(emocion, cuadro_asignado)
-            print(f"🧠 OpenAI asignó el cuadro clínico: {cuadro_asignado} para la emoción '{emocion}'.")
+    # --- 5) Respuesta base si no hubo disparador ---
+    if not texto_out:
+        base = []
+        if emociones_openai:
+            base.append(f"Se observan: {', '.join(emociones_openai)}.")
+        if cuadro_openai:
+            base.append(f"Cuadro clínico probable: {cuadro_openai}.")
+        if not base:
+            base.append("No aparecen elementos clínicos relevantes en este mensaje.")
+        texto_out = " ".join(base)
 
-        except Exception as e:
-            print(f"❌ Error al obtener el cuadro clínico de OpenAI para '{emocion}': {e}")
+    if recordatorio:
+        texto_out = f"{texto_out}\n\n{recordatorio}"
 
-    interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
+    return {"respuesta": texto_out, "session": session}
 
-    if session["emociones_totales_detectadas"] == 1:
-        emocion = session["emociones_detectadas"][0]
-        respuesta_original = (
-            f"Por lo que mencionás, podría percibirse {emocion}. "
-            "¿Podrías contarme un poco más sobre cómo lo estás sintiendo?"
-        )
-    
-    elif session["emociones_totales_detectadas"] >= 2:
-        emociones_list = ", ".join(session["emociones_detectadas"])
-        respuesta_original = (
-            f"Por lo que mencionás, podría tratarse de un cuadro vinculado a {emociones_list}. "
-            "Me interesa saber si notás que esto te afecta en tu vida diaria."
-        )
-    
-    else:
-        respuesta_original = (
-            "Gracias por compartir lo que estás atravesando. "
-            "Si lo deseás, podés contarme más para que pueda orientarte mejor."
-        )
-    
-
-    if not respuesta_original or not isinstance(respuesta_original, str) or len(respuesta_original.strip()) < 5:
-        respuesta_fallback = (
-            "¡Ups! No pude generar una respuesta adecuada en este momento. Podés intentar reformular tu mensaje "
-            "o escribir directamente al WhatsApp del Lic. Bustamante: +54 911 3310-1186."
-        )
-        registrar_auditoria_respuesta(user_id, "respuesta vacía", respuesta_fallback, "Fallback por respuesta nula o inválida")
-        registrar_respuesta_openai(interaccion_id, respuesta_fallback)
-        return {"respuesta": respuesta_fallback, "session": session}
-
-    registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
-    registrar_respuesta_openai(interaccion_id, respuesta_original)
-    registrar_historial_clinico(
-        user_id=user_id,
-        emociones=session.get("emociones_detectadas", []),
-        sintomas=[],
-        tema=None,
-        respuesta_openai=respuesta_original,
-        sugerencia=None,
-        fase_evaluacion=f"interacción {contador}",
-        interaccion_id=interaccion_id,
-        fecha=datetime.now(),
-        fuente="web",
-        origen="modulo_clinico",
-        eliminado=False,
-    )
-
-
-
-    return {"respuesta": respuesta_original, "session": session}
 
 
 
