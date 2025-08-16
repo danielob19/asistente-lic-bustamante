@@ -33,117 +33,69 @@ def registrar_emocion_clinica(user_id: str, emocion: str, origen: str = "detecci
 
 
 
-def registrar_historial_clinico(
-    user_id: str,
-    *,
-    # Campos principales
-    fecha: datetime | None = None,
-    emociones: list[str] | None = None,
-    sintomas: list[str] | None = None,
-    tema: str | None = None,
-    respuesta_openai: str | None = None,
-    sugerencia: str | None = None,
-    fase_evaluacion: str | None = None,
-    fuente: str = "seguimiento",
 
-    # Vínculo con interacción y trazabilidad
-    interaccion_id: int | str | None = None,
-    origen: str = "modelo",
 
-    # Clasificación / diagnóstico orientativo
-    cuadro_clinico_probable: str | None = None,
 
-    # Estado de sesión/último contacto
-    nuevas_emociones_detectadas: list[str] | None = None,
-    fecha_ultima_interaccion: datetime | None = None,
-
-    # Borrado lógico
-    eliminado: bool = False,
-
-    # ---------- Alias de compatibilidad (migración) ----------
-    # Si alguna llamada vieja pasa estos nombres, los mapeamos.
-    clasificacion: str | None = None,   # alias de cuadro_clinico_probable
-    motivo: str | None = None,          # alias de tema
-) -> bool:
+# --- Shim de compatibilidad: bloquear escrituras legacy en historial clínico ---
+def registrar_historial_clinico(*args, **kwargs):
     """
-    Inserta un registro en historial_clinico_usuario con la mayor cantidad
-    de información disponible. Mantiene compatibilidad hacia atrás con
-    parámetros alias (clasificacion/motivo).
-
-    Devuelve True si se insertó OK, False si hubo error.
+    Compatibilidad con llamadas antiguas desde routes/asistente.py.
+    - No persiste si el origen es administrativo/filtro/híbrido (no clínico).
+    - No persiste si fuente != 'openai'.
+    - En casos clínicos válidos, deriva a registrar_novedad_openai().
+    Nunca lanza excepciones (seguro en producción).
     """
-
-    # Defaults seguros
-    fecha = fecha or datetime.now()
-    emociones = emociones or []
-    sintomas = sintomas or []
-    nuevas_emociones_detectadas = nuevas_emociones_detectadas or []
-
-    # Compatibilidad de nombres
-    if cuadro_clinico_probable is None and clasificacion:
-        cuadro_clinico_probable = clasificacion
-    if tema is None and motivo:
-        tema = motivo
-
-    # interaccion_id -> int o None
-    interaccion_id_int = None
-    if interaccion_id not in (None, ""):
-        try:
-            interaccion_id_int = int(interaccion_id)  # si viene str lo convertimos
-        except (TypeError, ValueError):
-            interaccion_id_int = None  # lo guardamos como NULL
-
-    consulta = """
-        INSERT INTO historial_clinico_usuario
-        (
-            user_id,
-            fecha,
-            emociones,
-            sintomas,
-            tema,
-            respuesta_openai,
-            sugerencia,
-            fase_evaluacion,
-            fuente,
-            interaccion_id,
-            origen,
-            cuadro_clinico_probable,
-            nuevas_emociones_detectadas,
-            fecha_ultima_interaccion,
-            eliminado
-        )
-        VALUES
-        (
-            %s, %s, %s, %s, %s,
-            %s, %s, %s, %s, %s,
-            %s, %s, %s, %s, %s
-        )
-    """
-
-    valores = [
-        user_id,
-        fecha,
-        emociones,
-        sintomas,
-        tema,
-        respuesta_openai,
-        sugerencia,
-        fase_evaluacion,
-        fuente,
-        interaccion_id_int,
-        origen,
-        cuadro_clinico_probable,
-        nuevas_emociones_detectadas,
-        fecha_ultima_interaccion,
-        eliminado,
-    ]
-
     try:
-        ejecutar_consulta(consulta, valores, commit=True)
-        return True
+        # Normalizar: si llamaron posicional, mapear a kwargs esperados
+        if args:
+            keys = (
+                "user_id", "emociones", "sintomas", "tema", "respuesta_openai",
+                "sugerencia", "fase_evaluacion", "interaccion_id", "fecha",
+                "fuente", "origen", "cuadro_clinico_probable",
+                "nuevas_emociones_detectadas", "eliminado",
+            )
+            for i, k in enumerate(keys[:len(args)]):
+                kwargs.setdefault(k, args[i])
+
+        origen = (kwargs.get("origen") or "").strip().lower()
+        fuente = (kwargs.get("fuente") or "").strip().lower()
+
+        # Orígenes no clínicos conocidos (los que viste en routes/asistente.py)
+        ORIGENES_NO_CLINICOS = {
+            "bifurcacion_admin",
+            "filtro_lenguaje_institucional",
+            "filtro_empatia_simulada",
+            "filtro_precios",
+            "filtro_contacto_temprano",
+            "derivacion_implicita",
+            "respuesta_peligrosa",
+            "respuesta_vacía",
+            "inferencia_hibrida",
+            "match_2_coincidencias",
+        }
+
+        # Bloquear escrituras que no cumplen la directiva 100% OpenAI (clínico)
+        if fuente != "openai" or origen in ORIGENES_NO_CLINICOS:
+            print(f"[shim] registrar_historial_clinico ignorado (fuente={fuente!r}, origen={origen!r})")
+            return None
+
+        # Caso clínico válido: usar el registrador nuevo y unificado
+        return registrar_novedad_openai(
+            user_id=kwargs.get("user_id"),
+            emociones=kwargs.get("emociones") or [],
+            nuevas_emociones_detectadas=kwargs.get("nuevas_emociones_detectadas") or [],
+            cuadro_clinico_probable=kwargs.get("cuadro_clinico_probable"),
+            interaccion_id=kwargs.get("interaccion_id"),
+            fuente="openai",
+        )
+
     except Exception as e:
-        print(f"[✖] Error al registrar historial clínico: {e}")
-        return False
+        # Nunca romper el flujo por compat — sólo loguear suave
+        print(f"[shim] registrar_historial_clinico falló en compatibilidad: {e}")
+        return None
+
+
+
 
 
 
