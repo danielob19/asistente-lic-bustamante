@@ -456,16 +456,27 @@ async def asistente(input_data: UserInput):
             
             # >>> Atajo clínico unificado (antes de toda la lógica larga de generación de textos):
             if intencion_general == "CLINICA" or hay_contexto_clinico_anterior(user_id) or emociones_detectadas_bifurcacion:
-                salida = procesar_clinico({
-                    "mensaje_original": mensaje_original,
-                    "mensaje_usuario": mensaje_usuario,
-                    "user_id": user_id,
-                    "session": session,
-                    "contador": _contador_para(user_id),
-                })
+                try:
+                    salida = procesar_clinico({
+                        "mensaje_original": mensaje_original,
+                        "mensaje_usuario": mensaje_usuario,
+                        "user_id": user_id,
+                        "session": session,
+                        "contador": _contador_para(user_id),
+                    })
+                except Exception as e:
+                    print(f"🔴 procesar_clinico lanzó excepción: {e}")
+                    return {"respuesta": "Gracias por contarme. Estoy teniendo un problema técnico para procesar tu mensaje. ¿Podés intentar nuevamente?"}
+            
+                # Blindaje por si vino None o sin 'respuesta'
+                if not salida or not isinstance(salida, dict) or "respuesta" not in salida:
+                    print(f"⚠️ procesar_clinico devolvió un valor inesperado: {type(salida)}")
+                    return {"respuesta": "Gracias por tu paciencia. ¿Podés volver a contarme brevemente lo que estás sintiendo?"}
+            
                 # Persistir sesión devuelta por el módulo clínico y responder
-                user_sessions[user_id] = salida["session"]
+                user_sessions[user_id] = salida.get("session", session)
                 return {"respuesta": salida["respuesta"]}
+            
 
             
 
