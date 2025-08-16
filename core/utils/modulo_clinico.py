@@ -515,6 +515,28 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         else:
             texto_out = "En este mensaje no aparecen elementos clínicos relevantes."
 
+    # 6) Salida FINAL (siempre devolvemos algo)
+    if recordatorio and texto_out:
+        texto_final = f"{recordatorio} {texto_out}"
+    elif recordatorio:
+        texto_final = recordatorio
+    elif texto_out:
+        texto_final = texto_out
+    else:
+        texto_final = (
+            "Gracias por compartirlo. En este mensaje no aparecen elementos clínicos claros. "
+            "Si te sirve, contame cuándo se intensifica (trabajo, noche, al dormir) y cómo vienen el descanso y la concentración."
+        )
+
+    # Sanitizar espacios
+    texto_final = " ".join(texto_final.split())
+
+    return {
+        "respuesta": texto_final,
+        "session": session,
+    }
+
+
 
 
 # ==============================================================
