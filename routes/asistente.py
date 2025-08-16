@@ -847,6 +847,10 @@ async def asistente(input_data: UserInput):
                 session["contador_interacciones"] = 0
                 session["emociones_detectadas"] = []
                 session["intenciones_clinicas_acumuladas"] = []
+
+        # ← resync del local con la sesión ANTES de evaluar
+        contador = session.get("contador_interacciones", 0)
+
         
 
 
