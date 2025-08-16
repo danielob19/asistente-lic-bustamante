@@ -138,7 +138,7 @@ def _emocion_predominante(user_id: str, session: dict) -> Optional[str]:
     # 2) Refuerzo desde la tabla unificada 'historial_clinico_usuario'
     sql = """
         SELECT e AS emocion, COUNT(*) AS freq
-        FROM historial_clinico_usuario h,
+        FROM public.historial_clinico_usuario h,
              unnest(COALESCE(h.emociones, '{}')) AS e
         WHERE h.user_id = %s AND COALESCE(h.eliminado, false) = false
         GROUP BY e
