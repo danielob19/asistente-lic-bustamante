@@ -1228,18 +1228,20 @@ async def asistente(input_data: UserInput):
                             interaccion_id=int(time.time()),
                             fecha=datetime.now(),
                             fuente="web",
-                            origen="derivacion_implicita",        # <-- nuevo/estandarizado
+                            origen="derivacion_implicita",
                             eliminado=False,
                         )
                     except Exception as e:
                         print(f"⚠️ Error al registrar historial clínico desde derivación implícita: {e}")
-
-
+        
                     registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, motivo)
-                    break
-                session["ultimas_respuestas"].append(respuesta_ai)
-                user_sessions[user_id] = session
-                return {"respuesta": respuesta_ai}
+        
+                    # ⬇️ dentro del if:
+                    session["ultimas_respuestas"].append(respuesta_ai)
+                    user_sessions[user_id] = session
+                    return {"respuesta": respuesta_ai}
+        # si no hubo coincidencia, sigue el flujo normal
+
         
         # 🔐 Seguridad textual: verificar si la respuesta de OpenAI contiene elementos peligrosos
         if contiene_elementos_peligrosos(respuesta_original):
