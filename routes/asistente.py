@@ -550,38 +550,6 @@ async def asistente(input_data: UserInput):
                 print(f"🧠 Emociones registradas/actualizadas en sesión: {emociones_actuales}")
 
 
-
-
-
-
-
-
-
-
-            
-
-        
-            # 🔁 Inferencia clínica híbrida (DB → OpenAI)
-            resultado = _inferir_por_db_o_openai(user_id, mensaje_usuario, session)
-            
-            # 🗃️ Registrar en historial_clinico_usuario (tabla unificada)
-            registrar_historial_clinico(
-                user_id=user_id,
-                emociones=session.get("emociones_detectadas", []),
-                sintomas=[],  # si querés, podés guardar síntomas detectados por la DB
-                tema="clinica_inferencia_hibrida",
-                respuesta_openai=None if resultado["fuente"] == "db" else resultado["mensaje"],
-                sugerencia=None,
-                fase_evaluacion="inferencia_hibrida",
-                interaccion_id=session.get("contador_interacciones", 0),
-                fecha=datetime.now(),
-                fuente=resultado["fuente"],
-                origen="inferencia_hibrida",  # <-- nuevo para consistencia
-                cuadro_clinico_probable=resultado.get("cuadro_probable"),
-                nuevas_emociones_detectadas=session.get("nuevas_emociones", []),
-                eliminado=False
-            )
-
             
             # 💬 Devolver respuesta clínica
             session["ultimas_respuestas"].append(resultado["mensaje"])
