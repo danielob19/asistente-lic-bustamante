@@ -71,7 +71,7 @@ def startup_event():
         cursor = conn.cursor()
         cursor.execute("""
             SELECT DISTINCT LOWER(unnest(emociones)) AS sintoma
-            FROM historial_clinico_usuario
+            FROM public.historial_clinico_usuario
             WHERE emociones IS NOT NULL
         """)
         sintomas = cursor.fetchall()
@@ -103,4 +103,5 @@ def start_session_cleaner():
 
     thread = threading.Thread(target=cleaner, daemon=True)
     thread.start()
+
 
