@@ -866,7 +866,6 @@ async def asistente(input_data: UserInput):
                 )
         
             elif contador >= 14:
-                from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica
             
                 hipotesis_psico = generar_hipotesis_psicodinamica(
                     session["emociones_detectadas"], session["mensajes"]
