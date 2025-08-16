@@ -993,6 +993,9 @@ async def asistente(input_data: UserInput):
                 user_sessions[user_id] = session
                 registrar_respuesta_openai(interaccion_id, respuesta)
                 return {"respuesta": respuesta}
+                
+
+        contador = session.get("contador_interacciones", 0)
 
 
         # 🧠 Nueva respuesta para la PRIMERA INTERACCIÓN
