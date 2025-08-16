@@ -439,7 +439,8 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     ultimo = obtener_ultimo_registro_usuario(user_id)
     recordatorio = ""
     if ultimo:
-        fecha_ult = ultimo[2]
+        fecha_ult = _get_col(ultimo, 2, "fecha", None)
+
         try:
             if isinstance(fecha_ult, str):
                 # intento parseo básico ISO
