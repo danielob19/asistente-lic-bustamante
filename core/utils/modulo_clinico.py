@@ -362,6 +362,19 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             map_emo_to_cuadro.setdefault(emocion, set()).add(cuadro)
 
         objetivo = (cuadro_openai or "").strip().lower()
+
+        # Fallback si OpenAI no devolvió cuadro
+        if not objetivo:
+            union = set(_limpiar_lista_str(emociones_sesion)) | emos_hist
+            counts = {}
+            for e in union:
+                for c in map_emo_to_cuadro.get(e, []):
+                    counts[c] = counts.get(c, 0) + 1
+            if counts:
+                objetivo = max(counts, key=counts.get)
+                #  Mini-log aquí
+                print(f"🧪 Fallback de cuadro activado → {objetivo} con votos: {counts}")
+        
         votos = 0
         detalles = {"sesion": [], "historial": []}
 
