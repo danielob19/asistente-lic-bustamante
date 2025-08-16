@@ -345,7 +345,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         emos_hist = set()
         for r in hist:
             # r = (id, user_id, fecha, emociones, nuevas_emociones_detectadas, cuadro_clinico_probable, interaccion_id)
-            for e in (r[3] or []):
+            for e in (_get_col(r, 3, "emociones", []) or []):
                 emos_hist.add((e or "").strip().lower())
 
         # Estadística global: emoción -> {cuadros}
