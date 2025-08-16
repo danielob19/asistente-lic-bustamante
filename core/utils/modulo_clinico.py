@@ -222,6 +222,26 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             return []
         return [re.sub(r"\s+", " ", x.strip().lower()) for x in xs if isinstance(x, str) and x.strip()]
 
+
+    def _get_col(row, idx=None, key=None, default=None):
+        """
+        Accede de forma segura a una columna de un row que puede ser tupla/lista o dict.
+        - Si es (list, tuple) usa `idx`
+        - Si es dict usa `key`
+        - Si falla, devuelve `default`
+        """
+        if isinstance(row, (list, tuple)):
+            try:
+                return row[idx]
+            except Exception:
+                return default
+        if isinstance(row, dict):
+            if key is not None and key in row:
+                return row.get(key, default)
+            return default
+        return default
+
+
     def _ask_openai_emociones_y_cuadro(texto_usuario: str) -> tuple[list[str], str]:
         """
         Usa exclusivamente OpenAI para detectar:
