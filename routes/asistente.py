@@ -548,15 +548,6 @@ async def asistente(input_data: UserInput):
                         session["emociones_detectadas"].append(emocion)
             
                 print(f"🧠 Emociones registradas/actualizadas en sesión: {emociones_actuales}")
-
-
-            
-            # 💬 Devolver respuesta clínica
-            session["ultimas_respuestas"].append(resultado["mensaje"])
-            user_sessions[user_id] = session
-            return {"respuesta": resultado["mensaje"]}
-            
-
             
                                     
         
