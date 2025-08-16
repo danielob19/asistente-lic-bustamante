@@ -184,6 +184,38 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     session = input_data["session"]
     contador = int(input_data["contador"])
 
+    # --- Bootstrap de sesión desde DB si está vacía (memoria persistente) ---
+    def _bootstrap_session_desde_db(user_id: str, session: dict) -> dict:
+        """
+        Reconstruye campos mínimos de sesión a partir del último registro en
+        public.historial_clinico_usuario para que el asistente conserve memoria
+        aunque no haya sesión en RAM.
+        """
+        try:
+            ult = obtener_ultimo_registro_usuario(user_id)
+            if ult:
+                # ult = (id, user_id, fecha, emociones, nuevas_emociones_detectadas, cuadro_clinico_probable, interaccion_id, ...)
+                if not session.get("emociones_detectadas"):
+                    session["emociones_detectadas"] = _limpiar_lista_str(ult[3] or [])
+                if not session.get("ultima_fecha"):
+                    fecha_ult = ult[2]
+                    session["ultima_fecha"] = (fecha_ult if isinstance(fecha_ult, str) else fecha_ult.isoformat())
+                if "disparo_notificado" not in session:
+                    session["disparo_notificado"] = False
+                # contador “siguiente” interacción (si viene vacío)
+                if not isinstance(session.get("contador_interacciones"), int):
+                    try:
+                        session["contador_interacciones"] = (int(ult[6]) if ult[6] is not None else 0) + 1
+                    except Exception:
+                        session["contador_interacciones"] = 1
+        except Exception:
+            # no bloquear clínica por fallos de bootstrap
+            pass
+        return session
+    
+    session = _bootstrap_session_desde_db(user_id, session or {})
+
+
     # --- Utilidades locales ---
     def _limpiar_lista_str(xs):
         if not xs:
