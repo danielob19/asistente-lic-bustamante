@@ -46,7 +46,7 @@ def obtener_sintomas_existentes(user_id: str | None = None) -> set[str]:
 
     sql = f"""
         SELECT COALESCE(sintomas, '{{}}') AS sintomas
-        FROM historial_clinico_usuario
+        FROM public.historial_clinico_usuario
         {where}
     """
     filas = ejecutar_consulta(sql, params)
@@ -66,7 +66,7 @@ def obtener_sintomas_con_estado_emocional() -> list[tuple[str, str]]:
         with psycopg2.connect(DATABASE_URL) as conn, conn.cursor() as cur:
             cur.execute("""
                 SELECT DISTINCT LOWER(unnest(emociones)) AS sintoma
-                FROM historial_clinico_usuario
+                FROM public.historial_clinico_usuario
                 WHERE emociones IS NOT NULL
             """)
             sintomas = [row[0] for row in cur.fetchall() if row and row[0]]
@@ -92,7 +92,7 @@ def obtener_combinaciones_no_registradas(dias=7):
 
         consulta = """
             SELECT DISTINCT emociones, fecha
-            FROM historial_clinico_usuario
+            FROM public.historial_clinico_usuario
             WHERE fecha >= %s
               AND array_length(emociones, 1) > 1
             ORDER BY fecha DESC;
