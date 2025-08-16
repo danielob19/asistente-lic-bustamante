@@ -4,7 +4,12 @@ from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, refor
 from fastapi import APIRouter, HTTPException
 from core.modelos.base import UserInput
 
-from core.utils.motor_fallback import detectar_sintomas_db, inferir_cuadros, decidir
+from core.utils.motor_fallback import (
+    safe_detectar_sintomas as detectar_sintomas_db,
+    safe_inferir_cuadros as inferir_cuadros,
+    safe_decidir as decidir,
+)
+
 from core.utils.generador_openai import generar_respuesta_con_openai  # ya lo usás
 
 
