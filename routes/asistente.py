@@ -428,9 +428,31 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id] = session
 
 
-            def _contador_para(uid: str) -> int:
-                ult = obtener_ultimo_registro_usuario(uid)
-                return (int(ult[6]) + 1) if (ult and ult[6] is not None) else 1
+            # --- Contador robusto por último registro del usuario ---
+            def _contador_para(user_id: str) -> int:
+                """
+                Devuelve el próximo contador de interacción basándose en el último registro clínico.
+                Soporta filas tipo dict (RealDictRow) o tupla. Fallback seguro a 1.
+                """
+                try:
+                    ult = obtener_ultimo_registro_usuario(user_id)
+                    if not ult:
+                        return 1
+            
+                    # interaccion_id puede venir como dict o como tupla
+                    if isinstance(ult, dict):
+                        prev = ult.get("interaccion_id")
+                    else:
+                        # (id, user_id, fecha, emociones, nuevas_emociones_detectadas,
+                        #  cuadro_clinico_probable, interaccion_id)
+                        prev = ult[6] if len(ult) > 6 else None
+            
+                    return (int(prev) + 1) if prev is not None else 1
+            
+                except Exception as e:
+                    print(f"[⚠] _contador_para fallback por error: {e}")
+                    return 1
+
             
             # >>> Atajo clínico unificado (antes de toda la lógica larga de generación de textos):
             if intencion_general == "CLINICA" or hay_contexto_clinico_anterior(user_id) or emociones_detectadas_bifurcacion:
