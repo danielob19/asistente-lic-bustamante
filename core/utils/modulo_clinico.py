@@ -451,8 +451,8 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             seg = int(delta.total_seconds())
 
             if seg >= REINGRESO_SEGUNDOS and (emociones_openai or cuadro_openai):
-                emos_previas = _limpiar_lista_str(ultimo[3] or [])  # emociones
-                cuadro_prev = (ultimo[5] or "").strip().lower()     # cuadro
+                emos_previas = _limpiar_lista_str(_get_col(ultimo, 3, "emociones", []) or [])    # emociones
+                cuadro_prev = ((_get_col(ultimo, 5, "cuadro_clinico_probable") or "")).strip().lower()  # cuadro clinico
 
                 if emos_previas or cuadro_prev:
                     prev = ""
