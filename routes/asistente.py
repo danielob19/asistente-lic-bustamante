@@ -428,7 +428,22 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id] = session
 
 
+            def _contador_para(uid: str) -> int:
+                ult = obtener_ultimo_registro_usuario(uid)
+                return (int(ult[6]) + 1) if (ult and ult[6] is not None) else 1
             
+            # >>> Atajo clínico unificado (antes de toda la lógica larga de generación de textos):
+            if intencion_general == "CLINICA" or hay_contexto_clinico_anterior(user_id) or emociones_detectadas_bifurcacion:
+                salida = procesar_clinico({
+                    "mensaje_original": mensaje_original,
+                    "mensaje_usuario": mensaje_usuario,
+                    "user_id": user_id,
+                    "session": session,
+                    "contador": _contador_para(user_id),
+                })
+                # Persistir sesión devuelta por el módulo clínico y responder
+                user_sessions[user_id] = salida["session"]
+                return {"respuesta": salida["respuesta"]}
 
             
 
