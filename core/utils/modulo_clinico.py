@@ -285,7 +285,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     def _ask_openai_emociones_y_cuadro(texto_usuario: str) -> tuple[list[str], str]:
         """
         Usa exclusivamente OpenAI para detectar:
-          - emociones (lista de strings, minúsculas, sin duplicados, máx. 6)
+          - emociones (lista de strings, minúsculas, sin duplicados, máx. 4)
           - cuadro_probable (string, minúsculas). Si no hay, cadena vacía.
         Devuelve (emociones, cuadro).
         """
@@ -299,7 +299,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             "}\n"
             "Instrucciones estrictas:\n"
             "- Solo JSON: sin explicaciones, sin texto antes/después, sin Markdown, sin etiquetas.\n"
-            "- \"emociones\": array de 0 a 6 términos en minúsculas, sin duplicados, únicamente emociones NEGATIVAS o clínicamente relevantes mencionadas (p. ej.: ansiedad, angustia, tristeza, estrés, irritabilidad, insomnio, apatía, culpa, miedo).\n"
+            "- \"emociones\": array de 0 a 4 términos en minúsculas, sin duplicados, únicamente emociones NEGATIVAS o clínicamente relevantes mencionadas (p. ej.: ansiedad, angustia, tristeza, estrés, irritabilidad, insomnio, apatía, culpa, miedo).\n"
             "- \"cuadro_probable\": síntesis breve y prudente en minúsculas (p. ej.: \"ansiedad generalizada\", \"estrés sostenido\"). Si no surge, usar \"\".\n"
             "- Si no hay contenido clínico, responder exactamente: {\"emociones\": [], \"cuadro_probable\": \"\"}.\n\n"
             f"TEXTO: {texto_usuario}"
@@ -322,17 +322,17 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             emociones = data.get("emociones", []) or []
             cuadro = (data.get("cuadro_probable") or "").strip().lower()
     
-            # Normalizar + deduplicar + recortar a 6
+            # Normalizar + deduplicar + recortar a 4
             def _dedup_norm(xs: list[str]) -> list[str]:
                 norm = _limpiar_lista_str(xs)
-                return list(dict.fromkeys(norm))[:6]
+                return list(dict.fromkeys(norm))[:4]
     
             emociones = _dedup_norm(emociones)
             return emociones, cuadro
         except Exception:
             # Fallback: si no vino JSON válido, tomamos tokens por comas/saltos
             items = [s.strip().lower() for s in re.split(r"[,\n;]", out) if s.strip()]
-            items = list(dict.fromkeys(_limpiar_lista_str(items)))[:6]
+            items = list(dict.fromkeys(_limpiar_lista_str(items)))[:4]
             return items, ""
 
 
