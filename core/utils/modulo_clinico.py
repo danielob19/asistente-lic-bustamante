@@ -184,34 +184,69 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     session = input_data["session"]
     contador = int(input_data["contador"])
 
-    # --- Bootstrap de sesión desde DB si está vacía (memoria persistente) ---
+
+    
     def _bootstrap_session_desde_db(user_id: str, session: dict) -> dict:
         """
-        Reconstruye campos mínimos de sesión a partir del último registro en
-        public.historial_clinico_usuario para que el asistente conserve memoria
+        Reconstruye **mínimos** de sesión a partir del último registro en
+        public.historial_clinico_usuario para que el asistente conserve memoria,
         aunque no haya sesión en RAM.
+    
+        Robusto frente a cambios de forma del row (tuple o dict).
         """
+        def _get(row, key: str, idx: int, default=None):
+            try:
+                if isinstance(row, dict):
+                    return row.get(key, default)
+                # tupla/lista
+                return row[idx] if (hasattr(row, "__len__") and len(row) > idx) else default
+            except Exception:
+                return default
+    
         try:
             ult = obtener_ultimo_registro_usuario(user_id)
-            if ult:
-                # ult = (id, user_id, fecha, emociones, nuevas_emociones_detectadas, cuadro_clinico_probable, interaccion_id, ...)
-                if not session.get("emociones_detectadas"):
-                    session["emociones_detectadas"] = _limpiar_lista_str(ult[3] or [])
-                if not session.get("ultima_fecha"):
-                    fecha_ult = ult[2]
-                    session["ultima_fecha"] = (fecha_ult if isinstance(fecha_ult, str) else fecha_ult.isoformat())
-                if "disparo_notificado" not in session:
-                    session["disparo_notificado"] = False
-                # contador “siguiente” interacción (si viene vacío)
-                if not isinstance(session.get("contador_interacciones"), int):
-                    try:
-                        session["contador_interacciones"] = (int(ult[6]) if ult[6] is not None else 0) + 1
-                    except Exception:
-                        session["contador_interacciones"] = 1
+            if not ult:
+                return session
+    
+            # Campos tolerantes a tupla/dict
+            emociones_ult   = _get(ult, "emociones",        3, []) or []
+            fecha_ult       = _get(ult, "fecha",            2, None)
+            interaccion_ult = _get(ult, "interaccion_id",   6, None)
+    
+            # 1) Emociones detectadas
+            if not session.get("emociones_detectadas"):
+                session["emociones_detectadas"] = _limpiar_lista_str(emociones_ult)
+    
+            # 2) Última fecha (ISO)
+            if not session.get("ultima_fecha") and fecha_ult:
+                try:
+                    if isinstance(fecha_ult, str):
+                        # normalizamos (puede venir con 'Z')
+                        from datetime import datetime
+                        session["ultima_fecha"] = datetime.fromisoformat(fecha_ult.replace("Z", "")).isoformat()
+                    else:
+                        session["ultima_fecha"] = fecha_ult.isoformat()
+                except Exception:
+                    # si falla el parseo, guardamos tal cual
+                    session["ultima_fecha"] = str(fecha_ult)
+    
+            # 3) Flag del disparador (por defecto False)
+            session.setdefault("disparo_notificado", False)
+    
+            # 4) Contador de interacciones (si no viene en sesión)
+            if not isinstance(session.get("contador_interacciones"), int):
+                try:
+                    base = int(interaccion_ult) if interaccion_ult is not None else 0
+                    session["contador_interacciones"] = base + 1
+                except Exception:
+                    session["contador_interacciones"] = 1
+    
         except Exception:
-            # no bloquear clínica por fallos de bootstrap
+            # No bloquear el flujo clínico por errores de bootstrap
             pass
+    
         return session
+
     
     session = _bootstrap_session_desde_db(user_id, session or {})
 
