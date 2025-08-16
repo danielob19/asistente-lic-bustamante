@@ -60,6 +60,7 @@ from core.funciones_clinicas import _inferir_por_db_o_openai
 from core.funciones_asistente import detectar_emociones_negativas
 from core.funciones_asistente import verificar_memoria_persistente
 from core.db.consulta import obtener_emociones_ya_registradas
+from core.db.consulta import obtener_ultimo_registro_usuario
 from core.utils.palabras_irrelevantes import palabras_irrelevantes
 from respuestas_clinicas import RESPUESTAS_CLINICAS
 
