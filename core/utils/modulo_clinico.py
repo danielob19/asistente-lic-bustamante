@@ -182,7 +182,12 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     mensaje_usuario = input_data["mensaje_usuario"]
     user_id = input_data["user_id"]
     session = input_data["session"]
-    contador = int(input_data["contador"])
+    contador_raw = input_data.get("contador")
+    try:
+        contador = int(contador_raw) if contador_raw is not None else 1
+    except Exception:
+        contador = 1
+
 
 
     
