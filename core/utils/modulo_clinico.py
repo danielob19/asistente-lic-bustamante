@@ -353,13 +353,33 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             for e in (_get_col(r, 3, "emociones", []) or []):
                 emos_hist.add((e or "").strip().lower())
 
+
         # Estadística global: emoción -> {cuadros}
         glob = estadistica_global_emocion_a_cuadro() or []
-        map_emo_to_cuadro = {}
+        map_emo_to_cuadro: dict[str, set] = {}
         for emocion, cuadro, c in glob:
             if not emocion or not cuadro:
                 continue
-            map_emo_to_cuadro.setdefault(emocion, set()).add(cuadro)
+            map_emo_to_cuadro.setdefault(emocion, set()).add((cuadro or "").strip().lower())
+        
+        # 🧰 Fallback local si la global está vacía (DB recién limpiada):
+        # sembramos el mapa usando el historial del propio usuario
+        if not map_emo_to_cuadro:
+            try:
+                hist = obtener_historial_usuario(user_id, limite=200) or []
+                for r in hist:
+                    cuadro_prev = (_get_col(r, 5, "cuadro_clinico_probable") or "").strip().lower()
+                    if not cuadro_prev:
+                        continue
+                    for e in (_get_col(r, 3, "emociones", []) or []):
+                        e = (e or "").strip().lower()
+                        if not e:
+                            continue
+                        map_emo_to_cuadro.setdefault(e, set()).add(cuadro_prev)
+                print(f"🧮 Seed local map_emo_to_cuadro → {len(map_emo_to_cuadro)} emociones")
+            except Exception as ex:
+                print(f"⚠️ No se pudo seedear map_emo_to_cuadro: {ex}")
+
 
 
         # --- Reconciliación entre OpenAI y votos por emociones (sesión + historial)
