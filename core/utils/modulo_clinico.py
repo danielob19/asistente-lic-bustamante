@@ -561,11 +561,19 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                 elif cuadro_openai:
                     ahora_txt = f" y ahora aparece como probable {cuadro_openai}"
             
-                # Recordatorio final
+                # Recordatorio final (evita "me comentaste" si no hay previo y limpia espacios)
+                prev_txt = prev_txt.strip()
+                ahora_txt = ahora_txt.strip()
+                
+                prev_inicio = "me comentaste " if prev_txt else ""
                 recordatorio = (
-                    f"Hace {_humanizar_tiempo(seg)} me comentaste {prev_txt}{ahora_txt}. "
+                    f" Hace {_humanizar_tiempo(seg)} {prev_inicio}{prev_txt} {ahora_txt}. "
                     f"¿Cambió algo desde entonces?"
                 )
+                
+                # Colapsar espacios dobles por si alguna parte viene vacía
+                recordatorio = " ".join(recordatorio.split())
+
 
         except Exception:
             pass
