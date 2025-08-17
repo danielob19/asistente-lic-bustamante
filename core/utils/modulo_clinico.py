@@ -432,19 +432,35 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     # --- 1) Detectar con OpenAI ---
     emociones_openai, cuadro_openai = _ask_openai_emociones_y_cuadro(mensaje_usuario)
 
-    # --- 2) Registrar novedades (memoria persistente única) ---
+    # --- 2) Reconciliar primero (OpenAI + fallback), luego registrar ---
     emos_prev = set(_limpiar_lista_str(session.get("emociones_detectadas", [])))
     nuevas_emos = [e for e in emociones_openai if e not in emos_prev]
-
-    if emociones_openai or cuadro_openai:
+    
+    # Unimos emociones de sesión + actuales para el cómputo
+    emociones_union = list(set(_limpiar_lista_str(session.get("emociones_detectadas", [])) + emociones_openai))
+    
+    # Cálculo de coincidencias (con semilla y fallback ya implementados)
+    votos, detalles, objetivo, counts = _coincidencias_sesion_historial_global(
+        user_id=user_id,
+        emociones_sesion=emociones_union,
+        cuadro_openai=cuadro_openai
+    )
+    
+    # Reconciliación: si OpenAI no trajo cuadro, usamos el fallback (objetivo)
+    cuadro_final = (objetivo or cuadro_openai or "").strip().lower()
+    print(f"⚖️ Reconciliación de cuadro → openai='{cuadro_openai}', counts={counts}, elegido='{cuadro_final}'")
+    
+    # Ahora sí, registrar SIEMPRE con el cuadro_final (puede ser "")
+    if emociones_openai or cuadro_final:
         registrar_novedad_openai(
             user_id=user_id,
             emociones=emociones_openai,
             nuevas_emociones_detectadas=nuevas_emos,
-            cuadro_clinico_probable=cuadro_openai or None,
+            cuadro_clinico_probable=cuadro_final or None,   # ← usa el reconciliado
             interaccion_id=contador,
             fuente="openai",
         )
+
 
     # Actualizar sesión
     session["emociones_detectadas"] = list(emos_prev.union(emociones_openai))
