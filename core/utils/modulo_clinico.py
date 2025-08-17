@@ -448,7 +448,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     
     # Reconciliación: si OpenAI no trajo cuadro, usamos el fallback (objetivo)
     cuadro_final = (objetivo or cuadro_openai or "").strip().lower()
-    print(f"⚖️ Reconciliación de cuadro → openai='{cuadro_openai}', counts={counts}, elegido='{cuadro_final}'")
+    print(f"⚖️ Reconciliación de cuadro → openai='{cuadro_openai}', elegido='{cuadro_final}'")
     
     # Ahora sí, registrar SIEMPRE con el cuadro_final (puede ser "")
     if emociones_openai or cuadro_final:
