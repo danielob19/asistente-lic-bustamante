@@ -517,31 +517,53 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             seg = int(delta.total_seconds())
 
             if seg >= REINGRESO_SEGUNDOS and (emociones_openai or cuadro_openai):
-                emos_previas = _limpiar_lista_str(_get_col(ultimo, 3, "emociones", []) or [])    # emociones
-                cuadro_prev = ((_get_col(ultimo, 5, "cuadro_clinico_probable") or "")).strip().lower()  # cuadro clinico
+                # Tiempo humanizado (minutos, horas, días, semanas, meses, años)
+                def _humanizar_tiempo(seg: int) -> str:
+                    if seg < 60:
+                        return "unos segundos"
+                    mins = seg // 60
+                    if mins < 60:
+                        return f"{mins} minuto{'s' if mins != 1 else ''}"
+                    horas = mins // 60
+                    if horas < 24:
+                        return f"{horas} hora{'s' if horas != 1 else ''}"
+                    dias = horas // 24
+                    if dias < 7:
+                        return f"{dias} día{'s' if dias != 1 else ''}"
+                    semanas = dias // 7
+                    if semanas < 4:
+                        return f"{semanas} semana{'s' if semanas != 1 else ''}"
+                    meses = dias // 30
+                    if meses < 12:
+                        return f"{meses} mes{'es' if meses != 1 else ''}"
+                    anios = dias // 365
+                    return f"{anios} año{'s' if anios != 1 else ''}"
+            
+                # Lo último que teníamos guardado
+                emos_previas = _limpiar_lista_str(_get_col(ultimo, 3, "emociones", []) or [])
+                cuadro_prev  = ((_get_col(ultimo, 5, "cuadro_clinico_probable") or "")).strip().lower()
+            
+                # Frase de lo previo (emociones/caso probable)
+                partes_prev = []
+                if emos_previas:
+                    partes_prev.append(f"que tenías {', '.join(emos_previas)}")
+                if cuadro_prev:
+                    partes_prev.append(f"y estimamos como probable {cuadro_prev}")
+                prev_txt = " ".join(partes_prev)
+            
+                # Frase de lo actual (mensaje de ahora)
+                ahora_txt = ""
+                if emociones_openai:
+                    ahora_txt = f" y ahora mencionás {', '.join(emociones_openai)}"
+                elif cuadro_openai:
+                    ahora_txt = f" y ahora aparece como probable {cuadro_openai}"
+            
+                # Recordatorio final
+                recordatorio = (
+                    f"Hace {_humanizar_tiempo(seg)} me comentaste {prev_txt}{ahora_txt}. "
+                    f"¿Cambió algo desde entonces?"
+                )
 
-                if emos_previas or cuadro_prev:
-                    prev = ""
-                    if emos_previas:
-                        prev += f"Previo se registraron: {', '.join(emos_previas)}. "
-                    if cuadro_prev:
-                        prev += f"Se había estimado como probable: {cuadro_prev}. "
-
-                    # Formato amigable del tiempo transcurrido
-                    if seg < 3600:
-                        mins = max(1, seg // 60)
-                        trans = f"~{mins}m"
-                    elif seg < 86400:
-                        horas = seg // 3600
-                        trans = f"~{horas}h"
-                    else:
-                        dias = seg // 86400
-                        trans = f"~{dias}d"
-
-                    recordatorio = (
-                        f"{prev}Pasaron {trans} desde la última conversación. "
-                        f"¿Aparecieron emociones nuevas?"
-                    )
         except Exception:
             pass
 
