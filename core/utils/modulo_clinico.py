@@ -546,39 +546,42 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     # 3) Disparador por coincidencias (<10 y aún no notificado)
     texto_out = ""
     if contador < 10 and cuadro_openai and not session.get("disparo_notificado", False):
-        # Unimos emociones de sesión + previas de la sesión para el cómputo (sin duplicar)
-        emociones_union = list(set(_limpiar_lista_str(session.get("emociones_detectadas", [])) + _limpiar_lista_str(emociones_openai)))
-        votos, detalles, objetivo = _coincidencias_sesion_historial_global(
-            user_id=user_id,
-            emociones_sesion=emociones_union,
-            cuadro_openai=cuadro_openai
-        )
-    
-        if votos >= 2:
-            partes = []
-            if emociones_openai:
-                partes.append(f"Lo que traés hoy se suma a lo previo y se observa {', '.join(emociones_openai)}.")
-            partes.append(f"Cuadro clínico probable: {objetivo}.")
-            partes.append("¿Podés ubicar cuándo se intensifica más (trabajo, noche, antes de dormir)? ¿Cambios en sueño, concentración o tensión corporal?")
-    
-            texto_out = " ".join(partes)
-    
-            # Registrar explícitamente el suceso del disparador (además de la novedad ya registrada)
-            registrar_novedad_openai(
+        try:
+            # Unimos emociones de sesión + previas de la sesión para el cómputo (sin duplicar)
+            emociones_union = list(set(
+                _limpiar_lista_str(session.get("emociones_detectadas", [])) +
+                _limpiar_lista_str(emociones_openai)
+            ))
+            votos, detalles, objetivo = _coincidencias_sesion_historial_global(
                 user_id=user_id,
-                emociones=session.get("emociones_detectadas", []),
-                nuevas_emociones_detectadas=[],
-                cuadro_clinico_probable=objetivo,
-                interaccion_id=contador,
-                fuente="openai_disparo"
+                emociones_sesion=emociones_union,
+                cuadro_openai=cuadro_openai
             )
     
-            session["disparo_notificado"] = True
-            session["disparo_cuadro"] = objetivo
+            if votos >= 2:
+                partes = []
+                if emociones_openai:
+                    partes.append(f"Lo que traés hoy se suma a lo previo y se observa {', '.join(emociones_openai)}.")
+                partes.append(f"Cuadro clínico probable: {objetivo}.")
+                partes.append("¿Podés ubicar cuándo se intensifica más (trabajo, noche, antes de dormir)? "
+                              "¿Cambios en sueño, concentración o tensión corporal?")
+                texto_out = " ".join(partes)
+    
+                # Registrar explícitamente el suceso del disparador
+                registrar_novedad_openai(
+                    user_id=user_id,
+                    emociones=session.get("emociones_detectadas", []),
+                    nuevas_emociones_detectadas=[],
+                    cuadro_clinico_probable=objetivo,
+                    interaccion_id=contador,
+                    fuente="openai_disparo"
+                )
+                session["disparo_notificado"] = True
+                session["disparo_cuadro"] = objetivo
+    
+        except Exception as ex:
+            print(f"🔴 Error en disparador: {ex}")
 
-
-        except Exception:
-            pass
 
     
     # 5) Si no hubo disparador armado, respuesta clínica breve, humana y profesional
