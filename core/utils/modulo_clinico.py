@@ -528,15 +528,19 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     
     
     # Ahora sí, registrar SIEMPRE con el cuadro_final (puede ser "")
-    if emociones_openai or cuadro_final:
-        registrar_novedad_openai(
-            user_id=user_id,
-            emociones=emociones_openai,
-            nuevas_emociones_detectadas=nuevas_emos,
-            cuadro_clinico_probable=cuadro_final or None,   # ← usa el reconciliado
-            interaccion_id=contador,
-            fuente="openai",
-        )
+    try:
+        if emociones_openai or cuadro_final:
+            registrar_novedad_openai(
+                user_id=user_id,
+                emociones=emociones_openai,
+                nuevas_emociones_detectadas=nuevas_emos,
+                cuadro_clinico_probable=cuadro_final or None,  # usa el reconciliado
+                interaccion_id=contador,
+                fuente="openai",
+            )
+    except Exception as ex:
+        print(f"🔴 Error al registrar novedad openai: {ex}")
+
 
 
     # Actualizar sesión
