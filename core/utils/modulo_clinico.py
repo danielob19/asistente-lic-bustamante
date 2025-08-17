@@ -361,22 +361,33 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                 continue
             map_emo_to_cuadro.setdefault(emocion, set()).add(cuadro)
 
-        objetivo = (cuadro_openai or "").strip().lower()
 
-        # Fallback si OpenAI no devolvió cuadro
-        if not objetivo:
-            union = set(_limpiar_lista_str(emociones_sesion)) | emos_hist
-            counts = {}
-            for e in union:
-                for c in map_emo_to_cuadro.get(e, []):
-                    counts[c] = counts.get(c, 0) + 1
-            if counts:
-                objetivo = max(counts, key=counts.get)
-                #  Mini-log aquí
-                print(f"🧪 Fallback de cuadro activado → {objetivo} con votos: {counts}")
+        # --- Reconciliación entre OpenAI y votos por emociones (sesión + historial)
+        objetivo_openai = (cuadro_openai or "").strip().lower()
         
+        # Unión de emociones normalizadas de sesión + historial (ya tenés emos_hist arriba)
+        union = set(_limpiar_lista_str(emociones_sesion)) | emos_hist
+        
+        # Conteo de cuadros posibles a partir de la unión de emociones
+        counts = {}
+        for e in union:
+            for c in map_emo_to_cuadro.get(e, []):
+                counts[c] = counts.get(c, 0) + 1
+        
+        # Elegimos objetivo final: si OpenAI empata o gana, se respeta; si pierde, va el más votado
+        if counts:
+            top = max(counts, key=counts.get)
+            objetivo = objetivo_openai if counts.get(objetivo_openai, 0) >= counts[top] else top
+        else:
+            objetivo = objetivo_openai
+        
+        # Mini-log para depurar la reconciliación
+        print(f"⚖️ Reconciliación de cuadro → openai='{objetivo_openai}', counts={counts}, elegido='{objetivo}'")
+        
+        # Inicialización como antes
         votos = 0
         detalles = {"sesion": [], "historial": []}
+
 
         # Sesión
         for e in emociones_sesion:
