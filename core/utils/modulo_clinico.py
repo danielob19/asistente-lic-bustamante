@@ -456,74 +456,72 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     recordatorio = ""
     if ultimo:
         fecha_ult = _get_col(ultimo, 2, "fecha", None)
-
+    
         try:
             if isinstance(fecha_ult, str):
                 # intento parseo básico ISO
                 fecha_ult_dt = datetime.fromisoformat(fecha_ult.replace("Z", ""))
             else:
                 fecha_ult_dt = fecha_ult
-
+    
             delta = ahora - fecha_ult_dt
             seg = int(delta.total_seconds())
-
-            # 🔎 LOG de depuración (puedes quitarlo luego)
+    
+            # 🔍 LOG de depuración
             print(f"⏱ reingreso: seg={seg}, REINGRESO_SEGUNDOS={REINGRESO_SEGUNDOS}")
-
+    
             if seg >= REINGRESO_SEGUNDOS and (emociones_openai or cuadro_openai):
                 # Tiempo humanizado (minutos, horas, días, semanas, meses, años)
                 def _humanizar_tiempo(seg: int) -> str:
-                    if seg < 60:
-                        return "unos segundos"
+                    if seg < 60:  return "unos segundos"
                     mins = seg // 60
-                    if mins < 60:
-                        return f"{mins} minuto{'s' if mins != 1 else ''}"
+                    if mins < 60: return f"{mins} minuto{'s' if mins != 1 else ''}"
                     horas = mins // 60
-                    if horas < 24:
-                        return f"{horas} hora{'s' if horas != 1 else ''}"
+                    if horas < 24: return f"{horas} hora{'s' if horas != 1 else ''}"
                     dias = horas // 24
-                    if dias < 7:
-                        return f"{dias} día{'s' if dias != 1 else ''}"
+                    if dias < 7:  return f"{dias} día{'s' if dias != 1 else ''}"
                     semanas = dias // 7
-                    if dias < 30:  # en vez de if semanas < 4
-                        return f"{semanas} semana{'s' if semanas != 1 else ''}"
+                    if dias < 30: return f"{semanas} semana{'s' if semanas != 1 else ''}"
                     meses = dias // 30
-                    if meses < 12:
-                        return f"{meses} mes{'es' if meses != 1 else ''}"
+                    if meses < 12: return f"{meses} mes{'es' if meses != 1 else ''}"
                     anios = dias // 365
                     return f"{anios} año{'s' if anios != 1 else ''}"
-            
+    
                 # Lo último que teníamos guardado
-                emos_previas = _limpiar_lista_str(_get_col(ultimo, 3, "emociones", []) or [])
+                emos_previas = _limpiar_lista_str(_get_col(ultimo, 3, "emociones", [])) or []
                 cuadro_prev  = ((_get_col(ultimo, 5, "cuadro_clinico_probable") or "")).strip().lower()
-            
-                # Frase de lo previo (emociones/caso probable)
+    
+                # Frase de lo previo
                 partes_prev = []
                 if emos_previas:
                     partes_prev.append(f"que tenías {', '.join(emos_previas)}")
                 if cuadro_prev:
                     partes_prev.append(f"y estimamos como probable {cuadro_prev}")
                 prev_txt = " ".join(partes_prev)
-            
+    
                 # Frase de lo actual (mensaje de ahora)
                 ahora_txt = ""
                 if emociones_openai:
-                    ahora_txt = f" y ahora mencionás {', '.join(emociones_openai)}"
+                    ahora_txt = f"y ahora mencionás {', '.join(emociones_openai)}"
                 elif cuadro_openai:
-                    ahora_txt = f" y ahora aparece como probable {cuadro_openai}"
-            
-                # Recordatorio final (evita "me comentaste" si no hay previo y limpia espacios)
+                    ahora_txt = f"y ahora aparece como probable {cuadro_openai}"
+    
+                # Recordatorio final (evita “me comentaste” si no hay previo)
                 prev_txt = prev_txt.strip()
                 ahora_txt = ahora_txt.strip()
-                
                 prev_inicio = "me comentaste " if prev_txt else ""
+    
                 recordatorio = (
                     f" Hace {_humanizar_tiempo(seg)} {prev_inicio}{prev_txt} {ahora_txt}. "
                     f"¿Cambió algo desde entonces?"
                 )
-                
                 # Colapsar espacios dobles por si alguna parte viene vacía
                 recordatorio = " ".join(recordatorio.split())
+    
+        except Exception:
+            # En recordatorio, si algo falla seguimos sin romper el flujo.
+            pass
+
 
     
     
