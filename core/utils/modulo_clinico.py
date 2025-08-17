@@ -552,16 +552,17 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                 _limpiar_lista_str(session.get("emociones_detectadas", [])) +
                 _limpiar_lista_str(emociones_openai)
             ))
+    
             votos, detalles, objetivo = _coincidencias_sesion_historial_global(
                 user_id=user_id,
                 emociones_sesion=emociones_union,
-                cuadro_openai=cuadro_openai
+                cuadro_openai=cuadro_openai,
             )
     
             if votos >= 2:
                 partes = []
                 if emociones_openai:
-                    partes.append(f"Lo que traés hoy se suma a lo previo y se observa {', '.join(emociones_openai)}.")
+                    partes.append(f"Por lo que traés hoy se suma a lo previo y se observa {', '.join(emociones_openai)}.")
                 partes.append(f"Cuadro clínico probable: {objetivo}.")
                 partes.append("¿Podés ubicar cuándo se intensifica más (trabajo, noche, antes de dormir)? "
                               "¿Cambios en sueño, concentración o tensión corporal?")
@@ -570,11 +571,11 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                 # Registrar explícitamente el suceso del disparador
                 registrar_novedad_openai(
                     user_id=user_id,
-                    emociones=session.get("emociones_detectadas", []),
-                    nuevas_emociones_detectadas=[],
+                    emociones=emociones_openai,
+                    nuevas_emociones_detectadas=session.get("emociones_detectadas", []),
                     cuadro_clinico_probable=objetivo,
                     interaccion_id=contador,
-                    fuente="openai_disparo"
+                    fuente="openai_disparo",
                 )
                 session["disparo_notificado"] = True
                 session["disparo_cuadro"] = objetivo
