@@ -516,6 +516,9 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             delta = ahora - fecha_ult_dt
             seg = int(delta.total_seconds())
 
+            # 🔎 LOG de depuración (puedes quitarlo luego)
+            print(f"⏱ reingreso: seg={seg}, REINGRESO_SEGUNDOS={REINGRESO_SEGUNDOS}")
+
             if seg >= REINGRESO_SEGUNDOS and (emociones_openai or cuadro_openai):
                 # Tiempo humanizado (minutos, horas, días, semanas, meses, años)
                 def _humanizar_tiempo(seg: int) -> str:
@@ -531,7 +534,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                     if dias < 7:
                         return f"{dias} día{'s' if dias != 1 else ''}"
                     semanas = dias // 7
-                    if semanas < 4:
+                    if dias < 30:  # en vez de if semanas < 4
                         return f"{semanas} semana{'s' if semanas != 1 else ''}"
                     meses = dias // 30
                     if meses < 12:
