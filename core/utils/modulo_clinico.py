@@ -440,7 +440,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     emociones_union = list(set(_limpiar_lista_str(session.get("emociones_detectadas", [])) + emociones_openai))
     
     # Cálculo de coincidencias (con semilla y fallback ya implementados)
-    votos, detalles, objetivo, counts = _coincidencias_sesion_historial_global(
+    votos, detalles, objetivo = _coincidencias_sesion_historial_global(
         user_id=user_id,
         emociones_sesion=emociones_union,
         cuadro_openai=cuadro_openai
