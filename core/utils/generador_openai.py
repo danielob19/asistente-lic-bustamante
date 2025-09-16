@@ -1,5 +1,6 @@
-import openai
 import os
+import time
+import openai
 
 # ✅ Configurar la API key aquí, donde se usa
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -18,7 +19,6 @@ def generar_respuesta_con_openai(
     - reintentos con backoff ante errores/transitorios
     - si corta por longitud, reintenta con cupo mayor
     """
-    import time
 
     # Podés sobreescribir el modelo por env si querés
     modelo = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
