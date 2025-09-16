@@ -433,10 +433,11 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     # --- 1) Detectar con OpenAI ---
     emociones_openai, cuadro_openai = _ask_openai_emociones_y_cuadro(mensaje_usuario)
 
-    # --- 2) Reconciliar primero (OpenAI + fallback), luego registrar ---
-    emos_prev = set(_limpiar_lista_str(session.get("emociones_detectadas", [])))
-    nuevas_emos = [e for e in emociones_openai if e not in emos_prev]
+    # emociones previas (sesión)
+    emos_sesion_prev = set(_limpiar_lista_str(session.get("emociones_detectadas", [])))
+    nuevas_emos = [e for e in emociones_openai if e not in emos_sesion_prev]
     
+        
     # Unimos emociones de sesión + actuales para el cómputo
     emociones_union = list(set(_limpiar_lista_str(session.get("emociones_detectadas", [])) + emociones_openai))
     
