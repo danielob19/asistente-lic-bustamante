@@ -7,6 +7,7 @@ from typing import Dict, Any
 from datetime import datetime
 from datetime import datetime, timedelta  # ← añadimos timedelta para cálculos de reingreso
 
+from core.db.consulta import registrar_interaccion_clinica
 
 from core.utils.clinico_contexto import hay_contexto_clinico_anterior
 from core.utils_contacto import obtener_mensaje_contacto
