@@ -13,10 +13,10 @@ from core.utils.motor_fallback import (
 from core.utils.generador_openai import generar_respuesta_con_openai  # ya lo usás
 
 
+# funciones clínicas adicionales (si las usás)
 from core.utils.modulo_clinico import (
-    obtener_emociones_usuario,
     clasificar_cuadro_clinico,
-    determinar_malestar_predominante
+    determinar_malestar_predominante,
 )
 
 
