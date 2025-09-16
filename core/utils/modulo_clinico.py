@@ -1,48 +1,21 @@
-import openai
 import re
-import time
 import unicodedata
 import string
 from typing import Dict, Any
 from datetime import datetime
-from datetime import datetime, timedelta  # ← añadimos timedelta para cálculos de reingreso
 
-from core.db.consulta import registrar_interaccion_clinica
-
-from core.utils.clinico_contexto import hay_contexto_clinico_anterior
-from core.utils_contacto import obtener_mensaje_contacto
-from core.funciones_asistente import detectar_emociones_negativas
-from core.utils.generador_openai import generar_respuesta_con_openai
-from core.constantes import CLINICO, CLINICO_CONTINUACION
-
-from core.db.consulta import obtener_ultima_interaccion_emocional
-from core.utils.tiempo import delta_preciso_desde
-from core.constantes import MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG
-
-
-from core.db.registro import (
-    registrar_respuesta_openai,
-    registrar_auditoria_respuesta,
-    registrar_interaccion,
-    registrar_emocion,
-    registrar_emocion_clinica,
-    registrar_historial_clinico,   # <- importante
-)
-
-
-from core.db.sintomas import (
-    registrar_sintoma,
-    obtener_sintomas_existentes
-)
-
+from core.db.conexion import ejecutar_consulta
 from core.db.consulta import (
+    registrar_interaccion_clinica,
     obtener_historial_usuario,
     obtener_ultimo_registro_usuario,
     estadistica_global_emocion_a_cuadro,
+    obtener_ultima_interaccion_emocional,
 )
+from core.utils.generador_openai import generar_respuesta_con_openai
+from core.utils.tiempo import delta_preciso_desde
+from core.constantes import MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG
 
-
-from core.db.conexion import ejecutar_consulta  # Eliminado user_sessions
 
 
 def armar_prompt_openai(historial_emociones, nuevas_emociones, ultima_interaccion, nombre_usuario=None):
