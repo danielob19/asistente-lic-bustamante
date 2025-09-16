@@ -45,8 +45,6 @@ from core.db.consulta import (
 
 from core.db.conexion import ejecutar_consulta  # Eliminado user_sessions
 
-# Producción: considerar reingreso a partir de 60 segundos
-REINGRESO_SEGUNDOS = 5
 
 def armar_prompt_openai(historial_emociones, nuevas_emociones, ultima_interaccion, nombre_usuario=None):
     resumen = ""
