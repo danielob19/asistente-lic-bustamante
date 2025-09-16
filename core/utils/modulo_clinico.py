@@ -1,3 +1,4 @@
+import json
 import re
 import unicodedata
 import string
@@ -253,7 +254,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
           - cuadro_probable (string, minúsculas). Si no hay, cadena vacía.
         Devuelve (emociones, cuadro).
         """
-        import json, re
     
         prompt = (
             "Analizá el siguiente mensaje del usuario y devolvé EXCLUSIVAMENTE un JSON válido con este formato exacto:\n"
