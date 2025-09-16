@@ -614,15 +614,30 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             "Gracias por compartirlo. En este mensaje no aparecen elementos clínicos claros. "
             "Si te sirve, contame cuándo se intensifica (trabajo, noche, al dormir) y cómo vienen el descanso y la concentración."
         )
-
+    
     # Sanitizar espacios
     texto_final = " ".join(texto_final.split())
-
+    
+    # Registrar SIEMPRE la interacción final en historial_clinico_usuario
+    try:
+        registrar_interaccion_clinica(
+            user_id=user_id,
+            emociones=emociones_openai or [],
+            nuevas_emociones_detectadas=nuevas_emos or [],
+            cuadro_clinico_probable=cuadro_final or None,   # usa el reconciliado si existe
+            respuesta_openai=texto_final,                   # guarda exactamente lo que se respondió
+            origen="deteccion",
+            fuente="openai",
+            eliminado=False,
+            interaccion_id=contador,
+        )
+    except Exception as ex:
+        print(f"🔴 Error registrando interacción clínica: {ex}")
+    
     return {
         "respuesta": texto_final,
         "session": session,
     }
-
 
 
 
