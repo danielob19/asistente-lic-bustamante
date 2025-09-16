@@ -461,33 +461,53 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             ult = obtener_ultima_interaccion_emocional(user_id)
             if ult:
                 fecha_ult = ult.get("fecha")
-                emos_prev = (ult.get("emociones") or []) + [
-                    e for e in (ult.get("nuevas_emociones_detectadas") or []) 
+                emos_prev_registro = (ult.get("emociones") or []) + [
+                    e for e in (ult.get("nuevas_emociones_detectadas") or [])
                     if e not in (ult.get("emociones") or [])
                 ]
                 cuadro_prev = (ult.get("cuadro_clinico_probable") or "").strip()
     
-                # Umbral opcional (si querés no repetirlo cuando fue “recién”)
-                if MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG > 0:
-                    from datetime import datetime, timezone
-                    delta_seg = int((datetime.now(timezone.utc) - (fecha_ult.replace(tzinfo=timezone.utc) if fecha_ult.tzinfo is None else fecha_ult.astimezone(timezone.utc))).total_seconds())
-                    if delta_seg < MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG:
-                        fecha_ult = None  # no mostramos prefijo
+                # Normalizamos fecha a UTC aware (acepta datetime o str ISO)
+                from datetime import datetime, timezone
+                def _to_utc(dt):
+                    if dt is None:
+                        return None
+                    if isinstance(dt, str):
+                        try:
+                            dt = datetime.fromisoformat(dt.replace("Z", ""))
+                        except Exception:
+                            return None
+                    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc)
     
-                if fecha_ult:
-                    tiempo_txt = delta_preciso_desde(fecha_ult)
+                fecha_ult_utc = _to_utc(fecha_ult)
+    
+                # Umbral opcional (si querés no repetirlo cuando fue “recién”)
+                if MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG > 0 and fecha_ult_utc:
+                    delta_seg = int((datetime.now(timezone.utc) - fecha_ult_utc).total_seconds())
+                    if delta_seg < MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG:
+                        fecha_ult_utc = None  # no mostramos prefijo
+    
+                if fecha_ult_utc:
+                    tiempo_txt = delta_preciso_desde(fecha_ult_utc)
     
                     # Texto “previo” (emociones o cuadro)
                     prev_txt = ""
-                    if emos_prev:
-                        prev_txt = ("habías mencionado " + ", ".join(emos_prev[:-1]) + f" y {emos_prev[-1]}") if len(emos_prev) > 1 else f"habías mencionado {emos_prev[0]}"
+                    if emos_prev_registro:
+                        prev_txt = (
+                            "habías mencionado " + ", ".join(emos_prev_registro[:-1]) + f" y {emos_prev_registro[-1]}"
+                            if len(emos_prev_registro) > 1 else
+                            f"habías mencionado {emos_prev_registro[0]}"
+                        )
                     elif cuadro_prev:
                         prev_txt = f"habías comentado {cuadro_prev}"
     
                     # Texto “ahora”
                     ahora_txt = ""
                     if emociones_openai:
-                        ahora_txt = "y ahora aparece " + (", ".join(emociones_openai[:-1]) + f" y {emociones_openai[-1]}" if len(emociones_openai) > 1 else emociones_openai[0])
+                        ahora_txt = "y ahora aparece " + (
+                            ", ".join(emociones_openai[:-1]) + f" y {emociones_openai[-1]}"
+                            if len(emociones_openai) > 1 else emociones_openai[0]
+                        )
                     elif cuadro_openai:
                         ahora_txt = f"y ahora aparece como probable {cuadro_openai}"
     
@@ -501,10 +521,8 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as ex:
         print(f"🔴 Error al armar recordatorio emocional: {ex}")
         recordatorio = ""
-
-
-
     
+
     
     # Ahora sí, registrar SIEMPRE con el cuadro_final (puede ser "")
     try:
