@@ -140,16 +140,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         resumen breve + 'Cuadro clínico probable', y no repetir en la sesión.
       - Reingreso producción: recordar emociones/cuadro previos si pasaron ≥60s y preguntar por emociones nuevas.
     """
-    import json, re
-    from datetime import datetime
-    # Imports internos para evitar cambiar otros bloques
-    from core.db.consulta import (
-        obtener_historial_usuario,
-        obtener_ultimo_registro_usuario,
-        estadistica_global_emocion_a_cuadro,
-    )
-    from core.db.registro import registrar_novedad_openai
-    from core.utils.generador_openai import generar_respuesta_con_openai
 
     # --- Extraer inputs ---
     mensaje_original = input_data["mensaje_original"]
