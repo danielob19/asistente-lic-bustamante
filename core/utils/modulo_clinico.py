@@ -541,7 +541,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
     # Actualizar sesión
-    session["emociones_detectadas"] = list(emos_prev.union(emociones_openai))
+    session["emociones_detectadas"] = list(emos_sesion_prev.union(emociones_openai))
     session["ultima_fecha"] = ahora.isoformat()
 
     # 3) Disparador por coincidencias (<10 y aún no notificado)
