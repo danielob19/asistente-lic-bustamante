@@ -207,9 +207,8 @@ def estadistica_global_emocion_a_cuadro():
 
 def obtener_ultima_interaccion_emocional(user_id: str) -> Optional[dict]:
     """
-    Devuelve el registro más reciente (dict) de historial_clinico_usuario para el user_id,
+    Devuelve el registro más reciente (detalle) de historial_clinico_usuario para el user_id,
     que tenga emociones (o nuevas_emociones_detectadas) y no esté eliminado.
-    Campos de interés: id, fecha, emociones, nuevas_emociones_detectadas, cuadro_clinico_probable.
     """
     query = """
         SELECT
@@ -225,7 +224,7 @@ def obtener_ultima_interaccion_emocional(user_id: str) -> Optional[dict]:
           AND (
                 COALESCE(array_length(emociones, 1), 0) > 0
              OR COALESCE(array_length(nuevas_emociones_detectadas, 1), 0) > 0
-          )
+              )
         ORDER BY fecha DESC
         LIMIT 1
     """
