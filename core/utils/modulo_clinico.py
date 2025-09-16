@@ -577,7 +577,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                 registrar_interaccion_clinica(
                     user_id=user_id,
                     emociones=emociones_openai or [],
-                    nuevas_emociones_detectadas=_limpiar_lista_str(session.get("emociones_detectadas", [])),
+                    nuevas_emociones_detectadas=nuevas_emos or [],
                     cuadro_clinico_probable=objetivo or None,
                     respuesta_openai=texto_out,  # lo que dijo el asistente en el disparador
                     origen="deteccion",
