@@ -524,12 +524,15 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                         emociones=emociones_openai or [],
                         nuevas_emociones_detectadas=_limpiar_lista_str(session.get("emociones_detectadas", [])),
                         cuadro_clinico_probable=objetivo or None,
-                        respuesta_openai=texto_out,      # lo que dijo el asistente en el disparador
+                        respuesta_openai=texto_out,  # lo que dijo el asistente en el disparador
                         origen="deteccion",
                         fuente="openai_disparo",
                         eliminado=False,
                         interaccion_id=contador,
                     )
+                    # Marcar flags en sesión para no repetir el disparador
+                    session["disparo_notificado"] = True
+                    session["disparo_cuadro"] = objetivo
     
         except Exception as ex:
             print(f"🔴 Error en disparador: {ex}")
