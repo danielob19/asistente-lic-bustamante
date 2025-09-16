@@ -14,6 +14,10 @@ from core.funciones_asistente import detectar_emociones_negativas
 from core.utils.generador_openai import generar_respuesta_con_openai
 from core.constantes import CLINICO, CLINICO_CONTINUACION
 
+from core.db.consulta import obtener_ultima_interaccion_emocional
+from core.utils.tiempo import delta_preciso_desde
+from core.constantes import MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG
+
 
 from core.db.registro import (
     registrar_respuesta_openai,
