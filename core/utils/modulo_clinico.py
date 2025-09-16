@@ -615,24 +615,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # ==============================================================
-# 📌 Guardar nueva emoción en DB
-# ==============================================================
-def guardar_emocion_en_db(user_id, emocion, clasificacion):
-    """
-    Inserta una emoción detectada y su clasificación en la DB.
-    """
-    try:
-        query = """
-            INSERT INTO emociones_detectadas (user_id, emocion, clasificacion, fecha)
-            VALUES (%s, %s, %s, NOW())
-        """
-        ejecutar_consulta(query, (user_id, emocion, clasificacion), commit=True)
-        print(f"💾 Emoción '{emocion}' registrada para el usuario {user_id}")
-    except Exception as e:
-        print(f"⚠️ Error al guardar emoción en DB: {e}")
-
-
-# ==============================================================
 # 📌 Clasificar cuadro clínico probable (puede usarse IA)
 # ==============================================================
 def clasificar_cuadro_clinico(emocion):
