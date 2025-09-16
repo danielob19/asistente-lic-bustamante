@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from core.constantes import DATABASE_URL
 from typing import Optional
 from .conexion import ejecutar_consulta
+from typing import List, Optional
 
 
 def obtener_emociones_ya_registradas(user_id: str) -> set[str]:
@@ -230,3 +231,52 @@ def obtener_ultima_interaccion_emocional(user_id: str) -> Optional[dict]:
     """
     rows = ejecutar_consulta(query, (user_id,))
     return rows[0] if rows else None
+
+
+
+
+
+def registrar_interaccion_clinica(
+    user_id: str,
+    emociones: Optional[List[str]] = None,
+    nuevas_emociones_detectadas: Optional[List[str]] = None,
+    cuadro_clinico_probable: Optional[str] = None,
+    respuesta_openai: Optional[str] = None,
+    origen: str = "deteccion",        # ajustá si tenés otro valor por defecto
+    fuente: str = "openai",
+    eliminado: bool = False,
+    tema: Optional[str] = None,
+    sintomas: Optional[List[str]] = None,
+    interaccion_id: Optional[int] = None,
+) -> int:
+    """
+    Inserta una fila en public.historial_clinico_usuario y retorna el id generado.
+    Solo usamos esta tabla para persistir el historial.
+    """
+    sql = """
+        INSERT INTO public.historial_clinico_usuario
+            (user_id, fecha, emociones, nuevas_emociones_detectadas,
+             cuadro_clinico_probable, respuesta_openai, origen, fuente, eliminado,
+             tema, sintomas, interaccion_id)
+        VALUES
+            (%s, NOW(), %s, %s,
+             %s, %s, %s, %s, %s,
+             %s, %s, %s)
+        RETURNING id
+    """
+    params = (
+        user_id,
+        emociones if emociones else None,
+        nuevas_emociones_detectadas if nuevas_emociones_detectadas else None,
+        (cuadro_clinico_probable or None),
+        (respuesta_openai or None),
+        origen,
+        fuente,
+        eliminado,
+        (tema or None),
+        sintomas if sintomas else None,
+        interaccion_id,
+    )
+    rows = ejecutar_consulta(sql, params)
+    return rows[0]["id"]
+
