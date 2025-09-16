@@ -615,29 +615,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # ==============================================================
-# 📌 Obtener todas las emociones históricas de un usuario
-# ==============================================================
-from core.db.conexion import ejecutar_consulta
-from sqlalchemy import text  # si quieres seguir usando SQL parametrizado
-
-def obtener_emociones_usuario(user_id):
-    """
-    Devuelve una lista de emociones históricas para el usuario desde la DB.
-    """
-    try:
-        query = """
-            SELECT emocion
-            FROM emociones_detectadas
-            WHERE user_id = %s
-        """
-        resultados = ejecutar_consulta(query, (user_id,))
-        return [row["emocion"] for row in resultados] if resultados else []
-    except Exception as e:
-        print(f"⚠️ Error en obtener_emociones_usuario: {e}")
-        return []
-
-
-# ==============================================================
 # 📌 Guardar nueva emoción en DB
 # ==============================================================
 def guardar_emocion_en_db(user_id, emocion, clasificacion):
