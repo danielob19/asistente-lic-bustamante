@@ -513,29 +513,31 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                 if emociones_openai:
                     partes.append(f"Por lo que traés hoy se suma a lo previo y se observa {', '.join(emociones_openai)}.")
                 partes.append(f"Cuadro clínico probable: {objetivo}.")
-                partes.append("¿Podés ubicar cuándo se intensifica más (trabajo, noche, antes de dormir)? "
-                              "¿Cambios en sueño, concentración o tensión corporal?")
+                partes.append(
+                    "¿Podés ubicar cuándo se intensifica más (trabajo, noche, antes de dormir)? "
+                    "¿Cambios en sueño, concentración o tensión corporal?"
+                )
                 texto_out = " ".join(partes)
     
                 # Registrar explícitamente el suceso del disparador
-                try:
-                    registrar_interaccion_clinica(
-                        user_id=user_id,
-                        emociones=emociones_openai or [],
-                        nuevas_emociones_detectadas=_limpiar_lista_str(session.get("emociones_detectadas", [])),
-                        cuadro_clinico_probable=objetivo or None,
-                        respuesta_openai=texto_out,  # lo que dijo el asistente en el disparador
-                        origen="deteccion",
-                        fuente="openai_disparo",
-                        eliminado=False,
-                        interaccion_id=contador,
-                    )
-                    # Marcar flags en sesión para no repetir el disparador
-                    session["disparo_notificado"] = True
-                    session["disparo_cuadro"] = objetivo
+                registrar_interaccion_clinica(
+                    user_id=user_id,
+                    emociones=emociones_openai or [],
+                    nuevas_emociones_detectadas=_limpiar_lista_str(session.get("emociones_detectadas", [])),
+                    cuadro_clinico_probable=objetivo or None,
+                    respuesta_openai=texto_out,  # lo que dijo el asistente en el disparador
+                    origen="deteccion",
+                    fuente="openai_disparo",
+                    eliminado=False,
+                    interaccion_id=contador
+                )
+                # Marcar flags en sesión para no repetir el disparador
+                session["disparo_notificado"] = True
+                session["disparo_cuadro"] = objetivo
     
         except Exception as ex:
             print(f"🔴 Error en disparador: {ex}")
+    
 
 
     
