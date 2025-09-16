@@ -247,57 +247,111 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         return default
 
 
+    def _parse_json_emociones(payload: str) -> tuple[list[str], str]:
+        """
+        Parsea con tolerancia y valida el esquema:
+          {"emociones": [...0..4 strings minúsculas...], "cuadro_probable": "str"}
+        Retorna (emociones, cuadro) o ([], "") si no es válido.
+        """
+        data = None
+    
+        # 1) Intento directo
+        try:
+            data = json.loads(payload)
+        except Exception:
+            pass
+    
+        # 2) Si vino texto con basura alrededor, extraemos el primer objeto {...}
+        if not isinstance(data, dict):
+            m = re.search(r"\{(?:.|\n)*\}", payload, flags=re.S)
+            if m:
+                try:
+                    data = json.loads(m.group(0))
+                except Exception:
+                    data = None
+    
+        if not isinstance(data, dict):
+            return [], ""
+    
+        # Normalización
+        emos = data.get("emociones") or []
+        if not isinstance(emos, list):
+            emos = []
+    
+        emos_norm = []
+        for e in emos:
+            s = str(e).strip().lower()
+            if s:
+                emos_norm.append(s)
+    
+        # Únicas, máximo 4
+        emos_norm = list(dict.fromkeys(emos_norm))[:4]
+    
+        cuadro = str(data.get("cuadro_probable") or "").strip().lower()
+    
+        # Validación mínima
+        if any("," in x or "{" in x or "}" in x for x in emos_norm):
+            return [], ""
+        if not isinstance(cuadro, str):
+            cuadro = ""
+    
+        return emos_norm, cuadro
+    
+    
     def _ask_openai_emociones_y_cuadro(texto_usuario: str) -> tuple[list[str], str]:
         """
-        Usa exclusivamente OpenAI para detectar:
-          - emociones (lista de strings, minúsculas, sin duplicados, máx. 4)
-          - cuadro_probable (string, minúsculas). Si no hay, cadena vacía.
-        Devuelve (emociones, cuadro).
+        Pide a OpenAI emociones (0..4) y cuadro probable en JSON estricto.
+        Nunca lanza excepción: si falla todo, retorna ([], "").
+        100% OpenAI (sin depender de DB).
         """
-    
-        prompt = (
-            "Analizá el siguiente mensaje del usuario y devolvé EXCLUSIVAMENTE un JSON válido con este formato exacto:\n"
+        # Instrucción compacta y estricta
+        prompt_base = (
+            "Analizá el siguiente mensaje clínico y devolvé EXCLUSIVAMENTE un JSON válido con este formato exacto:\n"
             "{\n"
-            '  "emociones": ["..."],\n'
+            '  "emociones": ["...", "..."],\n'
             '  "cuadro_probable": "..." \n'
-            "}\n"
-            "Instrucciones estrictas:\n"
-            "- Solo JSON: sin explicaciones, sin texto antes/después, sin Markdown, sin etiquetas.\n"
-            "- \"emociones\": array de 0 a 4 términos en minúsculas, sin duplicados, únicamente emociones NEGATIVAS o clínicamente relevantes mencionadas (p. ej.: ansiedad, angustia, tristeza, estrés, irritabilidad, insomnio, apatía, culpa, miedo).\n"
-            "- \"cuadro_probable\": síntesis breve y prudente en minúsculas (p. ej.: \"ansiedad generalizada\", \"estrés sostenido\"). Si no surge, usar \"\".\n"
-            "- Si no hay contenido clínico, responder exactamente: {\"emociones\": [], \"cuadro_probable\": \"\"}.\n\n"
-            f"TEXTO: {texto_usuario}"
+            "}\n\n"
+            "Reglas:\n"
+            "- Solo JSON: sin explicaciones, sin texto antes/después, sin Markdown.\n"
+            "- Emociones: 0 a 4 términos en minúsculas, sin duplicados, solo negativas/clinicamente relevantes.\n"
+            '- Cuadro_probable: síntesis breve y prudente en minúsculas (p. ej.: "ansiedad generalizada", "estrés").\n"
+            f"- TEXTO: {texto_usuario}\n"
         )
     
-        out = generar_respuesta_con_openai(prompt) or '{"emociones": [], "cuadro_probable": ""}'
-        out = (out or "").strip()
+        # Hasta 3 intentos: 1) solicitud normal, 2) refuerzo JSON-only, 3) reparador
+        prompts = [
+            prompt_base,
+            prompt_base + "\nIMPORTANTE: respondé SOLO con el objeto JSON. Nada más.",
+            (
+                "Arreglá el siguiente contenido para que sea EXACTAMENTE un objeto JSON válido con claves "
+                '"emociones" (lista de strings) y "cuadro_probable" (string). No agregues texto fuera del JSON.\n\n'
+                f"CONTENIDO:\n{prompt_base}"
+            ),
+        ]
     
-        # Limpieza por si el modelo rodea con ```json ... ```
-        if out.startswith("```"):
-            out = re.sub(r"^```(?:json)?\s*|\s*```$", "", out, flags=re.IGNORECASE)
+        # Reintentos de red/timeout: leve backoff
+        for intento, p in enumerate(prompts, start=1):
+            for _ in range(2):  # 2 reintentos por intento lógico
+                try:
+                    # Tu wrapper a OpenAI; usá temperature=0 para máxima exactitud
+                    raw = generar_respuesta_con_openai(p, temperatura=0, max_tokens=200)
+                    if not isinstance(raw, str):
+                        raw = str(raw or "")
     
-        # Si hay texto alrededor, intentamos quedarnos solo con el primer bloque {...}
-        m = re.search(r"\{.*\}", out, flags=re.DOTALL)
-        if m:
-            out = m.group(0)
+                    emociones, cuadro = _parse_json_emociones(raw)
+                    if emociones or cuadro:
+                        return emociones, cuadro
     
-        try:
-            data = json.loads(out)
-            emociones = data.get("emociones", []) or []
-            cuadro = (data.get("cuadro_probable") or "").strip().lower()
+                    # Si no pudo parsear/validar, rompemos inner loop y probamos siguiente prompt
+                    break
     
-            # Normalizar + deduplicar + recortar a 4
-            def _dedup_norm(xs: list[str]) -> list[str]:
-                norm = _limpiar_lista_str(xs)
-                return list(dict.fromkeys(norm))[:4]
+                except Exception as ex:
+                    # network/timeout/rate-limit → reintento ligero
+                    print(f"⚠️ intento {intento}: OpenAI falló: {ex}")
+                    continue
     
-            emociones = _dedup_norm(emociones)
-            return emociones, cuadro
-        except Exception:
-            # Fallback: si no vino JSON válido, tomamos tokens por comas/saltos
-            items = [s.strip().lower() for s in re.split(r"[,\n;]", out) if s.strip()]
-            items = list(dict.fromkeys(_limpiar_lista_str(items)))[:4]
-            return items, ""
+        # Si llegamos acá, no conseguimos una salida válida
+        return [], ""
 
 
     def _coincidencias_sesion_historial_global(user_id: str, emociones_sesion, cuadro_openai: str):
