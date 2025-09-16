@@ -453,76 +453,55 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     print(f"⚖️ Reconciliación de cuadro → openai='{cuadro_openai}', elegido='{cuadro_final}'")
     
 
-    # 4) Recordatorio al reconectar (si vuelve luego de un tiempo y trae contenido clínico)
-    ultimo = obtener_ultimo_registro_usuario(user_id)
+    # 4) Contexto temporal emocional (preciso, ignora admins)
     recordatorio = ""
-    if ultimo:
-        fecha_ult = _get_col(ultimo, 2, "fecha", None)
+    try:
+        # Solo tiene sentido si el input actual trae contenido emocional o cuadro
+        if emociones_openai or cuadro_openai:
+            ult = obtener_ultima_interaccion_emocional(user_id)
+            if ult:
+                fecha_ult = ult.get("fecha")
+                emos_prev = (ult.get("emociones") or []) + [
+                    e for e in (ult.get("nuevas_emociones_detectadas") or []) 
+                    if e not in (ult.get("emociones") or [])
+                ]
+                cuadro_prev = (ult.get("cuadro_clinico_probable") or "").strip()
     
-        try:
-            if isinstance(fecha_ult, str):
-                # intento parseo básico ISO
-                fecha_ult_dt = datetime.fromisoformat(fecha_ult.replace("Z", ""))
-            else:
-                fecha_ult_dt = fecha_ult
+                # Umbral opcional (si querés no repetirlo cuando fue “recién”)
+                if MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG > 0:
+                    from datetime import datetime, timezone
+                    delta_seg = int((datetime.now(timezone.utc) - (fecha_ult.replace(tzinfo=timezone.utc) if fecha_ult.tzinfo is None else fecha_ult.astimezone(timezone.utc))).total_seconds())
+                    if delta_seg < MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG:
+                        fecha_ult = None  # no mostramos prefijo
     
-            delta = ahora - fecha_ult_dt
-            seg = int(delta.total_seconds())
+                if fecha_ult:
+                    tiempo_txt = delta_preciso_desde(fecha_ult)
     
-            # 🔍 LOG de depuración
-            print(f"⏱ reingreso: seg={seg}, REINGRESO_SEGUNDOS={REINGRESO_SEGUNDOS}")
+                    # Texto “previo” (emociones o cuadro)
+                    prev_txt = ""
+                    if emos_prev:
+                        prev_txt = ("habías mencionado " + ", ".join(emos_prev[:-1]) + f" y {emos_prev[-1]}") if len(emos_prev) > 1 else f"habías mencionado {emos_prev[0]}"
+                    elif cuadro_prev:
+                        prev_txt = f"habías comentado {cuadro_prev}"
     
-            if seg >= REINGRESO_SEGUNDOS and (emociones_openai or cuadro_openai):
-                # Tiempo humanizado (minutos, horas, días, semanas, meses, años)
-                def _humanizar_tiempo(seg: int) -> str:
-                    if seg < 60:  return "unos segundos"
-                    mins = seg // 60
-                    if mins < 60: return f"{mins} minuto{'s' if mins != 1 else ''}"
-                    horas = mins // 60
-                    if horas < 24: return f"{horas} hora{'s' if horas != 1 else ''}"
-                    dias = horas // 24
-                    if dias < 7:  return f"{dias} día{'s' if dias != 1 else ''}"
-                    semanas = dias // 7
-                    if dias < 30: return f"{semanas} semana{'s' if semanas != 1 else ''}"
-                    meses = dias // 30
-                    if meses < 12: return f"{meses} mes{'es' if meses != 1 else ''}"
-                    anios = dias // 365
-                    return f"{anios} año{'s' if anios != 1 else ''}"
+                    # Texto “ahora”
+                    ahora_txt = ""
+                    if emociones_openai:
+                        ahora_txt = "y ahora aparece " + (", ".join(emociones_openai[:-1]) + f" y {emociones_openai[-1]}" if len(emociones_openai) > 1 else emociones_openai[0])
+                    elif cuadro_openai:
+                        ahora_txt = f"y ahora aparece como probable {cuadro_openai}"
     
-                # Lo último que teníamos guardado
-                emos_previas = _limpiar_lista_str(_get_col(ultimo, 3, "emociones", [])) or []
-                cuadro_prev  = ((_get_col(ultimo, 5, "cuadro_clinico_probable") or "")).strip().lower()
-    
-                # Frase de lo previo
-                partes_prev = []
-                if emos_previas:
-                    partes_prev.append(f"que tenías {', '.join(emos_previas)}")
-                if cuadro_prev:
-                    partes_prev.append(f"y estimamos como probable {cuadro_prev}")
-                prev_txt = " ".join(partes_prev)
-    
-                # Frase de lo actual (mensaje de ahora)
-                ahora_txt = ""
-                if emociones_openai:
-                    ahora_txt = f"y ahora mencionás {', '.join(emociones_openai)}"
-                elif cuadro_openai:
-                    ahora_txt = f"y ahora aparece como probable {cuadro_openai}"
-    
-                # Recordatorio final (evita “me comentaste” si no hay previo)
-                prev_txt = prev_txt.strip()
-                ahora_txt = ahora_txt.strip()
-                prev_inicio = "me comentaste " if prev_txt else ""
-    
-                recordatorio = (
-                    f" Hace {_humanizar_tiempo(seg)} {prev_inicio}{prev_txt} {ahora_txt}. "
-                    f"¿Cambió algo desde entonces?"
-                )
-                # Colapsar espacios dobles por si alguna parte viene vacía
-                recordatorio = " ".join(recordatorio.split())
-    
-        except Exception:
-            # En recordatorio, si algo falla seguimos sin romper el flujo.
-            pass
+                    # Prefijo final (sin “me comentaste”, aclara que se refiere a lo emocional)
+                    recordatorio = (
+                        f"La última vez que hablamos **de cómo te sentías** fue hace {tiempo_txt}"
+                        + (f" y {prev_txt}" if prev_txt else "")
+                        + (f", {ahora_txt}" if ahora_txt else "")
+                        + ". ¿Cambió algo desde entonces?"
+                    ).replace("  ", " ").strip()
+    except Exception as ex:
+        print(f"🔴 Error al armar recordatorio emocional: {ex}")
+        recordatorio = ""
+
 
 
     
