@@ -555,16 +555,18 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                 texto_out = " ".join(partes)
     
                 # Registrar explícitamente el suceso del disparador
-                registrar_novedad_openai(
-                    user_id=user_id,
-                    emociones=emociones_openai,
-                    nuevas_emociones_detectadas=session.get("emociones_detectadas", []),
-                    cuadro_clinico_probable=objetivo,
-                    interaccion_id=contador,
-                    fuente="openai_disparo",
-                )
-                session["disparo_notificado"] = True
-                session["disparo_cuadro"] = objetivo
+                try:
+                    registrar_interaccion_clinica(
+                        user_id=user_id,
+                        emociones=emociones_openai or [],
+                        nuevas_emociones_detectadas=_limpiar_lista_str(session.get("emociones_detectadas", [])),
+                        cuadro_clinico_probable=objetivo or None,
+                        respuesta_openai=texto_out,      # lo que dijo el asistente en el disparador
+                        origen="deteccion",
+                        fuente="openai_disparo",
+                        eliminado=False,
+                        interaccion_id=contador,
+                    )
     
         except Exception as ex:
             print(f"🔴 Error en disparador: {ex}")
