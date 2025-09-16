@@ -24,6 +24,12 @@ user_sessions = {}
 # ⏱ Tiempo de expiración de sesiones (en segundos)
 SESSION_TIMEOUT = 60
 
+# Umbral para mostrar el prefijo temporal emocional (0 = siempre)
+# Ejemplos: 1800 = 30 min, 7200 = 2 h
+MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG = int(os.getenv(
+    "MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG", "0"
+))
+
 # 🗂 Cache de síntomas (se llena al iniciar la app)
 sintomas_cacheados = set()
 
