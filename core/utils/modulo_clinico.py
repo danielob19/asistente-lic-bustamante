@@ -29,8 +29,6 @@ from core.db.registro import (
 )
 
 
-from core.db.registro import registrar_historial_clinico
-
 from core.db.sintomas import (
     registrar_sintoma,
     obtener_sintomas_existentes
