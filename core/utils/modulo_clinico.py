@@ -311,8 +311,8 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             "}\n\n"
             "Reglas:\n"
             "- Solo JSON: sin explicaciones, sin texto antes/después, sin Markdown.\n"
-            "- Emociones: 0 a 4 términos en minúsculas, sin duplicados, solo negativas/clinicamente relevantes.\n"
-            '- Cuadro_probable: síntesis breve y prudente en minúsculas (p. ej.: "ansiedad generalizada", "estrés").\n"
+            "- Emociones: 0 a 4 términos en minúsculas, sin duplicados, únicamente emociones negativas o clínicamente relevantes.\n"
+            "- Cuadro_probable: síntesis breve y prudente en minúsculas (p. ej.: \"ansiedad generalizada\", \"estrés\").\n"
             f"- TEXTO: {texto_usuario}\n"
         )
     
