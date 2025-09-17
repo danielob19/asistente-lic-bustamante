@@ -644,32 +644,13 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     
     # 5) Si no hubo disparador armado, respuesta clínica breve, humana y profesional
     if not texto_out:
-        if emociones_openai or cuadro_openai:
-            partes = []
-    
-            # Apertura breve y focalizada
-            if emociones_openai:
-                partes.append(
-                    f"Por lo que describís, se observa {', '.join(emociones_openai)}."
-                )
-            elif cuadro_openai:
-                partes.append("Por lo que describís, aparecen indicios clínicos relevantes.")
-    
-            # Preguntas guía (orientadas al recorte clínico)
-            partes.append(
-                "¿En qué momentos se intensifica más: durante el trabajo, al final del día o al intentar dormir?"
-            )
-            partes.append(
-                "¿Cómo vienen el sueño y la concentración? ¿Notaste tensión corporal (cuello/mandíbula), irritabilidad o fatiga reciente?"
-            )
-    
-            # Cierre con hipótesis prudente
-            if cuadro_openai:
-                partes.append(f"Cuadro clínico probable: {cuadro_openai}.")
-    
-            texto_out = " ".join(partes)
-        else:
-            texto_out = "En este mensaje no aparecen elementos clínicos relevantes."
+        texto_out = armar_respuesta_humana(
+            mensaje_usuario=mensaje_usuario,
+            emociones=emociones_openai,
+            cuadro=cuadro_openai,
+            recordatorio=recordatorio,  # tu “Hace X me comentaste…”
+        )
+
 
     # 6) Salida FINAL (siempre devolvemos algo)
     if recordatorio and texto_out:
