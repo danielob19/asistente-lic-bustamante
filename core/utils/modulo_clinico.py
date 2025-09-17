@@ -2,7 +2,7 @@ import json
 import re
 import unicodedata
 import string
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 
 from core.db.conexion import ejecutar_consulta
