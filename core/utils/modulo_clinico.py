@@ -15,8 +15,6 @@ from core.db.consulta import (
 )
 from core.utils.generador_openai import generar_respuesta_con_openai
 from core.utils.tiempo import delta_preciso_desde
-from core.constantes import MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG
-
 
 
 def armar_prompt_openai(historial_emociones, nuevas_emociones, ultima_interaccion, nombre_usuario=None):
