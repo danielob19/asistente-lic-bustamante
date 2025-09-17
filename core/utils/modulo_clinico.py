@@ -125,6 +125,82 @@ def detectar_emocion(texto: str) -> str | None:
     return None
 
 
+def armar_respuesta_humana(
+    mensaje_usuario: str,
+    emociones: list[str] | None,
+    cuadro: str | None,
+    recordatorio: str | "",
+) -> str:
+    """
+    Construye una respuesta breve, humana y clínica sin usar regex ni patrones de detección.
+    Se apoya SOLO en lo que ya devolvió OpenAI (emociones / cuadro) y en el recordatorio.
+    """
+    emociones = [e.strip().lower() for e in (emociones or []) if str(e).strip()]
+    cuadro = (cuadro or "").strip().lower()
+
+    partes: list[str] = []
+
+    # Prefijo temporal (p. ej., "Hace 2 horas me comentaste…")
+    if recordatorio:
+        partes.append(recordatorio)
+
+    # Agradecer y reflejar brevemente
+    if emociones and cuadro:
+        listado = ", ".join(emociones[:-1]) + f" y {emociones[-1]}" if len(emociones) > 1 else emociones[0]
+        partes.append(f"Gracias por contarlo. Por lo que describís, aparece {listado}; el cuadro probable es {cuadro}.")
+    elif emociones:
+        listado = ", ".join(emociones[:-1]) + f" y {emociones[-1]}" if len(emociones) > 1 else emociones[0]
+        partes.append(f"Gracias por compartirlo. Tiene sentido que te sientas {listado}.")
+    elif cuadro:
+        partes.append(f"Gracias por contarlo. Por lo que describís, podría tratarse de {cuadro}.")
+    else:
+        # Sin señales claras de OpenAI: mantené calidez, no técnico
+        partes.append("Gracias por contarlo.")
+
+    # Preguntas abiertas (humanas) – elegimos por la 1ª emoción si existe; si no, genéricas
+    preguntas_genericas = [
+        "¿En qué situaciones notás que se hace más intenso?",
+        "¿Qué cambios observás en el cuerpo o en los pensamientos cuando aparece?",
+        "¿Hay algo que te ayude, aunque sea un poco, a que baje cuando sucede?",
+    ]
+
+    preguntas_por_emocion = {
+        "ansiedad": [
+            "¿En qué momentos se vuelve más intensa (trabajo, noche, antes de dormir)?",
+            "¿Qué notás en el cuerpo (respiración, pecho, mandíbula) cuando aparece?",
+        ],
+        "nerviosismo": [
+            "¿Qué situaciones suelen generarte nerviosismo?",
+            "¿Cómo te das cuenta de que está empezando y qué te ayuda a bajarlo un poco?",
+        ],
+        "miedo": [
+            "¿A qué situaciones o ideas suele estar ligado el miedo?",
+            "¿Qué hacés para afrontarlo cuando aparece, aunque sea de a poco?",
+        ],
+        "tristeza": [
+            "¿Desde cuándo venís notando esta tristeza?",
+            "¿En qué momentos del día se intensifica más?",
+        ],
+        "pánico": [
+            "¿Recordás qué suele disparar esos episodios o cómo comienzan?",
+            "¿Qué estrategias te dieron algún alivio cuando te pasó?",
+        ],
+        "insomnio": [
+            "¿Desde cuándo notás dificultades para dormir y cómo impacta en tu día?",
+            "¿Qué probaste a la noche y qué te ayudó aunque sea un poco?",
+        ],
+    }
+
+    clave = emociones[0] if emociones else ""
+    preguntas = preguntas_por_emocion.get(clave, preguntas_genericas)
+
+    # Sumamos 2 preguntas para mantener breve y conversacional
+    partes.append(" ".join(preguntas[:2]))
+
+    # Cierre suave
+    partes.append("Si querés, lo vamos viendo juntos paso a paso.")
+
+    return " ".join(partes).strip()
 
 
 
