@@ -127,9 +127,9 @@ def detectar_emocion(texto: str) -> str | None:
 
 def armar_respuesta_humana(
     mensaje_usuario: str,
-    emociones: list[str] | None,
-    cuadro: str | None,
-    recordatorio: str | "",
+    emociones: Optional[List[str]],
+    cuadro: Optional[str],
+    recordatorio: str = "",
 ) -> str:
     """
     Construye una respuesta breve, humana y clínica sin usar regex ni patrones de detección.
