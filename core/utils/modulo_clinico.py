@@ -3,7 +3,13 @@ import re
 import unicodedata
 import string
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+import os
+from datetime import datetime, timezone
+try:
+    from zoneinfo import ZoneInfo  # Python 3.9+
+except Exception:
+    ZoneInfo = None
+
 
 from core.db.conexion import ejecutar_consulta
 from core.db.consulta import (
