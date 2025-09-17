@@ -626,46 +626,18 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     print(f"⚖️ Reconciliación de cuadro → openai='{cuadro_openai}', elegido='{cuadro_final}'")
     
 
-    # 4) Contexto temporal emocional (siempre, basado en última detección emocional)
+    # 4) Contexto temporal emocional (siempre, contextual y humano)
     recordatorio = ""
     try:
-        # Siempre tomamos la última interacción emocional (la función ya ignora admins)
-        ult = obtener_ultima_interaccion_emocional(user_id)
-        if ult:
-            fecha_ult = ult.get("fecha")
-    
-            # emociones previas = emociones + nuevas_emociones_detectadas (sin duplicados)
-            emos_prev = list(dict.fromkeys(
-                (ult.get("emociones") or []) + (ult.get("nuevas_emociones_detectadas") or [])
-            ))
-            cuadro_prev = (ult.get("cuadro_clinico_probable") or "").strip()
-    
-            # Tiempo preciso (segundos / minutos / horas / días / meses / años)
-            tiempo_txt = delta_preciso_desde(fecha_ult)
-    
-            # “me comentaste …”
-            if emos_prev:
-                prev_txt = ("me comentaste " + ", ".join(emos_prev[:-1]) + f" y {emos_prev[-1]}"
-                            if len(emos_prev) > 1 else f"me comentaste {emos_prev[0]}")
-            elif cuadro_prev:
-                prev_txt = f"me comentaste {cuadro_prev}"
-            else:
-                prev_txt = "me comentaste cómo te sentías"
-    
-            # (Opcional) “ahora mencionás …” solo si el mensaje ACTUAL es clínico
-            ahora_txt = ""
-            if emociones_openai:
-                ahora_txt = (", ".join(emociones_openai[:-1]) + f" y {emociones_openai[-1]}"
-                             if len(emociones_openai) > 1 else emociones_openai[0])
-            elif cuadro_openai:
-                ahora_txt = cuadro_openai
-    
-            recordatorio = (
-                f"Hace {tiempo_txt} {prev_txt}."
-                + (f" Ahora mencionás {ahora_txt}." if ahora_txt else "")
-            ).strip()
+        ultima = obtener_ultima_interaccion_emocional(user_id)   # ignora admins
+        recordatorio = construir_recordatorio_contextual(
+            emociones_actuales=emociones_openai,
+            cuadro_actual=cuadro_openai,
+            ultima=ultima,
+        )
     except Exception as ex:
-        print(f"⚠️ Error armando recordatorio temporal: {ex}")
+        print(f"⚠️ Error armando recordatorio contextual: {ex}")
+    
 
     
 
