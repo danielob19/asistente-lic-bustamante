@@ -211,6 +211,82 @@ def armar_respuesta_humana(
 
 
 
+def _nombre_dia_es(n: int) -> str:
+    dias = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+    return dias[n % 7]
+
+def _nombre_mes_es(n: int) -> str:
+    meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+             "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+    return meses[(n - 1) % 12]
+
+def fecha_humana_es(fecha: datetime) -> str:
+    """
+    Devuelve 'martes 5 de febrero de 2024 a las 19:45 hs' en TZ_LOCAL (default: America/Argentina/Buenos_Aires).
+    """
+    if not fecha:
+        return ""
+    if fecha.tzinfo is None:
+        fecha = fecha.replace(tzinfo=timezone.utc)
+
+    tz_name = os.getenv("TZ_LOCAL", "America/Argentina/Buenos_Aires")
+    try:
+        fecha = fecha.astimezone(ZoneInfo(tz_name)) if ZoneInfo else fecha.astimezone(timezone.utc)
+    except Exception:
+        fecha = fecha.astimezone(timezone.utc)
+
+    return f"{_nombre_dia_es(fecha.weekday())} {fecha.day} de {_nombre_mes_es(fecha.month)} de {fecha.year} a las {fecha.hour:02d}:{fecha.minute:02d} hs"
+
+from typing import Optional, List
+
+def construir_recordatorio_contextual(
+    emociones_actuales: Optional[List[str]],
+    cuadro_actual: Optional[str],
+    ultima: Optional[dict],
+) -> str:
+    """
+    'Lo que traés ahora (miedo) podría vincularse o sumarse a angustia
+     que me comentaste el martes 5 de febrero de 2024 a las 19:45 hs (hace 7 meses y 3 días). ¿Ocurrió algo en este tiempo?'
+    """
+    if not ultima:
+        return ""
+
+    fecha_ult = ultima.get("fecha")
+    if not fecha_ult:
+        return ""
+
+    emos_prev = list(dict.fromkeys(
+        (ultima.get("emociones") or []) +
+        (ultima.get("nuevas_emociones_detectadas") or [])
+    ))
+    cuadro_prev = (ultima.get("cuadro_clinico_probable") or "").strip()
+
+    prev_lbl = ", ".join(emos_prev) if emos_prev else (cuadro_prev if cuadro_prev else "cómo te sentías")
+
+    act_lbl = ""
+    if emociones_actuales:
+        act_lbl = ", ".join([e for e in emociones_actuales if e])
+    elif cuadro_actual:
+        act_lbl = (cuadro_actual or "").strip()
+
+    fecha_txt = fecha_humana_es(fecha_ult)
+    rel_txt = delta_preciso_desde(fecha_ult)  # <-- sigue usando tu helper importado
+
+    if act_lbl:
+        return (
+            f"Lo que traés ahora ({act_lbl}) podría vincularse o sumarse a {prev_lbl} "
+            f"que me comentaste el {fecha_txt} ({rel_txt}). ¿Ocurrió algo en este tiempo?"
+        )
+    else:
+        return (
+            f"Me habías comentado {prev_lbl} el {fecha_txt} ({rel_txt}). "
+            f"¿Ocurrió algo desde entonces?"
+        )
+
+
+
+
+
 
 def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     """
