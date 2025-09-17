@@ -653,16 +653,17 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
     # 6) Salida FINAL (siempre devolvemos algo)
-    if recordatorio and texto_out:
-        texto_final = f"{recordatorio} {texto_out}"
-    elif recordatorio:
-        texto_final = recordatorio
-    elif texto_out:
+    if texto_out:
+        # Ya incluye el recordatorio si correspondía
         texto_final = texto_out
+    elif recordatorio:
+        # Si no hubo texto_out, al menos devolvemos el recordatorio
+        texto_final = recordatorio
     else:
+        # Fallback humano y breve (sin el mensaje rígido)
         texto_final = (
-            "Gracias por compartirlo. En este mensaje no aparecen elementos clínicos claros. "
-            "Si te sirve, contame cuándo se intensifica (trabajo, noche, al dormir) y cómo vienen el descanso y la concentración."
+            "Gracias por compartirlo. ¿En qué momentos se intensifica más "
+            "y qué notás en el cuerpo o en los pensamientos cuando aparece?"
         )
     
     # Sanitizar espacios
@@ -673,9 +674,9 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         registrar_interaccion_clinica(
             user_id=user_id,
             emociones=emociones_openai or [],
-            nuevas_emociones_detectadas=nuevas_emos or [],
-            cuadro_clinico_probable=cuadro_final or None,   # usa el reconciliado si existe
-            respuesta_openai=texto_final,                   # guarda exactamente lo que se respondió
+            nuevas_emociones_detectadas=nuevas_emos or [],   # <- mantiene solo lo nuevo
+            cuadro_clinico_probable=cuadro_final or None,    # <- usa el reconciliado si existe
+            respuesta_openai=texto_final,                    # <- lo que efectivamente se dijo
             origen="deteccion",
             fuente="openai",
             eliminado=False,
@@ -688,6 +689,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         "respuesta": texto_final,
         "session": session,
     }
+
 
 
 
