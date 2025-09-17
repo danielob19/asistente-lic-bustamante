@@ -470,74 +470,47 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     print(f"⚖️ Reconciliación de cuadro → openai='{cuadro_openai}', elegido='{cuadro_final}'")
     
 
-    # 4) Contexto temporal emocional (preciso, ignora admins)
+    # 4) Contexto temporal emocional (siempre, basado en última detección emocional)
     recordatorio = ""
     try:
-        # Solo tiene sentido si el input actual trae contenido emocional o cuadro
-        if emociones_openai or cuadro_openai:
-            ult = obtener_ultima_interaccion_emocional(user_id)
-            if ult:
-                fecha_ult = ult.get("fecha")
-                emos_prev_registro = (ult.get("emociones") or []) + [
-                    e for e in (ult.get("nuevas_emociones_detectadas") or [])
-                    if e not in (ult.get("emociones") or [])
-                ]
-                cuadro_prev = (ult.get("cuadro_clinico_probable") or "").strip()
+        # Siempre tomamos la última interacción emocional (la función ya ignora admins)
+        ult = obtener_ultima_interaccion_emocional(user_id)
+        if ult:
+            fecha_ult = ult.get("fecha")
     
-                # Normalizamos fecha a UTC aware (acepta datetime o str ISO)
-                from datetime import datetime, timezone
-                def _to_utc(dt):
-                    if dt is None:
-                        return None
-                    if isinstance(dt, str):
-                        try:
-                            dt = datetime.fromisoformat(dt.replace("Z", ""))
-                        except Exception:
-                            return None
-                    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc)
+            # emociones previas = emociones + nuevas_emociones_detectadas (sin duplicados)
+            emos_prev = list(dict.fromkeys(
+                (ult.get("emociones") or []) + (ult.get("nuevas_emociones_detectadas") or [])
+            ))
+            cuadro_prev = (ult.get("cuadro_clinico_probable") or "").strip()
     
-                fecha_ult_utc = _to_utc(fecha_ult)
+            # Tiempo preciso (segundos / minutos / horas / días / meses / años)
+            tiempo_txt = delta_preciso_desde(fecha_ult)
     
-                # Umbral opcional (si querés no repetirlo cuando fue “recién”)
-                if MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG > 0 and fecha_ult_utc:
-                    delta_seg = int((datetime.now(timezone.utc) - fecha_ult_utc).total_seconds())
-                    if delta_seg < MOSTRAR_PRECISION_EMOCIONAL_UMBRAL_SEG:
-                        fecha_ult_utc = None  # no mostramos prefijo
+            # “me comentaste …”
+            if emos_prev:
+                prev_txt = ("me comentaste " + ", ".join(emos_prev[:-1]) + f" y {emos_prev[-1]}"
+                            if len(emos_prev) > 1 else f"me comentaste {emos_prev[0]}")
+            elif cuadro_prev:
+                prev_txt = f"me comentaste {cuadro_prev}"
+            else:
+                prev_txt = "me comentaste cómo te sentías"
     
-                if fecha_ult_utc:
-                    tiempo_txt = delta_preciso_desde(fecha_ult_utc)
+            # (Opcional) “ahora mencionás …” solo si el mensaje ACTUAL es clínico
+            ahora_txt = ""
+            if emociones_openai:
+                ahora_txt = (", ".join(emociones_openai[:-1]) + f" y {emociones_openai[-1]}"
+                             if len(emociones_openai) > 1 else emociones_openai[0])
+            elif cuadro_openai:
+                ahora_txt = cuadro_openai
     
-                    # Texto “previo” (emociones o cuadro)
-                    prev_txt = ""
-                    if emos_prev_registro:
-                        prev_txt = (
-                            "habías mencionado " + ", ".join(emos_prev_registro[:-1]) + f" y {emos_prev_registro[-1]}"
-                            if len(emos_prev_registro) > 1 else
-                            f"habías mencionado {emos_prev_registro[0]}"
-                        )
-                    elif cuadro_prev:
-                        prev_txt = f"habías comentado {cuadro_prev}"
-    
-                    # Texto “ahora”
-                    ahora_txt = ""
-                    if emociones_openai:
-                        ahora_txt = "y ahora aparece " + (
-                            ", ".join(emociones_openai[:-1]) + f" y {emociones_openai[-1]}"
-                            if len(emociones_openai) > 1 else emociones_openai[0]
-                        )
-                    elif cuadro_openai:
-                        ahora_txt = f"y ahora aparece como probable {cuadro_openai}"
-    
-                    # Prefijo final (sin “me comentaste”, aclara que se refiere a lo emocional)
-                    recordatorio = (
-                        f"La última vez que hablamos **de cómo te sentías** fue hace {tiempo_txt}"
-                        + (f" y {prev_txt}" if prev_txt else "")
-                        + (f", {ahora_txt}" if ahora_txt else "")
-                        + ". ¿Cambió algo desde entonces?"
-                    ).replace("  ", " ").strip()
+            recordatorio = (
+                f"Hace {tiempo_txt} {prev_txt}."
+                + (f" Ahora mencionás {ahora_txt}." if ahora_txt else "")
+            ).strip()
     except Exception as ex:
-        print(f"🔴 Error al armar recordatorio emocional: {ex}")
-        recordatorio = ""
+        print(f"⚠️ Error armando recordatorio temporal: {ex}")
+
     
 
 
