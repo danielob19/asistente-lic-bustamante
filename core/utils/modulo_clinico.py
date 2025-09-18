@@ -286,6 +286,11 @@ def construir_recordatorio_contextual(
 
 
 
+def _citar_breve(texto: str, max_chars: int = 70) -> str:
+    t = " ".join(str(texto or "").split())
+    return (t[:max_chars] + "…") if len(t) > max_chars else t
+
+
 
 
 def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
