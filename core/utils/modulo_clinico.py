@@ -498,20 +498,21 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         100% OpenAI (sin depender de DB).
         """
         # Instrucción compacta y estricta
-        prompt_base = (
-            "Analizá el siguiente mensaje clínico y devolvé EXCLUSIVAMENTE un JSON válido con este formato exacto:\n"
-            "{\n"
-            '  "emociones": ["...", "..."],\n'
-            '  "cuadro_probable": "..." \n'
-            "}\n\n"
-            "Reglas (español de Argentina):\n"
-            "- Solo JSON: sin explicaciones, sin texto antes/después, sin Markdown.\n"
-            "- Tolerá faltas y variantes coloquiales (p. ej., 'agustiado' ≈ 'angustiado').\n"
-            "- Emociones: 0 a 4 términos en minúsculas, sin duplicados, solo negativas/clinicamente relevantes.\n"
-            "- Si el usuario expresa un malestar aunque sea con faltas, inferí la emoción más probable.\n"
-            '- \"cuadro_probable\": síntesis prudente en minúsculas (p. ej.: \"ansiedad\", \"estrés\", \"insomnio\").\n"
-            f"- TEXTO: {texto_usuario}\n"
-        )
+        prompt_base = "\n".join([
+            "Analizá el siguiente mensaje clínico y devolvé EXCLUSIVAMENTE un JSON válido con este formato exacto:",
+            "{",
+            '  "emociones": ["...", "..."],',
+            '  "cuadro_probable": "..."',
+            "}",
+            "",
+            "Reglas (español de Argentina):",
+            "- Solo JSON: sin explicaciones, sin texto antes/después, sin Markdown.",
+            "- Tolerá faltas y variantes coloquiales (p. ej., 'agustiado' ≈ 'angustiado').",
+            "- Emociones: 0 a 4 términos en minúsculas, sin duplicados, solo negativas/clinicamente relevantes.",
+            "- Si el usuario expresa un malestar aunque sea con faltas, inferí la emoción más probable.",
+            '- "cuadro_probable": síntesis prudente en minúsculas (p. ej.: "ansiedad", "estrés", "insomnio").',
+            f"- TEXTO: {texto_usuario}",
+        ])
 
     
         # Hasta 3 intentos: 1) solicitud normal, 2) refuerzo JSON-only, 3) reparador
