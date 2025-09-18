@@ -642,6 +642,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             emociones_actuales=emociones_openai,
             cuadro_actual=cuadro_openai,
             ultima=ultima,
+            mensaje_actual=mensaje_usuario,  # <- NUEVO
         )
     except Exception as ex:
         print(f"⚠️ Error armando recordatorio contextual: {ex}")
