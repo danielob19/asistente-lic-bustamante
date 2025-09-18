@@ -237,51 +237,83 @@ def fecha_humana_es(fecha: datetime) -> str:
 
     return f"{_nombre_dia_es(fecha.weekday())} {fecha.day} de {_nombre_mes_es(fecha.month)} de {fecha.year} a las {fecha.hour:02d}:{fecha.minute:02d} hs"
 
-from typing import Optional, List
+
+
+
+
+
 
 def construir_recordatorio_contextual(
     emociones_actuales: Optional[List[str]],
     cuadro_actual: Optional[str],
     ultima: Optional[dict],
+    mensaje_actual: str = "",
 ) -> str:
     """
-    'Lo que traés ahora (miedo) podría vincularse o sumarse a angustia
-     que me comentaste el martes 5 de febrero de 2024 a las 19:45 hs (hace 7 meses y 3 días). ¿Ocurrió algo en este tiempo?'
+    Devuelve un recordatorio contextual, p. ej.:
+    'Lo que traés ahora (miedo a la oscuridad) podría vincularse o sumarse a angustia
+     que me comentaste el martes 5 de febrero de 2024 a las 19:45 hs (hace 7 meses y 3 días).
+     ¿Ocurrió algo en este tiempo?'
+    Requiere: helpers 'fecha_humana_es' y 'delta_preciso_desde'.
+    Usa _citar_breve(mensaje_actual) si no hay emoción/cuadro detectado.
     """
-    if not ultima:
+    try:
+        if not ultima:
+            return ""
+
+        fecha_ult = ultima.get("fecha")
+        if not fecha_ult:
+            return ""
+
+        # Emociones previas (sin duplicados) + cuadro previo
+        prev_emociones = list(
+            dict.fromkeys(
+                (ultima.get("emociones") or []) +
+                (ultima.get("nuevas_emociones_detectadas") or [])
+            )
+        )
+        cuadro_prev = (ultima.get("cuadro_clinico_probable") or "").strip()
+
+        if prev_emociones:
+            prev_lbl = ", ".join(prev_emociones)
+        elif cuadro_prev:
+            prev_lbl = cuadro_prev
+        else:
+            prev_lbl = "cómo te sentías"
+
+        # Etiqueta actual: emociones -> cuadro -> cita del mensaje del usuario
+        act_lbl = ""
+        if emociones_actuales:
+            act_lbl = ", ".join([e for e in emociones_actuales if e])
+        elif cuadro_actual:
+            act_lbl = (cuadro_actual or "").strip()
+        elif mensaje_actual:
+            # Requiere el helper _citar_breve(texto, max_chars=70)
+            citado = _citar_breve(mensaje_actual)
+            act_lbl = f"\"{citado}\""
+
+        # Fecha absoluta + relativo
+        fecha_txt = fecha_humana_es(fecha_ult)        # p. ej. 'martes 5 de febrero de 2024 a las 19:45 hs'
+        rel_txt   = delta_preciso_desde(fecha_ult)    # p. ej. 'hace 7 meses y 3 días'
+
+        if act_lbl:
+            return (
+                f"Lo que traés ahora ({act_lbl}) podría vincularse o sumarse a {prev_lbl} "
+                f"que me comentaste el {fecha_txt} ({rel_txt}). ¿Ocurrió algo en este tiempo?"
+            )
+        else:
+            return (
+                f"Me habías comentado {prev_lbl} el {fecha_txt} ({rel_txt}). "
+                f"¿Ocurrió algo desde entonces?"
+            )
+
+    except Exception as ex:
+        print(f"⚠️ Error en construir_recordatorio_contextual: {ex}")
         return ""
 
-    fecha_ult = ultima.get("fecha")
-    if not fecha_ult:
-        return ""
 
-    emos_prev = list(dict.fromkeys(
-        (ultima.get("emociones") or []) +
-        (ultima.get("nuevas_emociones_detectadas") or [])
-    ))
-    cuadro_prev = (ultima.get("cuadro_clinico_probable") or "").strip()
 
-    prev_lbl = ", ".join(emos_prev) if emos_prev else (cuadro_prev if cuadro_prev else "cómo te sentías")
 
-    act_lbl = ""
-    if emociones_actuales:
-        act_lbl = ", ".join([e for e in emociones_actuales if e])
-    elif cuadro_actual:
-        act_lbl = (cuadro_actual or "").strip()
-
-    fecha_txt = fecha_humana_es(fecha_ult)
-    rel_txt = delta_preciso_desde(fecha_ult)  # <-- sigue usando tu helper importado
-
-    if act_lbl:
-        return (
-            f"Lo que traés ahora ({act_lbl}) podría vincularse o sumarse a {prev_lbl} "
-            f"que me comentaste el {fecha_txt} ({rel_txt}). ¿Ocurrió algo en este tiempo?"
-        )
-    else:
-        return (
-            f"Me habías comentado {prev_lbl} el {fecha_txt} ({rel_txt}). "
-            f"¿Ocurrió algo desde entonces?"
-        )
 
 
 
