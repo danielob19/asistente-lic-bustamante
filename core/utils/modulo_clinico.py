@@ -467,12 +467,15 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             '  "emociones": ["...", "..."],\n'
             '  "cuadro_probable": "..." \n'
             "}\n\n"
-            "Reglas:\n"
+            "Reglas (español de Argentina):\n"
             "- Solo JSON: sin explicaciones, sin texto antes/después, sin Markdown.\n"
-            "- Emociones: 0 a 4 términos en minúsculas, sin duplicados, únicamente emociones negativas o clínicamente relevantes.\n"
-            "- Cuadro_probable: síntesis breve y prudente en minúsculas (p. ej.: \"ansiedad generalizada\", \"estrés\").\n"
+            "- Tolerá faltas y variantes coloquiales (p. ej., 'agustiado' ≈ 'angustiado').\n"
+            "- Emociones: 0 a 4 términos en minúsculas, sin duplicados, solo negativas/clinicamente relevantes.\n"
+            "- Si el usuario expresa un malestar aunque sea con faltas, inferí la emoción más probable.\n"
+            '- \"cuadro_probable\": síntesis prudente en minúsculas (p. ej.: \"ansiedad\", \"estrés\", \"insomnio\").\n"
             f"- TEXTO: {texto_usuario}\n"
         )
+
     
         # Hasta 3 intentos: 1) solicitud normal, 2) refuerzo JSON-only, 3) reparador
         prompts = [
