@@ -2,6 +2,7 @@ import json
 import re
 import unicodedata
 import string
+from unidecode import unidecode
 from typing import Dict, Any, Optional, List
 import os
 from datetime import datetime, timezone
@@ -207,6 +208,43 @@ def armar_respuesta_humana(
     partes.append("Si querés, lo vamos viendo juntos paso a paso.")
 
     return " ".join(partes).strip()
+
+
+
+
+
+def _join_humano(items):
+    """Une una lista en español: 'a', 'a y b', 'a, b y c'."""
+    xs = [x for x in (items or []) if x]
+    if not xs: return ""
+    if len(xs) == 1: return xs[0]
+    if len(xs) == 2: return f"{xs[0]} y {xs[1]}"
+    return f"{', '.join(xs[:-1])} y {xs[-1]}"
+
+def _citar_breve(texto: str, max_chars: int = 70) -> str:
+    t = " ".join(str(texto or "").strip().strip('“”"\'').split())
+    return (t[:max_chars] + "…") if len(t) > max_chars else t
+
+def _es_texto_de_bot(t: str) -> bool:
+    s = (t or "").lower()
+    gatillos = ("me comentaste", "hace ", " hs", "¿ocurrió algo", "cuadro clínico probable", "gracias por contarlo")
+    return any(g in s for g in gatillos)
+
+def _es_expresion_explicita(msg: str) -> bool:
+    """¿El/la usuario/a lo afirma en 1ª persona? (estoy, me siento, tengo, etc.)."""
+    t = unidecode((msg or "").lower())
+    pautas = ("estoy ", "me siento", "tengo ", "siento ", "me da ", "tengo miedo", "estoy muy", "estoy re ")
+    return any(p in t for p in pautas)
+
+def _detecta_evitacion_social(msg: str) -> bool:
+    """Heurística suave para evitación social / fobia social."""
+    t = unidecode((msg or "").lower())
+    claves = ("evitar", "no ir", "excusa", "excusarme", "reunion", "reuniones", "evento", "eventos",
+              "familia", "amigos", "gente", "multitud", "juntarme", "salir")
+    return sum(k in t for k in claves) >= 2
+
+
+
 
 
 
