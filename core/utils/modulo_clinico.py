@@ -333,6 +333,54 @@ def construir_recordatorio_contextual(
 
 
 
+def _openai_respuesta_terapeutica(mensaje_usuario: str, recordatorio: str) -> str:
+    """
+    Pide a OpenAI que redacte la respuesta clínica final en castellano rioplatense,
+    natural y humana, integrando el recordatorio temporal si existe. Sin diagnósticos
+    cerrados; 1–3 oraciones, con 1–2 preguntas abiertas.
+    """
+    # Contexto que le damos al modelo
+    contexto = []
+    if recordatorio:
+        contexto.append(f"Recordatorio temporal (NO repetir literal, integrarlo con naturalidad): {recordatorio}")
+    contexto.append(f"Mensaje del usuario: {mensaje_usuario}")
+    contexto_txt = "\n".join(contexto)
+
+    prompt = "\n".join([
+        "Actuá como psicólogo clínico (tono humano, empático, rioplatense, usando 'vos').",
+        "Objetivo: redactar UNA respuesta breve (1 a 3 oraciones) que acompañe y oriente.",
+        "Reglas:",
+        "- Si el usuario AFIRMA un estado (p.ej., 'estoy angustiado'), reconocelo como afirmación (p.ej., 'decís que estás angustiado'), no como sospecha.",
+        "- Si NO lo afirma explícitamente, inferí prudentemente el malestar más probable (ansiedad, angustia, miedo, insomnio, evitación social, etc.).",
+        "- Integrá el recordatorio temporal SOLO si lo proveo; no lo repitas textual, hilalo en la primera frase.",
+        "- Evitá: 'te leo', tecnicismos, listados largos, diagnósticos cerrados.",
+        "- Cerrá con 1 o 2 preguntas abiertas para explorar (situaciones, cuerpo/pensamientos, desde cuándo).",
+        "- No ofrezcas teléfonos ni agenda; enfocá en lo clínico.",
+        "",
+        "Redactá directamente la respuesta final del terapeuta (sin encabezados).",
+        "",
+        "=== CONTEXTO ===",
+        contexto_txt,
+    ])
+
+    try:
+        texto = generar_respuesta_con_openai(prompt, temperatura=0.3, max_tokens=280)
+        return (texto or "").strip()
+    except Exception as ex:
+        print(f"⚠️ _openai_respuesta_terapeutica falló: {ex}")
+        # Fallback súper breve por si la API falla (no debería activarse casi nunca)
+        return (
+            "Gracias por contarlo. ¿En qué situaciones se intensifica más y qué notás en el cuerpo "
+            "o en los pensamientos cuando aparece?"
+        )
+
+
+
+
+
+
+
+
 
 
 def _citar_breve(texto: str, max_chars: int = 70) -> str:
