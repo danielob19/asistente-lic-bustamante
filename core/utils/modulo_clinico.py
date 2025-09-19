@@ -261,6 +261,15 @@ def fecha_humana_es(fecha: datetime) -> str:
 
 
 
+def _segundos_desde(dt) -> int:
+    """Devuelve segundos transcurridos desde dt (timezone-safe)."""
+    if dt is None:
+        return 10**9
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    ahora = datetime.now(timezone.utc)
+    return int((ahora - dt.astimezone(timezone.utc)).total_seconds())
+
 
 
 
