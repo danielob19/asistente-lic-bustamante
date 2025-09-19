@@ -12,6 +12,24 @@ except Exception:
 
 
 from core.db.conexion import ejecutar_consulta
+
+# --- unidecode opcional: usa la librería si está, si no hace fallback con unicodedata ---
+try:
+    from unidecode import unidecode  # si está instalado, lo usamos
+except Exception:
+    import unicodedata
+    def unidecode(s: str) -> str:
+        """Fallback simple: elimina diacríticos con la stdlib."""
+        if s is None:
+            return s
+        return "".join(
+            ch for ch in unicodedata.normalize("NFKD", s)
+            if not unicodedata.combining(ch)
+        )
+# --- fin bloque unidecode opcional ---
+
+
+
 from core.db.consulta import (
     registrar_interaccion_clinica,
     obtener_historial_usuario,
