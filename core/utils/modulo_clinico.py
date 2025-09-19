@@ -741,15 +741,15 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     # 4) Contexto temporal emocional (siempre, contextual y humano)
     recordatorio = ""
     try:
-        ultima = obtener_ultima_interaccion_emocional(user_id)   # ignora admins
+        ultima = obtener_ultima_interaccion_emocional(user_id)  # ignora admins
         recordatorio = construir_recordatorio_contextual(
             emociones_actuales=emociones_openai,
             cuadro_actual=cuadro_openai,
             ultima=ultima,
-            mensaje_actual=mensaje_usuario,  # <- NUEVO
         )
     except Exception as ex:
         print(f"⚠️ Error armando recordatorio contextual: {ex}")
+
     
 
     
