@@ -24,6 +24,11 @@ from core.utils.generador_openai import generar_respuesta_con_openai
 from core.utils.tiempo import delta_preciso_desde
 
 
+THROTTLE_RECORDATORIO_SEG = int(os.getenv("THROTTLE_RECORDATORIO_SEG", "90"))
+
+
+
+
 def armar_prompt_openai(historial_emociones, nuevas_emociones, ultima_interaccion, nombre_usuario=None):
     resumen = ""
     if historial_emociones:
