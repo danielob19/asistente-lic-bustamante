@@ -803,14 +803,13 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
     
-    # 5) Si no hubo disparador armado, respuesta clínica breve, humana y profesional
+    # 5) Respuesta clínica final (OpenAI plena). Si no hubo disparador armado:
     if not texto_out:
-        texto_out = armar_respuesta_humana(
+        texto_out = _openai_respuesta_terapeutica(
             mensaje_usuario=mensaje_usuario,
-            emociones=emociones_openai,
-            cuadro=cuadro_openai,
-            recordatorio=recordatorio,  # tu “Hace X me comentaste…”
+            recordatorio=recordatorio,  # “Hace X me comentaste…”
         )
+    
 
 
     # 6) Salida FINAL (siempre devolvemos algo)
