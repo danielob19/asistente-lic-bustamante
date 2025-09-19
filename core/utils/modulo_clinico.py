@@ -175,41 +175,82 @@ def es_consulta_administrativa(texto: str) -> bool:
 
 def armar_respuesta_humana(
     mensaje_usuario: str,
-    emociones: Optional[list[str]] = None,
-    cuadro: Optional[str] = None,
+    emociones: list[str] | None = None,
+    cuadro: str | None = None,
     recordatorio: str = ""
 ) -> str:
     """
-    Respuesta clínica breve, empática y profesional (2–4 frases).
-    - Integra el recordatorio de forma natural.
-    - No diagnostica; usa condicional si sugiere algo.
-    - 1–2 preguntas concretas, sin repetir info administrativa.
+    Respuesta breve, natural y clínica:
+    - Empática, sin repetir literalmente lo que dijo el usuario.
+    - Integra (si viene) el recordatorio temporal “Hace X me comentaste…”.
+    - No diagnostica; orienta y pregunta 1–2 cosas concretas según foco.
+    - No contradice lo que el usuario afirma (p.ej. si dice que duerme bien).
     """
-    emos_str = ", ".join(sorted({e.strip().lower() for e in (emociones or []) if e})) or ""
-    cuadro_str = (cuadro or "").strip().lower()
 
-    prompt = f"""
-Sos psicólogo clínico y conversás en español rioplatense, tono cálido, conciso y profesional.
-Reglas:
-- Empezá con VALIDACIÓN breve y humana (1 frase).
-- Si hay recordatorio, integralo NATURAL al inicio (no como bloque aparte).
-- No diagnostiques; si sugerís algo, usá condicional (“podría estar relacionado…”).
-- No inventes síntomas ni contradigas al usuario.
-- Hacé SOLO 1–2 preguntas concretas, pertinentes al texto.
-- Evitá “te leo”. Usá “si querés, contame…” o “¿te pasa que…?”.
-- No ofrezcas contacto/costos salvo que el usuario lo pida.
-- Respuesta en 2–4 frases, sin viñetas.
+    def _dequote(s: str) -> str:
+        s = s.strip()
+        if len(s) >= 2 and ((s[0] == s[-1] and s[0] in "'\"") or (s.startswith("“") and s.endswith("”"))):
+            s = s[1:-1].strip()
+        # colapsar comillas duplicadas
+        s = s.replace("''", "'").replace('""', '"')
+        return s
 
-Contexto:
-- Recordatorio: "{recordatorio}"
-- Emociones detectadas: "{emos_str}"
-- Hipótesis de cuadro (puede estar vacío): "{cuadro_str}"
+    def _es_parrot(resp: str, user: str) -> bool:
+        # Si la salida es prácticamente el texto del usuario
+        a = re.sub(r"\W+", "", resp.lower())
+        b = re.sub(r"\W+", "", user.lower())
+        if not a or not b:
+            return False
+        return a == b or (a.startswith(b) and len(a) <= int(len(b) * 1.2))
 
-Usuario dijo (literal): "{mensaje_usuario}"
+    # armar “foco” para orientar las preguntas
+    foco = ""
+    if emociones:
+        foco = emociones[0]
+    elif cuadro:
+        foco = cuadro
 
-Devolvé SOLO el texto para el usuario.
-"""
-    return generar_respuesta_con_openai(prompt)
+    # prompt con reglas claras para OpenAI (sin diagnóstico ni eco)
+    instrucciones = f"""
+Actuá como psicólogo clínico. Tono cálido, claro y profesional.
+Responde en 1–3 frases, en español rioplatense.
+Objetivo: acompañar y avanzar la conversación con 1–2 preguntas concretas.
+
+REGLAS:
+- No repitas literalmente lo que dijo la persona ni pongas el texto entre comillas.
+- No diagnostiques ni etiquetes (“depresión”, “fobia social”, etc.). Evitá conclusiones tajantes.
+- Si la persona niega algo (p. ej. “no estoy fatigado”), no lo contradigas.
+- Usá el recordatorio SI viene provisto, integrándolo con naturalidad (no lo repitas si ya está en tu redacción).
+- Evitá muletillas genéricas (“Entiendo que estás buscando información…”).
+- Aterrizá una o dos preguntas según el contenido. No más de 2 preguntas.
+
+Contexto (si lo hay):
+{recordatorio.strip()}
+
+Mensaje actual del usuario:
+{mensaje_usuario.strip()}
+
+Pistas (opcional):
+- Emociones detectadas: {", ".join(emociones or []) or "—"}
+- Foco a explorar: {foco or "—"}
+
+Redactá tu respuesta ahora (1–3 frases).
+    """.strip()
+
+    # llamada a tu wrapper
+    salida = generar_respuesta_con_openai(instrucciones) or ""
+    salida = _dequote(salida)
+
+    # si vino eco, pedimos una re-redacción explícita sin eco
+    if _es_parrot(salida, mensaje_usuario):
+        instrucciones_no_parrot = instrucciones + "\n\nIMPORTANTE: NO repitas el texto del usuario ni lo pongas entre comillas. Reformulá brevemente y seguí con una o dos preguntas concretas."
+        salida = generar_respuesta_con_openai(instrucciones_no_parrot) or ""
+        salida = _dequote(salida)
+
+    # sanitizar mínimos
+    salida = " ".join(salida.split())
+    return salida or "Gracias por compartirlo. ¿En qué momentos notás que se intensifica y qué cambia en el cuerpo o en los pensamientos cuando aparece?"
+
 
 
 
