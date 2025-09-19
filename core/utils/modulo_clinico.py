@@ -175,56 +175,42 @@ def es_consulta_administrativa(texto: str) -> bool:
 
 def armar_respuesta_humana(
     mensaje_usuario: str,
-    emociones_openai: list[str] | None,
-    cuadro_openai: str | None,
-    recordatorio: str = "",
+    emociones: Optional[list[str]] = None,
+    cuadro: Optional[str] = None,
+    recordatorio: str = ""
 ) -> str:
-    partes: list[str] = []
-    if recordatorio:
-        partes.append(recordatorio)
+    """
+    Respuesta clínica breve, empática y profesional (2–4 frases).
+    - Integra el recordatorio de forma natural.
+    - No diagnostica; usa condicional si sugiere algo.
+    - 1–2 preguntas concretas, sin repetir info administrativa.
+    """
+    emos_str = ", ".join(sorted({e.strip().lower() for e in (emociones or []) if e})) or ""
+    cuadro_str = (cuadro or "").strip().lower()
 
-    texto = mensaje_usuario or ""
-    explicita = _es_expresion_explicita(texto)
-    emociones = [e for e in (emociones_openai or []) if e]
-    etiqu = _join_humano(emociones)
+    prompt = f"""
+Sos psicólogo clínico y conversás en español rioplatense, tono cálido, conciso y profesional.
+Reglas:
+- Empezá con VALIDACIÓN breve y humana (1 frase).
+- Si hay recordatorio, integralo NATURAL al inicio (no como bloque aparte).
+- No diagnostiques; si sugerís algo, usá condicional (“podría estar relacionado…”).
+- No inventes síntomas ni contradigas al usuario.
+- Hacé SOLO 1–2 preguntas concretas, pertinentes al texto.
+- Evitá “te leo”. Usá “si querés, contame…” o “¿te pasa que…?”.
+- No ofrezcas contacto/costos salvo que el usuario lo pida.
+- Respuesta en 2–4 frases, sin viñetas.
 
-    # 1) Afirmaciones explícitas del usuario
-    if emociones:
-        if explicita:
-            # Ej: “estoy muy angustiado” → afirmación
-            partes.append(f"Decís que estás atravesando {etiqu}.")
-        else:
-            # Ej: “me borro de reuniones” → inferencia suave
-            partes.append(f"Por lo que contás, podría estar apareciendo {etiqu}.")
+Contexto:
+- Recordatorio: "{recordatorio}"
+- Emociones detectadas: "{emos_str}"
+- Hipótesis de cuadro (puede estar vacío): "{cuadro_str}"
 
-    # 2) Cuadro probable (si no hubo emociones o para complementar)
-    if cuadro_openai and (not emociones or not explicita):
-        partes.append(f"También podría tratarse de {cuadro_openai}.")
+Usuario dijo (literal): "{mensaje_usuario}"
 
-    # 3) Heurística de evitación social si el texto lo sugiere
-    if not emociones and _detecta_evitacion_social(texto):
-        partes.append(
-            "Notás que tendés a evitar reuniones o eventos; eso puede vincularse con incomodidad social o ansiedad en lo social."
-        )
+Devolvé SOLO el texto para el usuario.
+"""
+    return generar_respuesta_con_openai(prompt)
 
-    # 4) Preguntas orientadas (variadas según foco)
-    foco = (emociones[0] if emociones else (cuadro_openai or "")).lower()
-    if "miedo" in foco:
-        partes.append("¿Aparece más a la noche o al intentar dormir? ¿Qué pensás o imaginás justo antes?")
-    elif "angust" in foco or "ansied" in foco:
-        partes.append("¿En qué situaciones se intensifica más (trabajo, estudio, pareja)? ¿Qué notás en el cuerpo: opresión, taquicardia, nudo en el estómago?")
-    elif "insomnio" in foco or ("dorm" in unidecode(texto.lower())):
-        partes.append("¿Te cuesta conciliar, te despertás varias veces o te levantás muy temprano? ¿Usás pantallas en la cama o tomás mate/café de tarde-noche?")
-    elif _detecta_evitacion_social(texto):
-        partes.append("¿Qué temés que pase si asistís? ¿Qué hacés para calmarlo en el momento?")
-    else:
-        # fallback humano y breve
-        citado = _citar_breve(texto)
-        partes.append(f"Gracias por compartirlo. Sobre “{citado}”: ¿qué situaciones lo activan y qué notás en el cuerpo o en los pensamientos cuando aparece?")
-
-    # 5) Cierre amable, sin repetir
-    respuesta = " ".join(p for p in partes if p).strip()
-    return respuesta
 
 
 
