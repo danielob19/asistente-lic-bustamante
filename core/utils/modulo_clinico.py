@@ -888,15 +888,16 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
         # Si no hubo texto_out, al menos devolvemos el recordatorio
         texto_final = recordatorio
     else:
-        # Fallback humano y breve (sin el mensaje rígido)
+        # Fallback humano y breve (sin diagnóstico)
         texto_final = (
-            "Gracias por compartirlo. ¿En qué momentos se intensifica más "
-            "y qué notás en el cuerpo o en los pensamientos cuando aparece?"
+            "Gracias por compartirlo. "
+            "¿En qué momentos se intensifica más y qué notás en el cuerpo o en los pensamientos cuando aparece?"
         )
     
     # Sanitizar espacios
     texto_final = " ".join(texto_final.split())
-    
+
+
     # Registrar SIEMPRE la interacción final en historial_clinico_usuario
     try:
         registrar_interaccion_clinica(
