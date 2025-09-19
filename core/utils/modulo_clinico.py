@@ -157,6 +157,20 @@ def detectar_emocion(texto: str) -> str | None:
 
 
 
+ADMIN_PATTERNS = re.compile(
+    r"\b(whats?app|tel(e(f|ph|fó)no)?|contact(o|ar)|c(ó|o)mo (lo|la) contacto|"
+    r"cu(a|á)nt(o|a) cobra|honorari(os|o)|pami|obra social|prepaga|"
+    r"presencial|modalidad|d(í|i)as y horarios?)\b",
+    re.IGNORECASE
+)
+
+def es_consulta_administrativa(texto: str) -> bool:
+    return bool(ADMIN_PATTERNS.search(texto or ""))
+
+
+
+
+
 
 def armar_respuesta_humana(
     mensaje_usuario: str,
