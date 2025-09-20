@@ -930,7 +930,7 @@ async def asistente(input_data: UserInput):
                 return {"respuesta": respuesta}
                       
                     
-            elif contador == 15:
+            elif (not CERRAR_CONVERSACION_SOLO_RIESGO) and contador == 15:
                 respuesta = (
                     "Ya en este punto, no puedo seguir brindándote orientación desde este espacio. "
                     "Lo más apropiado es que puedas consultarlo directamente con el Lic. Daniel O. Bustamante, "
@@ -938,7 +938,7 @@ async def asistente(input_data: UserInput):
                     "No me es posible continuar con la conversación."
                 )
         
-            elif contador >= 16:
+            elif (not CERRAR_CONVERSACION_SOLO_RIESGO) and contador >= 16:
                 respuesta = (
                     "Como te mencioné anteriormente, ya no puedo continuar con esta conversación desde aquí. "
                     "Es fundamental que, si deseás avanzar, lo hagas consultando directamente con el Lic. Daniel O. Bustamante, "
@@ -946,30 +946,33 @@ async def asistente(input_data: UserInput):
                     "No me es posible continuar respondiendo mensajes en este espacio."
                 )
 
-            elif contador >= 17:
-                respuesta = (
-                    "Ya he sido claro en que no puedo continuar respondiendo mensajes por este medio. "
-                    "Te reitero que lo indicado es que consultes directamente con el Lic. Daniel O. Bustamante, "
-                    "quien podrá brindarte el acompañamiento profesional que necesitás. "
-                    "No insistas por este canal, ya que no podré responderte."
-                )
-                session["ultimas_respuestas"].append(respuesta)
-                user_sessions[user_id] = session  # Asegura persistencia en la sesión
-                registrar_respuesta_openai(interaccion_id, respuesta)
-                return {"respuesta": respuesta}
-        
-            else:
-                recordatorio = ""
-                if (contador - 10) % 2 == 0:
-                    recordatorio = " Te recuerdo que para una orientación adecuada, deberías consultar con el Lic. Daniel O. Bustamante."
-        
-                respuesta_variable = seleccionar_estilo_clinico_variable()
-                respuesta = respuesta_variable + recordatorio
-        
-            session["ultimas_respuestas"].append(respuesta)
-            user_sessions[user_id] = session  # Asegura persistencia en la sesión
-            registrar_respuesta_openai(interaccion_id, respuesta)
-            return {"respuesta": respuesta}
+            # --- Bloque de cierres/recordatorios por contador (se salta si el flag está activo)
+            if not CERRAR_CONVERSACION_SOLO_RIESGO:
+                if contador >= 17:
+                    respuesta = (
+                        "Ya he sido claro en que no puedo continuar respondiendo mensajes por este medio. "
+                        "Te reitero que lo indicado es que consultes directamente con el Lic. Daniel O. Bustamante, "
+                        "quien podrá brindarte el acompañamiento profesional que necesitás. "
+                        "No insistas por este canal, ya que no podré responderte."
+                    )
+                    session["ultimas_respuestas"].append(respuesta)
+                    user_sessions[user_id] = session
+                    registrar_respuesta_openai(interaccion_id, respuesta)
+                    return {"respuesta": respuesta}
+            
+                elif contador >= 10:
+                    recordatorio = ""
+                    if (contador - 10) % 2 == 0:
+                        recordatorio = " Te recuerdo que para una orientación adecuada, deberías consultar con el Lic. Daniel O. Bustamante."
+                    respuesta_variable = seleccionar_estilo_clinico_variable()
+                    respuesta = respuesta_variable + recordatorio
+                    session["ultimas_respuestas"].append(respuesta)
+                    user_sessions[user_id] = session
+                    registrar_respuesta_openai(interaccion_id, respuesta)
+                    return {"respuesta": respuesta}
+            
+            # Si el flag está True, no entra a ninguno de los returns de arriba y continúa el flujo clínico normal
+
 
         # 🛑 Filtro definitivo para inputs irrelevantes, maliciosos o de cortesía post-cierre
         # o más robusto:
