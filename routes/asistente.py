@@ -395,7 +395,9 @@ async def asistente(input_data: UserInput):
                     malestares_texto = ", ".join(malestares_previos[:5]) + "… entre otros"
                 else:
                     malestares_texto = ", ".join(malestares_previos)
-        
+
+
+                
                 # ===== 3️⃣ Crear mensaje recordatorio =====
                 mensaje_recordatorio = (
                     f"{tiempo_texto} me comentaste que estabas atravesando: {malestares_texto}. "
@@ -406,7 +408,9 @@ async def asistente(input_data: UserInput):
                 session["mensaje_recordatorio_memoria"] = mensaje_recordatorio
                 session["memoria_usada_en_esta_sesion"] = True
                 user_sessions[user_id] = session
-        
+
+
+            
             # Inyectar recordatorio solo si existe y aún no se usó en esta respuesta
             if "mensaje_recordatorio_memoria" in session:
                 mensaje_usuario = f"{session.pop('mensaje_recordatorio_memoria')} {mensaje_usuario}"
@@ -420,6 +424,65 @@ async def asistente(input_data: UserInput):
             ])
             print(f"💾 Emociones agregadas desde bifurcación: {emociones_detectadas_bifurcacion}")
 
+
+            
+
+            # === Inferencia clínica incremental (cuadro probable) ===
+            try:
+                # 1) Emociones “del momento”
+                emos_ahora = list(dict.fromkeys(emociones_detectadas_bifurcacion or []))
+            
+                # 2) Unimos con lo que ya venías juntando en sesión (sin duplicar)
+                emos_prev = session.get("emociones_detectadas", [])
+                emos_union = list(dict.fromkeys((emos_prev or []) + (emos_ahora or [])))
+            
+                # 3) Si hay 2+ emociones, inferimos cuadro probable
+                cuadro_prob = ""
+                if len(emos_union) >= 2:
+                    try:
+                        # Si tenés clasificador local:
+                        from core.utils.modulo_clinico import clasificar_cuadro_clinico
+                        cuadro_prob = (clasificar_cuadro_clinico(emos_union) or "").strip().lower()
+                    except Exception:
+                        cuadro_prob = ""
+            
+                # 4) Registro SIEMPRE de lo nuevo en la DB (aunque no haya cuadro)
+                #    (usa tu registrador actual; nombres según tu proyecto)
+                try:
+                    registrar_historial_clinico(
+                        user_id=user_id,
+                        emociones=emos_ahora,
+                        sintomas=[],
+                        tema="Clínica - Turno",
+                        respuesta_openai="",             # acá podés guardar luego la respuesta final
+                        sugerencia="",
+                        fase_evaluacion="turno_incremental",
+                        interaccion_id=interaccion_id if 'interaccion_id' in locals() else int(time.time()),
+                        fecha=datetime.now(),
+                        fuente="web",
+                        origen="asistente_incremental",
+                        eliminado=False,
+                        cuadro_clinico_probable=cuadro_prob or None,   # <- queda persistido si existe
+                    )
+                except Exception as e:
+                    print(f"⚠️ Error registrando emociones/cuadro: {e}")
+            
+                # 5) Actualizamos memoria de sesión
+                session["emociones_detectadas"] = emos_union
+                user_sessions[user_id] = session
+            
+                # 6) Si hay cuadro probable, preparamos un apéndice clínico para la respuesta
+                apendice_cuadro = ""
+                if cuadro_prob:
+                    apendice_cuadro = (
+                        f" Por lo que venís contando, *cuadro clínico probable*: {cuadro_prob}. "
+                        "Si te sirve, podemos explorar cuándo se intensifica (trabajo, tarde-noche, antes de dormir) "
+                        "y cómo están el descanso y la concentración."
+                    )
+            
+            except Exception as e:
+                print(f"⚠️ Error en inferencia incremental: {e}")
+                apendice_cuadro = ""
 
 
 
