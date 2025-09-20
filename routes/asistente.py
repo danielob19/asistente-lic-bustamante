@@ -1538,7 +1538,7 @@ async def asistente(input_data: UserInput):
             return {"respuesta": respuesta_filtrada}
 
         # ----------------------------- LÍMITE DE INTERACCIONES -----------------------------
-        if contador >= LIMITE_INTERACCIONES:
+        if (not CERRAR_CONVERSACION_SOLO_RIESGO) and contador >= LIMITE_INTERACCIONES:
             respuesta = (
                 "Este canal ha alcanzado su límite de interacciones permitidas. "
                 "Por razones clínicas y éticas, no es posible continuar. "
