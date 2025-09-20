@@ -17,13 +17,36 @@ RESPUESTAS_CLINICAS = {
 
     8: "Podría estar vinculada una autopercepción negativa generalizada. Esa idea de 'fracaso total' merece ser observada en función de tu historia y contexto. ¿Querés contarme un poco más sobre cómo lo vivís?",
 
-    9: "Por lo que comentás, al malestar anímico que describiste anteriormente, advierto que se suman nuevas emociones. Daría la impresión de que se trata de un estado emocional predominantemente depresivo. No obstante, para estar seguros se requiere de una evaluación psicológica profesional. Te sugiero contactar al Lic. Bustamante. Podés escribirle al WhatsApp +54 911 3310-1186.",
+    9:  "Por lo que venís contando, al malestar anímico que describiste antes se suman emociones nuevas. "
+        "Podría tratarse de un estado de ánimo bajo sostenido, pero hace falta mirar tu historia y contexto. "
+        "¿Querés que exploremos cuándo empezó y qué lo empeora o alivia?",
 
-    10: "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, sería ideal que lo continúes con el Lic. Bustamante en un espacio clínico. Podés escribirle al WhatsApp +54 911 3310-1186.",
+    10: "Gracias por todo lo que compartiste. Para seguir cuidando lo que te pasa, "
+        "podemos ordenar juntos momentos, situaciones y señales corporales donde más se nota. "
+        "¿En qué momentos del día lo sentís con más fuerza?",
 
-    11: "Para seguir explorando lo que estás atravesando en profundidad, lo recomendable sería hacerlo con el Lic. Bustamante en un entorno clínico. Podés escribirle al WhatsApp +54 911 3310-1186.",
+    11: "Para profundizar, nos puede ayudar mirar gatillos: ¿trabajo, noche, antes de dormir, discusiones, soledad? "
+        "¿Qué apareció primero: pensamientos, emociones o sensaciones en el cuerpo?",
 
-    12: "Este espacio ya cumplió su función de orientación. Para continuar con mayor claridad, podés contactar al Lic. Bustamante al WhatsApp +54 911 3310-1186.",
+    12: "Hasta acá venimos delineando bastante. Si te parece, seguimos con algo concreto: "
+        "¿qué te funcionó aunque sea un poco (rutina, descanso, hablarlo, salir, respirar)?",
 
-    13: "Ya hemos recorrido juntos un análisis significativo. Para seguir avanzando con mayor claridad, podés contactar al Lic. Bustamante al WhatsApp +54 911 3310-1186."
+    13: "Noté varios hilos en común en lo que contás (ánimo, ansiedad y sueño). "
+        "Si te sirve, armamos un plan breve: identificar 2–3 situaciones, 2–3 señales en el cuerpo y 1–2 pasos prácticos.",
+
+    14: "Cuando preferís evitar reuniones o encuentros, puede haber incomodidad social o ansiedad anticipatoria. "
+        "¿Qué temés que pase allí (juicio, vergüenza, quedarte en blanco)?",
+
+    15: "Sobre el sueño: ¿cuesta conciliar, te despertás a mitad de la noche o muy temprano? "
+        "¿Aparecen pensamientos en bucle al acostarte? ¿Notás tensión en cuello/mandíbula o taquicardia?",
+
+    16: "Mencionaste la pérdida de un ser querido. El duelo puede traer oleadas de tristeza, culpa o vacío. "
+        "¿Qué momentos te pegan más fuerte y qué te ayuda a atravesarlos, aunque sea un poco?",
+
+    17: "Si aparece miedo intenso con síntomas físicos (taquicardia, opresión, falta de aire) que suben rápido, "
+        "podríamos pensar en episodios de pánico. ¿Te pasa en algún lugar u horario específico?",
+
+    18: "Con el miedo a la oscuridad: sirve mapear qué imagen o pensamiento aparece primero y dónde lo sentís en el cuerpo. "
+        "¿Podemos identificar el primer recuerdo de esta sensación y qué la dispara hoy?",
+
 }
