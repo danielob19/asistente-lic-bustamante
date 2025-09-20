@@ -893,6 +893,14 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             "Gracias por compartirlo. "
             "¿En qué momentos se intensifica más y qué notás en el cuerpo o en los pensamientos cuando aparece?"
         )
+
+
+    # Añadir apéndice clínico si fue calculado en esta sesión
+    apend = session.get("_apendice_cuadro", "")
+    if apend and apend not in texto_final:
+        texto_final = f"{texto_final} {apend}"
+
+
     
     # Sanitizar espacios
     texto_final = " ".join(texto_final.split())
