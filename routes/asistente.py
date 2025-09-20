@@ -513,16 +513,28 @@ async def asistente(input_data: UserInput):
             
                 # 6) Si hay cuadro probable, preparamos un apéndice clínico para la respuesta
                 apendice_cuadro = ""
-                if cuadro_prob:
-                    apendice_cuadro = (
-                        f" Por lo que venís contando, *cuadro clínico probable*: {cuadro_prob}. "
-                        "Si te sirve, podemos explorar cuándo se intensifica (trabajo, tarde-noche, antes de dormir) "
-                        "y cómo están el descanso y la concentración."
-                    )
+                try:
+                    if cuadro_prob:
+                        apendice_cuadro = (
+                            f" Por lo que venís contando, *cuadro clínico probable*: {cuadro_prob}. "
+                            "Si te sirve, podemos explorar cuándo se intensifica (trabajo, tarde-noche, antes de dormir) "
+                            "y cómo están el descanso y la concentración."
+                        )
+                
+                    # Persistir SIEMPRE para poder reusarlo en la respuesta final
+                    session["_apendice_cuadro"] = apendice_cuadro
+                    user_sessions[user_id] = session
+                
+                except Exception as e:
+                    print(f"⚠️ Error en inferencia incremental (apéndice): {e}")
+                    apendice_cuadro = ""
+                    session["_apendice_cuadro"] = ""
+                    user_sessions[user_id] = session
+
             
             except Exception as e:
                 print(f"⚠️ Error en inferencia incremental: {e}")
-                apendice_cuadro = ""
+
 
 
 
