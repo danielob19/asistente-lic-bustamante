@@ -1073,21 +1073,33 @@ async def asistente(input_data: UserInput):
                     return {"respuesta": respuesta}
             
                 elif contador >= 10:
+                    # Recordatorio breve cada 2 interacciones desde la #10
                     recordatorio = ""
                     if (contador - 10) % 2 == 0:
-                        recordatorio = " Te recuerdo que para una orientación adecuada, deberías consultar con el Lic. Daniel O. Bustamante."
+                        recordatorio = (
+                            " Te recuerdo que para una orientación adecuada, deberías consultar "
+                            "con el Lic. Daniel O. Bustamante."
+                        )
+            
+                    # Apertura variable clínica + recordatorio
                     respuesta_variable = seleccionar_estilo_clinico_variable()
-                    respuesta = respuesta_variable + recordatorio
+                    base = f"{respuesta_variable}{recordatorio}".strip()
+            
+                    # Apéndice clínico calculado previamente y persistido en sesión
+                    apend = session.get("_apendice_cuadro", "")
+            
                     # Cierre unificado (apéndice clínico + contacto + limpieza)
                     respuesta = _finalizar_respuesta(
-                        respuesta,
-                        apendice=apendice_cuadro,      # viene del cálculo previo; puede ser ""
-                        incluir_contacto=True
+                        base,
+                        apendice=apend,
+                        incluir_contacto=True,
                     )
+            
                     session["ultimas_respuestas"].append(respuesta)
                     user_sessions[user_id] = session
                     registrar_respuesta_openai(interaccion_id, respuesta)
                     return {"respuesta": respuesta}
+
             
             # Si el flag está True, no entra a ninguno de los returns de arriba y continúa el flujo clínico normal
 
