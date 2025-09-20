@@ -12,9 +12,6 @@ from core.utils.motor_fallback import (
 )
 
 
-from core.constantes import CERRAR_CONVERSACION_SOLO_RIESGO
-
-
 from core.utils.generador_openai import generar_respuesta_con_openai  # ya lo usás
 
 
