@@ -1092,18 +1092,19 @@ async def asistente(input_data: UserInput):
             # Si el flag está True, no entra a ninguno de los returns de arriba y continúa el flujo clínico normal
 
 
-        # 🛑 Filtro definitivo para inputs irrelevantes, maliciosos o de cortesía post-cierre
-        # o más robusto:
+        # 🧱 Filtro definitivo para inputs irrelevantes, maliciosos o de cortesía post-cierre
         if contador >= 10 and (clasificacion and clasificacion in ["IRRELEVANTE", "MALICIOSO", "CORTESIA"]):
-            respuesta = (
-                "Gracias por tu mensaje. Ya no puedo continuar con esta conversación por este medio. "
-                "Te recomiendo que contactes directamente con el Lic. Daniel O. Bustamante para una evaluación adecuada."
-            )
-            session["ultimas_respuestas"].append(respuesta)
-            user_sessions[user_id] = session
-            registrar_respuesta_openai(interaccion_id, respuesta)
-            return {"respuesta": respuesta}
-        
+            if not CERRAR_CONVERSACION_SOLO_RIESGO:
+                # ---- Modo legacy: cierre duro (se mantiene por compatibilidad) ----
+                respuesta = (
+                    "Gracias por tu mensaje. Ya no puedo continuar con esta conversación por este medio. "
+                    "Te recomiendo que contactes directamente con el Lic. Daniel O. Bustamante para una evaluación adecuada."
+                )
+                session["ultimas_respuestas"].append(respuesta)
+                user_sessions[user_id] = session
+                registrar_respuesta_openai(interaccion_id, respuesta)
+                return {"respuesta": respuesta}
+                
         # ✅ Si hay una respuesta clínica manual para esta interacción, se devuelve directamente
         # 🔄 (Se reemplazó el uso de 'respuestas_personalizadas' por 'RESPUESTAS_CLINICAS' del módulo importado)
         if contador in RESPUESTAS_CLINICAS:
