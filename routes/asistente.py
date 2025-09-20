@@ -92,6 +92,19 @@ from core.constantes import (
 
 from datetime import datetime
 
+# Import robusto (soporta varias ubicaciones posibles)
+try:
+    from respuestas_clinicas import RESPUESTAS_CLINICAS            # raíz del repo (tu caso)
+except Exception:
+    try:
+        from core.respuestas_clinicas import RESPUESTAS_CLINICAS   # por si lo movés a /core
+    except Exception:
+        try:
+            from core.utils.respuestas_clinicas import RESPUESTAS_CLINICAS  # por si lo movés a /core/utils
+        except Exception:
+            RESPUESTAS_CLINICAS = {}
+
+
 import openai
 import re
 import time
