@@ -413,20 +413,20 @@ def _openai_respuesta_terapeutica(mensaje_usuario: str, recordatorio: str) -> st
 
     prompt = "\n".join([
         "Actuá como psicólogo clínico (tono humano, empático, rioplatense, usando 'vos').",
-        "Objetivo: redactar UNA respuesta breve (1 a 3 oraciones) que acompañe y oriente.",
-        "Reglas:",
-        "- Si el usuario AFIRMA un estado (p.ej., 'estoy angustiado'), reconocelo como afirmación (p.ej., 'decís que estás angustiado'), no como sospecha.",
-        "- Si NO lo afirma explícitamente, inferí prudentemente el malestar más probable (ansiedad, angustia, miedo, insomnio, evitación social, etc.).",
-        "- Integrá el recordatorio temporal SOLO si lo proveo; no lo repitas textual, hilalo en la primera frase.",
-        "- Evitá: 'te leo', tecnicismos, listados largos, diagnósticos cerrados.",
-        "- Cerrá con 1 o 2 preguntas abiertas para explorar (situaciones, cuerpo/pensamientos, desde cuándo).",
-        "- No ofrezcas teléfonos ni agenda; enfocá en lo clínico.",
-        "",
-        "Redactá directamente la respuesta final del terapeuta (sin encabezados).",
+        "Objetivo: redactar UNA respuesta breve (1 a 3 oraciones) que acompañe y oriente, y cerrá con 1 pregunta clínica abierta (solo una).",
+        "No diagnósticos cerrados ni etiquetas tajantes; sí hipótesis prudentes en minúsculas.",
+        "Si la persona AFIRMA un estado (p. ej., 'tengo miedo a la oscuridad', 'no puedo dormir'), reconocelo como afirmación y trabajalo (no digas que 'parece' o 'podría ser que…').",
+        "Si existe recordatorio temporal, integralo de manera natural en la primera frase (no lo repitas literal).",
+        "Prohibido: cortes administrativos, '¿Hay algo puntual…?', derivaciones, consejos genéricos.",
+        "Siempre explorá: situaciones/antecedentes (¿desde cuándo?), cuerpo/pensamientos, frecuencia e impacto en la vida diaria.",
+        "Si aparece insomnio o miedo a la oscuridad: preguntá por ritual/ambiente de sueño, despertares, tensión corporal y pensamientos intrusivos al acostarse.",
         "",
         "=== CONTEXTO ===",
         contexto_txt,
+        "",
+        "Redactá directamente la respuesta final del terapeuta (sin encabezados)."
     ])
+
 
     try:
         texto = generar_respuesta_con_openai(prompt, temperatura=0.3, max_tokens=280)
