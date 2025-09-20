@@ -1,5 +1,8 @@
 import os
 
+CERRAR_CONVERSACION_SOLO_RIESGO = True  # no cerrar jamás salvo riesgo
+
+
 # ✅ Ruta de conexión a la base de datos (Render la define automáticamente como variable de entorno)
 DATABASE_URL = os.getenv("DATABASE_URL")
 
