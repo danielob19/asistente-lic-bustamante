@@ -1120,18 +1120,31 @@ async def asistente(input_data: UserInput):
             # Si el flag está True, no entra a ninguno de los returns de arriba y continúa el flujo clínico normal
 
 
-        # 🧱 Filtro definitivo para inputs irrelevantes, maliciosos o de cortesía post-cierre
+        # 🧱 Filtro definitivo para inputs irrelevantes/maliciosos o de cortesía post-cierre
         if contador >= 10 and (clasificacion and clasificacion in ["IRRELEVANTE", "MALICIOSO", "CORTESIA"]):
             if not CERRAR_CONVERSACION_SOLO_RIESGO:
-                # ---- Modo legacy: cierre duro (se mantiene por compatibilidad) ----
+                # ---- Modo legacy: cierre duro (sólo si el flag lo permite) ----
                 respuesta = (
                     "Gracias por tu mensaje. Ya no puedo continuar con esta conversación por este medio. "
                     "Te recomiendo que contactes directamente con el Lic. Daniel O. Bustamante para una evaluación adecuada."
                 )
-                session["ultimas_respuestas"].append(respuesta)
-                user_sessions[user_id] = session
-                registrar_respuesta_openai(interaccion_id, respuesta)
-                return {"respuesta": respuesta}
+            else:
+                # ---- Modo actual: NO cortar; damos una salida amable y útil ----
+                base = (
+                    "Gracias por tu mensaje. Para poder orientarte, contame algo concreto que te esté molestando "
+                    "(emociones, sensaciones corporales, situaciones o momentos en que se intensifica)."
+                )
+                respuesta = _finalizar_respuesta(
+                    base,
+                    apendice=session.get("_apendice_cuadro", ""),  # usa el apéndice clínico si lo hubo
+                    incluir_contacto=True
+                )
+        
+            session["ultimas_respuestas"].append(respuesta)
+            user_sessions[user_id] = session
+            registrar_respuesta_openai(interaccion_id, respuesta)
+            return {"respuesta": respuesta}
+
                 
         # ✅ Si hay una respuesta clínica manual para esta interacción, se devuelve directamente
         # 🔄 (Se reemplazó el uso de 'respuestas_personalizadas' por 'RESPUESTAS_CLINICAS' del módulo importado)
