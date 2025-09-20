@@ -465,72 +465,75 @@ async def asistente(input_data: UserInput):
             
 
             # === Inferencia clínica incremental (cuadro probable) ===
+            # Inicializamos por seguridad
+            emos_ahora: list[str] = []
+            emos_union: list[str] = []
+            cuadro_prob: str = ""
+            
             try:
                 # 1) Emociones “del momento”
                 emos_ahora = list(dict.fromkeys(emociones_detectadas_bifurcacion or []))
             
-                # 2) Unimos con lo que ya venías juntando en sesión (sin duplicar)
-                emos_prev = session.get("emociones_detectadas", [])
+                # 2) Unimos con las que venían en sesión (sin duplicar)
+                emos_prev = session.get("emociones_detectadas") or []
                 emos_union = list(dict.fromkeys((emos_prev or []) + (emos_ahora or [])))
             
-                # 3) Si hay 2+ emociones, inferimos cuadro probable
-                cuadro_prob = ""
+                # 3) Si hay ≥ 2 emociones, inferimos cuadro probable
                 if len(emos_union) >= 2:
                     try:
-                        # Si tenés clasificador local:
                         from core.utils.modulo_clinico import clasificar_cuadro_clinico
-                        cuadro_prob = (clasificar_cuadro_clinico(emos_union) or "").strip().lower()
+                        cp = (clasificar_cuadro_clinico(emos_union) or "").strip().lower()
+                        cuadro_prob = cp or ""
                     except Exception:
                         cuadro_prob = ""
             
                 # 4) Registro SIEMPRE de lo nuevo en la DB (aunque no haya cuadro)
-                #    (usa tu registrador actual; nombres según tu proyecto)
                 try:
                     registrar_historial_clinico(
                         user_id=user_id,
                         emociones=emos_ahora,
                         sintomas=[],
                         tema="Clínica - Turno",
-                        respuesta_openai="",             # acá podés guardar luego la respuesta final
-                        sugerencia="",
+                        respuesta_openai="-",                     # (placeholder, la final va en otro registro)
+                        sugerencia="-",
                         fase_evaluacion="turno_incremental",
-                        interaccion_id=interaccion_id if 'interaccion_id' in locals() else int(time.time()),
+                        interaccion_id=interaccion_id if "interaccion_id" in locals() else int(time.time()),
                         fecha=datetime.now(),
                         fuente="web",
                         origen="asistente_incremental",
                         eliminado=False,
-                        cuadro_clinico_probable=cuadro_prob or None,   # <- queda persistido si existe
+                        cuadro_clinico_probable=cuadro_prob or None,  # persiste si existe
                     )
                 except Exception as e:
                     print(f"⚠️ Error registrando emociones/cuadro: {e}")
             
-                # 5) Actualizamos memoria de sesión
-                session["emociones_detectadas"] = emos_union
+            except Exception as e:
+                # Falla general de la inferencia incremental
+                print(f"⚠️ Error en inferencia incremental: {e}")
+            
+            # 5) Actualizamos memoria de sesión (siempre)
+            session["emociones_detectadas"] = emos_union
+            user_sessions[user_id] = session
+            
+            # 6) Si hay cuadro probable, preparamos y persistimos apéndice clínico para la respuesta
+            apendice_cuadro = ""
+            try:
+                if cuadro_prob:
+                    apendice_cuadro = (
+                        f" Por lo que venís contando, *cuadro clínico probable*: {cuadro_prob}. "
+                        "Si te sirve, podemos explorar cuándo se intensifica (trabajo, tarde-noche, antes de dormir) "
+                        "y cómo están el descanso y la concentración."
+                    )
+            
+                # Persistir SIEMPRE para reusarlo en la respuesta final
+                session["_apendice_cuadro"] = apendice_cuadro
                 user_sessions[user_id] = session
             
-                # 6) Si hay cuadro probable, preparamos un apéndice clínico para la respuesta
-                apendice_cuadro = ""
-                try:
-                    if cuadro_prob:
-                        apendice_cuadro = (
-                            f" Por lo que venís contando, *cuadro clínico probable*: {cuadro_prob}. "
-                            "Si te sirve, podemos explorar cuándo se intensifica (trabajo, tarde-noche, antes de dormir) "
-                            "y cómo están el descanso y la concentración."
-                        )
-                
-                    # Persistir SIEMPRE para poder reusarlo en la respuesta final
-                    session["_apendice_cuadro"] = apendice_cuadro
-                    user_sessions[user_id] = session
-                
-                except Exception as e:
-                    print(f"⚠️ Error en inferencia incremental (apéndice): {e}")
-                    apendice_cuadro = ""
-                    session["_apendice_cuadro"] = ""
-                    user_sessions[user_id] = session
-
-            
             except Exception as e:
-                print(f"⚠️ Error en inferencia incremental: {e}")
+                print(f"⚠️ Error en inferencia incremental (apéndice): {e}")
+                session["_apendice_cuadro"] = ""
+                user_sessions[user_id] = session
+
 
 
 
