@@ -664,7 +664,7 @@ async def asistente(input_data: UserInput):
         
 
         # 🛑 Corte anticipado si ya se registró cierre definitivo en una interacción previa
-        if "CIERRE_LIMITE" in session.get("interacciones_previas", []):
+        if (not CERRAR_CONVERSACION_SOLO_RIESGO) and "CIERRE_LIMITE" in session.get("interacciones_previas", []):
             respuesta = (
                 "Este canal ha alcanzado su límite de interacciones permitidas. "
                 "Por razones clínicas y éticas, no es posible continuar. "
