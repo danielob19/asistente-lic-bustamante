@@ -100,6 +100,7 @@ import time
 import random
 import unicodedata
 import traceback
+import os
 
 
 
@@ -109,6 +110,44 @@ try:
 except Exception:
     # Si el import falla en el entorno de despliegue, usamos un dict local
     user_sessions = {}
+
+
+
+# --- Helpers de cierre de respuesta -----------------------------------------
+
+CONTACTO_NUM = os.getenv("CONTACTO_NUM", "3310-1186")
+CONTACTO_WPP = os.getenv(
+    "CONTACTO_WPP",
+    " Si querés, podés escribir al WhatsApp +54 911 3310-1186 del Lic. Bustamante para avanzar."
+)
+
+def _finalizar_respuesta(texto: str,
+                         *,
+                         apendice: str | None = None,
+                         incluir_contacto: bool = True) -> str:
+    """
+    Unifica el cierre de la respuesta:
+    - anexa apéndice clínico si viene
+    - agrega recomendación de contacto (sin duplicar)
+    - limpia espacios extra
+    """
+    texto = (texto or "").strip()
+
+    # Apéndice clínico (si se calculó antes)
+    if apendice is None:
+        # fallback: si lo dejaste como variable de módulo en algún flujo
+        apendice = globals().get("apendice_cuadro", "")
+    if apendice:
+        texto = f"{texto} {apendice}".strip()
+
+    # Recomendación de contacto (sin duplicar por número)
+    if incluir_contacto and CONTACTO_NUM not in texto:
+        texto = f"{texto} {CONTACTO_WPP}".strip()
+
+    # Sanitizar espacios
+    texto = " ".join(texto.split())
+    return texto
+# ---------------------------------------------------------------------------
 
 
 def clasificar_cuadro_clinico_openai(emocion: str) -> str:
@@ -1029,6 +1068,12 @@ async def asistente(input_data: UserInput):
                         recordatorio = " Te recuerdo que para una orientación adecuada, deberías consultar con el Lic. Daniel O. Bustamante."
                     respuesta_variable = seleccionar_estilo_clinico_variable()
                     respuesta = respuesta_variable + recordatorio
+                    # Cierre unificado (apéndice clínico + contacto + limpieza)
+                    respuesta = _finalizar_respuesta(
+                        respuesta,
+                        apendice=apendice_cuadro,      # viene del cálculo previo; puede ser ""
+                        incluir_contacto=True
+                    )
                     session["ultimas_respuestas"].append(respuesta)
                     user_sessions[user_id] = session
                     registrar_respuesta_openai(interaccion_id, respuesta)
