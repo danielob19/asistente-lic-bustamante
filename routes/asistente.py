@@ -1176,20 +1176,22 @@ async def asistente(input_data: UserInput):
                 
         # ✅ Si hay una respuesta clínica manual para esta interacción, se devuelve directamente
         # 🔄 (Se reemplazó el uso de 'respuestas_personalizadas' por 'RESPUESTAS_CLINICAS' del módulo importado)
-        if contador in RESPUESTAS_CLINICAS:
+        if (
+            clasificacion not in {"CLINICO"} and
+            session.get("tipo_input") != "CLINICO_CONTINUACION" and
+            contador in RESPUESTAS_CLINICAS
+        ):
             respuesta_manual = RESPUESTAS_CLINICAS[contador]
-        
-            # Auditoría (registro explícito como respuesta manual no generada por OpenAI)
             registrar_auditoria_respuesta(
                 user_id=user_id,
                 respuesta_original=respuesta_manual,
                 respuesta_final=respuesta_manual,
-                motivo_modificacion="respuesta manual predefinida"
+                motivo_modificacion="respuesta manual predefinida",
             )
-        
             session["ultimas_respuestas"].append(respuesta_manual)
             user_sessions[user_id] = session
             return {"respuesta": respuesta_manual}
+
 
         
         # ✅ Interacciones 6 a 8 – Confirmación implícita de emoción inferida 5 si aún no fue confirmada
