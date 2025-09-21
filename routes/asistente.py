@@ -1798,29 +1798,6 @@ async def asistente(input_data: UserInput):
             user_sessions[user_id] = session
             return {"respuesta": respuesta_filtrada}
 
-        # ----------------------------- LÍMITE DE INTERACCIONES -----------------------------
-        if (not CERRAR_CONVERSACION_SOLO_RIESGO) and contador >= LIMITE_INTERACCIONES:
-            respuesta = (
-                "Este canal ha alcanzado su límite de interacciones permitidas. "
-                "Por razones clínicas y éticas, no es posible continuar. "
-                "Te recomiendo que contactes directamente al Lic. Daniel O. Bustamante para el seguimiento profesional."
-            )
-        
-            motivo = "Cierre automático por alcanzar el límite de interacciones permitidas"
-            registrar_auditoria_respuesta(user_id, "Límite alcanzado", respuesta, motivo)
-        
-            session.setdefault("interacciones_previas", []).append("CIERRE_LIMITE")
-            user_sessions[user_id] = session  # ✅ Persistencia del cambio
-        
-            session["ultimas_respuestas"].append(respuesta)
-            user_sessions[user_id] = session  # Asegura persistencia en la sesión
-            registrar_respuesta_openai(interaccion_id, respuesta)
-            return {"respuesta": respuesta}
-        
-        return {"respuesta": respuesta_ai}
-
-
-    
 
 
     except Exception as e:
