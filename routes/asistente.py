@@ -64,7 +64,6 @@ from core.funciones_asistente import verificar_memoria_persistente
 from core.db.consulta import obtener_emociones_ya_registradas
 from core.db.consulta import obtener_ultimo_registro_usuario
 from core.utils.palabras_irrelevantes import palabras_irrelevantes
-from respuestas_clinicas import RESPUESTAS_CLINICAS
 
 
 from core.resumen_clinico import (
@@ -91,19 +90,6 @@ from core.constantes import (
 )
 
 from datetime import datetime
-
-# Import robusto (soporta varias ubicaciones posibles)
-try:
-    from respuestas_clinicas import RESPUESTAS_CLINICAS            # raíz del repo (tu caso)
-except Exception:
-    try:
-        from core.respuestas_clinicas import RESPUESTAS_CLINICAS   # por si lo movés a /core
-    except Exception:
-        try:
-            from core.utils.respuestas_clinicas import RESPUESTAS_CLINICAS  # por si lo movés a /core/utils
-        except Exception:
-            RESPUESTAS_CLINICAS = {}
-
 
 import openai
 import re
