@@ -919,18 +919,8 @@ async def asistente(input_data: UserInput):
                 tipo_input = CLINICO_CONTINUACION
         
 
-        # 🛑 Corte anticipado si ya se registró cierre definitivo en una interacción previa
-        if (not CERRAR_CONVERSACION_SOLO_RIESGO) and "CIERRE_LIMITE" in session.get("interacciones_previas", []):
-            respuesta = (
-                "Este canal ha alcanzado su límite de interacciones permitidas. "
-                "Por razones clínicas y éticas, no es posible continuar. "
-                "Te recomiendo que contactes directamente al Lic. Daniel O. Bustamante para el seguimiento profesional."
-            )
-            session["contador_interacciones"] += 1
-            session["ultimas_respuestas"].append(respuesta)
-            user_sessions[user_id] = session  # Asegura persistencia en la sesión
-            registrar_respuesta_openai(None, respuesta)  # No se genera nuevo ID de interacción
-            return {"respuesta": respuesta}
+        session["interacciones_previas"] = [x for x in session.get("interacciones_previas", []) if x != "CIERRE_LIMITE"]
+
         
 
         # ✅ Registrar el tipo de interacción actual
