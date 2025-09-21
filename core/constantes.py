@@ -1,6 +1,9 @@
 import os
 
-CERRAR_CONVERSACION_SOLO_RIESGO = True  # no cerrar jamás salvo riesgo
+# Modo Always-On
+CERRAR_CONVERSACION_SOLO_RIESGO = True  # <- así NUNCA se disparan los cierres “duros” por límite/contador
+LIMITE_INTERACCIONES = 10**9            # opcional: deja sin efecto el límite
+
 
 
 # ✅ Ruta de conexión a la base de datos (Render la define automáticamente como variable de entorno)
