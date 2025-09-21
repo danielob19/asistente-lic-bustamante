@@ -225,7 +225,9 @@ def clasificar_cuadro_clinico_openai(emocion: str) -> str:
 
 router = APIRouter()
 
-LIMITE_INTERACCIONES = 20  # 🔒 Límite máximo de interacciones permitidas por usuario
+# Desactivar límite duro
+LIMITE_INTERACCIONES = None
+
 
 def respuesta_default_fuera_de_contexto() -> str:
     return (
