@@ -319,21 +319,31 @@ async def asistente(input_data: UserInput):
 
         
         
-        # ✅ Inicializar sesión del usuario lo antes posible para evitar errores
-        session = user_sessions.get(user_id, {
-            "contador_interacciones": 0,
-            "ultima_interaccion": time.time(),
-            "mensajes": [],
-            "emociones_detectadas": [],
-            "ultimas_respuestas": [],
-            "input_sospechoso": False,
-            "interacciones_previas": [],
-            "intenciones_clinicas_acumuladas": []  # 🆕 Campo agregado para acumulación clínica
-        })
-
-        # Asegurar que 'contador' exista en todos los caminos de ejecución
-        contador = session.get("contador_interacciones", 0)
+        # --- bootstrap de sesión por user_id (memoria persistente) ---
+        session = user_sessions.get(user_id, {}) or {}
         
+        session.setdefault("emociones_detectadas", [])
+        session.setdefault("cuadro_clinico_probable", None)
+        session.setdefault("_apendice_cuadro", "")
+        session.setdefault("ultimas_respuestas", [])
+        session.setdefault("mensajes", [])
+        session.setdefault("intenciones_previas", [])
+        session.setdefault("intenciones_clinicas_acumuladas", [])
+        session.setdefault("input_sospechoso", False)
+        
+        # contador: conservar si ya existía; si no, arranca en 0
+        session["contador_interacciones"] = session.get("contador_interacciones", 0)
+        
+        # timestamp de última interacción
+        session["ultima_interaccion"] = time.time()
+        
+        # persistir
+        user_sessions[user_id] = session
+        
+        # (opcional, si tu código lo usa como variable suelta)
+        contador = session["contador_interacciones"]
+        
+                
     
         # 🛡️ Validación anticipada para evitar errores de tipo NoneType
         if mensaje_original is None or not isinstance(mensaje_original, str):
