@@ -162,8 +162,64 @@ def _finalizar_respuesta(texto: str,
 
 
 def clasificar_cuadro_clinico_openai(emocion: str) -> str:
-    # Placeholder conservador para no frenar el flujo
-    return "patrón emocional detectado"
+    """
+    Dado un resumen breve de emociones/síntomas (cadena), devuelve un rótulo corto
+    del *cuadro clínico probable* (p.ej.: 'ansiedad generalizada', 'episodio depresivo',
+    'insomnio de conciliación', 'estrés crónico', 'aislamiento social').
+    No devuelve 'patrón emocional' ni diagnósticos cerrados.
+    """
+    try:
+        prompt = (
+            "Actuá como psicólogo clínico. Te paso un resumen de emociones/síntomas "
+            "contados por un usuario. Respondé con UN solo rótulo clínico corto, "
+            "prudente y orientativo (no diagnóstico cerrado), en español rioplatense, "
+            "sin comillas ni punto final. Ejemplos de formato: "
+            "'ansiedad generalizada', 'episodio depresivo', 'insomnio de conciliación', "
+            "'estrés crónico', 'aislamiento social'. Si no alcanza la info, respondé "
+            "'estado emocional inespecífico'.\n\n"
+            f"Resumen: {emocion}"
+        )
+
+        # Llamado directo a OpenAI; si ya tenés un wrapper, podés usarlo aquí.
+        resp = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=16,
+        )
+
+        label = resp.choices[0].message["content"].strip()
+        # Tomar la primera línea, limpiar bullets/quotes y punto final
+        label = label.splitlines()[0]
+        label = re.sub(r'^[\-\*\•]\s*', "", label)
+        label = label.strip(' "\'').rstrip(".")
+
+        # Defensa: evitar devoluciones genéricas o inválidas
+        prohibidos = {
+            "patrón emocional", "patron emocional", "patrón emocional detectado",
+            "patron emocional detectado", "patrón", "patron"
+        }
+        if not label or label.lower() in prohibidos or len(label) > 60:
+            raise ValueError("label inválida")
+
+        return label
+
+    except Exception as e:
+        print(f"⚠️ Error en clasificar_cuadro_clinico_openai: {e}")
+        # Fallback heurístico simple por palabras clave
+        txt = (emocion or "").lower()
+        if any(k in txt for k in ("miedo", "ansiedad", "nervio")):
+            return "ansiedad a explorar"
+        if any(k in txt for k in ("triste", "desgano", "deprim")):
+            return "episodio depresivo a explorar"
+        if any(k in txt for k in ("insom", "duermo", "sueño")):
+            return "insomnio de conciliación"
+        if any(k in txt for k in ("estrés", "estres", "tensión", "tension")):
+            return "estrés crónico"
+        if any(k in txt for k in ("solo", "aislad", "evitar gente", "no juntarme", "no quiero estar con gente")):
+            return "aislamiento social"
+        return "estado emocional inespecífico"
+
 
 
 
