@@ -993,15 +993,37 @@ async def asistente(input_data: UserInput):
                     user_sessions[user_id] = session
                     return {"respuesta": texto_fuera}
             
-                # Hay señales clínicas previas → continuamos en el flujo CLÍNICO
-                session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
                 session["tipo_input"] = "CLINICO_CONTINUACION"  # opcional si lo usás en otra parte
                 user_sessions[user_id] = session
-                # (no hacemos return: dejamos que el flujo clínico siga después del try)
+                
+
+                # === PUERTA DE ENTRADA AL MÓDULO CLÍNICO ===
+                if clasificacion == "CLINICO" or session.get("tipo_input") == "CLINICO_CONTINUACION":
+                    out = procesar_clinico({
+                        "user_id": user_id,
+                        "mensaje_usuario": mensaje_usuario,
+                        "emociones_session": session.get("emociones_detectadas", []),
+                        "cuadro_openai": session.get("cuadro_clinico_probable", None),
+                    })
+                    texto = out.get("respuesta", "").strip() or (
+                        "Gracias por compartirlo. ¿En qué momentos notás que se intensifica y qué cambia en el cuerpo "
+                        "o en los pensamientos cuando aparece?"
+                    )
+                
+                    # Persistencia y salida
+                    session["ultimas_respuestas"].append(texto)
+                    session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
+                    # opcional: limpiar la bandera para evitar “pegado” en el próximo turno
+                    session.pop("tipo_input", None)
+                
+                    user_sessions[user_id] = session
+                    return {"respuesta": texto}
 
         
         except Exception as e:
             print(f"🧠❌ Error en clasificación contextual: {e}")
+
+
         
         # Registrar interacción con mensaje original incluido
         interaccion_id = registrar_interaccion(user_id, mensaje_usuario, mensaje_original)
