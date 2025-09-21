@@ -566,12 +566,15 @@ async def asistente(input_data: UserInput):
             cuadro_prob: str = ""
             
             try:
-                # 1) Emociones “del momento”
-                emos_ahora = list(dict.fromkeys(emociones_detectadas_bifurcacion or []))
+                # 1) Normalizar y tomar emociones “del momento”
+                def _norm(e: str) -> str:
+                    return (e or "").strip().lower()
             
-                # 2) Unimos con las que venían en sesión (sin duplicar)
-                emos_prev = session.get("emociones_detectadas") or []
-                emos_union = list(dict.fromkeys((emos_prev or []) + (emos_ahora or [])))
+                emos_ahora = list(dict.fromkeys(map(_norm, emociones_detectadas_bifurcacion or [])))
+            
+                # 2) Unir con las que venían en sesión (sin duplicar)
+                emos_prev = list(dict.fromkeys(map(_norm, session.get("emociones_detectadas") or [])))
+                emos_union = list(dict.fromkeys(emos_prev + emos_ahora))
             
                 # 3) Si hay ≥ 2 emociones, inferimos cuadro probable
                 if len(emos_union) >= 2:
@@ -582,7 +585,7 @@ async def asistente(input_data: UserInput):
                     except Exception:
                         cuadro_prob = ""
             
-                # 4) Registro SIEMPRE de lo nuevo en la DB (aunque no haya cuadro)
+                # 4) Registrar SIEMPRE lo nuevo en la DB (aunque no haya cuadro)
                 try:
                     registrar_historial_clinico(
                         user_id=user_id,
@@ -608,6 +611,10 @@ async def asistente(input_data: UserInput):
             
             # 5) Actualizamos memoria de sesión (siempre)
             session["emociones_detectadas"] = emos_union
+            if cuadro_prob:
+                session["cuadro_clinico_probable"] = cuadro_prob
+            elif "cuadro_clinico_probable" not in session:
+                session["cuadro_clinico_probable"] = None
             user_sessions[user_id] = session
             
             # 6) Si hay cuadro probable, preparamos y persistimos apéndice clínico para la respuesta
@@ -628,6 +635,7 @@ async def asistente(input_data: UserInput):
                 print(f"⚠️ Error en inferencia incremental (apéndice): {e}")
                 session["_apendice_cuadro"] = ""
                 user_sessions[user_id] = session
+
 
 
 
