@@ -975,24 +975,30 @@ async def asistente(input_data: UserInput):
                 return {"respuesta": respuesta}
 
             
-            if clasificacion in ["TESTEO", "MALICIOSO", "IRRELEVANTE"]:
+            # --- TESTEO / MALICIOSO / IRRELEVANTE ---
+            if clasificacion in {"TESTEO", "MALICIOSO", "IRRELEVANTE"}:
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, clasificacion)
             
-                # ⚠️ Solo bloquear si NO hay emociones registradas y es muy temprano
-                if (
+                # ⚠️ Solo bloquear si NO hay contexto clínico y es muy temprano
+                sin_contexto = (
                     not hay_contexto_clinico_anterior(user_id)
                     and not session.get("emociones_detectadas")
                     and session.get("contador_interacciones", 0) <= 2
-                ):
-                    session["input_sospechoso"] = True
-                    session["ultimas_respuestas"].append(respuesta_default_fuera_de_contexto())
-                    user_sessions[user_id] = session
-                    return {"respuesta": respuesta_default_fuera_de_contexto()}
+                )
             
-                else:
-                    tipo_input = CLINICO_CONTINUACION
-                    session["contador_interacciones"] += 1  # ✅ CORRECCIÓN CRÍTICA AQUÍ
+                if sin_contexto:
+                    session["input_sospechoso"] = True
+                    texto_fuera = respuesta_default_fuera_de_contexto()
+                    session["ultimas_respuestas"].append(texto_fuera)
                     user_sessions[user_id] = session
+                    return {"respuesta": texto_fuera}
+            
+                # Hay señales clínicas previas → continuamos en el flujo CLÍNICO
+                session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
+                session["tipo_input"] = "CLINICO_CONTINUACION"  # opcional si lo usás en otra parte
+                user_sessions[user_id] = session
+                # (no hacemos return: dejamos que el flujo clínico siga después del try)
+
         
         except Exception as e:
             print(f"🧠❌ Error en clasificación contextual: {e}")
