@@ -806,16 +806,54 @@ async def asistente(input_data: UserInput):
             
                                     
         
-        # 🧠 Si se detecta intención MIXTA, invitar al usuario a decidir por dónde continuar
-        if intencion_general == "MIXTA":
-            session["contador_interacciones"] += 1
-            user_sessions[user_id] = session
-            return {
-                "respuesta": (
+        # --- Intención MIXTA: invitar una sola vez y luego interpretar la preferencia ---
+        try:
+            # 1) Si la intención es MIXTA y aún no invitamos, hacemos la invitación una sola vez
+            if intencion_general == "MIXTA" and not session.get("_mixta_invitacion_hecha", False):
+                respuesta_mixta = (
                     "Entiendo que estás buscando información sobre psicoterapia, pero también mencionás un aspecto emocional importante. "
                     "¿Preferís contarme un poco más sobre cómo lo estás viviendo últimamente o querés resolverlo directamente con el Lic. Bustamante?"
                 )
-            }
+                session["_mixta_invitacion_hecha"] = True
+                session["ultimas_respuestas"].append(respuesta_mixta)
+                session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
+                user_sessions[user_id] = session
+                return {"respuesta": respuesta_mixta}
+        
+            # 2) Si ya invitamos, interpretamos lo que eligió el usuario (sin romper si no coincide nada)
+            if session.get("_mixta_invitacion_hecha", False):
+                msg = (mensaje_usuario or "").lower()
+        
+                preferir_clinico = any(
+                    t in msg for t in [
+                        "sí", "si", "quiero", "me gust", "contar", "decirte", "hablarlo", "compartirlo", "prefiero hablar"
+                    ]
+                )
+                preferir_admin = any(
+                    t in msg for t in [
+                        "no", "preferiría", "preferiria", "directamente", "prefiero contacto", "contactar", "sacar turno", "agendar"
+                    ]
+                )
+        
+                if preferir_clinico:
+                    # Marcamos continuidad clínica y dejamos que el flujo clínico normal siga más abajo
+                    session["tipo_input"] = "CLINICO_CONTINUACION"
+                    user_sessions[user_id] = session
+                    # No retornamos acá: seguimos al flujo clínico
+        
+                elif preferir_admin:
+                    # Damos la vía administrativa y cerramos esta rama solamente
+                    respuesta_admin = f"Podés coordinar un turno por WhatsApp {CONTACTO_WPP}."
+                    session["ultimas_respuestas"].append(respuesta_admin)
+                    session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
+                    user_sessions[user_id] = session
+                    return {"respuesta": respuesta_admin}
+        
+                # Si no hay señal clara, no retornamos: dejamos que el flujo clínico y el resto de reglas continúen
+        except Exception as e:
+            print(f"⚠️ MIXTA guard falló: {e}")
+            # No cortamos la conversación; dejamos que continúe el flujo clínico normal
+
 
 
         # 🧠 Si el usuario respondió a la bifurcación mixta, interpretar su preferencia
