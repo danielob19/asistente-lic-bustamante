@@ -146,67 +146,93 @@ def _finalizar_respuesta(texto: str,
     # Sanitizar espacios
     texto = " ".join(texto.split())
     return texto
-# ---------------------------------------------------------------------------
 
+
+
+# ---------------------------------------------------------------------------
 
 def clasificar_cuadro_clinico_openai(emocion: str) -> str:
     """
-    Dado un resumen breve de emociones/síntomas (cadena), devuelve un rótulo corto
-    del *cuadro clínico probable* (p.ej.: 'ansiedad generalizada', 'episodio depresivo',
-    'insomnio de conciliación', 'estrés crónico', 'aislamiento social').
-    No devuelve 'patrón emocional' ni diagnósticos cerrados.
+    Devuelve un rótulo breve de *cuadro clínico probable* (no diagnóstico cerrado).
+    Mantiene vocabulario abierto para permitir términos nuevos/actualizados.
+    Solo higieniza y bloquea frases genéricas.
     """
+    import re
+
+    if not emocion or not emocion.strip():
+        return "indeterminado"
+
+    PROHIBIDOS = {
+        # genéricos/ruido que no aportan valor clínico
+        "patrón emocional", "patron emocional",
+        "patrón emocional detectado", "patron emocional detectado",
+        "patrón detectado", "patron detectado",
+        "estado emocional", "estado emocional inespecífico",
+        "label inválida", "label invalida",
+    }
+
+    def _limpiar_un_renglon(s: str) -> str:
+        s = (s or "").strip()
+        s = s.splitlines()[0]                 # 1° línea
+        s = re.sub(r'^[\-\*\•\·\s"]+', "", s)  # bullets/comillas al inicio
+        s = s.rstrip('".!;:')                  # cierres
+        return s.strip()
+
     try:
         prompt = (
-            "Actuá como psicólogo clínico. Te paso un resumen de emociones/síntomas "
-            "contados por un usuario. Respondé con UN solo rótulo clínico corto, "
-            "prudente y orientativo (no diagnóstico cerrado), en español rioplatense, "
-            "sin comillas ni punto final. Ejemplos de formato: "
+            "Actuá como psicólogo clínico actualizado (DSM-5-TR). Te paso un resumen "
+            "de emociones/síntomas de un usuario. Respondé con UN rótulo clínico "
+            "orientativo, breve (1-4 palabras), prudente (no diagnóstico cerrado), "
+            "en español rioplatense, sin comillas ni punto. Ejemplos de formato: "
             "'ansiedad generalizada', 'episodio depresivo', 'insomnio de conciliación', "
-            "'estrés crónico', 'aislamiento social'. Si no alcanza la info, respondé "
-            "'estado emocional inespecífico'.\n\n"
+            "'estrés crónico', 'aislamiento social'. Si no alcanza la info, respondé: "
+            "'indeterminado'.\n\n"
             f"Resumen: {emocion}"
         )
 
-        # Llamado directo a OpenAI; si ya tenés un wrapper, podés usarlo aquí.
         resp = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.1,
             max_tokens=16,
         )
+        label_raw = resp.choices[0].message["content"]
+        label = _limpiar_un_renglon(label_raw)
 
-        label = resp.choices[0].message["content"].strip()
-        # Tomar la primera línea, limpiar bullets/quotes y punto final
-        label = label.splitlines()[0]
-        label = re.sub(r'^[\-\*\•]\s*', "", label)
-        label = label.strip(' "\'').rstrip(".")
-
-        # Defensa: evitar devoluciones genéricas o inválidas
-        prohibidos = {
-            "patrón emocional", "patron emocional", "patrón emocional detectado",
-            "patron emocional detectado", "patrón", "patron"
-        }
-        if not label or label.lower() in prohibidos or len(label) > 60:
-            raise ValueError("label inválida")
+        # defensas mínimas
+        norm = label.lower()
+        if not norm or len(norm) > 60:
+            return "indeterminado"
+        if any(p in norm for p in PROHIBIDOS):
+            return "indeterminado"
 
         return label
 
     except Exception as e:
         print(f"⚠️ Error en clasificar_cuadro_clinico_openai: {e}")
-        # Fallback heurístico simple por palabras clave
-        txt = (emocion or "").lower()
-        if any(k in txt for k in ("miedo", "ansiedad", "nervio")):
-            return "ansiedad a explorar"
-        if any(k in txt for k in ("triste", "desgano", "deprim")):
-            return "episodio depresivo a explorar"
-        if any(k in txt for k in ("insom", "duermo", "sueño")):
-            return "insomnio de conciliación"
-        if any(k in txt for k in ("estrés", "estres", "tensión", "tension")):
-            return "estrés crónico"
-        if any(k in txt for k in ("solo", "aislad", "evitar gente", "no juntarme", "no quiero estar con gente")):
-            return "aislamiento social"
-        return "estado emocional inespecífico"
+        return "indeterminado"
+
+
+
+def sugerir_canonico_suave(label_model: str) -> str | None:
+    """
+    Devuelve una *sugerencia* de cluster interno para analytics.
+    No reemplaza el label del modelo; puede devolver None si no matchea.
+    """
+    import re
+    n = re.sub(r"\s+", " ", (label_model or "").lower()).strip()
+
+    buckets = {
+        "ansiedad": ["ansiedad", "ansioso", "angustia", "ansiedad generalizada"],
+        "depresivo": ["depresivo", "depresión", "baja de ánimo", "tristeza"],
+        "insomnio": ["insomnio", "sueño", "conciliar el sueño"],
+        "estrés": ["estrés", "burnout", "tensión"],
+        "aislamiento": ["aislamiento", "evitación", "retraimiento"],
+    }
+    for canon, terminos in buckets.items():
+        if any(t in n for t in terminos):
+            return canon
+    return None
 
 
 
