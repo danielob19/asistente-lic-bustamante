@@ -109,6 +109,8 @@ except Exception:
     user_sessions = {}
 
 
+RESPUESTAS_CLINICAS = None  # <- no usar; removido del flujo
+
 
 # --- Helpers de cierre de respuesta -----------------------------------------
 
