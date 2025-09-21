@@ -1,5 +1,6 @@
 import json
 import re
+from typing import Iterable
 import unicodedata
 import string
 from typing import Optional
@@ -943,23 +944,91 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
 # ==============================================================
 # 📌 Clasificar cuadro clínico probable (puede usarse IA)
 # ==============================================================
-def clasificar_cuadro_clinico(emocion):
+
+def clasificar_cuadro_clinico(
+    emociones: str | Iterable[str],
+    mensaje_usuario: str = "",
+    usar_llm: bool = True,
+) -> str:
     """
-    Clasifica la emoción detectada en un cuadro clínico probable.
+    Devuelve una *síntesis clínica prudente* (2–5 palabras, minúsculas, sin diagnósticos cerrados).
+    Estrategia híbrida:
+      1) Intento LLM (si hay ≥2 emociones o usar_llm=True).
+      2) Fallback heurístico por mapeo local.
+    Acepta una emoción (str) o un conjunto/lista de emociones.
     """
-    clasificacion_map = {
-        "ansiedad": "Posible cuadro de ansiedad generalizada",
-        "tristeza": "Posible episodio depresivo",
-        "miedo": "Posible cuadro de angustia",
-        "insomnio": "Posible trastorno del sueño",
-        "estres": "Posible cuadro de estrés crónico",
-        "deprimido": "Posible episodio depresivo mayor",
-        "soledad": "Posible aislamiento emocional"
+
+    # Normalizar insumos
+    if isinstance(emociones, str):
+        emos = [emociones]
+    else:
+        emos = [e for e in (emociones or []) if e]
+
+    emos = [str(e).strip().lower() for e in emos if str(e).strip()]
+
+    # --- Heurística local (fallback) -----------------------------------------
+    mapa = {
+        "ansiedad": "posible ansiedad elevada",
+        "angustia": "posible estado de angustia",
+        "miedo": "posible respuesta de miedo",
+        "insomnio": "dificultad con el sueño",
+        "estrés": "estrés sostenido",
+        "tristeza": "ánimo bajo",
+        "deprimido": "ánimo deprimido",
+        "soledad": "aislamiento/soledad",
+        "culpa": "autocrítica/culpa",
+        "vergüenza": "vergüenza/autoexigencia",
+        "evitación": "conducta evitativa",
+        "fobia social": "ansiedad social",
     }
-    return clasificacion_map.get(
-        emocion.lower(),
-        "Patrón emocional que requiere evaluación profesional por el Lic. Daniel O. Bustamante"
-    )
+
+    def _heuristica() -> str:
+        for e in emos:
+            if e in mapa:
+                return mapa[e]
+        # combinaciones frecuentes
+        s = set(emos)
+        if {"ansiedad", "insomnio"} <= s:
+            return "ansiedad nocturna/insomnio"
+        if {"ansiedad", "evitación"} <= s or {"miedo", "evitación"} <= s:
+            return "ansiedad con evitación"
+        if {"tristeza", "soledad"} <= s:
+            return "ánimo bajo con aislamiento"
+        return ""  # sin inferencia local
+
+    # --- LLM (síntesis prudente) ---------------------------------------------
+    if usar_llm and len(emos) >= 2:
+        try:
+            prompt = "\n".join([
+                "Actuá como psicólogo clínico prudente.",
+                "Te paso emociones detectadas y el mensaje actual del usuario.",
+                "Devolveme UNA síntesis clínica prudente (2–5 palabras), en minúsculas,",
+                "sin diagnósticos cerrados ni etiquetas tajantes. Evitá términos como",
+                "“trastorno”, “mayor”, “generalizada”, “fobia social” como rótulo médico.",
+                "",
+                f"emociones: {', '.join(emos)}",
+                f"mensaje: {mensaje_usuario.strip() or '—'}",
+                "",
+                "salida (solo el texto, sin comillas):"
+            ])
+
+            txt = (generar_respuesta_con_openai(prompt, temperature=0.2, max_tokens=30) or "").strip()
+            txt = txt.strip('"“”').lower()
+            # Sanitizar: 2–5 palabras, solo texto corto
+            palabras = re.findall(r"[a-záéíóúñü]+", txt)
+            if 2 <= len(palabras) <= 5 and len(txt) <= 60:
+                return " ".join(palabras)
+        except Exception:
+            pass  # caemos al fallback
+
+    # --- Fallback local -------------------------------------------------------
+    h = _heuristica()
+    if h:
+        return h
+
+    # Último recurso: mantener estilo prudente
+    return "patrón emocional a explorar en sesión"
+
 
 
 # ==============================================================
