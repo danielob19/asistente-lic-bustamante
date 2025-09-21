@@ -183,74 +183,84 @@ def armar_respuesta_humana(
     Respuesta breve, natural y clínica:
     - Empática, sin repetir literalmente lo que dijo el usuario.
     - Integra (si viene) el recordatorio temporal “Hace X me comentaste…”.
-    - No diagnostica; orienta y pregunta 1–2 cosas concretas según foco.
+    - No diagnostica; orienta y termina con **1** sola pregunta concreta.
     - No contradice lo que el usuario afirma (p.ej. si dice que duerme bien).
     """
 
+    # --- helpers internos -----------------------------------------------------
     def _dequote(s: str) -> str:
-        s = s.strip()
-        if len(s) >= 2 and ((s[0] == s[-1] and s[0] in "'\"") or (s.startswith("“") and s.endswith("”"))):
+        s = (s or "").strip()
+        if len(s) >= 2 and ((s[-1] == s[0] and s[0] in "\"'") or (s.startswith("“") and s.endswith("”"))):
             s = s[1:-1].strip()
         # colapsar comillas duplicadas
-        s = s.replace("''", "'").replace('""', '"')
+        s = s.replace('“', '"').replace('”', '"')
         return s
 
     def _es_parrot(resp: str, user: str) -> bool:
-        # Si la salida es prácticamente el texto del usuario
-        a = re.sub(r"\W+", "", resp.lower())
-        b = re.sub(r"\W+", "", user.lower())
+        # si la salida es prácticamente el texto del usuario
+        import re
+        a = re.sub(r"\s+", " ", resp.lower()).strip()
+        b = re.sub(r"\s+", " ", (user or "").lower()).strip()
         if not a or not b:
             return False
-        return a == b or (a.startswith(b) and len(a) <= int(len(b) * 1.2))
+        return a == b or (a.startswith(b[: max(1, int(len(b) * 0.8))]) and len(a) <= int(len(b) * 1.2))
 
-    # armar “foco” para orientar las preguntas
+    # --- “foco” para orientar la pregunta final -------------------------------
     foco = ""
     if emociones:
         foco = emociones[0]
     elif cuadro:
         foco = cuadro
 
-    # prompt con reglas claras para OpenAI (sin diagnóstico ni eco)
-    instrucciones = f"""
-Actuá como psicólogo clínico. Tono cálido, claro y profesional.
-Responde en 1–3 frases, en español rioplatense.
-Objetivo: acompañar y avanzar la conversación con 1–2 preguntas concretas.
+    # --- prompt con reglas claras (una sola pregunta) -------------------------
+    instrucciones = "\n".join([
+        "Actuá como psicólogo clínico. Tono cálido, claro y profesional.",
+        "Respondé en 1–3 frases, en español rioplatense.",
+        "Objetivo: acompañar y avanzar la conversación con **1** pregunta concreta.",
+        "",
+        "REGLAS:",
+        "- No repitas literalmente lo que dijo la persona ni pongas el texto entre comillas.",
+        "- No diagnostiques ni etiquetes (“depresión”, “fobia social”, etc.). Evitá conclusiones tajantes.",
+        "- Si la persona niega algo (p. ej. “no estoy fatigado”), no la contradigas.",
+        "- Usá el recordatorio si viene provisto, integrándolo con naturalidad (no lo repitas si ya está en tu redacción).",
+        "- Evitá muletillas genéricas (“entiendo que estás buscando información…”).",
+        "- Aterrizá en **una** única pregunta concreta vinculada al contenido (máximo 1).",
+        "",
+        "Contexto (si lo hay):",
+        recordatorio.strip(),
+        "",
+        "Mensaje actual del usuario:",
+        (mensaje_usuario or "").strip(),
+        "",
+        "Pistas (opcional):",
+        f"- Emociones detectadas: {', '.join(emociones or []) or '—'}",
+        f"- Foco a explorar: {foco or '—'}",
+        "",
+        "Redactá tu respuesta ahora (1–3 frases).",
+        ""
+    ])
 
-REGLAS:
-- No repitas literalmente lo que dijo la persona ni pongas el texto entre comillas.
-- No diagnostiques ni etiquetes (“depresión”, “fobia social”, etc.). Evitá conclusiones tajantes.
-- Si la persona niega algo (p. ej. “no estoy fatigado”), no lo contradigas.
-- Usá el recordatorio SI viene provisto, integrándolo con naturalidad (no lo repitas si ya está en tu redacción).
-- Evitá muletillas genéricas (“Entiendo que estás buscando información…”).
-- Aterrizá una o dos preguntas según el contenido. No más de 2 preguntas.
-
-Contexto (si lo hay):
-{recordatorio.strip()}
-
-Mensaje actual del usuario:
-{mensaje_usuario.strip()}
-
-Pistas (opcional):
-- Emociones detectadas: {", ".join(emociones or []) or "—"}
-- Foco a explorar: {foco or "—"}
-
-Redactá tu respuesta ahora (1–3 frases).
-    """.strip()
-
-    # llamada a tu wrapper
+    # --- llamada a tu wrapper de OpenAI --------------------------------------
     salida = generar_respuesta_con_openai(instrucciones) or ""
     salida = _dequote(salida)
 
-    # si vino eco, pedimos una re-redacción explícita sin eco
+    # Si vino eco (parrot), pedimos una re-redacción explícita sin eco
     if _es_parrot(salida, mensaje_usuario):
-        instrucciones_no_parrot = instrucciones + "\n\nIMPORTANTE: NO repitas el texto del usuario ni lo pongas entre comillas. Reformulá brevemente y seguí con una o dos preguntas concretas."
+        instrucciones_no_parrot = (
+            instrucciones
+            + "\n\nIMPORTANTE: NO repitas el texto del usuario ni lo pongas entre comillas. "
+              "Reformulá brevemente y seguí con **una sola** pregunta concreta."
+        )
         salida = generar_respuesta_con_openai(instrucciones_no_parrot) or ""
         salida = _dequote(salida)
 
-    # sanitizar mínimos
+    # sanitizar mínimos y fallback clínico útil
     salida = " ".join(salida.split())
-    return salida or "Gracias por compartirlo. ¿En qué momentos notás que se intensifica y qué cambia en el cuerpo o en los pensamientos cuando aparece?"
-
+    return (
+        salida
+        or "Gracias por compartirlo. ¿En qué momentos notás que se intensifica y qué cambia "
+           "en el cuerpo o en los pensamientos cuando aparece?"
+    )
 
 
 
