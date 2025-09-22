@@ -1088,15 +1088,15 @@ async def asistente(input_data: UserInput):
                         "Estilo sugerido: una simple bienvenida informal, por ejemplo: '¡Hola! Contame.', 'Hola, decime nomás.', 'Hola, ¿cómo estás?'.\n"
                         "Debe sonar como alguien que saluda para iniciar un diálogo, no para despedirse ni cerrar la conversación."
                     )
-                    respuesta_saludo = _try_openai(
-                        prompt_saludo_inicial,
-                        contador=session["contador_interacciones"],
+                    respuesta_contextual = _try_openai(
+                        prompt_cortesia_contextual,
+                        contador=session.get("contador_interacciones", 0),
                         user_id=user_id,
                         mensaje_usuario=mensaje_usuario,
                         mensaje_original=mensaje_original,
                     )
-
-            
+                    
+                                
                     session["ultimas_respuestas"].append(respuesta_saludo)
                     session["contador_interacciones"] += 1
                     user_sessions[user_id] = session
