@@ -112,6 +112,41 @@ except Exception:
 RESPUESTAS_CLINICAS = None  # <- no usar; removido del flujo
 
 
+#-------------------------------------------------------------------------------
+
+# --- Safe wrapper para OpenAI (evita que el usuario note errores) ----------------
+from core.utils.generador_openai import generar_respuesta_con_openai  # ya importado arriba
+
+def _fallback_clinico() -> str:
+    # Texto útil, neutro y clínico si la IA falla o devuelve algo vacío
+    return (
+        "Gracias por contarlo. ¿En qué momentos notás que se intensifica y qué cambia "
+        "en el cuerpo o en los pensamientos cuando aparece?"
+    )
+
+def _try_openai(prompt: str, **kwargs) -> str:
+    """
+    Llama a OpenAI y NUNCA deja que suba una excepción.
+    Si falla o la respuesta es vacía/corta, devuelve un fallback clínico.
+    También depura kwargs inesperados (p.ej. 'temperatura').
+    """
+    # Solo aceptar kwargs que realmente soporta tu generador
+    permitidos = {"contador", "user_id", "mensaje_usuario", "mensaje_original"}
+    kwargs = {k: v for k, v in kwargs.items() if k in permitidos}
+
+    try:
+        t = generar_respuesta_con_openai(prompt, **kwargs)
+        if not t or len(t.strip()) < 5:
+            raise ValueError("respuesta vacía o demasiado corta")
+        return t.strip()
+    except Exception as e:
+        print(f"⚠️ SafeOpenAI fallback: {e}")
+        return _fallback_clinico()
+
+
+# -------------------------------------------------------------------------------
+
+
 # --- Helpers de cierre de respuesta -----------------------------------------
 
 CONTACTO_NUM = os.getenv("CONTACTO_NUM", "3310-1186")
