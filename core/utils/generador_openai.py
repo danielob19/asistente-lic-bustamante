@@ -1,6 +1,7 @@
 import os
 import time
 import openai
+from typing import Optional
 
 # ✅ Configurar la API key aquí, donde se usa
 openai.api_key = os.getenv("OPENAI_API_KEY")
