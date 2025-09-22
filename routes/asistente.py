@@ -115,7 +115,6 @@ RESPUESTAS_CLINICAS = None  # <- no usar; removido del flujo
 #-------------------------------------------------------------------------------
 
 # --- Safe wrapper para OpenAI (evita que el usuario note errores) ----------------
-from core.utils.generador_openai import generar_respuesta_con_openai  # ya importado arriba
 
 def _fallback_clinico() -> str:
     # Texto útil, neutro y clínico si la IA falla o devuelve algo vacío
