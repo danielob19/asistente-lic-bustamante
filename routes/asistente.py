@@ -1057,13 +1057,14 @@ async def asistente(input_data: UserInput):
                         "Estilo sugerido: una simple bienvenida informal, por ejemplo: '¡Hola! Contame.', 'Hola, decime nomás.', 'Hola, ¿cómo estás?'.\n"
                         "Debe sonar como alguien que saluda para iniciar un diálogo, no para despedirse ni cerrar la conversación."
                     )
-                    respuesta_saludo = generar_respuesta_con_openai(
+                    respuesta_saludo = _try_openai(
                         prompt_saludo_inicial,
-                        session["contador_interacciones"],
-                        user_id,
-                        mensaje_usuario,
-                        mensaje_original
+                        contador=session["contador_interacciones"],
+                        user_id=user_id,
+                        mensaje_usuario=mensaje_usuario,
+                        mensaje_original=mensaje_original,
                     )
+
             
                     session["ultimas_respuestas"].append(respuesta_saludo)
                     session["contador_interacciones"] += 1
@@ -1082,13 +1083,14 @@ async def asistente(input_data: UserInput):
                     "NO uses frases como: '¿y tú?', '¿cómo estás tú?', '¿cómo vas?' ni ninguna variante de pregunta personal o de seguimiento."
                 )
             
-                respuesta_contextual = generar_respuesta_con_openai(
+                respuesta_contextual = _try_openai(
                     prompt_cortesia_contextual,
-                    session["contador_interacciones"],
-                    user_id,
-                    mensaje_usuario,
-                    mensaje_original
+                    contador=session["contador_interacciones"],
+                    user_id=user_id,
+                    mensaje_usuario=mensaje_usuario,
+                    mensaje_original=mensaje_original,
                 )
+
             
                 # Validación simple
                 if not respuesta_contextual or len(respuesta_contextual.strip()) < 3:
