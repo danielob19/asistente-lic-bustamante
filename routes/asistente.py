@@ -382,6 +382,19 @@ def obtener_cuadro_por_emociones(user_id: str, session: dict):
 
 
 
+
+@router.get("/asistente")
+def asistente_info():
+    """
+    Evita 405 en GET /asistente: informa cómo usar el endpoint correcto.
+    """
+    return {
+        "detail": "Usá POST /asistente con el cuerpo esperado.",
+        "schema_esperado": {"user_id": "str", "mensaje": "str"},
+    }
+
+
+
 @router.post("/asistente")
 async def asistente(input_data: UserInput):
     try:
