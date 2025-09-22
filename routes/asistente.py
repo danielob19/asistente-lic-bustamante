@@ -274,32 +274,34 @@ router = APIRouter()
 
 
 
-def _empieza_con_hola_que_tal(txt: str) -> bool:
-    t = unicodedata.normalize("NFKD", txt).encode("ascii", "ignore").decode().lower()
-    t = t.replace("¿", "").replace("?", "").strip()
-    return t.startswith("hola, que tal") or t.startswith("hola que tal")
+def _filtrar_saludo_posterior(respuesta_original: str, contador: int, user_id: str) -> str:
+    """
+    Si no es la primera interacción y la respuesta empieza con 'Hola, ¿qué tal?',
+    elimina el saludo. Si no aplica, devuelve la respuesta tal cual.
+    """
+    t = (respuesta_original or "").strip()
+    if contador == 1:
+        return t
+    if not _empieza_con_hola_que_tal(t):
+        return t
 
-# --- Filtro único para remover "Hola, ¿qué tal?" en interacciones > 1 ---
-t = (respuesta_original or "").strip()
-if contador != 1 and _empieza_con_hola_que_tal(t):
     variantes = [
-        "hola, ¿qué tal? ", "hola, qué tal? ", "hola que tal? ",
-        "hola, ¿qué tal?",  "hola, qué tal?",  "hola que tal",
-        "hola, que tal? ",  "hola, que tal?"
+        "hola, qué tal", "hola qué tal",
+        "hola, que tal", "hola que tal",
     ]
     t_norm = t
     for v in variantes:
-        if t_norm.lower().startswith(v.lower()):
+        if t_norm.lower().startswith(v):
             t_norm = t_norm[len(v):].strip()
             break
-
-    motivo = ("Se eliminó el saludo inicial 'Hola, ¿qué tal?' porque no corresponde "
-              "repetirlo en interacciones posteriores a la primera")
-    registrar_auditoria_respuesta(user_id, respuesta_original, t_norm, motivo)
-    respuesta_ai = t_norm
-else:
-    respuesta_ai = respuesta_original
-
+    try:
+        registrar_auditoria_respuesta(
+            user_id, respuesta_original, t_norm,
+            "Se eliminó el saludo inicial 'Hola, ¿qué tal?' por ser posterior a la primera interacción",
+        )
+    except Exception:
+        pass
+    return t_norm
 
 
 
