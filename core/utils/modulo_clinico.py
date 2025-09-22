@@ -537,14 +537,17 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             # 3) Flag del disparador (por defecto False)
             session.setdefault("disparo_notificado", False)
     
-            # 4) Contador de interacciones (si no viene en sesión)
+            # 4) Contador de interacciones (no incrementar en bootstrap)
             if not isinstance(session.get("contador_interacciones"), int):
                 try:
                     base = int(interaccion_ult) if interaccion_ult is not None else 0
-                    session["contador_interacciones"] = base + 1
+                    # Usar el base si existe, pero NO sumar. El incremento va sólo al emitir respuesta.
+                    session["contador_interacciones"] = base
                 except Exception:
-                    session["contador_interacciones"] = 1
-    
+                    # Si algo falla, seteamos 0 (de nuevo: no incrementamos acá)
+                    session["contador_interacciones"] = 0
+            
+                
         except Exception:
             # No bloquear el flujo clínico por errores de bootstrap
             pass
