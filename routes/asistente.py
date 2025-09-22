@@ -414,16 +414,12 @@ async def asistente(input_data: UserInput):
         # …defaults + línea de contador…
         session["contador_interacciones"] = int(session.get("contador_interacciones") or 0)
         
-        # merge idempotente desde DB
-        try:
-            from core.utils.modulo_clinico import _bootstrap_session_desde_db
-            session = _bootstrap_session_desde_db(user_id, session or {})
-            user_sessions[user_id] = session
-        except Exception as e:
-            print(f"⚠️ bootstrap desde DB omitido: {e}")
+        # ⚠️ No hagas bootstrap acá; lo hace internamente procesar_clinico()
+        session = session or {}
         
-        # refrescá la variable local luego del merge
+        # refrescá la variable local (sin depender de import)
         contador = int(session.get("contador_interacciones") or 0)
+
 
         
         # timestamp de última interacción
