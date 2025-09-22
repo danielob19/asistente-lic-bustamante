@@ -440,7 +440,7 @@ def _openai_respuesta_terapeutica(mensaje_usuario: str, recordatorio: str) -> st
 
 
     try:
-        texto = generar_respuesta_con_openai(prompt, temperatura=0.3, max_tokens=280)
+        texto = generar_respuesta_con_openai(prompt, temperature=0.3, max_tokens=280)
         return (texto or "").strip()
     except Exception as ex:
         print(f"⚠️ _openai_respuesta_terapeutica falló: {ex}")
@@ -672,7 +672,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             for _ in range(2):  # 2 reintentos por intento lógico
                 try:
                     # Tu wrapper a OpenAI; usá temperature=0 para máxima exactitud
-                    raw = generar_respuesta_con_openai(p, temperatura=0, max_tokens=200)
+                    raw = generar_respuesta_con_openai(p, temperature=0, max_tokens=200)
                     if not isinstance(raw, str):
                         raw = str(raw or "")
     
