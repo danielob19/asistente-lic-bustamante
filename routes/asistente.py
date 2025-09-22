@@ -1057,7 +1057,30 @@ async def asistente(input_data: UserInput):
                 temperature=0.0
             )
         
-            clasificacion = response_contextual.choices[0].message['content'].strip().upper()
+            # ✅ Extracción robusta de la clasificación desde la respuesta de OpenAI
+            def _extraer_clasificacion(resp) -> str:
+                """
+                Soporta resp como objeto (SDK) o como dict, y falla a string vacío.
+                """
+                try:
+                    # Estilo SDK (atributos)
+                    texto = getattr(resp.choices[0].message, "content", None)
+                    if texto is None:
+                        raise AttributeError
+                    return str(texto).strip().upper()
+                except Exception:
+                    # Estilo dict (claves)
+                    try:
+                        texto = (
+                            (resp.get("choices") or [{}])[0]
+                            .get("message", {})
+                            .get("content", "")
+                        )
+                        return str(texto).strip().upper()
+                    except Exception:
+                        return ""
+            
+            clasificacion = _extraer_clasificacion(response_contextual) or "IRRELEVANTE"
 
             # 🔍 Validación robusta
             opciones_validas = {
