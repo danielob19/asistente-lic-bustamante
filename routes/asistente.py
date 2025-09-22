@@ -1102,10 +1102,12 @@ async def asistente(input_data: UserInput):
                     user_sessions[user_id] = session
                     registrar_respuesta_openai(None, respuesta_saludo)
                     return {"respuesta": respuesta_saludo}
+
+                
             
-                # 🔵 CORTESÍA GENERAL (no es saludo inicial o ya fue saludado)
+                # 🟦 CORTESÍA GENERAL (no es el saludo inicial)
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
-            
+                
                 prompt_cortesia_contextual = (
                     f"El usuario ha enviado el siguiente mensaje de cortesía o cierre: '{mensaje_usuario}'.\n"
                     "Redactá una respuesta breve y cordial, sin repetir frases como 'Con gusto', 'Estoy disponible' ni 'Que tengas un buen día'.\n"
@@ -1113,7 +1115,7 @@ async def asistente(input_data: UserInput):
                     "Evitá cerrar de forma tajante o dar a entender que la conversación terminó. No uses emojis. No hagas preguntas ni ofrezcas ayuda adicional si no fue solicitada.\n"
                     "NO uses frases como: '¿y tú?', '¿cómo estás tú?', '¿cómo vas?' ni ninguna variante de pregunta personal o de seguimiento."
                 )
-            
+                
                 respuesta_contextual = _try_openai(
                     prompt_cortesia_contextual,
                     contador=session.get("contador_interacciones", 0),
@@ -1121,35 +1123,30 @@ async def asistente(input_data: UserInput):
                     mensaje_usuario=mensaje_usuario,
                     mensaje_original=mensaje_original,
                 )
-
-
-            
-                # Validación simple
-                if not respuesta_contextual or len(respuesta_contextual.strip()) < 3:
-                    respuesta_contextual = "Perfecto, seguimos en contacto si más adelante querés continuar."
-            
-                # 🧼 Filtro contra frases de cierre sutil
+                
+                # Filtro contra cierres suaves/no deseados
                 frases_cierre_suave = [
                     "que tengas un buen día", "¡que tengas un buen día!", "que tengas buen día",
-                    "buen día para vos", "que tengas un lindo día", "que tengas una excelente tarde",
-                    "que tengas un excelente día", "¡que tengas una excelente tarde!", "que tengas una linda tarde"
+                    "buen día para vos", "que tengas una linda tarde", "que tengas una excelente tarde",
+                    "que tengas un excelente día", "quedo a disposición", "estoy para ayudarte",
                 ]
-                for frase_final in frases_cierre_suave:
-                    if frase_final in respuesta_contextual.lower():
-                        respuesta_contextual = re.sub(frase_final, "", respuesta_contextual, flags=re.IGNORECASE).strip(".! ")
-            
-                # Eliminar residuos de puntuación si quedó la frase vacía o colgante
-                if respuesta_contextual.endswith(("¡", "¿", ",", ".", "!", " ")):
-                    respuesta_contextual = respuesta_contextual.rstrip("¡¿,!. ")
-            
-                # Último refuerzo por si quedó vacía tras filtros
-                if not respuesta_contextual.strip():
-                    respuesta_contextual = "Hola, contame."
-            
-                session["ultimas_respuestas"].append(respuesta_contextual)
-                session["contador_interacciones"] += 1
+                txt = (respuesta_contextual or "").strip()
+                for f in frases_cierre_suave:
+                    if f in txt.lower():
+                        txt = txt.lower().replace(f, "").strip()
+                
+                # Limpieza de puntuación sobrante
+                txt = txt.rstrip("¡¿,!. ").strip()
+                
+                # Fallback por si quedó vacío o ultra corto
+                if not txt or len(txt) < 3:
+                    txt = "Gracias por tu mensaje. Si más adelante querés compartir algo puntual (emociones, situaciones o cuándo se intensifica), te leo."
+                
+                session["ultimas_respuestas"].append(txt)
+                session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
                 user_sessions[user_id] = session
-                return {"respuesta": respuesta_contextual}
+                return {"respuesta": txt}
+
             
 
             
