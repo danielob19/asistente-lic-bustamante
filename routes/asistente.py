@@ -99,6 +99,8 @@ import unicodedata
 import traceback
 import os
 
+import logging
+logging.basicConfig(level=logging.INFO)
 
 
 # -- Sesiones en memoria (fallback seguro) --
@@ -1251,8 +1253,32 @@ async def asistente(input_data: UserInput):
                     return {"respuesta": texto}
 
         
-        except Exception as e:
-            print(f"🧠❌ Error en clasificación contextual: {e}")
+        except Exception:
+            # Evita UnboundLocalError si la variable no existe
+            tiene_prompt_cortesia = bool(locals().get("prompt_cortesia_contextual"))
+            contador_safe = int(session.get("contador_interacciones") or 0)
+        
+            # Traza completa + metadatos mínimos
+            logger.exception(
+                "🧠❌ Error en clasificación contextual",
+                extra={
+                    "user_id": user_id,
+                    "contador": contador_safe,
+                    "tiene_prompt_cortesia": tiene_prompt_cortesia,
+                },
+            )
+        
+            # Fallback seguro para el usuario
+            texto = (
+                "Gracias por tu mensaje. Para poder orientarte, contame algo concreto que te esté molestando "
+                "(emociones, sensaciones corporales, situaciones o momentos en que se intensifica)."
+            )
+            session["ultimas_respuestas"].append(texto)
+            session["contador_interacciones"] = contador_safe + 1
+            user_sessions[user_id] = session
+            registrar_respuesta_openai(None, texto)
+            return {"respuesta": texto}
+
 
 
         
