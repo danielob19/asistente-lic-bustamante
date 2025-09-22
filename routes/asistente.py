@@ -1116,11 +1116,12 @@ async def asistente(input_data: UserInput):
             
                 respuesta_contextual = _try_openai(
                     prompt_cortesia_contextual,
-                    contador=session["contador_interacciones"],
+                    contador=session.get("contador_interacciones", 0),
                     user_id=user_id,
                     mensaje_usuario=mensaje_usuario,
                     mensaje_original=mensaje_original,
                 )
+
 
             
                 # Validación simple
