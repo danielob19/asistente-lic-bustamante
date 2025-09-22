@@ -1315,7 +1315,13 @@ async def asistente(input_data: UserInput):
 
         
         
-                respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
+                respuesta_original = _try_openai(
+                    prompt,
+                    contador=contador,
+                    user_id=user_id,
+                    mensaje_usuario=mensaje_usuario,
+                    mensaje_original=mensaje_original,
+                )
         
                 # Validación por fallback
                 if not respuesta_original or not isinstance(respuesta_original, str) or len(respuesta_original.strip()) < 5:
@@ -1450,17 +1456,42 @@ async def asistente(input_data: UserInput):
         )
         
         # Solicitar respuesta a OpenAI con el nuevo prompt clínico
-        respuesta_original = generar_respuesta_con_openai(prompt, contador, user_id, mensaje_usuario, mensaje_original)
-        
-        # 🔍 Filtro para remover saludo 'Hola, ¿qué tal?' si no es la primera interacción
-        if contador != 1 and respuesta_original.strip().lower().startswith("hola, ¿qué tal?"):
-            respuesta_filtrada = respuesta_original.replace("Hola, ¿qué tal? ", "", 1).strip()
-            motivo = "Se eliminó el saludo inicial 'Hola, ¿qué tal?' porque no corresponde repetirlo en interacciones posteriores a la primera"
-            registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_filtrada, motivo)
-            respuesta_ai = respuesta_filtrada
-        else:
-            respuesta_ai = respuesta_original
-        
+        respuesta_original = _try_openai(
+            prompt,
+            contador=contador,
+            user_id=user_id,
+            mensaje_usuario=mensaje_usuario,
+            mensaje_original=mensaje_original,
+        )
+
+
+
+def _empieza_con_hola_que_tal(txt: str) -> bool:
+    t = unicodedata.normalize("NFKD", txt).encode("ascii", "ignore").decode().lower()
+    t = t.replace("¿", "").replace("?", "").strip()
+    return t.startswith("hola, que tal") or t.startswith("hola que tal")
+
+# --- Filtro único para remover "Hola, ¿qué tal?" en interacciones > 1 ---
+t = (respuesta_original or "").strip()
+if contador != 1 and _empieza_con_hola_que_tal(t):
+    variantes = [
+        "hola, ¿qué tal? ", "hola, qué tal? ", "hola que tal? ",
+        "hola, ¿qué tal?",  "hola, qué tal?",  "hola que tal",
+        "hola, que tal? ",  "hola, que tal?"
+    ]
+    t_norm = t
+    for v in variantes:
+        if t_norm.lower().startswith(v.lower()):
+            t_norm = t_norm[len(v):].strip()
+            break
+
+    motivo = ("Se eliminó el saludo inicial 'Hola, ¿qué tal?' porque no corresponde "
+              "repetirlo en interacciones posteriores a la primera")
+    registrar_auditoria_respuesta(user_id, respuesta_original, t_norm, motivo)
+    respuesta_ai = t_norm
+else:
+    respuesta_ai = respuesta_original
+
 
 
         # 🔒 Filtro contra mención indebida al Lic. Bustamante fuera de interacciones permitidas
