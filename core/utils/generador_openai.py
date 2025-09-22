@@ -1,12 +1,10 @@
+# core/utils/generador_openai.py
 import os
 import time
 import openai
 from typing import Optional
 
-# ✅ Configurar la API key aquí, donde se usa
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
-# core/utils/generador_openai.py
 
 def generar_respuesta_con_openai(
     prompt: str,
@@ -14,20 +12,27 @@ def generar_respuesta_con_openai(
     user_id: str | None = None,
     mensaje_usuario: str | None = None,
     mensaje_original: str | None = None,
-    # ✅ nuevos kwargs tolerados
+    # Aceptamos ambos nombres para compatibilidad:
     temperatura: float | None = None,
+    temperature: float | None = None,
     max_tokens: int | None = None,
+    **kwargs,
 ) -> str | None:
     """
-    Wrapper estable para ChatCompletion:
-    - temperature configurable (default 0.0)
-    - max_tokens configurable (default 200; fallback 400)
-    - reintentos con backoff
+    Wrapper estable para ChatCompletion, tolerante a:
+    - 'temperatura' (ES) o 'temperature' (EN)
+    - 'max_tokens'
+    - kwargs extra (ignorados)
     """
-
     modelo = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
 
-    temp = 0.0 if temperatura is None else float(temperatura)
+    # Normalización: prioriza 'temperature' si vino, si no usa 'temperatura'
+    temp = 0.0
+    if temperature is not None:
+        temp = float(temperature)
+    elif temperatura is not None:
+        temp = float(temperatura)
+
     MAX_TOKENS_PRIMARY = 200 if max_tokens is None else int(max_tokens)
     MAX_TOKENS_FALLBACK = max(400, MAX_TOKENS_PRIMARY)
     TIMEOUT_SECONDS = 12
@@ -47,7 +52,11 @@ def generar_respuesta_con_openai(
             contenido = (choice.message.content or "").strip()
 
             # Si cortó por tokens, segundo intento con más cupo
-            if choice.get("finish_reason") == "length":
+            try:
+                finish = getattr(choice, "finish_reason", None) or choice.get("finish_reason")
+            except Exception:
+                finish = None
+            if finish == "length":
                 try:
                     respuesta2 = openai.ChatCompletion.create(
                         model=modelo,
