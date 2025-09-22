@@ -1180,129 +1180,22 @@ async def asistente(input_data: UserInput):
 
 
         # ====================== INTERACCIÓN 10 O POSTERIOR: CIERRE DEFINITIVO ======================
-        if contador >= 10 and tipo_input == CLINICO:
-            if contador == 10:
-                respuesta = (
-                    "He encontrado interesante nuestra conversación, pero para profundizar más en el análisis de tu malestar, "
-                    "sería ideal que consultes con un profesional. Por ello, te sugiero que te contactes con el Lic. Bustamante. "
-                    "Lamentablemente, no puedo continuar con la conversación más allá de este punto."
-                )
-        
-            elif contador >= 14:
-            
-                hipotesis_psico = generar_hipotesis_psicodinamica(
-                    session["emociones_detectadas"], session["mensajes"]
-                )
-            
-                frases_cierre_varias = [
-                    "Como mencioné en otra ocasión, no puedo continuar respondiendo desde este espacio.",
-                    "Tal como advertí antes, no es posible continuar esta conversación por este medio.",
-                    "Ya te indiqué que este canal tiene un límite de interacción.",
-                    "Como fue señalado, este espacio no permite continuar más allá de este punto.",
-                    "Como fue expresado antes, no podré seguir dialogando por esta vía.",
-                ]
-                cierre = random.choice(frases_cierre_varias)
-            
-                respuesta = (
-                    hipotesis_psico + " " + cierre + " "
-                    "Es fundamental que, si deseás avanzar, lo hagas consultando directamente con el Lic. Daniel O. Bustamante, "
-                    "quien podrá brindarte el acompañamiento profesional que necesitás. "
-                    "No me es posible continuar respondiendo mensajes en este espacio."
-                )
-            
-                session["ultimas_respuestas"].append(respuesta)
-                user_sessions[user_id] = session  # Asegura persistencia en la sesión
-                registrar_respuesta_openai(interaccion_id, respuesta)
-                return {"respuesta": respuesta}
-                      
-                    
-            elif (not CERRAR_CONVERSACION_SOLO_RIESGO) and contador == 15:
-                respuesta = (
-                    "Ya en este punto, no puedo seguir brindándote orientación desde este espacio. "
-                    "Lo más apropiado es que puedas consultarlo directamente con el Lic. Daniel O. Bustamante, "
-                    "quien podrá ofrecerte un acompañamiento profesional. "
-                    "No me es posible continuar con la conversación."
-                )
-        
-            elif (not CERRAR_CONVERSACION_SOLO_RIESGO) and contador >= 16:
-                respuesta = (
-                    "Como te mencioné anteriormente, ya no puedo continuar con esta conversación desde aquí. "
-                    "Es fundamental que, si deseás avanzar, lo hagas consultando directamente con el Lic. Daniel O. Bustamante, "
-                    "quien podrá brindarte el acompañamiento profesional que necesitás. "
-                    "No me es posible continuar respondiendo mensajes en este espacio."
-                )
 
-            # --- Bloque de cierres/recordatorios por contador (se salta si el flag está activo)
-            if not CERRAR_CONVERSACION_SOLO_RIESGO:
-                if contador >= 17:
-                    respuesta = (
-                        "Ya he sido claro en que no puedo continuar respondiendo mensajes por este medio. "
-                        "Te reitero que lo indicado es que consultes directamente con el Lic. Daniel O. Bustamante, "
-                        "quien podrá brindarte el acompañamiento profesional que necesitás. "
-                        "No insistas por este canal, ya que no podré responderte."
-                    )
-                    session["ultimas_respuestas"].append(respuesta)
-                    user_sessions[user_id] = session
-                    registrar_respuesta_openai(interaccion_id, respuesta)
-                    return {"respuesta": respuesta}
-            
-                elif contador >= 10:
-                    # Recordatorio breve cada 2 interacciones desde la #10
-                    recordatorio = ""
-                    if (contador - 10) % 2 == 0:
-                        recordatorio = (
-                            " Te recuerdo que para una orientación adecuada, deberías consultar "
-                            "con el Lic. Daniel O. Bustamante."
-                        )
-            
-                    # Apertura variable clínica + recordatorio
-                    respuesta_variable = seleccionar_estilo_clinico_variable()
-                    base = f"{respuesta_variable}{recordatorio}".strip()
-            
-                    # Apéndice clínico calculado previamente y persistido en sesión
-                    apend = session.get("_apendice_cuadro", "")
-            
-                    # Cierre unificado (apéndice clínico + contacto + limpieza)
-                    respuesta = _finalizar_respuesta(
-                        base,
-                        apendice=apend,
-                        incluir_contacto=True,
-                    )
-            
-                    session["ultimas_respuestas"].append(respuesta)
-                    user_sessions[user_id] = session
-                    registrar_respuesta_openai(interaccion_id, respuesta)
-                    return {"respuesta": respuesta}
-
-            
-            # Si el flag está True, no entra a ninguno de los returns de arriba y continúa el flujo clínico normal
-
-
-        # 🧱 Filtro definitivo para inputs irrelevantes/maliciosos o de cortesía post-cierre
-        if contador >= 10 and (clasificacion and clasificacion in ["IRRELEVANTE", "MALICIOSO", "CORTESIA"]):
-            if not CERRAR_CONVERSACION_SOLO_RIESGO:
-                # ---- Modo legacy: cierre duro (sólo si el flag lo permite) ----
-                respuesta = (
-                    "Gracias por tu mensaje. Ya no puedo continuar con esta conversación por este medio. "
-                    "Te recomiendo que contactes directamente con el Lic. Daniel O. Bustamante para una evaluación adecuada."
-                )
-            else:
-                # ---- Modo actual: NO cortar; damos una salida amable y útil ----
-                base = (
-                    "Gracias por tu mensaje. Para poder orientarte, contame algo concreto que te esté molestando "
-                    "(emociones, sensaciones corporales, situaciones o momentos en que se intensifica)."
-                )
-                respuesta = _finalizar_respuesta(
-                    base,
-                    apendice=session.get("_apendice_cuadro", ""),  # usa el apéndice clínico si lo hubo
-                    incluir_contacto=True
-                )
-        
+        # 💬 Filtro para irrelevantes/maliciosos o cortesía post-cierre (NO cortamos)
+        if contador > 10 and (clasificacion in ["IRRELEVANTE", "MALICIOSO", "CORTESIA"]):
+            base = (
+                "Gracias por tu mensaje. Para poder orientarte, contame algo concreto que te esté molestando "
+                "(emociones, sensaciones corporales, situaciones o momentos en que se intensifica)."
+            )
+            respuesta = _finalizar_respuesta(
+                base,
+                apendice=session.get("_apendice_cuadro", ""),  # si hubo apéndice clínico, se anexa
+                incluir_contacto=True,
+            )
             session["ultimas_respuestas"].append(respuesta)
             user_sessions[user_id] = session
             registrar_respuesta_openai(interaccion_id, respuesta)
             return {"respuesta": respuesta}
-
 
         
         # ✅ Interacciones 6 a 8 – Confirmación implícita de emoción inferida 5 si aún no fue confirmada
