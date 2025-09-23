@@ -4,7 +4,6 @@ from core.utils_seguridad import contiene_elementos_peligrosos, contiene_frase_d
 from core.db.registro import registrar_auditoria_input_original
 from core.db.consulta import es_saludo, es_cortesia, contiene_expresion_administrativa
 from core.db.sintomas import obtener_sintomas_existentes
-from core.db.config import conn
 import openai
 from collections import Counter
 import re
