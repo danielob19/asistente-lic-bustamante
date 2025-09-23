@@ -3,7 +3,6 @@ from core.db.sintomas import obtener_sintomas_con_estado_emocional, registrar_si
 from core.utils.palabras_irrelevantes import palabras_irrelevantes
 from core.utils.generador_openai import generar_respuesta_con_openai
 import re
-from core.db.config import conn
 from core.utils.motor_fallback import detectar_sintomas_db, inferir_cuadros, decidir
 
 
