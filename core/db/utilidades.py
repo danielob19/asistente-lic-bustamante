@@ -1,5 +1,6 @@
 # core/db/utilidades.py
 
+from core.constantes import DATABASE_URL
 import psycopg2
 
 
