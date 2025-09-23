@@ -176,20 +176,3 @@ def init_db():
         print(f"❌ Error en init_db(): {e}")
 
 
-
-
-def ejecutar_consulta(query, valores=None, commit=False):
-    try:
-        cursor = conn.cursor()
-        cursor.execute(query, valores)
-        if commit:
-            conn.commit()
-        try:
-            return cursor.fetchall()
-        except psycopg2.ProgrammingError:
-            return None
-    except Exception as e:
-        print(f"🔴 Error en ejecutar_consulta: {e}")
-        raise
-    finally:
-        cursor.close()
