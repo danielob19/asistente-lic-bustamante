@@ -1,6 +1,7 @@
 # core/db/utilidades.py
 
 from core.constantes import DATABASE_URL
+from core.db.conexion import ejecutar_consulta as ejecutar_consulta_db
 import psycopg2
 
 
@@ -175,4 +176,6 @@ def init_db():
     except Exception as e:
         print(f"❌ Error en init_db(): {e}")
 
+def ejecutar_consulta(query, valores=None, commit=False):
+    return ejecutar_consulta_db(query, valores, commit)
 
