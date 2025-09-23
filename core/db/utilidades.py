@@ -1,8 +1,7 @@
 # core/db/utilidades.py
 
 import psycopg2
-from core.db.config import DATABASE_URL
-from core.db.config import conn
+
 
 def gestionar_combinacion_emocional(emocion1, emocion2):
     """
