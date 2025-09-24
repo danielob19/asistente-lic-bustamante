@@ -925,41 +925,81 @@ async def asistente(input_data: UserInput):
         
             # 2) Si ya invitamos, interpretamos qué eligió el usuario (sin romper si no coincide nada)
             if session.get("_mixta_invitacion_hecha", False):
-        
-                # Normalizador para comparar sin acentos/mayúsculas
+            
+                # Normalizador: sin acentos / minúsculas
                 def _norm(s: str) -> str:
                     import unicodedata
                     s = (s or "").lower()
                     s = unicodedata.normalize("NFKD", s)
                     return "".join(ch for ch in s if not unicodedata.combining(ch))
-        
+            
                 msg = _norm(mensaje_usuario)
-        
-                # Elección por texto explícito del usuario (sin triggers emocionales)
-                preferir_clinico = any(p in msg for p in (
-                    "si", "sí", "quiero", "me gusta", "me gustaria", "me gustaría",
-                    "contar", "contarte", "decirte", "hablarlo", "charlarlo", "compartirlo",
-                    "prefiero contarte", "prefiero contarlo",
-                    "seguir por aca", "seguir por acá", "sigamos por aca", "sigamos por acá",
-                    "lo vemos aca", "lo vemos acá", "prefiero aca", "prefiero aqui", "prefiero aquí"
-                ))
-        
-                preferir_admin = any(p in msg for p in (
+            
+                # ✅ SINÓNIMOS AMPLIOS (seguir acá con el chatbot)
+                CLINICO_KEYWORDS = (
+                    # afirmaciones genéricas tras una pregunta cerrada
+                    "si", "sí", "dale", "ok", "de acuerdo", "me sirve",
+                    # intención de continuar aquí
+                    "quiero", "prefiero", "continuemos", "sigamos", "seguimos",
+                    "seguir por aca", "seguir por aqui", "seguir por aquí",
+                    "sigamos por aca", "sigamos por aqui", "sigamos por aquí",
+                    "quiero seguir aca", "quiero seguir aqui", "quiero seguir aquí",
+                    "prefiero seguir aca", "prefiero seguir aqui", "prefiero seguir aquí",
+                    "lo vemos aca", "lo vemos aqui", "lo vemos aquí",
+                    # explorar acá
+                    "quiero explorarlo", "quiero explorarlo aca",
+                    "quiero explorarlo aqui", "quiero explorarlo aquí",
+                    "prefiero explorarlo aca", "prefiero explorarlo aqui", "prefiero explorarlo aquí",
+                    # hablar/contar/conversar acá
+                    "contar", "contarte", "quiero contarte", "prefiero contarte",
+                    "te cuento", "contame",
+                    "decirte", "charlar", "charlarlo", "charlemos",
+                    "hablar", "hablarlo", "hablemos", "hablemoslo", "hablémoslo",
+                    "prefiero hablar aca", "prefiero hablar aqui", "prefiero hablar aquí",
+                    "conversar", "conversarlo", "prefiero conversar",
+                    # otras expresiones frecuentes
+                    "me gustaria", "me gustaría", "me gusta", "me viene bien",
+                    "trabajarlo aca", "trabajarlo aqui", "trabajarlo aquí",
+                    "aca", "aqui", "aquí", "por aca", "por aqui", "por aquí"
+                )
+            
+                # ✅ SINÓNIMOS AMPLIOS (contactar al licenciado / vía administrativa)
+                ADMIN_KEYWORDS = (
                     "contactar", "contactarlo", "consultarlo", "consultarle",
-                    "prefiero contacto", "prefiero hablar con", "hablar con",
-                    "sacar turno", "turno", "agendar", "agenda",
-                    "whatsapp", "wpp", "tel", "telefono", "llamar",
-                    "modalidad", "precio", "arancel", "obra social", "prepaga", "horario", "pami"
-                ))
-        
+                    "prefiero contacto", "contacto", "pasame contacto", "pásame contacto",
+                    "pasame el numero", "pásame el número", "dame el numero", "dame el número",
+                    "numero", "número", "whatsapp", "wpp", "wp", "+54",
+                    "tel", "telefono", "teléfono", "llamar", "llamá", "llamalo",
+                    "hablar con", "prefiero hablar con", "hablar con el lic", "hablar con el licenciado",
+                    "sacar turno", "sacar un turno", "turno", "agendar", "agenda", "coordinar", "coordinar un turno",
+                    "quiero un turno", "quiero coordinar",
+                    "modalidad", "precio", "arancel", "costo", "valor",
+                    "obra social", "prepaga", "pami", "presencial"
+                )
+            
+                preferir_clinico = any(k in msg for k in CLINICO_KEYWORDS)
+                preferir_admin   = any(k in msg for k in ADMIN_KEYWORDS)
+            
+                # ⚖️ Empate: si aparecen señales de ambos, priorizá ADMIN si hay intención explícita de contacto/turno
+                if preferir_clinico and preferir_admin:
+                    if any(k in msg for k in ("hablar con", "contactar", "turno", "coordinar", "whatsapp", "wpp", "tel", "telefono", "teléfono", "llamar")):
+                        preferir_clinico = False
+                    else:
+                        preferir_admin = False
+            
                 if preferir_clinico and not preferir_admin:
-                    # Marcamos continuidad clínica y dejamos que el flujo clínico normal siga más abajo
-                    session["tipo_input"] = "CLINICO_CONTINUACION"
+                    # Respuesta puente; cerramos acá para evitar rutas inestables aguas abajo
+                    respuesta = (
+                        "Perfecto. Sigamos por acá. ¿En qué momentos lo notás más y qué cambios "
+                        "aparecen en el cuerpo o en los pensamientos? Si querés, también podemos "
+                        "revisar cómo impacta en el sueño y la concentración."
+                    )
+                    session["ultimas_respuestas"].append(respuesta)
+                    session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
                     user_sessions[user_id] = session
-                    # no retornamos acá: seguimos al flujo clínico
-        
+                    return {"respuesta": respuesta}
+            
                 elif preferir_admin and not preferir_clinico:
-                    # Damos la vía administrativa y cerramos esta rama solamente
                     respuesta_admin = (
                         "De acuerdo. Si preferís resolverlo con el Lic. Bustamante, "
                         f"podés escribirle {CONTACTO_WPP}."
@@ -968,6 +1008,7 @@ async def asistente(input_data: UserInput):
                     session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
                     user_sessions[user_id] = session
                     return {"respuesta": respuesta_admin}
+
         
         except Exception as e:
             print(f"⚠️ MIXTA guardó falló: {e}")
