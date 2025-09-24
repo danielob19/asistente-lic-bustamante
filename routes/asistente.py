@@ -950,41 +950,43 @@ async def asistente(input_data: UserInput):
 
 
         # 🧠 Si el usuario respondió a la bifurcación mixta, interpretar su preferencia
-                ultimas_respuestas = session.get("ultimas_respuestas", [])
-                if ultimas_respuestas and "preferís contarme" in ultimas_respuestas[-1].lower():
-                    msg = mensaje_usuario.lower()
+        ultimas_respuestas = session.get("ultimas_respuestas", [])
+        if ultimas_respuestas and any(p in ultimas_respuestas[-1].lower() for p in (
+            "preferís contarme", "preferis contarme", "preferís contar", "preferis contar"
+        )):
+            msg = (mensaje_usuario or "").lower()
         
-                    # 👉 El usuario prefiere CONTAR acá (seguir flujo clínico)
-                    if any(frase in msg for frase in [
-                        "sí", "si", "quiero", "me gusta", "me gustaría", "gustaria",
-                        "contar", "contarte", "decirte", "hablarlo", "compartirlo",
-                        "prefiero contarte", "prefiero contarlo"
-                    ]):
-                        respuesta = (
-                            "Perfecto. Sigamos por acá. "
-                            "¿En qué momentos del trabajo lo notás más y qué cambios aparecen en el cuerpo o en los pensamientos?"
-                        )
-                        session["ultimas_respuestas"].append(respuesta)
-                        session["contador_interacciones"] += 1
-                        user_sessions[user_id] = session
-                        return {"respuesta": respuesta}
+            # El usuario prefiere CONTAR acá (seguir flujo clínico)
+            if any(frase in msg for frase in [
+                "sí", "si", "quiero", "me gusta", "me gustaría", "gustaria",
+                "contar", "contarte", "decirte", "hablarlo", "compartirlo",
+                "prefiero contarte", "prefiero contarlo"
+            ]):
+                respuesta = (
+                    "Perfecto. Sigamos por acá. ¿En qué momentos del trabajo lo notás más "
+                    "y qué cambios aparecen en el cuerpo o en los pensamientos?"
+                )
+                session["ultimas_respuestas"].append(respuesta)
+                session["contador_interacciones"] += 1
+                user_sessions[user_id] = session
+                return {"respuesta": respuesta}
         
-                    # 👉 El usuario prefiere CONTACTAR al licenciado (derivar)
-                    elif any(frase in msg for frase in [
-                        "no", "preferiría", "preferiria", "directamente",
-                        "prefiero contacto", "prefiero hablar", "contactar",
-                        "sacar turno", "agendar", "whatsapp", "wpp", "tel", "telefono",
-                        "modalidad", "precio", "arancel", "obra social", "prepaga",
-                        "horario", "pami"
-                    ]):
-                        respuesta = (
-                            "De acuerdo. Si preferís resolverlo con el Lic. Bustamante, "
-                            "podés escribirle al WhatsApp +54 911 3310-1186."
-                        )
-                        session["ultimas_respuestas"].append(respuesta)
-                        session["contador_interacciones"] += 1
-                        user_sessions[user_id] = session
-                        return {"respuesta": respuesta}
+            # El usuario prefiere CONTACTAR al licenciado (derivar)
+            elif any(frase in msg for frase in [
+                "no", "preferiría", "preferiria", "directamente",
+                "prefiero contacto", "prefiero hablar", "contactar",
+                "sacar turno", "agendar", "whatsapp", "wpp", "tel", "telefono",
+                "modalidad", "precio", "arancel", "obra social", "prepaga", "horario", "pami"
+            ]):
+                respuesta = (
+                    "De acuerdo. Si preferís resolverlo con el Lic. Bustamante, "
+                    "podés escribirle al WhatsApp +54 911 3310-1186."
+                )
+                session["ultimas_respuestas"].append(respuesta)
+                session["contador_interacciones"] += 1
+                user_sessions[user_id] = session
+                return {"respuesta": respuesta}
+
 
 
         # ✅ Frases neutrales que no deben analizarse emocionalmente
