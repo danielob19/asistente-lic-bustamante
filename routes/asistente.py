@@ -896,7 +896,8 @@ async def asistente(input_data: UserInput):
                 print(f"🧠 Emociones registradas/actualizadas en sesión: {emociones_actuales}")
             
                                     
-        
+        # --- Invitación mixta universal (contextual) + elección ---
+        try:
             # Invitación mixta universal (contextual)
             disp = extraer_disparadores(mensaje_usuario)
             contexto = resumir_disparadores(disp)
