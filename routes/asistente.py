@@ -13,6 +13,8 @@ from core.utils.motor_fallback import (
 
 
 from core.utils.generador_openai import generar_respuesta_con_openai  # ya lo usás
+from core.utils.disparadores import extraer_disparadores, resumir_disparadores
+
 
 
 # funciones clínicas adicionales (si las usás)
