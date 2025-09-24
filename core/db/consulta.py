@@ -93,31 +93,29 @@ def obtener_combinaciones_no_registradas(dias=7):
     en historial_clinico_usuario en los últimos 'dias'.
     """
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-
         fecha_limite = datetime.now() - timedelta(days=dias)
-
-        consulta = """
-            SELECT DISTINCT emociones, fecha
-            FROM public.historial_clinico_usuario
-            WHERE fecha >= %s
-              AND array_length(emociones, 1) > 1
-            ORDER BY fecha DESC;
-        """
-        cursor.execute(consulta, (fecha_limite,))
-        combinaciones = cursor.fetchall()
-        conn.close()
+        with psycopg2.connect(DATABASE_URL) as conn, conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT DISTINCT emociones, fecha
+                FROM public.historial_clinico_usuario
+                WHERE fecha >= %s
+                  AND array_length(emociones, 1) > 1
+                ORDER BY fecha DESC
+            """, (fecha_limite,))
+            combinaciones = cursor.fetchall()
 
         print(f"\n📋 Combinaciones emocionales registradas (últimos {dias} días):")
         for emociones, fecha in combinaciones:
-            print(f" - {', '.join(emociones)} @ {fecha.strftime('%Y-%m-%d %H:%M')}")
+            try:
+                print(f" - {', '.join(emociones)} @ {fecha.strftime('%Y-%m-%d %H:%M')}")
+            except Exception:
+                pass
 
         return combinaciones
-
     except Exception as e:
         print(f"❌ Error al obtener combinaciones emocionales: {e}")
         return []
+
 
 
 def es_saludo(texto: str) -> bool:
