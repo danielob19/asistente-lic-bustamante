@@ -948,8 +948,9 @@ async def asistente(input_data: UserInput):
             
                 # ✅ SINÓNIMOS AMPLIOS (seguir acá con el chatbot)
                 CLINICO_KEYWORDS = (
-                    # afirmaciones genéricas tras una pregunta cerrada
-                    "si", "sí", "dale", "ok", "de acuerdo", "me sirve",
+                    # afirmaciones genéricas
+                    "si", "sí", "afirmativo", "si afirmativo", "sí afirmativo",
+                    "digo que si", "digo que sí", "de acuerdo", "ok", "dale", "me sirve", "correcto",
                     # intención de continuar aquí
                     "quiero", "prefiero", "continuemos", "sigamos", "seguimos",
                     "seguir por aca", "seguir por aqui", "seguir por aquí",
@@ -958,9 +959,8 @@ async def asistente(input_data: UserInput):
                     "prefiero seguir aca", "prefiero seguir aqui", "prefiero seguir aquí",
                     "lo vemos aca", "lo vemos aqui", "lo vemos aquí",
                     # explorar acá
-                    "quiero explorarlo", "quiero explorarlo aca",
-                    "quiero explorarlo aqui", "quiero explorarlo aquí",
-                    "prefiero explorarlo aca", "prefiero explorarlo aqui", "prefiero explorarlo aquí",
+                    "quiero explorarlo", "quiero explorarlo aca", "quiero explorarlo aqui", "quiero explorarlo aquí",
+                    "prefiero explorarlo", "prefiero explorarlo aca", "prefiero explorarlo aqui", "prefiero explorarlo aquí",
                     # hablar/contar/conversar acá
                     "contar", "contarte", "quiero contarte", "prefiero contarte",
                     "te cuento", "contame",
@@ -980,7 +980,7 @@ async def asistente(input_data: UserInput):
                     "prefiero contacto", "contacto", "pasame contacto", "pásame contacto",
                     "pasame el numero", "pásame el número", "dame el numero", "dame el número",
                     "numero", "número", "whatsapp", "wpp", "wp", "+54",
-                    "tel", "telefono", "teléfono", "llamar", "llamá", "llamalo",
+                    "tel", "telefono", "teléfono", "llamar", "llama", "llamá", "llamalo",
                     "hablar con", "prefiero hablar con", "hablar con el lic", "hablar con el licenciado",
                     "sacar turno", "sacar un turno", "turno", "agendar", "agenda", "coordinar", "coordinar un turno",
                     "quiero un turno", "quiero coordinar",
@@ -993,7 +993,11 @@ async def asistente(input_data: UserInput):
             
                 # ⚖️ Empate: si aparecen señales de ambos, priorizá ADMIN si hay intención explícita de contacto/turno
                 if preferir_clinico and preferir_admin:
-                    if any(k in msg for k in ("hablar con", "contactar", "turno", "coordinar", "whatsapp", "wpp", "tel", "telefono", "teléfono", "llamar")):
+                    admin_tie_break = (
+                        "hablar con", "contactar", "turno", "coordinar",
+                        "whatsapp", "wpp", "tel", "telefono", "llamar", "numero", "número", "presencial"
+                    )
+                    if any(k in msg for k in admin_tie_break):
                         preferir_clinico = False
                     else:
                         preferir_admin = False
@@ -1019,6 +1023,7 @@ async def asistente(input_data: UserInput):
                     session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
                     user_sessions[user_id] = session
                     return {"respuesta": respuesta_admin}
+
 
         
         except Exception as e:
