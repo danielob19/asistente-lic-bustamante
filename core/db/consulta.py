@@ -274,6 +274,15 @@ def registrar_interaccion_clinica(
         sintomas if sintomas else None,
         interaccion_id,
     )
-    rows = ejecutar_consulta(sql, params)
-    return rows[0]["id"]
+    try:
+        # Usamos conexión directa para poder hacer RETURNING + COMMIT de forma segura
+        with psycopg2.connect(DATABASE_URL) as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(sql, params)
+            row = cur.fetchone()          # trae {"id": ...}
+            conn.commit()                 # persistimos la inserción
+            return (row or {}).get("id")  # int | None
+    except Exception as e:
+        print(f"❌ registrar_interaccion_clinica falló: {e}")
+        return None
+
 
