@@ -897,14 +897,24 @@ async def asistente(input_data: UserInput):
             
                                     
         
-        # --- Intención MIXTA: invitar una sola vez y luego interpretar la preferencia ---
-        try:
-            # 1) Si la intención es MIXTA y aún no invitamos, hacemos la invitación una sola vez
-            if intencion_general == "MIXTA" and not session.get("_mixta_invitacion_hecha", False):
-                # Invitación MIxTA contextual (universal)
-                disp = extraer_disparadores(mensaje_usuario)
-                contexto = resumir_disparadores(disp)  # ej.: "cuando estoy por dormir", "en la oficina", "de noche"
-        
+            # Invitación mixta universal (contextual)
+            disp = extraer_disparadores(mensaje_usuario)
+            contexto = resumir_disparadores(disp)
+            
+            def hay_contexto(d):
+                return bool(
+                    d and (
+                        d.get("frases") or d.get("momentos") or d.get("lugares") or d.get("actividades")
+                    )
+                )
+            
+            # Dispara la invitación si:
+            # - la intención fue MIXTA o CLINICA, o
+            # - hay CONTEXTO clínico detectado (aunque venga INDEFINIDA),
+            # y aún no invitamos en esta conversación.
+            if (intencion_general in ("MIXTA", "CLINICA") or hay_contexto(disp)) \
+                    and not session.get("_mixta_invitacion_hecha", False):
+            
                 if contexto:
                     respuesta_mixta = (
                         f"Entiendo que aparece algo personal {contexto}. "
@@ -915,13 +925,14 @@ async def asistente(input_data: UserInput):
                         "Entiendo que aparece algo personal. "
                         f"¿Preferís explorarlo acá un momento o contactarlo al Lic. Bustamante {CONTACTO_WPP}?"
                     )
-        
+            
                 session["_mixta_invitacion_hecha"] = True
-                session["_mixta_contexto"] = contexto  # opcional: por si luego querés reutilizarlo
+                session["_mixta_contexto"] = contexto  # opcional, por si luego querés reutilizarlo
                 session["ultimas_respuestas"].append(respuesta_mixta)
                 session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
                 user_sessions[user_id] = session
                 return {"respuesta": respuesta_mixta}
+
         
             # 2) Si ya invitamos, interpretamos qué eligió el usuario (sin romper si no coincide nada)
             if session.get("_mixta_invitacion_hecha", False):
