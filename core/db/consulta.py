@@ -231,9 +231,6 @@ def obtener_ultima_interaccion_emocional(user_id: str) -> Optional[dict]:
 
 
 
-
-
-
 def registrar_interaccion_clinica(
     user_id: str,
     emociones: Optional[List[str]] = None,
