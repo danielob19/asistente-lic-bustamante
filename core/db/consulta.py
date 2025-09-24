@@ -4,6 +4,8 @@ from core.constantes import DATABASE_URL
 from typing import Optional
 from .conexion import ejecutar_consulta
 from typing import List, Optional
+from psycopg2.extras import RealDictCursor
+
 
 
 def obtener_emociones_ya_registradas(user_id: str) -> set[str]:
