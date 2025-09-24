@@ -49,16 +49,20 @@ def obtener_sintomas_existentes(user_id: str | None = None) -> set[str]:
         params = (user_id,)
 
     sql = f"""
-        SELECT COALESCE(sintomas, '{{}}') AS sintomas
+        SELECT COALESCE(sintomas, ARRAY[]::text[]) AS sintomas
         FROM public.historial_clinico_usuario
         {where}
     """
-    filas = ejecutar_consulta(sql, params)
-    res = set()
-    for f in filas or []:
-        for s in f.get("sintomas", []) or []:
-            res.add(s)
+    filas = ejecutar_consulta(sql, params) or []
+    res: set[str] = set()
+    for f in filas:
+        sintomas = f.get("sintomas") or []
+        # normalizar a str y agregar al set
+        for s in sintomas:
+            if s and isinstance(s, str):
+                res.add(s.strip().lower())
     return res
+
 
 
 
