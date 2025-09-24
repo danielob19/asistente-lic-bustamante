@@ -1,10 +1,11 @@
 import psycopg2
 from datetime import datetime, timedelta
-from core.constantes import DATABASE_URL
-from typing import Optional
-from .conexion import ejecutar_consulta
 from typing import List, Optional
 from psycopg2.extras import RealDictCursor
+
+from core.constantes import DATABASE_URL
+from core.db.conexion import ejecutar_consulta
+
 
 
 
