@@ -901,11 +901,23 @@ async def asistente(input_data: UserInput):
         try:
             # 1) Si la intención es MIXTA y aún no invitamos, hacemos la invitación una sola vez
             if intencion_general == "MIXTA" and not session.get("_mixta_invitacion_hecha", False):
-                respuesta_mixta = (
-                    "Entiendo que estás buscando información sobre psicoterapia, pero también aparece un aspecto personal. "
-                    "¿Preferís contarme un poco más sobre cómo lo estás viviendo últimamente o querés resolverlo directamente con el Lic. Bustamante?"
-                )
+                # Invitación MIxTA contextual (universal)
+                disp = extraer_disparadores(mensaje_usuario)
+                contexto = resumir_disparadores(disp)  # ej.: "cuando estoy por dormir", "en la oficina", "de noche"
+        
+                if contexto:
+                    respuesta_mixta = (
+                        f"Entiendo que aparece algo personal {contexto}. "
+                        f"¿Preferís explorarlo acá un momento o contactarlo al Lic. Bustamante {CONTACTO_WPP}?"
+                    )
+                else:
+                    respuesta_mixta = (
+                        "Entiendo que aparece algo personal. "
+                        f"¿Preferís explorarlo acá un momento o contactarlo al Lic. Bustamante {CONTACTO_WPP}?"
+                    )
+        
                 session["_mixta_invitacion_hecha"] = True
+                session["_mixta_contexto"] = contexto  # opcional: por si luego querés reutilizarlo
                 session["ultimas_respuestas"].append(respuesta_mixta)
                 session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
                 user_sessions[user_id] = session
@@ -913,32 +925,44 @@ async def asistente(input_data: UserInput):
         
             # 2) Si ya invitamos, interpretamos qué eligió el usuario (sin romper si no coincide nada)
             if session.get("_mixta_invitacion_hecha", False):
-                msg = (mensaje_usuario or "").lower()
+        
+                # Normalizador para comparar sin acentos/mayúsculas
+                def _norm(s: str) -> str:
+                    import unicodedata
+                    s = (s or "").lower()
+                    s = unicodedata.normalize("NFKD", s)
+                    return "".join(ch for ch in s if not unicodedata.combining(ch))
+        
+                msg = _norm(mensaje_usuario)
         
                 # Elección por texto explícito del usuario (sin triggers emocionales)
-                preferir_clinico = any(t in msg for t in (
-                    "si", "sí", "quiero", "me gust", "contar", "decirte",
-                    "hablarlo", "compartirlo", "prefiero hablar"
+                preferir_clinico = any(p in msg for p in (
+                    "si", "sí", "quiero", "me gusta", "me gustaria", "me gustaría",
+                    "contar", "contarte", "decirte", "hablarlo", "charlarlo", "compartirlo",
+                    "prefiero contarte", "prefiero contarlo",
+                    "seguir por aca", "seguir por acá", "sigamos por aca", "sigamos por acá",
+                    "lo vemos aca", "lo vemos acá", "prefiero aca", "prefiero aqui", "prefiero aquí"
                 ))
         
-                preferir_admin = any(t in msg for t in (
-                    "no", "preferiría", "preferiria", "directamente",
-                    "prefiero contacto", "contactar", "sacar turno", "agendar",
-                    "whatsapp", "wpp", "tel", "telefono",
-                    "modalidad", "precio", "arancel", "obra social", "prepaga", "horario"
+                preferir_admin = any(p in msg for p in (
+                    "contactar", "contactarlo", "consultarlo", "consultarle",
+                    "prefiero contacto", "prefiero hablar con", "hablar con",
+                    "sacar turno", "turno", "agendar", "agenda",
+                    "whatsapp", "wpp", "tel", "telefono", "llamar",
+                    "modalidad", "precio", "arancel", "obra social", "prepaga", "horario", "pami"
                 ))
         
-                if preferir_clinico:
+                if preferir_clinico and not preferir_admin:
                     # Marcamos continuidad clínica y dejamos que el flujo clínico normal siga más abajo
                     session["tipo_input"] = "CLINICO_CONTINUACION"
                     user_sessions[user_id] = session
                     # no retornamos acá: seguimos al flujo clínico
         
-                elif preferir_admin:
+                elif preferir_admin and not preferir_clinico:
                     # Damos la vía administrativa y cerramos esta rama solamente
                     respuesta_admin = (
-                        f"Podés coordinar un turno por WhatsApp {CONTACTO_WPP}. "
-                        "Atiende lun–vie de 13:00 a 20:00, modalidad online."
+                        "De acuerdo. Si preferís resolverlo con el Lic. Bustamante, "
+                        f"podés escribirle {CONTACTO_WPP}."
                     )
                     session["ultimas_respuestas"].append(respuesta_admin)
                     session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
@@ -947,7 +971,8 @@ async def asistente(input_data: UserInput):
         
         except Exception as e:
             print(f"⚠️ MIXTA guardó falló: {e}")
-        # No cortamos la conversación; dejamos que continúe el flujo clínico normal
+            # No cortamos la conversación; dejamos que continúe el flujo clínico normal
+
 
 
 
