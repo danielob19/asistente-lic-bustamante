@@ -949,8 +949,7 @@ async def asistente(input_data: UserInput):
 
 
 
-
-                # 🧠 Si el usuario respondió a la bifurcación mixta, interpretar su preferencia
+        # 🧠 Si el usuario respondió a la bifurcación mixta, interpretar su preferencia
                 ultimas_respuestas = session.get("ultimas_respuestas", [])
                 if ultimas_respuestas and "preferís contarme" in ultimas_respuestas[-1].lower():
                     msg = mensaje_usuario.lower()
