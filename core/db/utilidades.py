@@ -7,40 +7,40 @@ import psycopg2
 
 def gestionar_combinacion_emocional(emocion1, emocion2):
     """
-    Consulta la tabla 'disparadores_emocionales' para una frase clínica correspondiente a una combinación de emociones.
-    Si no la encuentra, registra automáticamente la combinación en 'combinaciones_no_registradas'.
+    Devuelve la frase clínica para la combinación (emocion1, emocion2).
+    Si no existe, registra la combinación en 'combinaciones_no_registradas'.
+    Nunca rompe: ante error devuelve "".
     """
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-
-        consulta = """
-            SELECT texto_disparador FROM disparadores_emocionales
+        # 1) Intentar frase ya cargada (nombres de columnas según tu tabla)
+        sel = """
+            SELECT texto_disparador
+            FROM disparadores_emocionales
             WHERE (emocion_1 = %s AND emocion_2 = %s)
                OR (emocion_1 = %s AND emocion_2 = %s)
             LIMIT 1;
         """
-        cursor.execute(consulta, (emocion1, emocion2, emocion2, emocion1))
-        resultado = cursor.fetchone()
+        rows = ejecutar_consulta_db(sel, (emocion1, emocion2, emocion2, emocion1)) or []
+        if rows:
+            # RealDictCursor → dict. Si en tu tabla el campo se llama distinto, dejamos fallback.
+            frase = (rows[0] or {}).get("texto_disparador") or (rows[0] or {}).get("frase")
+            if frase:
+                return frase
 
-        if resultado:
-            conn.close()
-            return resultado[0]
-
-        print(f"🆕 Combinación emocional no registrada: {emocion1} + {emocion2}")
-        cursor.execute("""
+        # 2) Si no existe, registrar la combinación (best effort, no rompe si falla)
+        ins = """
             INSERT INTO combinaciones_no_registradas (emocion_1, emocion_2)
             VALUES (%s, %s)
             ON CONFLICT DO NOTHING;
-        """, (emocion1.lower(), emocion2.lower()))
+        """
+        _ = ejecutar_consulta_db(ins, (str(emocion1).lower(), str(emocion2).lower()), commit=True)
 
-        conn.commit()
-        conn.close()
-        return None
+        return ""  # default seguro si no hay frase configurada
 
     except Exception as e:
-        print(f"❌ Error al gestionar combinación emocional: {e}")
-        return None
+        print(f"⚠️ gestionar_combinacion_emocional falló: {e}")
+        return ""
+
 
 
 
