@@ -516,7 +516,31 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     session.setdefault("intenciones_clinicas_acumuladas", [])
     session.setdefault("input_sospechoso", False)
 
+    
 
+    # --- Utilidades locales (deben estar disponibles antes de usarlas) ---
+    def _limpiar_lista_str(xs):
+        if not xs:
+            return []
+        import re
+        return [re.sub(r"\s+", " ", x.strip().lower()) for x in xs if isinstance(x, str) and x.strip()]
+    
+    
+    def _get_col(row, idx=None, key=None, default=None):
+        """
+        Accede de forma segura a una columna de un row que puede ser tupla/lista o dict.
+        """
+        if isinstance(row, (list, tuple)):
+            try:
+                return row[idx]
+            except Exception:
+                return default
+        if isinstance(row, dict):
+            if key is not None and key in row:
+                return row.get(key, default)
+            return default
+        return default
+    
 
     
     def _bootstrap_session_desde_db(user_id: str, session: dict) -> dict:
@@ -586,31 +610,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     
     session = _bootstrap_session_desde_db(user_id, session or {})
 
-
-    # --- Utilidades locales ---
-    def _limpiar_lista_str(xs):
-        if not xs:
-            return []
-        return [re.sub(r"\s+", " ", x.strip().lower()) for x in xs if isinstance(x, str) and x.strip()]
-
-
-    def _get_col(row, idx=None, key=None, default=None):
-        """
-        Accede de forma segura a una columna de un row que puede ser tupla/lista o dict.
-        - Si es (list, tuple) usa `idx`
-        - Si es dict usa `key`
-        - Si falla, devuelve `default`
-        """
-        if isinstance(row, (list, tuple)):
-            try:
-                return row[idx]
-            except Exception:
-                return default
-        if isinstance(row, dict):
-            if key is not None and key in row:
-                return row.get(key, default)
-            return default
-        return default
 
 
     def _parse_json_emociones(payload: str) -> tuple[list[str], str]:
