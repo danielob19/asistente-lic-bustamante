@@ -476,16 +476,45 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
       - Reingreso producción: recordar emociones/cuadro previos si pasaron ≥60s y preguntar por emociones nuevas.
     """
 
-    # --- Extraer inputs ---
-    mensaje_original = input_data["mensaje_original"]
-    mensaje_usuario = input_data["mensaje_usuario"]
-    user_id = input_data["user_id"]
-    session = input_data["session"]
+    # --- Extraer inputs (robusto) ---
+    # Acepta 'mensaje_original' o, como respaldo, 'mensaje' (por compatibilidad)
+    mensaje_original = input_data.get("mensaje_original") or input_data.get("mensaje")
+    if not isinstance(mensaje_original, str) or not mensaje_original.strip():
+        raise ValueError("Falta 'mensaje_original' (o 'mensaje') en input_data al llamar a procesar_clinico")
+
+    # Si no viene 'mensaje_usuario', lo derivamos de 'mensaje_original' normalizado
+    mensaje_usuario = input_data.get("mensaje_usuario")
+    if not isinstance(mensaje_usuario, str) or not mensaje_usuario.strip():
+        import unicodedata
+        mensaje_usuario = unicodedata.normalize("NFKD", mensaje_original).encode("ASCII", "ignore").decode("utf-8").lower()
+
+    user_id = input_data.get("user_id")
+    if not isinstance(user_id, str) or not user_id.strip():
+        raise ValueError("Falta 'user_id' en input_data al llamar a procesar_clinico")
+
+    session = input_data.get("session") or {}
+    if not isinstance(session, dict):
+        # tolera tipos mapeables (p.ej. pydantic/BaseModel.dict())
+        try:
+            session = dict(session)
+        except Exception:
+            session = {}
+
     contador_raw = input_data.get("contador")
     try:
         contador = int(contador_raw) if contador_raw is not None else 1
     except Exception:
         contador = 1
+
+    # Semillas de sesión mínimas (idempotentes)
+    session.setdefault("emociones_detectadas", [])
+    session.setdefault("cuadro_clinico_probable", None)
+    session.setdefault("_apendice_cuadro", "")
+    session.setdefault("ultimas_respuestas", [])
+    session.setdefault("mensajes", [])
+    session.setdefault("intenciones_previas", [])
+    session.setdefault("intenciones_clinicas_acumuladas", [])
+    session.setdefault("input_sospechoso", False)
 
 
 
