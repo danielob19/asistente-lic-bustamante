@@ -147,13 +147,16 @@ emociones_clinicas = {
     "tristeza": ["triste", "deprimido", "bajoneado", "vacío"],
 }
 
-def detectar_emocion(texto: str) -> str | None:
-    texto = texto.lower()
+
+
+def detectar_emocion(texto: str) -> Optional[str]:
+    texto = (texto or "").lower()
     for emocion, variantes in emociones_clinicas.items():
         for variante in variantes:
             if re.search(rf"\b{re.escape(variante)}\b", texto):
                 return emocion
     return None
+
 
 
 
