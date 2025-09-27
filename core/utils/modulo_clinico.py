@@ -756,9 +756,10 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                         if not e:
                             continue
                         map_emo_to_cuadro.setdefault(e, set()).add(cuadro_prev)
-                print(f"🧮 Seed local map_emo_to_cuadro → {len(map_emo_to_cuadro)} emociones")
+                logger.info("Seed local map_emo_to_cuadro",
+                            extra={"total_emociones": len(map_emo_to_cuadro)})
             except Exception as ex:
-                print(f"⚠️ No se pudo seedear map_emo_to_cuadro: {ex}")
+                logger.exception("No se pudo seedear map_emo_to_cuadro")
 
 
 
