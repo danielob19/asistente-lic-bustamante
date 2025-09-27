@@ -955,7 +955,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             interaccion_id=contador,
         )
     except Exception as ex:
-        print(f"🔴 Error registrando interacción clínica: {ex}")
+        logger.exception("Error registrando interacción clínica")
     
     return {
         "respuesta": texto_final,
