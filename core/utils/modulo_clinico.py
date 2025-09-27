@@ -783,7 +783,15 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             objetivo = objetivo_openai
         
         # Mini-log para depurar la reconciliación
-        print(f"⚖️ Reconciliación de cuadro → openai='{objetivo_openai}', counts={counts}, elegido='{objetivo}'")
+        logger.info(
+            "Reconciliación de cuadro (auxiliar)",
+            extra={
+                "objetivo_openai": objetivo_openai,
+                "counts": counts,
+                "elegido": objetivo,
+            }
+        )
+
         
         # Inicialización como antes
         votos = 0
