@@ -842,7 +842,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
             ultima=ultima,
         )
     except Exception as ex:
-        print(f"⚠️ Error armando recordatorio contextual: {ex}")
+        logger.exception("Error armando recordatorio contextual")
 
     
 
