@@ -898,7 +898,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
                 session["disparo_cuadro"] = objetivo
     
         except Exception as ex:
-            print(f"🔴 Error en disparador: {ex}")
+            logger.exception("Error en disparador clínico")
     
 
 
