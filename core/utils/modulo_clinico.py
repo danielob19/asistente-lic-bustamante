@@ -838,8 +838,15 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     
     # Reconciliación: si OpenAI no trajo cuadro, usamos el fallback (objetivo)
     cuadro_final = (objetivo or cuadro_openai or "").strip().lower()
-    print(f"⚖️ Reconciliación de cuadro → openai='{cuadro_openai}', elegido='{cuadro_final}'")
+    logger.info(
+        "Reconciliación de cuadro (principal)",
+        extra={
+            "cuadro_openai": cuadro_openai,
+            "cuadro_final": cuadro_final,
+        }
+    )
     
+        
 
     # 4) Contexto temporal emocional (siempre, contextual y humano)
     recordatorio = ""
