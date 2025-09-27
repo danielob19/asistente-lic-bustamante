@@ -15,6 +15,9 @@ except Exception:
 
 from core.db.conexion import ejecutar_consulta
 
+import logging
+logger = logging.getLogger(__name__)
+
 # --- unidecode opcional: usa la librería si está, si no hace fallback con unicodedata ---
 try:
     from unidecode import unidecode  # si está instalado, lo usamos
