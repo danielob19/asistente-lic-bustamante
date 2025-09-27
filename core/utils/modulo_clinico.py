@@ -449,7 +449,7 @@ def _openai_respuesta_terapeutica(mensaje_usuario: str, recordatorio: str) -> st
         texto = generar_respuesta_con_openai(prompt, temperature=0.3, max_tokens=280)
         return (texto or "").strip()
     except Exception as ex:
-        print(f"⚠️ _openai_respuesta_terapeutica falló: {ex}")
+        logger.exception("_openai_respuesta_terapeutica falló")
         # Fallback súper breve por si la API falla (no debería activarse casi nunca)
         return (
             "Gracias por contarlo. ¿En qué situaciones se intensifica más y qué notás en el cuerpo "
