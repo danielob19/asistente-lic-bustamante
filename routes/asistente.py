@@ -102,7 +102,14 @@ import traceback
 import os
 
 import logging
-logging.basicConfig(level=logging.INFO)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
 
 
 # -- Sesiones en memoria (fallback seguro) --
