@@ -3,7 +3,6 @@ import re
 from typing import Iterable
 import unicodedata
 import string
-from typing import Optional
 from typing import Dict, Any, Optional, List
 import os
 from datetime import datetime, timezone
