@@ -709,7 +709,7 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     
                 except Exception as ex:
                     # network/timeout/rate-limit → reintento ligero
-                    print(f"⚠️ intento {intento}: OpenAI falló: {ex}")
+                    logger.exception("OpenAI falló durante intento de JSON clínico")
                     continue
     
         # Si llegamos acá, no conseguimos una salida válida
