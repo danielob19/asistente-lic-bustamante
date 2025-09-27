@@ -279,6 +279,7 @@ def _citar_breve(texto: str, max_chars: int = 70) -> str:
     t = " ".join(str(texto or "").strip().strip('“”"\'').split())
     return (t[:max_chars] + "…") if len(t) > max_chars else t
 
+
 def _es_texto_de_bot(t: str) -> bool:
     s = (t or "").lower()
     gatillos = ("me comentaste", "hace ", " hs", "¿ocurrió algo", "cuadro clínico probable", "gracias por contarlo")
