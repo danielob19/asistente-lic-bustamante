@@ -120,7 +120,7 @@ def recuperar_historial_clinico(user_id, limite=5):
         resultados = ejecutar_consulta(query, (user_id, limite))
         return resultados or []
     except Exception as e:
-        print(f"🔴 Error al recuperar historial clínico: {e}")
+        logger.exception("Error al recuperar historial clínico")
         return []
 
 def construir_resumen_historial(historial):
