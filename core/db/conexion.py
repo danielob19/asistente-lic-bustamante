@@ -2,40 +2,35 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from core.constantes import DATABASE_URL
+import logging
 
-def ejecutar_consulta(query, params=None, commit=False):
+logger = logging.getLogger(__name__)
+
+def ejecutar_consulta(query: str, params=None, commit: bool = False):
     """
     Ejecuta una consulta segura:
     - Nunca propaga excepciones (evita 500).
-    - Para SELECT: devuelve lista (posiblemente vacía).
-    - Para INSERT/UPDATE/DELETE con commit=True: devuelve True si se confirmó, False si falló.
+    - SELECT: devuelve list[dict] (posiblemente vacía).
+    - INSERT/UPDATE/DELETE con commit=True: devuelve True si se confirmó, False si falló.
     """
-    conn = None
-    cur = None
+    params = params or ()
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute(query, params or ())
-        if commit:
-            conn.commit()
-            return True
-        try:
-            rows = cur.fetchall()
-        except psycopg2.ProgrammingError:
-            rows = []
-        return rows or []
-    except Exception as e:
-        # Loguea pero NO rompe el request
-        print(f"🔴 ejecutar_consulta falló: {e}")
+        # Ajusta sslmode si tu proveedor lo exige (por ej. 'require')
+        conn = psycopg2.connect(DATABASE_URL, connect_timeout=5)  # , sslmode="require"
+        with conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(query, params)
+                if commit:
+                    return True
+                try:
+                    rows = cur.fetchall()
+                except psycopg2.ProgrammingError:
+                    rows = []
+                return rows or []
+    except Exception:
+        # Log estructurado + stack trace
+        logger.exception("ejecutar_consulta falló", extra={
+            "query": query,
+            "commit": commit,
+        })
         return False if commit else []
-    finally:
-        try:
-            if cur is not None:
-                cur.close()
-        except Exception:
-            pass
-        try:
-            if conn is not None:
-                conn.close()
-        except Exception:
-            pass
