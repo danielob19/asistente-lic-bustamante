@@ -183,7 +183,8 @@ def armar_respuesta_humana(
     mensaje_usuario: str,
     emociones: list[str] | None = None,
     cuadro: str | None = None,
-    recordatorio: str = ""
+    recordatorio: str = "",
+    contexto_literal: str | None = None,  # ← NUEVO
 ) -> str:
     """
     Respuesta breve, natural y clínica:
