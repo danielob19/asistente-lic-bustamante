@@ -154,7 +154,44 @@ def _try_openai(prompt: str, **kwargs) -> str:
         return _fallback_clinico()
 
 
-# -------------------------------------------------------------------------------
+# --------------------------HELPERS---------------------------------------------
+
+# --- Salida centralizada ------------------------------------------------------
+def _finalizar_no_vacio(texto: str, session: dict) -> str:
+    """
+    Asegura que la respuesta NUNCA sea vacía.
+    Si viene vacío, usa contexto_literal si existe; si no, usa un fallback clínico útil.
+    Luego delega el cierre estandarizado a _finalizar_respuesta().
+    """
+    texto = (texto or "").strip()
+    if not texto:
+        ctx = session.get("contexto_literal")
+        texto = (
+            f"Gracias por contarlo. ¿Con qué frecuencia te sucede en {ctx}? ¿Desde cuándo lo notás?"
+            if ctx else
+            "Gracias por contarlo. ¿En qué momentos notás que se intensifica y qué cambia en el cuerpo o en los pensamientos cuando aparece?"
+        )
+    # aplica apéndice clínico + contacto + sanitizado
+    return _finalizar_respuesta(
+        texto,
+        apendice=session.get("_apendice_cuadro", ""),
+        incluir_contacto=True,
+    )
+
+def _ret(session: dict, user_id: str, texto: str) -> dict:
+    """
+    Punto ÚNICO de salida:
+    - Garantiza no-vacío y cierre estandarizado.
+    - Actualiza sesión con la respuesta.
+    - Devuelve el dict esperado por el frontend.
+    """
+    out = _finalizar_no_vacio(texto, session)
+    try:
+        session.setdefault("ultimas_respuestas", []).append(out)
+    except Exception:
+        pass
+    user_sessions[user_id] = session
+    return {"respuesta": out}
 
 
 # --- Helpers de cierre de respuesta -----------------------------------------
