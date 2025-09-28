@@ -1320,12 +1320,22 @@ async def asistente(input_data: UserInput):
 
                 # === PUERTA DE ENTRADA AL MÓDULO CLÍNICO ===
                 if clasificacion == "CLINICO" or session.get("tipo_input") == "CLINICO_CONTINUACION":
+                    # Asegurate de tener esto definido antes:
+                    # user_id = input_data.user_id
+                    # mensaje_original = input_data.mensaje
+                    # mensaje_usuario = mensaje_original  # o tu versión normalizada
+                    # session = obtener_sesion(user_id)   # si no la tenés ya
+                
                     out = procesar_clinico({
                         "user_id": user_id,
+                        "mensaje_original": mensaje_original,                         # ← clave faltante
                         "mensaje_usuario": mensaje_usuario,
+                        "session": session,                                           # ← pasa la sesión completa
+                        "contador": session.get("contador_interacciones", 0) + 1,     # ← contador para trazabilidad
                         "emociones_session": session.get("emociones_detectadas", []),
                         "cuadro_openai": session.get("cuadro_clinico_probable", None),
                     })
+                
                     texto = out.get("respuesta", "").strip() or (
                         "Gracias por compartirlo. ¿En qué momentos notás que se intensifica y qué cambia en el cuerpo "
                         "o en los pensamientos cuando aparece?"
@@ -1339,6 +1349,7 @@ async def asistente(input_data: UserInput):
                 
                     user_sessions[user_id] = session
                     return {"respuesta": texto}
+                
 
         
         except Exception:
