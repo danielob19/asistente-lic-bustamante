@@ -205,7 +205,6 @@ def armar_respuesta_humana(
 
     def _es_parrot(resp: str, user: str) -> bool:
         # si la salida es prácticamente el texto del usuario
-        import re
         a = re.sub(r"\s+", " ", resp.lower()).strip()
         b = re.sub(r"\s+", " ", (user or "").lower()).strip()
         if not a or not b:
