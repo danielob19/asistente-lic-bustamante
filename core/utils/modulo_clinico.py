@@ -412,6 +412,32 @@ def construir_recordatorio_contextual(
 
 
 
+def _extraer_contexto_literal(texto: str) -> str | None:
+    """
+    Extrae un CONTEXTO literal (substring) sin listas cerradas.
+    Soporta patrones naturales: 'en ...', 'cuando ...', 'durante ...', 'al ...',
+    'antes de ...', 'después de ...'. Devuelve None si no encuentra.
+    """
+    t = " ".join((texto or "").strip().strip("“”\"'").split())
+    if not t:
+        return None
+
+    patrones = [
+        r"\b(?:en|en el|en la|en los|en las)\s+([a-z0-9áéíóúñü .,'-]{2,80})",
+        r"\b(?:cuando|mientras|durante)\s+([a-z0-9áéíóúñü .,'-]{2,80})",
+        r"\b(?:al|antes de|después de)\s+([a-z0-9áéíóúñü .,'-]{2,80})",
+    ]
+    for p in patrones:
+        m = re.search(p, t, flags=re.IGNORECASE)
+        if not m:
+            continue
+        ctx = m.group(1).strip(" .,!?:;")
+        # Cortar en conectores para no “comer” toda la oración
+        ctx = re.split(r"\b(?:y|pero|aunque|porque|que|con|sin)\b", ctx)[0].strip(" .,!?:;")
+        if 2 <= len(ctx) <= 80:
+            return ctx
+    return None
+
 
 
 
