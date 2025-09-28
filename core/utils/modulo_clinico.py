@@ -524,6 +524,14 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     except Exception:
         contador = 1
 
+    # --- Contexto literal para enriquecer prompts (no listas cerradas) ---
+    contexto_literal = session.get("contexto_literal")
+    if not contexto_literal:
+        contexto_literal = _extraer_contexto_literal(mensaje_original) or _extraer_contexto_literal(mensaje_usuario)
+        if contexto_literal:
+            session["contexto_literal"] = contexto_literal
+
+
     # Semillas de sesión mínimas (idempotentes)
     session.setdefault("emociones_detectadas", [])
     session.setdefault("cuadro_clinico_probable", None)
@@ -540,7 +548,6 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     def _limpiar_lista_str(xs):
         if not xs:
             return []
-        import re
         return [re.sub(r"\s+", " ", x.strip().lower()) for x in xs if isinstance(x, str) and x.strip()]
     
     
