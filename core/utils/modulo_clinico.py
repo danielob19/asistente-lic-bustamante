@@ -463,28 +463,34 @@ def _extraer_contexto_literal(texto: str) -> str | None:
 
 
 
-def _openai_respuesta_terapeutica(mensaje_usuario: str, recordatorio: str) -> str:
+def _openai_respuesta_terapeutica(mensaje_usuario: str, recordatorio: str, contexto_literal: str | None = None) -> str:
     """
     Pide a OpenAI que redacte la respuesta clínica final en castellano rioplatense,
     natural y humana, integrando el recordatorio temporal si existe. Sin diagnósticos
-    cerrados; 1–3 oraciones, con 1–2 preguntas abiertas.
+    cerrados; 1-3 oraciones, con 1-2 preguntas abiertas.
     """
     # Contexto que le damos al modelo
     contexto = []
     if recordatorio:
         contexto.append(f"Recordatorio temporal (NO repetir literal, integrarlo con naturalidad): {recordatorio}")
     contexto.append(f"Mensaje del usuario: {mensaje_usuario}")
+
+    # 👇 NUEVO: contexto literal (substring exacto) si lo hubiera
+    if contexto_literal:
+        contexto.append(f"Contexto declarado por el usuario (literal): {contexto_literal}")
+
     contexto_txt = "\n".join(contexto)
 
     prompt = "\n".join([
         "Actuá como psicólogo clínico (tono humano, empático, rioplatense, usando 'vos').",
         "Objetivo: redactar UNA respuesta breve (1 a 3 oraciones) que acompañe y oriente, y cerrá con 1 pregunta clínica abierta (solo una).",
         "No diagnósticos cerrados ni etiquetas tajantes; sí hipótesis prudentes en minúsculas.",
-        "Si la persona AFIRMA un estado (p. ej., 'tengo miedo a la oscuridad', 'no puedo dormir'), reconocelo como afirmación y trabajalo (no digas que 'parece' o 'podría ser que…').",
+        "Si la persona AFIRMA un estado (p. ej. 'tengo miedo a la oscuridad', 'no puedo dormir'), reconocelo como afirmación y trabajalo (no digas que 'parece').",
         "Si existe recordatorio temporal, integralo de manera natural en la primera frase (no lo repitas literal).",
         "Prohibido: cortes administrativos, '¿Hay algo puntual…?', derivaciones, consejos genéricos.",
         "Siempre explorá: situaciones/antecedentes (¿desde cuándo?), cuerpo/pensamientos, frecuencia e impacto en la vida diaria.",
-        "Si aparece insomnio o miedo a la oscuridad: preguntá por ritual/ambiente de sueño, despertares, tensión corporal y pensamientos intrusivos al acostarse.",
+        # 👇 NUEVO: instrucción explícita si hay contexto literal
+        "Si hay CONTEXTO declarado por el usuario, integralo en 1 frase natural y cerrá con **UNA** pregunta clínica sobre frecuencia (¿con qué frecuencia sucede en ese contexto?) y temporalidad (¿desde cuándo?).",
         "",
         "=== CONTEXTO ===",
         contexto_txt,
@@ -492,13 +498,22 @@ def _openai_respuesta_terapeutica(mensaje_usuario: str, recordatorio: str) -> st
         "Redactá directamente la respuesta final del terapeuta (sin encabezados)."
     ])
 
-
     try:
         texto = generar_respuesta_con_openai(prompt, temperature=0.3, max_tokens=280)
-        return (texto or "").strip()
+        texto = (texto or "").strip()
+
+        # 👇 Fallback con contexto para evitar salida vacía
+        if not texto:
+            if contexto_literal:
+                return f"Gracias por contarlo. ¿Con qué frecuencia te sucede en {contexto_literal}? ¿Desde cuándo lo notás?"
+            return ("Gracias por contarlo. ¿En qué situaciones se intensifica más y qué notás en el cuerpo "
+                    "o en los pensamientos cuando aparece?")
+        return texto
     except Exception as ex:
         logger.exception("_openai_respuesta_terapeutica falló")
         # Fallback súper breve por si la API falla (no debería activarse casi nunca)
+        if contexto_literal:
+            return f"Gracias por contarlo. ¿Con qué frecuencia te sucede en {contexto_literal}? ¿Desde cuándo lo notás?"
         return (
             "Gracias por contarlo. ¿En qué situaciones se intensifica más y qué notás en el cuerpo "
             "o en los pensamientos cuando aparece?"
