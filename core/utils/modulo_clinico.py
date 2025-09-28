@@ -977,13 +977,13 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     if not texto_out:
         texto_out = armar_respuesta_humana(
             mensaje_usuario=mensaje_usuario,
-            emociones=emociones_openai,   # lista (puede ser None)
-            cuadro=cuadro_openai,         # string (puede ser None/"")
-            recordatorio=recordatorio,    # el “Hace X me comentaste…”
+            emociones=emociones_openai,            # lista (puede ser None)
+            cuadro=cuadro_openai,                  # string (puede ser None/"")
+            recordatorio=recordatorio,             # el “Hace X me comentaste…”
+            contexto_literal=session.get("contexto_literal"),  # ← NUEVO
         )
     
         
-
 
     # 6) Salida FINAL (siempre devolvemos algo)
     if texto_out:
