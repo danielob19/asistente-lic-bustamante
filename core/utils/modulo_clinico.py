@@ -262,13 +262,25 @@ def armar_respuesta_humana(
 
     # Si vino eco (parrot), pedimos una re-redacción explícita sin eco
     if _es_parrot(salida, mensaje_usuario):
-        instrucciones_no_parrot = (
-            instrucciones
-            + "\n\nIMPORTANTE: NO repitas el texto del usuario ni lo pongas entre comillas. "
-              "Reformulá brevemente y seguí con **una sola** pregunta concreta."
+        instrucciones_no_parrot = instrucciones
+    
+        # Asegurar que el contexto literal también esté presente en esta versión
+        if contexto_literal:
+            instrucciones_no_parrot += (
+                f"\n\n== CONTEXTO DECLARADO POR EL USUARIO ==\n"
+                f"{contexto_literal}\n"
+                "Usá ese contexto en la respuesta."
+            )
+    
+        instrucciones_no_parrot += (
+            "\n\nIMPORTANTE: NO repitas el texto del usuario ni lo pongas entre comillas. "
+            "Reformulá brevemente y seguí con **una sola** pregunta concreta "
+            "(si hay contexto, orientala a frecuencia y desde cuándo)."
         )
+    
         salida = generar_respuesta_con_openai(instrucciones_no_parrot) or ""
         salida = _dequote(salida)
+
 
     # sanitizar mínimos y fallback clínico útil
     salida = " ".join(salida.split())
