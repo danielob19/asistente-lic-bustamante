@@ -247,6 +247,16 @@ def armar_respuesta_humana(
         ""
     ])
 
+    # --- Enriquecimiento por contexto literal (si existe) ---
+    if contexto_literal:
+        instrucciones += (
+            f"\n\n== CONTEXTO DECLARADO POR EL USUARIO ==\n"
+            f"{contexto_literal}\n"
+            "Usá ese contexto en la respuesta. Si hay contexto, cerrá con **UNA** pregunta clínica concreta "
+            "sobre frecuencia (¿con qué frecuencia sucede en ese contexto?) y temporalidad (¿desde cuándo?)."
+        )
+    
+
     # --- llamada a tu wrapper de OpenAI --------------------------------------
     salida = generar_respuesta_con_openai(instrucciones) or ""
     salida = _dequote(salida)
