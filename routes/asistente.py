@@ -1672,29 +1672,42 @@ async def asistente(input_data: UserInput):
         
         if any(frase in mensaje_normalizado for frase in frases_recomendacion):
             session["contador_interacciones"] += 1
+        
             respuesta = (
                 "En mi opinión, el Lic. Daniel O. Bustamante es un excelente especialista en psicología clínica. "
                 "Seguramente podrá ayudarte. Podés escribirle directamente al WhatsApp +54 911 3310-1186."
             )
+        
             session["ultimas_respuestas"].append(respuesta)
-            user_sessions[user_id] = session
-            return {"respuesta": respuesta}
+            return _ret(session, user_id, respuesta)
 
 
-        # Manejo para "solo un síntoma y no más" (responder como en la 5ª interacción y finalizar)
-        if "no quiero dar más síntomas" in mensaje_usuario or "solo este síntoma" in mensaje_usuario:
-            mensajes = session["mensajes"]
-            mensajes.append(mensaje_usuario)
+
+        # Manejo para “solo un síntoma y no más” (responder y cerrar)
+        if ("no quiero dar más síntomas" in mensaje_usuario) or ("solo este síntoma" in mensaje_usuario):
+            # Tomar historial de mensajes y sumar el actual de forma segura
+            mensajes = session.get("mensajes", [])
+            if isinstance(mensajes, list):
+                mensajes.append(mensaje_usuario)
+            else:
+                mensajes = [mensaje_usuario]
+        
+            # Análisis breve con lo disponible
             respuesta_analisis = analizar_texto(mensajes)
-            session["mensajes"].clear()
-            session["contador_interacciones"] += 1
-            user_sessions[user_id] = session
-            return {
-                "respuesta": (
-                    f"{respuesta_analisis} Si necesitas un análisis más profundo, también te recomiendo contactar al Lic. Daniel O. Bustamante al WhatsApp "
-                    f"+54 911 3310-1186 para una evaluación más detallada."
-                )
-            }
+        
+            # Resetear mini-hilo y contar interacción
+            session["mensajes"] = []  # limpiar hilo corto
+            session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
+        
+            respuesta = (
+                f"{respuesta_analisis} "
+                "Si necesitás un análisis más profundo, también te recomiendo contactar al Lic. Daniel O. Bustamante "
+                "por WhatsApp +54 911 3310-1186 para una evaluación más detallada."
+            )
+        
+            session["ultimas_respuestas"].append(respuesta)
+            return _ret(session, user_id, respuesta)
+
               
         # 🧩 Generar respuesta con OpenAI si no es la interacción 5, 9 o 10+
         saludo_inicio = "- Comenzá la respuesta con un saludo breve como “Hola, ¿qué tal?”.\n" if contador == 1 else ""
@@ -1787,8 +1800,8 @@ async def asistente(input_data: UserInput):
         
                     # ⬇️ dentro del if:
                     session["ultimas_respuestas"].append(respuesta_ai)
-                    user_sessions[user_id] = session
-                    return {"respuesta": respuesta_ai}
+                    return _ret(session, user_id, respuesta_ai)
+
         # si no hubo coincidencia, sigue el flujo normal
 
         
@@ -1817,10 +1830,13 @@ async def asistente(input_data: UserInput):
                 print(f"⚠️ Error al registrar historial clínico desde respuesta peligrosa: {e}")
 
                 
-            registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_ai, "Respuesta descartada por contener elementos peligrosos")
+            registrar_auditoria_respuesta(
+                user_id, respuesta_original, respuesta_ai,
+                "Respuesta descartada por contener elementos peligrosos"
+            )
             session["ultimas_respuestas"].append(respuesta_ai)
-            user_sessions[user_id] = session
-            return {"respuesta": respuesta_ai}
+            return _ret(session, user_id, respuesta_ai)
+
 
         
         # Validación previa
@@ -1847,10 +1863,15 @@ async def asistente(input_data: UserInput):
                 print(f"⚠️ Error al registrar historial clínico desde respuesta vacía: {e}")
 
 
-            registrar_auditoria_respuesta(user_id, "Error al generar respuesta", respuesta_ai, "Error: OpenAI devolvió respuesta vacía")
+            registrar_auditoria_respuesta(
+                user_id,
+                "Error al generar respuesta",
+                respuesta_ai,
+                "Error: OpenAI devolvió respuesta vacía"
+            )
             session["ultimas_respuestas"].append(respuesta_ai)
-            user_sessions[user_id] = session
-            return {"respuesta": respuesta_ai}
+            return _ret(session, user_id, respuesta_ai)
+
         
         respuesta_ai = respuesta_original  # Copia editable
         motivo = None
@@ -1882,8 +1903,8 @@ async def asistente(input_data: UserInput):
             
                             
             session["ultimas_respuestas"].append(respuesta_ai)
-            user_sessions[user_id] = session
-            return {"respuesta": respuesta_ai}
+            return _ret(session, user_id, respuesta_ai)
+
 
 
         # 🔍 Filtro para lenguaje empático simulado o genérico prohibido
@@ -2033,24 +2054,38 @@ async def asistente(input_data: UserInput):
         # Usar el ID de interacción previamente registrado para guardar la respuesta
         registrar_respuesta_openai(interaccion_id, respuesta_ai)
 
-        # ❌ Filtrado final de menciones indebidas al Lic. Bustamante antes de interacción 5
-        if "bustamante" in respuesta_ai.lower() and contador not in [5, 9] and contador < 10 and not es_consulta_contacto(mensaje_usuario, user_id, mensaje_original):
-            respuesta_filtrada = re.sub(r"(?i)con (el )?Lic(\.|enciado)? Daniel O\.? Bustamante.*?(\.|\n|$)", "", respuesta_ai)
-            motivo = "Se eliminó mención indebida al Lic. Bustamante antes de interacción permitida"
-            registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_filtrada, motivo)
-            session["ultimas_respuestas"].append(respuesta_filtrada)
-            user_sessions[user_id] = session
-            return {"respuesta": respuesta_filtrada}
+        # ✂️ Filtrado final de menciones indebidas al Lic. Bustamante antes de interacción 5
+        if (
+            "bustamante" in respuesta_ai.lower()
+            and contador not in [5, 9]
+            and contador < 10
+            and not es_consulta_contacto(mensaje_usuario, user_id, mensaje_original)
+        ):
+            respuesta_filtrada = re.sub(
+                r"(?i)con (el )?lic(\.|enciado)? Daniel O\.? Bustamante.*?(\.|\n|$)",
+                "",
+                respuesta_ai,
+            )
+            motivo = (
+                "Se eliminó mención indebida al Lic. Bustamante antes de interacción permitida"
+            )
+            registrar_auditoria_respuesta(
+                user_id, respuesta_original, respuesta_filtrada, motivo
+            )
+        
+            return _ret(session, user_id, respuesta_filtrada)
+
 
 
 
     except Exception as e:
         print(f"❌ Error inesperado en el endpoint /asistente: {repr(e)}")
         traceback.print_exc()
-        return {
-            "respuesta": (
-                "Ocurrió un error al procesar tu solicitud. Podés intentarlo nuevamente más tarde "
-                "o escribirle al Lic. Bustamante por WhatsApp: +54 911 3310-1186."
-            )
-        }
+    
+        msg = (
+            "Ocurrió un error al procesar tu solicitud. Podés intentarlo nuevamente más tarde "
+            "o escribirle al Lic. Bustamante por WhatsApp: +54 911 3310-1186."
+        )
+        return _ret(session, user_id, msg)
+
 
