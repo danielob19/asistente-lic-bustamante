@@ -178,20 +178,35 @@ def _finalizar_no_vacio(texto: str, session: dict) -> str:
         incluir_contacto=True,
     )
 
-def _ret(session: dict, user_id: str, texto: str) -> dict:
+# --- Helper: normalizar respuestas a texto -----------------------------------
+def _as_text(x) -> str:
     """
-    Punto ÚNICO de salida:
-    - Garantiza no-vacío y cierre estandarizado.
-    - Actualiza sesión con la respuesta.
-    - Devuelve el dict esperado por el frontend.
+    Devuelve siempre un str.
+    Acepta:
+      - str
+      - dict con clave 'respuesta' -> toma ese valor
+      - cualquier otro -> str(x) o ""
     """
+    if isinstance(x, dict):
+        return str(x.get("respuesta", "") or "")
+    return str(x or "")
+
+
+def _ret(session, user_id: str, texto, *, incrementar_contador: bool = True):
+    # Normalizar posibles dicts a string antes de continuar
+    texto = _as_text(texto)
+
+    # Tu función existente que asegura no-vacío
     out = _finalizar_no_vacio(texto, session)
-    try:
-        session.setdefault("ultimas_respuestas", []).append(out)
-    except Exception:
-        pass
+
+    # Persistencia / contador / sesión (tu lógica existente)
+    session["ultimas_respuestas"].append(out)
+    if incrementar_contador:
+        session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
+
     user_sessions[user_id] = session
     return {"respuesta": out}
+
 
 
 # --- Helpers de cierre de respuesta -----------------------------------------
