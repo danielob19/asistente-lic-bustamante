@@ -513,10 +513,8 @@ async def asistente(input_data: UserInput):
         if mensaje_usuario.strip() in SALUDOS_SIMPLES:
             tipo_input = CORTESIA
             respuesta = "Hola, ¿en qué puedo ayudarte?"
-            session["ultimas_respuestas"].append(respuesta)
-            user_sessions[user_id] = session
             registrar_respuesta_openai(None, respuesta)
-            return {"respuesta": respuesta}
+            return _ret(session, user_id, respuesta)
         
 
         # 🚦 NUEVO: Inferencia bifurcada de intención del usuario (clínica vs administrativa)
@@ -533,7 +531,8 @@ async def asistente(input_data: UserInput):
         if intencion_general == "ADMINISTRATIVA" and not emociones_detectadas_bifurcacion:
             respuesta_admin = procesar_administrativo(mensaje_usuario, session, user_id)
             if respuesta_admin:
-                return respuesta_admin
+                return _ret(session, user_id, respuesta_admin)
+
 
         
         # 🧠 Si es administrativo PERO hay emoción detectada: redirigir por flujo clínico
@@ -822,17 +821,38 @@ async def asistente(input_data: UserInput):
                         "contador": _contador_para(user_id),
                     })
                 except Exception as e:
-                    print(f"🔴 procesar_clinico lanzó excepción: {e}")
-                    return {"respuesta": "Gracias por contarme. Estoy teniendo un problema técnico para procesar tu mensaje. ¿Podés intentar nuevamente?"}
-            
+                    # Log técnico
+                    try:
+                        logger.exception("procesar_clinico lanzó excepción", exc_info=True)
+                    except Exception:
+                        print(f"[!] procesar_clinico lanzó excepción: {e}")
+                
+                    # Salida centralizada (evita respuestas vacías)
+                    return _ret(
+                        session,
+                        user_id,
+                        "Gracias por contarme. Estoy teniendo un problema técnico para procesar tu mensaje. "
+                        "¿Podés intentar nuevamente en un momento?"
+                    )
+
                 # Blindaje por si vino None o sin 'respuesta'
                 if not salida or not isinstance(salida, dict) or "respuesta" not in salida:
-                    print(f"⚠️ procesar_clinico devolvió un valor inesperado: {type(salida)}")
-                    return {"respuesta": "Gracias por tu paciencia. ¿Podés volver a contarme brevemente lo que estás sintiendo?"}
+                    try:
+                        logger.warning("procesar_clinico devolvió un valor inesperado: %s", type(salida))
+                    except Exception:
+                        print(f"⚠️ procesar_clinico devolvió un valor inesperado: {type(salida)}")
+                
+                    return _ret(
+                        session,
+                        user_id,
+                        "Gracias por tu paciencia. ¿Podés volver a contarme brevemente lo que estás sintiendo?"
+                    )
+
             
                 # Persistir sesión devuelta por el módulo clínico y responder
-                user_sessions[user_id] = salida.get("session", session)
-                return {"respuesta": salida["respuesta"]}
+                session = salida.get("session", session)   # ← actualizar la sesión local con la que volvió
+                return _ret(session, user_id, salida.get("respuesta", ""))
+
             
 
             
@@ -917,8 +937,8 @@ async def asistente(input_data: UserInput):
                 
                         # Marcar flag de sesión y DEVOLVER respuesta directa
                         session["coincidencia_clinica_usada"] = True
-                        user_sessions[user_id] = session
-                        return {"respuesta": respuesta_match}
+                        return _ret(session, user_id, respuesta_match)
+
                 
                 except Exception as e:
                     print(f"⚠️ Error en detección de coincidencias clínicas: {e}")
@@ -975,8 +995,9 @@ async def asistente(input_data: UserInput):
                 session["_mixta_contexto"] = contexto  # opcional, por si luego querés reutilizarlo
                 session["ultimas_respuestas"].append(respuesta_mixta)
                 session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
-                user_sessions[user_id] = session
-                return {"respuesta": respuesta_mixta}
+                # Persistencia y respuesta centralizada
+                return _ret(session, user_id, respuesta_mixta)
+
 
         
             # 2) Si ya invitamos, interpretamos qué eligió el usuario (sin romper si no coincide nada)
@@ -1054,20 +1075,20 @@ async def asistente(input_data: UserInput):
                         "aparecen en el cuerpo o en los pensamientos? Si querés, también podemos "
                         "revisar cómo impacta en el sueño y la concentración."
                     )
-                    session["ultimas_respuestas"].append(respuesta)
+                    # (no hace falta append ni user_sessions: lo hace _ret)
                     session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
-                    user_sessions[user_id] = session
-                    return {"respuesta": respuesta}
+                    return _ret(session, user_id, respuesta)
+
             
                 elif preferir_admin and not preferir_clinico:
                     respuesta_admin = (
                         "De acuerdo. Si preferís resolverlo con el Lic. Bustamante, "
                         f"podés escribirle {CONTACTO_WPP}."
                     )
-                    session["ultimas_respuestas"].append(respuesta_admin)
+                    # (no hace falta append ni user_sessions: lo hace _ret)
                     session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
-                    user_sessions[user_id] = session
-                    return {"respuesta": respuesta_admin}
+                    return _ret(session, user_id, respuesta_admin)
+
 
 
         
@@ -1103,12 +1124,15 @@ async def asistente(input_data: UserInput):
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, "EXPECTATIVA_NO_CLINICA")
             session["contador_interacciones"] += 1
             user_sessions[user_id] = session
-            return {
-                "respuesta": (
+            return _ret(
+                session,
+                user_id,
+                (
                     "Este espacio está diseñado para brindar orientación clínica general. "
                     "Si hay algo puntual que te gustaría compartir sobre tu estado emocional, podés hacerlo con confianza."
                 )
-            }
+            )
+
         
 
         if not mensaje_usuario:
@@ -1139,26 +1163,30 @@ async def asistente(input_data: UserInput):
                 "Gracias por tu mensaje. Si más adelante deseás compartir algo personal o emocional, "
                 "podés hacerlo cuando lo sientas necesario."
             )
-            session["ultimas_respuestas"].append(respuesta)
-            session["contador_interacciones"] += 1
-            user_sessions[user_id] = session
+            # (no hace falta append ni user_sessions: lo hace _ret)
+            session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
+            
+            # mantienen tus registros/auditorías
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, tipo_input)
             registrar_respuesta_openai(None, respuesta)
-            return {"respuesta": respuesta}
+            
+            # salida centralizada
+            return _ret(session, user_id, respuesta)
+
 
 
 
         # 🧠 Continuación de tema clínico si fue identificado previamente
         if tipo_input == CLINICO_CONTINUACION:
             registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CLINICO_CONTINUACION)
-            session["contador_interacciones"] += 1
-            user_sessions[user_id] = session
-            return {
-                "respuesta": (
-                    "Entiendo. Lo que mencionaste antes podría estar indicando un malestar emocional. "
-                    "¿Querés que exploremos un poco más lo que estás sintiendo últimamente?"
-                )
-            }
+            session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
+        
+            msg = (
+                "Entiendo. Lo que mencionaste antes podría estar indicando un malestar emocional. "
+                "¿Querés que exploremos un poco más lo que estás sintiendo últimamente?"
+            )
+            return _ret(session, user_id, msg)
+
  
 
         # 🧠 Clasificación contextual con OpenAI
@@ -1250,11 +1278,12 @@ async def asistente(input_data: UserInput):
                         mensaje_original=mensaje_original,
                     )
             
-                    session["ultimas_respuestas"].append(respuesta_saludo)
+                    # (no hace falta append ni user_sessions: lo hace _ret)
                     session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
-                    user_sessions[user_id] = session
                     registrar_respuesta_openai(None, respuesta_saludo)
-                    return {"respuesta": respuesta_saludo}
+                    
+                    return _ret(session, user_id, respuesta_saludo)
+
             
                 # 🟦 CORTESÍA GENERAL (no es el saludo inicial)
                 registrar_auditoria_input_original(user_id, mensaje_original, mensaje_usuario, CORTESIA)
@@ -1299,11 +1328,12 @@ async def asistente(input_data: UserInput):
                         "(emociones, situaciones o cuándo se intensifica), te leo."
                     )
             
-                session["ultimas_respuestas"].append(txt)
+                # (no hace falta append ni user_sessions: lo hace _ret)
                 session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
-                user_sessions[user_id] = session
                 registrar_respuesta_openai(None, txt)
-                return {"respuesta": txt}
+                
+                return _ret(session, user_id, txt)
+
 
 
             
@@ -1313,11 +1343,10 @@ async def asistente(input_data: UserInput):
                 respuesta = (
                     "Para agendar una sesión o conocer disponibilidad, podés escribirle directamente al Lic. Bustamante al WhatsApp +54 911 3310-1186."
                 )
-                session["ultimas_respuestas"].append(respuesta)
-                user_sessions[user_id] = session
-                session["contador_interacciones"] += 1
-                user_sessions[user_id] = session
-                return {"respuesta": respuesta}
+                # (no hace falta append ni user_sessions: lo hace _ret)
+                session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
+                return _ret(session, user_id, respuesta)
+
 
             
             if clasificacion == "CONSULTA_MODALIDAD":
@@ -1327,10 +1356,10 @@ async def asistente(input_data: UserInput):
                     "Atiende de lunes a viernes, entre las 13:00 y las 20:00 hs. "
                     "Podés consultarle por disponibilidad escribiéndole directamente al WhatsApp +54 911 3310-1186."
                 )
-                session["ultimas_respuestas"].append(respuesta)
-                session["contador_interacciones"] += 1
-                user_sessions[user_id] = session
-                return {"respuesta": respuesta}
+                # (no hace falta append ni user_sessions: lo hace _ret)
+                session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
+                return _ret(session, user_id, respuesta)
+
 
             
             # --- TESTEO / MALICIOSO / IRRELEVANTE ---
@@ -1347,9 +1376,8 @@ async def asistente(input_data: UserInput):
                 if sin_contexto:
                     session["input_sospechoso"] = True
                     texto_fuera = respuesta_default_fuera_de_contexto()
-                    session["ultimas_respuestas"].append(texto_fuera)
-                    user_sessions[user_id] = session
-                    return {"respuesta": texto_fuera}
+                    return _ret(session, user_id, texto_fuera)
+
             
                 session["tipo_input"] = "CLINICO_CONTINUACION"  # opcional si lo usás en otra parte
                 user_sessions[user_id] = session
@@ -1378,14 +1406,10 @@ async def asistente(input_data: UserInput):
                         "o en los pensamientos cuando aparece?"
                     )
                 
-                    # Persistencia y salida
-                    session["ultimas_respuestas"].append(texto)
-                    session["contador_interacciones"] = session.get("contador_interacciones", 0) + 1
-                    # opcional: limpiar la bandera para evitar “pegado” en el próximo turno
-                    session.pop("tipo_input", None)
-                
-                    user_sessions[user_id] = session
-                    return {"respuesta": texto}
+                    # Persistencia y salida (centralizado)
+                    session.pop("tipo_input", None)  # opcional, para evitar “pegado” en el próximo turno
+                    return _ret(session, user_id, texto)
+
                 
 
         
@@ -1409,11 +1433,9 @@ async def asistente(input_data: UserInput):
                 "Gracias por tu mensaje. Para poder orientarte, contame algo concreto que te esté molestando "
                 "(emociones, sensaciones corporales, situaciones o momentos en que se intensifica)."
             )
-            session["ultimas_respuestas"].append(texto)
-            session["contador_interacciones"] = contador_safe + 1
-            user_sessions[user_id] = session
-            registrar_respuesta_openai(None, texto)
-            return {"respuesta": texto}
+            # Salida centralizada
+            return _ret(session, user_id, texto)
+            
 
 
 
@@ -1455,10 +1477,9 @@ async def asistente(input_data: UserInput):
                 apendice=session.get("_apendice_cuadro", ""),  # si hubo apéndice clínico, se anexa
                 incluir_contacto=True,
             )
-            session["ultimas_respuestas"].append(respuesta)
-            user_sessions[user_id] = session
-            registrar_respuesta_openai(interaccion_id, respuesta)
-            return {"respuesta": respuesta}
+            # Salida centralizada
+            return _ret(session, user_id, respuesta, interaccion_id=interaccion_id)
+
 
         
         # ✅ Interacciones 6 a 8 – Confirmación implícita de emoción inferida 5 si aún no fue confirmada
@@ -1485,10 +1506,8 @@ async def asistente(input_data: UserInput):
                     f"Gracias por confirmarlo. ¿Querés contarme un poco más sobre cómo se manifiesta esa {emocion} en tu día a día?"
                 )
         
-                session["ultimas_respuestas"].append(respuesta)
-                user_sessions[user_id] = session
-                registrar_respuesta_openai(interaccion_id, respuesta)
-                return {"respuesta": respuesta}
+                return _ret(session, user_id, respuesta, interaccion_id=interaccion_id)
+
                 
 
         contador = session.get("contador_interacciones", 0)
@@ -1551,23 +1570,34 @@ async def asistente(input_data: UserInput):
                         "¿Podés contarme un poco más sobre cómo lo estás viviendo estos días? "
                         "A veces ponerlo en palabras ayuda a entenderlo mejor."
                     )
-                    registrar_auditoria_respuesta(user_id, "respuesta vacía", respuesta_ai, "Fallback clínico: respuesta nula o inválida de OpenAI")
+                    registrar_auditoria_respuesta(
+                        user_id,
+                        "respuesta vacía",
+                        respuesta_ai,
+                        "Fallback clínico: respuesta nula o inválida de session",
+                    )
                     session["ultimas_respuestas"].append(respuesta_ai)
                     user_sessions[user_id] = session
-                    return {"respuesta": respuesta_ai}
-        
-                registrar_auditoria_respuesta(user_id, respuesta_original, respuesta_original)
+                    return _ret(session, user_id, respuesta_ai)
+                
+                registrar_auditoria_respuesta(
+                    user_id,
+                    respuesta_original,
+                    respuesta_original,
+                    # (si tu función lleva un cuarto argumento de nota, dejalo o quítalo según firma real)
+                )
                 registrar_respuesta_openai(None, respuesta_original)
                 session["ultimas_respuestas"].append(respuesta_original)
                 user_sessions[user_id] = session
-                return {"respuesta": respuesta_original}
+                return _ret(session, user_id, respuesta_original)
+
         
-            # 🔹 Si no es clínico ni hay contexto previo, mantener respuesta neutra
-            return {
-                "respuesta": (
-                    "Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?"
-                )
-            }
+            # ◆ Si no es clínico ni hay contexto previo, mantener respuesta neutra
+            respuesta = (
+                "Gracias por tu mensaje. ¿Hay algo puntual que te gustaría compartir o consultar en este espacio?"
+            )
+            return _ret(session, user_id, respuesta)
+
 
         # 🟢 Si la frase es neutral, de cortesía o curiosidad, no analizar emocionalmente ni derivar
         if mensaje_usuario in EXPRESIONES_DESCARTADAS or any(p in mensaje_usuario for p in ["recomienda", "opinás", "atiende"]):
@@ -1575,9 +1605,8 @@ async def asistente(input_data: UserInput):
                 "Gracias por tu mensaje. Si en algún momento deseás explorar una inquietud emocional, "
                 "estoy disponible para ayudarte desde este espacio."
             )
-            session["ultimas_respuestas"].append(respuesta)
-            user_sessions[user_id] = session
-            return {"respuesta": respuesta}
+            return _ret(session, user_id, respuesta)
+
 
         # 🔍 DEPURACIÓN: Mostrar estado actual de la sesión
         print("\n===== DEPURACIÓN - SESIÓN DEL USUARIO =====")
@@ -1588,8 +1617,14 @@ async def asistente(input_data: UserInput):
         print("========================================\n")
         
         # Detectar negaciones o correcciones
-        if any(negacion in mensaje_usuario for negacion in ["no dije", "no eso", "no es así", "eso no", "no fue lo que dije"]):
-            return {"respuesta": "Entiendo, gracias por aclararlo. ¿Cómo describirías lo que sientes?"}
+        negaciones = [
+            "no dije", "no eso", "no es así", "eso no",
+            "no fue lo que dije", "no quise decir"
+        ]
+        if any(neg in (mensaje_usuario or "").lower() for neg in negaciones):
+            respuesta = "Entiendo, gracias por aclararlo. ¿Cómo lo describirías con tus propias palabras ahora?"
+            return _ret(session, user_id, respuesta)
+
 
 
         # Manejo para "no sé", "ninguna", "ni la menor idea" tras describir un síntoma
@@ -1605,15 +1640,22 @@ async def asistente(input_data: UserInput):
         
             session["ultimas_respuestas"].append(respuesta)
             user_sessions[user_id] = session
-            return {"respuesta": respuesta}
+            return _ret(session, user_id, respuesta)
+
 
         
         if es_consulta_contacto(mensaje_usuario, user_id, mensaje_original):
             session["contador_interacciones"] += 1
             user_sessions[user_id] = session
-            return {
-                "respuesta": "Para contactar al Lic. Daniel O. Bustamante, podés enviarle un mensaje al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
-            }
+        
+            respuesta = (
+                "Para contactar al Lic. Daniel O. Bustamante, podés enviarle un mensaje "
+                "al WhatsApp +54 911 3310-1186. Él estará encantado de responderte."
+            )
+        
+            session["ultimas_respuestas"].append(respuesta)
+            return _ret(session, user_id, respuesta)
+
 
         
         # 🔹 Proporciona el número de contacto si el usuario pregunta por el "mejor psicólogo" o si es buen profesional
