@@ -552,6 +552,21 @@ async def asistente(input_data: UserInput):
         emociones_detectadas_bifurcacion = intencion_bifurcada.get("emociones_detectadas", [])
         temas_administrativos_detectados = intencion_bifurcada.get("temas_administrativos", [])
 
+        # --- GUARDIA ADMIN: si hay tema administrativo, NO invocar clínica ---
+        if (
+            intencion_general == "ADMINISTRATIVA"
+            or (temas_administrativos_detectados and len(temas_administrativos_detectados) > 0)
+        ):
+            # (opcional) marcar rama para evitar que el módulo clínico agregue apéndices
+            session["ultima_rama"] = "ADMIN"
+        
+            # responder por la rama administrativa y salir
+            respuesta_admin = procesar_administrativo(mensaje_usuario, session, user_id)
+        
+            # devolver por la salida centralizada que ya usás
+            return _ret(session, user_id, respuesta_admin)
+        
+
         # 🧠 Si se detecta una intención claramente administrativa y NO hay emoción relevante, responder con mensaje informativo
         if intencion_general == "ADMINISTRATIVA" and not emociones_detectadas_bifurcacion:
             respuesta_admin = procesar_administrativo(mensaje_usuario, session, user_id)
