@@ -1089,6 +1089,34 @@ def procesar_clinico(input_data: Dict[str, Any]) -> Dict[str, Any]:
     if apend and apend not in texto_final:
         texto_final = f"{texto_final} {apend}"
 
+    
+
+    # === Post-proceso clínico: anexo (emociones) + limpieza + oferta de contacto ===
+
+    # (1) Si querés anexar una sola vez el "cuadro clínico probable / emociones"
+    #     Usamos lo que ya tengas en memoria de la sesión:
+    if session.get("emociones_detectadas"):
+        emos_txt = ", ".join(session["emociones_detectadas"])
+        # Anexo breve, sólo si aún no está en el texto
+        anexo = f" Por lo que venís contando, *cuadro clínico probable*: {emos_txt}."
+        if anexo not in (texto_final or ""):
+            texto_final = f"{(texto_final or '').strip()} {anexo}"
+
+    # (2) Limpieza de redundancias / formato
+    try:
+        texto_final = _limpiar_redundancias(texto_final)
+    except Exception:
+        # En caso de que la helper no esté aún importada, no rompemos la salida
+        texto_final = (texto_final or "").strip()
+
+    # (3) Oferta de contacto con enfriador (cada 6 turnos o si lo piden explícitamente)
+    try:
+        if _debe_ofrecer_contacto(session, mensaje_usuario):
+            texto_final += " Si querés, podés escribir al WhatsApp +54 911 3310-1186 del Lic. Bustamante para coordinar."
+            _marcar_contacto_ofrecido(session)
+    except Exception:
+        pass
+
 
     
     # Sanitizar espacios
