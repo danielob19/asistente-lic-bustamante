@@ -33,6 +33,75 @@ except Exception:
 # --- fin bloque unidecode opcional ---
 
 
+def _limpiar_redundancias(txt: str) -> str:
+    """
+    Limpia repeticiones y deja 1 sola pregunta clínica al final.
+    - Colapsa frases duplicadas (ej: “Por lo que venís contando …”)
+    - Normaliza enumeraciones de emociones (“ansiedad frustración” → “ansiedad y frustración”)
+    - Quita dobles espacios y espacios antes de signos
+    - Si por error vienen 2+ preguntas, deja la última
+    """
+    t = (txt or "").strip()
+    if not t:
+        return t
+
+    # (a) Colapsar repeticiones exactas de “Por lo que venís contando …”
+    t = re.sub(r'(Por lo que ven[ií]s contando.*?)(?:\s+\1)+', r'\1', t, flags=re.IGNORECASE | re.DOTALL)
+
+    # (b) Normalizar “emotion1 emotion2” → “emotion1 y emotion2”
+    emociones_vocab = r'(ansiedad|estr[eé]s|miedo|enojo|tristeza|angustia|nerviosismo|frustraci[oó]n|cansancio|insomnio)'
+    t = re.sub(rf'\b{emociones_vocab}\s+{emociones_vocab}\b', r'\1 y \2', t, flags=re.IGNORECASE)
+
+    # (c) Espaciado
+    t = re.sub(r'\s{2,}', ' ', t)
+    t = re.sub(r'\s+([,.;:!?])', r'\1', t)
+
+    # (d) Dejar una sola pregunta (la última) si llegaron varias
+    preguntas = re.findall(r'[^?]+\?', t)
+    if len(preguntas) > 1:
+        # elimina todas menos la última
+        t = re.sub(r'([^?]+\?)(?=.*\?)', '', t).strip()
+
+    return t
+
+
+def _pretty_emociones(xs):
+    """
+    Ordena, desduplica y formatea lista de emociones:
+      ["ansiedad","frustración","miedo","ansiedad"] → "ansiedad, frustración y miedo"
+    """
+    xs = [str(x).strip().lower() for x in (xs or []) if x]
+    seen, out = set(), []
+    for e in xs:
+        if e not in seen:
+            seen.add(e); out.append(e)
+    if not out:
+        return ""
+    if len(out) == 1:
+        return out[0]
+    return ", ".join(out[:-1]) + " y " + out[-1]
+
+
+def _debe_ofrecer_contacto(session: dict, mensaje_usuario: str) -> bool:
+    """
+    Ofrece WhatsApp solo si:
+      - El usuario lo pide explícitamente, o
+      - Pasaron ≥6 turnos desde la última oferta
+    """
+    mu = (mensaje_usuario or "").lower()
+    pedido_exp = any(p in mu for p in ["contacto", "whatsapp", "teléfono", "telefono", "agenda", "sacar turno"])
+    if pedido_exp:
+        return True
+    last = session.get("ofrecio_contacto_en")
+    actual = session.get("contador_interacciones", 0)
+    return (last is None) or (actual - last >= 6)
+
+
+def _marcar_contacto_ofrecido(session: dict):
+    """Guarda en la sesión el turno en que se ofreció el contacto."""
+    session["ofrecio_contacto_en"] = session.get("contador_interacciones", 0)
+
+
 
 from core.db.consulta import (
     registrar_interaccion_clinica,
