@@ -435,7 +435,6 @@ def obtener_cuadro_por_emociones(user_id: str, session: dict):
         # Mapear emociones -> cuadro con heurística existente
         # 1) Intentar con la función clínica si está disponible
         try:
-            from core.utils.modulo_clinico import clasificar_cuadro_clinico
             cuadros = [clasificar_cuadro_clinico(e) for e in todas]
         except Exception:
             # 2) Fallback interno conservador
