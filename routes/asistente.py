@@ -11,7 +11,6 @@ from core.utils.motor_fallback import (
     safe_inferir_cuadros as inferir_cuadros,
     safe_decidir as decidir,
 )
-import unicodedata
 
 from core.utils.generador_openai import generar_respuesta_con_openai  # ya lo usás
 from core.utils.disparadores import extraer_disparadores, resumir_disparadores
