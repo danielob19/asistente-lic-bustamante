@@ -265,7 +265,6 @@ def clasificar_cuadro_clinico_openai(emocion: str) -> str:
     Mantiene vocabulario abierto para permitir términos nuevos/actualizados.
     Solo higieniza y bloquea frases genéricas.
     """
-    import re
 
     if not emocion or not emocion.strip():
         return "indeterminado"
