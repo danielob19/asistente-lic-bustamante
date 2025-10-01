@@ -326,7 +326,6 @@ def sugerir_canonico_suave(label_model: str) -> str | None:
     Devuelve una *sugerencia* de cluster interno para analytics.
     No reemplaza el label del modelo; puede devolver None si no matchea.
     """
-    import re
     n = re.sub(r"\s+", " ", (label_model or "").lower()).strip()
 
     buckets = {
