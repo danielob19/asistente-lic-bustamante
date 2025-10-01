@@ -66,7 +66,7 @@ from core.funciones_asistente import verificar_memoria_persistente
 from core.db.consulta import obtener_emociones_ya_registradas
 from core.db.consulta import obtener_ultimo_registro_usuario
 from core.utils.palabras_irrelevantes import palabras_irrelevantes
-
+from core.contexto import user_sessions
 
 from core.resumen_clinico import (
     generar_resumen_clinico_y_estado,
