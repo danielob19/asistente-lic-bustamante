@@ -4,7 +4,7 @@ from core.utils.modulo_administrativo import procesar_administrativo
 from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, reformular_estilo_narrativo
 from fastapi import APIRouter, HTTPException
 from core.modelos.base import UserInput
-
+from core.utils.intencion_usuario import detectar_intencion_bifurcada
 from core.utils.motor_fallback import (
     safe_detectar_sintomas as detectar_sintomas_db,
     safe_inferir_cuadros as inferir_cuadros,
@@ -543,7 +543,6 @@ async def asistente(input_data: UserInput):
         
 
         # 🚦 NUEVO: Inferencia bifurcada de intención del usuario (clínica vs administrativa)
-        from core.utils.intencion_usuario import detectar_intencion_bifurcada
         
         intencion_bifurcada = detectar_intencion_bifurcada(mensaje_usuario)
         print(f"🧠 Intención bifurcada detectada: {intencion_bifurcada}")
