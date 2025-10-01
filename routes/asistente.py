@@ -1719,6 +1719,19 @@ async def asistente(input_data: UserInput):
         
             # Análisis breve con lo disponible
             respuesta_analisis = analizar_texto(mensajes)
+
+            # --- patrón mínimo de parseo seguro ---
+            raw = respuesta_analisis   # o respuesta_openai, según tu variable
+            parsed = None
+            
+            if isinstance(raw, str) and "{" in raw and "}" in raw:
+                parsed = _json_dict_or_none(raw)
+            elif isinstance(raw, dict):
+                parsed = raw
+            
+            emociones_openai = parsed.get("emociones", []) if parsed else []
+            cuadro_openai    = parsed.get("cuadro_probable") if parsed else None
+            # --- fin patrón ---
         
             # Resetear mini-hilo y contar interacción
             session["mensajes"] = []  # limpiar hilo corto
