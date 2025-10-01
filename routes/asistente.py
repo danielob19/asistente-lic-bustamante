@@ -4,6 +4,7 @@ from core.utils.modulo_administrativo import procesar_administrativo
 from core.inferencia_psicodinamica import generar_hipotesis_psicodinamica, reformular_estilo_narrativo
 from fastapi import APIRouter, HTTPException
 from core.modelos.base import UserInput
+from core.utils.modulo_clinico import clasificar_cuadro_clinico
 from core.utils.intencion_usuario import detectar_intencion_bifurcada
 from core.utils.motor_fallback import (
     safe_detectar_sintomas as detectar_sintomas_db,
@@ -752,7 +753,6 @@ async def asistente(input_data: UserInput):
                 # 3) Si hay ≥ 2 emociones, inferimos cuadro probable
                 if len(emos_union) >= 2:
                     try:
-                        from core.utils.modulo_clinico import clasificar_cuadro_clinico
                         cp = (clasificar_cuadro_clinico(emos_union) or "").strip().lower()
                         cuadro_prob = cp or ""
                     except Exception:
