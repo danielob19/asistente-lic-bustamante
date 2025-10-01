@@ -100,6 +100,7 @@ import random
 import unicodedata
 import traceback
 import os
+import json
 
 import logging
 
@@ -155,6 +156,15 @@ def _try_openai(prompt: str, **kwargs) -> str:
 
 
 # --------------------------HELPERS---------------------------------------------
+
+
+
+def _json_dict_or_none(s: str):
+    try:
+        d = json.loads(s)
+        return d if isinstance(d, dict) else None
+    except Exception:
+        return None
 
 # --- Salida centralizada ------------------------------------------------------
 def _finalizar_no_vacio(texto: str, session: dict) -> str:
