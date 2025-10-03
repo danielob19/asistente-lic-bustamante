@@ -172,26 +172,44 @@ def _json_dict_or_none(s: str):
         return None
 
 # --- Salida centralizada ------------------------------------------------------
+
 def _finalizar_no_vacio(texto: str, session: dict) -> str:
     """
     Asegura que la respuesta NUNCA sea vacía.
-    Si viene vacío, usa contexto_literal si existe; si no, usa un fallback clínico útil.
+    Si viene vacía, usa contexto_literal si existe; si no, usa un fallback clínico útil.
     Luego delega el cierre estandarizado a _finalizar_respuesta().
     """
     texto = (texto or "").strip()
+
     if not texto:
         ctx = session.get("contexto_literal")
-        texto = (
-            f"Gracias por contarlo. ¿Con qué frecuencia te sucede en {ctx}? ¿Desde cuándo lo notás?"
-            if ctx else
-            "Gracias por contarlo. ¿En qué momentos notás que se intensifica y qué cambia en el cuerpo o en los pensamientos cuando aparece?"
-        )
-    # aplica apéndice clínico + contacto + sanitizado
+        if ctx:
+            texto = (
+                f"Gracias por contarlo. ¿Con qué frecuencia te sucede en {ctx}? "
+                "¿Desde cuándo lo notás?"
+            )
+        else:
+            texto = (
+                "Gracias por contarlo. ¿En qué momentos notás que se intensifica y "
+                "qué cambia en el cuerpo o en los pensamientos cuando aparece?"
+            )
+
+    # --- Apéndice clínico: agregar una sola vez y limpiarlo de sesión ---
+    ap = (session.get("_apendice_cuadro") or "").strip()
+    ap_to_pass = ""
+    if ap:
+        # sólo pasarlo si el texto final aún no lo contiene
+        if ap not in texto:
+            ap_to_pass = ap
+        # opcional: vaciar para no re-usarlo en el próximo turno
+        session.pop("_apendice_cuadro", None)
+
     return _finalizar_respuesta(
         texto,
-        apendice=session.get("_apendice_cuadro", ""),
+        apendice=ap_to_pass,   # sólo si hacía falta
         incluir_contacto=True,
     )
+
 
 # --- Helper: normalizar respuestas a texto -----------------------------------
 def _as_text(x) -> str:
