@@ -142,7 +142,11 @@ def _try_openai(prompt: str, **kwargs) -> str:
     También depura kwargs inesperados (p.ej. 'temperatura').
     """
     # Solo aceptar kwargs que realmente soporta tu generador
-    permitidos = {"contador", "user_id", "mensaje_usuario", "mensaje_original"}
+    permitidos = {
+        "contador", "user_id", "mensaje_usuario", "mensaje_original",
+        # ↓ habilitamos tuning básico
+        "temperature", "max_tokens", "model"
+    }
     kwargs = {k: v for k, v in kwargs.items() if k in permitidos}
 
     try:
@@ -153,6 +157,7 @@ def _try_openai(prompt: str, **kwargs) -> str:
     except Exception as e:
         print(f"⚠️ SafeOpenAI fallback: {e}")
         return _fallback_clinico()
+
 
 
 # --------------------------HELPERS---------------------------------------------
