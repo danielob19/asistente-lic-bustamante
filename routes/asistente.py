@@ -242,14 +242,6 @@ def _ret(session, user_id: str, texto, *, incrementar_contador: bool = True):
 
 
 
-# --- Helpers de cierre de respuesta -----------------------------------------
-
-CONTACTO_NUM = os.getenv("CONTACTO_NUM", "3310-1186")
-CONTACTO_WPP = os.getenv(
-    "CONTACTO_WPP",
-    " Si querés, podés escribir al WhatsApp +54 911 3310-1186 del Lic. Bustamante para avanzar."
-)
-
 def _finalizar_respuesta(texto: str,
                          *,
                          apendice: str | None = None,
