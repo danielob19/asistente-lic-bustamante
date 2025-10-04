@@ -1815,7 +1815,7 @@ async def asistente(input_data: UserInput):
             "Estilo y directrices obligatorias:\n"
             "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
             "- Comenzá la respuesta con un saludo breve como 'Hola, ¿qué tal?' solo si es la interacción 1.\n"
-            "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'se advierte...', 'impresiona...', 'podría tratarse de...', 'da la sensación de ser...', 'normalmente se trata de un...', etc.\n"
+            "- Si se detecta malestar emocional, formulá UNA PREGUNTA de verificación sobre cómo se relaciona con el contexto (no afirmes). Usá fórmulas como: '¿notás que … cuando …?', '¿desde cuándo te pasa … en …?', '¿con qué frecuencia aparece … en …?'. Evitá frases concluyentes o diagnósticas como 'se observa', 'se advierte', 'parece', 'impresiona', 'podría tratarse de'.\n"
             "- Evitá la frase 'Pareciera tratarse de...' en todas las interacciones, excepto en la 5 y 9.\n"
             "- No uses agradecimientos en ninguna interacción (ni al inicio ni al final).\n"
             "- No uses frases motivacionales ni simulaciones empáticas (ej: 'te entiendo', 'estás en buenas manos', etc.).\n"
