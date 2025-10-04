@@ -1557,7 +1557,8 @@ async def asistente(input_data: UserInput):
                 incluir_contacto=True,
             )
             # Salida centralizada
-            return _ret(session, user_id, respuesta, interaccion_id=interaccion_id)
+            return _ret(session, user_id, respuesta)
+
 
 
         
@@ -1585,7 +1586,8 @@ async def asistente(input_data: UserInput):
                     f"Gracias por confirmarlo. ¿Querés contarme un poco más sobre cómo se manifiesta esa {emocion} en tu día a día?"
                 )
         
-                return _ret(session, user_id, respuesta, interaccion_id=interaccion_id)
+                return _ret(session, user_id, respuesta)
+
 
                 
 
