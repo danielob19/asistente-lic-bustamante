@@ -601,8 +601,8 @@ def _openai_respuesta_terapeutica(mensaje_usuario: str, recordatorio: str, conte
     try:
         texto = generar_respuesta_con_openai(
         prompt,
-        temperature=TEMP_CLINICO,
-        max_tokens=TOK_CLINICO,
+        temperature=TEMP.CLINICO,
+        max_tokens=TOK.CLINICO,
         )
         texto = (texto or "").strip()
 
