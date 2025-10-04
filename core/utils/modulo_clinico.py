@@ -584,17 +584,26 @@ def _openai_respuesta_terapeutica(mensaje_usuario: str, recordatorio: str, conte
     prompt = "\n".join([
         "Actuá como psicólogo clínico (tono humano, empático, rioplatense, usando 'vos').",
         "Objetivo: redactar UNA respuesta breve (2 a 4 oraciones) que acompañe y oriente, y cerrá con 1 pregunta clínica abierta (solo una).",
-        "No diagnósticos cerrados ni etiquetas tajantes, sí hipótesis prudentes en minúsculas.",
+        "No diagnósticos cerrados ni etiquetas tajantes; sí hipótesis prudentes en minúsculas.",
         "Si la persona AFIRMA un estado (p. ej. 'tengo miedo a la oscuridad', 'no puedo dormir'), reconocelo como afirmación y trabajalo (no digas que 'parece').",
         "Si existe recordatorio temporal, integralo de manera natural en la primera frase (no lo repitas literal).",
         "Si el usuario menciona un hecho nuevo, conectalo con antecedentes ya declarados (p. ej., trabajo, discusiones, sueño) en una sola oración breve de conexión (máx. 15–20 palabras), solo si aporta claridad. No repitas literal.",
         "Siempre explorá: situaciones/antecedentes (¿desde cuándo?), cuerpo/pensamientos, frecuencia e impacto en la vida diaria.",
         "Extensión total: 80–120 palabras (2–4 frases).",
         "Evitá enumerar emociones en lista y evitá repetir la misma idea en frases distintas.",
-        # NUEVO: instrucción explícita si hay contexto literal
-        "Si hay CONTEXTO declarado por el usuario, integralo en la 1ª frase natural y cerrá con una única pregunta clínica sobre frecuencia (¿con qué frecuencia sucede en ese contexto?) y temporalidad (¿desde cuándo?).",
         "",
-        "Redactá directamente la respuesta final del terapeuta (sin encabezados)."
+        "# NUEVO: reglas explícitas para ATAR CABOS",
+        "Si hay CONTEXTO declarado por el usuario (contexto_literal):",
+        "- Retomá ese antecedente explícitamente en la PRIMERA oración (ej.: 'Por lo que contaste de [X], se entiende que…').",
+        "- Parafraseá el contexto en 6–12 palabras; no lo copies textual entre comillas.",
+        "- Conectá el antecedente con el malestar actual en UNA sola oración puente (≤ 15 palabras).",
+        "- Si es clínicamente compatible, inferí con prudencia la relación (ej.: 'discusión en el trabajo → tensión antes de dormir').",
+        "- Si el contexto no aporta, nombralo una sola vez y seguí con el motivo actual. No inventes contexto.",
+        "",
+        "# Cierre clínico único",
+        "Cerrá SIEMPRE con UNA única pregunta clínica abierta que indague frecuencia (¿con qué frecuencia sucede en ese contexto?) y temporalidad (¿desde cuándo?).",
+        "",
+        "Redactá directamente la respuesta final del terapeuta (sin encabezados).",
     ])
 
     try:
