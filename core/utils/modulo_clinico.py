@@ -555,14 +555,6 @@ def _extraer_contexto_literal(texto: str) -> str | None:
 
 
 
-#--------------------------AGREGADO EL 04 DE OCTUBRE 2025-----------------------------
-
-contexto_literal = session.get("_apendice_cuadro", "")
-if contexto_literal:
-    contexto_literal = f"Contexto previo del usuario: {contexto_literal}"
-
-#--------------------------------------------------------------------------------------
-
 def _openai_respuesta_terapeutica(mensaje_usuario: str, recordatorio: str, contexto_literal: str | None = None) -> str:
     """
     Pide a OpenAI que redacte la respuesta clínica final en castellano rioplatense,
