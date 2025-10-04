@@ -592,7 +592,11 @@ def _openai_respuesta_terapeutica(mensaje_usuario: str, recordatorio: str, conte
     ])
 
     try:
-        texto = generar_respuesta_con_openai(prompt, temperature=0.3, max_tokens=280)
+        texto = generar_respuesta_con_openai(
+        prompt,
+        temperature=TEMP_CLINICO,
+        max_tokens=TOK_CLINICO,
+        )
         texto = (texto or "").strip()
 
         # 👇 Fallback con contexto para evitar salida vacía
