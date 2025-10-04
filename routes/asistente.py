@@ -1631,7 +1631,7 @@ async def asistente(input_data: UserInput):
                     "Estilo y directrices obligatorias:\n"
                     "- Mantené un tono clínico, sobrio, profesional y respetuoso.\n"
                     f"{saludo_inicio}"
-                    "- Si se detecta malestar emocional, formulá una observación objetiva con expresiones como: 'se observa...', 'se advierte...', 'impresiona...', 'podría tratarse de...'\n"
+                    "- Si se detecta malestar emocional, formulá UNA PREGUNTA de verificación sobre cómo se relaciona con el contexto (no afirmes). Usá fórmulas como: '¿notás que … cuando …?', '¿desde cuándo te pasa … en …?', '¿con qué frecuencia aparece … en …?'. Evitá frases concluyentes o diagnósticas como 'se observa', 'se advierte', 'parece', 'impresiona', 'podría tratarse de'.\n"
                 )
                 
 
