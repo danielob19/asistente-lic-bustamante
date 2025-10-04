@@ -1250,7 +1250,15 @@ def clasificar_cuadro_clinico(
                 "salida (solo el texto, sin comillas):"
             ])
 
-            txt = (generar_respuesta_con_openai(prompt, temperature=0.2, max_tokens=30) or "").strip()
+            # Síntesis prudente (usa los valores centralizados)
+            txt = (
+                generar_respuesta_con_openai(
+                    prompt,
+                    temperature=TEMP.SINTESIS,   # hoy = 0.2
+                    max_tokens=TOK.SINTESIS      # hoy = 60 (mejor que 30 para no cortar)
+                ) or ""
+            ).strip()
+
             txt = txt.strip('"“”').lower()
             # Sanitizar: 2–5 palabras, solo texto corto
             palabras = re.findall(r"[a-záéíóúñü]+", txt)
