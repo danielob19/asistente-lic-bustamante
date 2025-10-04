@@ -274,32 +274,29 @@ def _ret(session, user_id: str, texto, *, incrementar_contador: bool = True):
 
 
 
-def _finalizar_respuesta(texto: str,
-                         *,
-                         apendice: str | None = None,
-                         incluir_contacto: bool = True) -> str:
+def _finalizar_respuesta(
+    texto: str,
+    *,
+    apendice: str | None = None,
+    incluir_contacto: bool = False,   # se ignora: no se agrega contacto aquí
+) -> str:
     """
-    Unifica el cierre de la respuesta:
-    - anexa apéndice clínico si viene
-    - agrega recomendación de contacto (sin duplicar)
-    - limpia espacios extra
+    Cierre unificado: agrega apéndice clínico si corresponde y limpia espacios.
+    (No inserta contacto en esta función).
     """
-    texto = (texto or "").strip()
+    t = (texto or "").strip()
 
-    # Apéndice clínico (si se calculó antes)
+    # Fallback de apéndice (por compatibilidad con flujos previos)
     if apendice is None:
-        # fallback: si lo dejaste como variable de módulo en algún flujo
-        apendice = globals().get("apendice_cuadro", "")
-    if apendice:
-        texto = f"{texto} {apendice}".strip()
+        apendice = globals().get("apendice_cuadro", "") or ""
 
-    # Recomendación de contacto (sin duplicar por número)
-    if incluir_contacto and CONTACTO_NUM not in texto:
-        texto = f"{texto} {CONTACTO_WPP}".strip()
+    if apendice:
+        t = f"{t} {apendice}".strip()
 
     # Sanitizar espacios
-    texto = " ".join(texto.split())
-    return texto
+    t = " ".join(t.split())
+    return t
+
 
 
 
