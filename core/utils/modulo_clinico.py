@@ -13,6 +13,8 @@ except Exception:
 
 
 from core.db.conexion import ejecutar_consulta
+from types import SimpleNamespace
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -32,6 +34,28 @@ except Exception:
         )
 # --- fin bloque unidecode opcional ---
 
+#-------------------------INICIO BLOQUE CONSTANTES-----------------------------------
+
+
+
+# --- Tuning centralizado para OpenAI ---
+TEMP = SimpleNamespace(
+    JSON=0.0,        # extractor emociones/cuadro (JSON)
+    CLINICO=0.55,    # respuesta clínica principal
+    SINTESIS=0.2,    # síntesis prudente 2-5 palabras
+)
+
+TOK = SimpleNamespace(
+    JSON=200,
+    CLINICO=280,
+    SINTESIS=60,
+)
+
+
+
+
+
+#---------------------- FINAL BLOQUE CONSTANTES------------------------------------
 
 def _limpiar_redundancias(txt: str) -> str:
     """
