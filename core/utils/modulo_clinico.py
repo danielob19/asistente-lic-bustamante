@@ -159,7 +159,7 @@ def armar_prompt_openai(historial_emociones, nuevas_emociones, ultima_interaccio
 
     prompt = (
         "Sos un asistente clínico digital que acompaña a personas en situaciones emocionales delicadas. "
-        "Analizá el siguiente contexto emocional, detectá patrones relevantes y sugerí con empatía posibles líneas de abordaje clínico, "
+        "Analizá el contexto emocional, detectá y relacioná patrones relevantes y sugerí con empatía posibles líneas de abordaje clínico, "
         "sin emitir diagnósticos tajantes ni frases genéricas.\n\n"
         f"{resumen}\n"
         "1. ¿Qué emociones/síntomas son predominantes en este usuario?\n"
