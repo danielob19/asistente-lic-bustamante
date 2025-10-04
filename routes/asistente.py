@@ -238,9 +238,10 @@ def _finalizar_no_vacio(texto: str, session: dict) -> str:
 
     return _finalizar_respuesta(
         texto,
-        apendice=ap_to_pass,   # sólo si hacía falta
-        incluir_contacto=True,
+        apendice=ap_to_pass,  # sólo si hacía falta
+        incluir_contacto=False,
     )
+
 
 
 # --- Helper: normalizar respuestas a texto -----------------------------------
