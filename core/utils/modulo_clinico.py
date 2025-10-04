@@ -41,13 +41,13 @@ except Exception:
 # --- Tuning centralizado para OpenAI ---
 TEMP = SimpleNamespace(
     JSON=0.0,        # extractor emociones/cuadro (JSON)
-    CLINICO=0.55,    # respuesta clínica principal
-    SINTESIS=0.2,    # síntesis prudente 2-5 palabras
+    CLINICO=0.62,    # respuesta clínica principal
+    SINTESIS=0.20,    # síntesis prudente 2-5 palabras
 )
 
 TOK = SimpleNamespace(
     JSON=200,
-    CLINICO=280,
+    CLINICO=300,
     SINTESIS=60,
 )
 
