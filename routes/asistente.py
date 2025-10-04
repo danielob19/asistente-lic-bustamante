@@ -160,7 +160,38 @@ def _try_openai(prompt: str, **kwargs) -> str:
 
 
 
-# --------------------------HELPERS---------------------------------------------
+# --------------------------HELPERS 04 DE OCTUBRE 2025---------------------------------------------
+
+# --- Contacto (solo a demanda)
+CONTACTO_NUM = "+54 911 3310-1186"
+CONTACTO_LINEA = f" Si querés, podés escribir al WhatsApp {CONTACTO_NUM} del Lic. Bustamante."
+
+
+# Patrones que indican que el usuario PIDE explícitamente contacto/agenda/precio
+_PEDIDOS_CONTACTO = [
+    r"\bwhats\s*app\b|\bwhatsapp\b|\bwa\b",
+    r"\btel(e|é)fono\b|\bcelu\b|\bcelular\b|\bcontact(o|ar)\b",
+    r"\bturno(s)?\b|\bcita(s)?\b|\bagendar\b|\bagenda(r|s)?\b|\bcoordinar\b",
+    r"\bhorari[oa]s?\b|\bdisponibilidad\b",
+    r"\bprecio(s)?\b|\barancel(es)?\b|\bvalor(es)?\b|\bcobr(a|ás|an)\b|\bcu(á|a)nt(o|a) (sale|cuesta)\b",
+]
+
+def _pide_contacto(mensaje_usuario: str) -> bool:
+    if not mensaje_usuario:
+        return False
+    msg = mensaje_usuario.lower()
+    return any(re.search(p, msg, flags=re.IGNORECASE) for p in _PEDIDOS_CONTACTO)
+
+def _agregar_contacto_si_pedido(texto: str, mensaje_usuario: str) -> str:
+    """Añade el WhatsApp SOLO si el usuario lo pidió explícitamente y aún no está en el texto."""
+    out = (texto or "").strip()
+    if _pide_contacto(mensaje_usuario):
+        if CONTACTO_NUM not in out and "whatsapp" not in out.lower():
+            out = f"{out}{CONTACTO_LINEA}"
+    return out
+
+
+#--------------------------------------------------------------------------------
 
 
 
@@ -170,6 +201,7 @@ def _json_dict_or_none(s: str):
         return d if isinstance(d, dict) else None
     except Exception:
         return None
+        
 
 # --- Salida centralizada ------------------------------------------------------
 
